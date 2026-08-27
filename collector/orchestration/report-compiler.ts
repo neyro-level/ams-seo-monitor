@@ -105,7 +105,7 @@ function compileWebmasterReport(
             : null,
       },
     ],
-    queries: mergedQueries.map((query) => ({
+    queries: mergedQueries.slice(0, 500).map((query) => ({
       queryId: query.queryId,
       query: query.queryText,
       cluster: "Не классифицирован",
