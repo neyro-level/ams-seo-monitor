@@ -12,7 +12,7 @@
 
 1. `Сводка`
 2. `SEO`
-3. `Трафик`
+3. `Трафик и обращения`
 
 По умолчанию открывается `Сводка`. Отдельные Webmaster/Metrica top-level routes не создаются: это раздробит один управленческий отчёт и усложнит работу клиента.
 
@@ -44,61 +44,59 @@
 
 ### SEO tab
 
-Целевая аудитория: аналитик/владелец, когда нужен detail drill-down.
+Director-level SEO detail:
 
-- Webmaster visibility;
-- queries;
-- indexing;
-- sitemap;
-- diagnostics;
-- links;
-- source caveats.
+- 4 KPI: total shows, clicks, CTR, average position;
+- one visibility trend;
+- up to 5 deterministic demand clusters;
+- up to 5 priority queries and compact search coverage: pages in search, excluded pages, sitemap status, critical issues.
 
-### Traffic tab
+Full 500-query pool, HTTP histories, links and raw diagnostics stay in internal source bundles for analyst tooling.
 
-- Yandex organic trend;
-- landing pages;
-- devices;
-- allowlisted goals;
-- sampling/privacy metadata;
-- source caveats.
+### Traffic and conversions tab
 
-## Director summary: 9 управленческих сигналов
+- 4 KPI: Yandex organic visits, unique target visits, conversion, organic share;
+- organic and target-visit trend;
+- up to 4 main target-action types;
+- up to 5 landing pages with visits, unique target visits and conversion;
+- compact quality block: bounce rate, depth and average duration.
 
-### KPI row 1 — search visibility
+Device tables, all goals, 50 landing pages and sampling details stay analyst-only.
 
-1. Показы в Яндексе
-2. Клики из поиска
-3. CTR
-4. Средняя позиция
+## Director summary
 
-### KPI row 2 — business traffic
+Six approved KPI:
 
-5. Органические визиты из Яндекса
-6. Органические посетители
-7. Уникальные целевые визиты по allowlist
-8. Конверсия organic visits → unique converted visits
+1. Total search shows from Webmaster all-query history.
+2. Search clicks from Webmaster all-query history.
+3. Yandex organic visits from Metrica.
+4. Unique target visits across the allowlisted goals.
+5. Organic conversion: target visits / organic visits.
+6. Pages in Yandex search.
 
-### Signal 9 — priority panel
+Each KPI shows current value and equal-period change.
 
-Один full-width блок:
+One management panel contains:
 
-- состояние источников и freshness;
-- один главный риск;
-- одна главная точка роста;
-- короткая рекомендация действия.
+- main result;
+- main risk;
+- main growth opportunity;
+- recommended action.
 
-Не делать девятую декоративную KPI-card: сетка 4+4 и один приоритетный panel лучше соответствует утверждённой плотности.
+Two charts remain:
 
-## Семантика данных
+- total search shows/clicks;
+- organic/unique target visits.
 
-- Webmaster clicks и Metrica visits показываются отдельно.
-- Их отношение — diagnostic ratio, не conversion.
-- Сумма goal reaches не является уникальными конверсиями.
-- Для KPI 7–8 W6 должен посчитать union allowlisted goals через converted visits, без двойного счёта одного визита.
-- current/previous используют равные периоды.
-- фактические source periods и timezone видимы.
-- partial/stale source не скрывается и не превращается в zero.
+## Data semantics
+
+- Webmaster clicks and Metrica visits remain separate.
+- Their ratio is diagnostic, not conversion.
+- Goal reaches are cumulative actions, not unique leads.
+- Unique target visits use an OR union of allowlisted goals and count one visit once.
+- Current and previous periods always have equal fixed length.
+- Webmaster totals come from `/search-queries/all/history`; popular pools are used only for opportunities.
+- Partial/stale/suppressed values never become zero silently.
 
 ## Progressive disclosure
 
@@ -117,19 +115,16 @@
 - один combined trend block;
 - ссылки/вкладки на detail.
 
-## Period and device controls
+## Period presets
 
-Current live report shows the exact aligned factual period and does not display fake controls.
+Approved fixed comparable periods ending on the latest factual Webmaster date:
 
-After scheduled period snapshots are implemented, controls become:
+- `Неделя`: 7 days, default;
+- `Месяц`: 28 days;
+- `Квартал`: 90 days;
+- `Полгода`: 180 days.
 
-- 7 days;
-- 28 days;
-- quarter;
-- year;
-- device: all/desktop/mobile.
-
-Webmaster weekly delay remains explicit. `Вчера` is forbidden for weekly query data. Tabs are already bookmarkable through `#summary/#seo/#traffic`; period/device state must also be static-safe and bookmarkable when enabled.
+Each period compares with the immediately preceding equal-length period. Period selection is bookmarkable through `?period=week|month|quarter|halfYear`. `Вчера` is forbidden for weekly Webmaster query data.
 
 ## Multi-client navigation
 
@@ -151,8 +146,11 @@ Client credentials в production открывают только свой subtre
 ## Current implementation status
 
 - three REDACTED_CLIENT_DATA city routes load live protected report JSON;
-- source periods are aligned;
-- report compiler and atomic publication are active;
+- source periods are aligned across four presets;
+- equal previous-period comparison and unique target visits are active;
+- query clusters use checked-in deterministic brand/topic rules;
+- report compiler and atomic period-aware publication are active;
+- detailed current/previous source bundles stay internal;
 - `/demo/` remains the only fixture route;
 - loading/error states do not expose technical details;
 - client navigation renders only its own subtree.
@@ -160,8 +158,7 @@ Client credentials в production открывают только свой subtre
 Remaining before production:
 
 ```text
-previous-period analytics
-→ scheduled sync/timers
+scheduled sync/timers
 → Nginx protected aliases + Basic Auth isolation
 → exact-main release
 ```

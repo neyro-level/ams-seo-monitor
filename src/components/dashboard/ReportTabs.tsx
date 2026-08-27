@@ -14,7 +14,7 @@ type ReportTabsProps = {
 const tabs: Array<{ key: ReportTab; label: string }> = [
   { key: "summary", label: "Сводка" },
   { key: "seo", label: "SEO" },
-  { key: "traffic", label: "Трафик" },
+  { key: "traffic", label: "Трафик и обращения" },
 ];
 
 function parseReportTab(hash: string): ReportTab {

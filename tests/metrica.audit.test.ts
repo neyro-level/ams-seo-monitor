@@ -28,6 +28,9 @@ describe("metrica audit dto", () => {
     const landing = await loadFixture("landing.json");
     const devices = await loadFixture("devices.json");
     const defaultGoalStat = await loadFixture("goal-stat-default.json");
+    const uniqueTarget = await loadFixture("unique-target.json");
+    const targetByTime = await loadFixture("target-bytime.json");
+    const targetLanding = await loadFixture("target-landing.json");
 
     const client = createMetricaClient(
       readMetricaEnvironment({
@@ -40,6 +43,8 @@ describe("metrica audit dto", () => {
         fetchImpl: async (url) => {
           const target = new URL(typeof url === "string" ? url : String(url));
           const metrics = target.searchParams.getAll("metrics");
+          const filters = target.searchParams.get("filters") ?? "";
+          const isUniqueTargetRequest = filters.includes("IsReached");
           if (target.pathname.endsWith("/management/v1/counters")) {
             return createJsonResponse(counters);
           }
@@ -47,10 +52,19 @@ describe("metrica audit dto", () => {
             return createJsonResponse(goals);
           }
           if (target.pathname.endsWith("/stat/v1/data/bytime")) {
-            return createJsonResponse(byTime);
+            return createJsonResponse(isUniqueTargetRequest ? targetByTime : byTime);
           }
           if (target.pathname.endsWith("/stat/v1/data")) {
             const dimensions = target.searchParams.getAll("dimensions");
+            if (
+              isUniqueTargetRequest &&
+              dimensions.includes("ym:s:startURLPath")
+            ) {
+              return createJsonResponse(targetLanding);
+            }
+            if (isUniqueTargetRequest) {
+              return createJsonResponse(uniqueTarget);
+            }
             if (dimensions.includes("ym:s:lastsignSearchEngineRootName")) {
               return createJsonResponse(searchEngines);
             }
@@ -76,8 +90,13 @@ describe("metrica audit dto", () => {
     expect(result.access.counterId).toBe("REDACTED_CLIENT_DATA");
     expect(result.allTraffic.summary.goalReaches).toBe(398);
     expect(result.yandexOrganic.summary.visits).toBe(5290);
+    expect(result.yandexOrganic.summary.targetVisits).toBe(49);
+    expect(result.yandexOrganic.summary.targetUsers).toBe(37);
+    expect(result.yandexOrganic.summary.conversionRate).toBe(0.93);
     expect(result.yandexOrganic.byTime).toHaveLength(3);
     expect(result.yandexOrganic.landingPages[0]?.path).toBe("/");
+    expect(result.yandexOrganic.byTime[0]?.targetVisits).toBe(4);
+    expect(result.yandexOrganic.landingPages[0]?.targetVisits).toBe(22);
     expect(result.yandexOrganic.devices[0]?.device).toBe("mobile");
     expect(result.goalsSummary.items).toHaveLength(6);
   });

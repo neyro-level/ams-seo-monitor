@@ -67,6 +67,20 @@ export function createWebmasterSourceFixture(site: SiteRegistry) {
         ],
       },
     ],
+    allQueryHistory: [
+      {
+        indicator: "TOTAL_SHOWS",
+        points: [{ date: "2026-08-23T00:00:00+03:00", value: 120 }],
+      },
+      {
+        indicator: "TOTAL_CLICKS",
+        points: [{ date: "2026-08-23T00:00:00+03:00", value: 6 }],
+      },
+      {
+        indicator: "AVG_SHOW_POSITION",
+        points: [{ date: "2026-08-23T00:00:00+03:00", value: 5.5 }],
+      },
+    ],
     indexingHistory: [
       {
         indicator: "HTTP_2XX",
@@ -129,6 +143,8 @@ export function createMetricaSourceFixture(site: SiteRegistry) {
         pageDepth: 2.4,
         averageVisitDurationSeconds: 180,
         goalReaches: 5,
+        targetVisits: 5,
+        targetUsers: 4,
         conversionRate: null,
       },
       byTime: [
@@ -136,6 +152,7 @@ export function createMetricaSourceFixture(site: SiteRegistry) {
           date: "2026-08-27",
           visits: 100,
           goalReaches: 5,
+          targetVisits: 5,
           conversionRate: null,
         },
       ],

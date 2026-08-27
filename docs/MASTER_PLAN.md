@@ -59,12 +59,15 @@ Domain уже создан владельцем. DNS/Nginx/SSL/deploy не вы�
 Works end-to-end locally:
 
 - one command synchronizes all three enabled REDACTED_CLIENT_DATA sites;
-- Webmaster and Metrica periods align to the factual Webmaster week;
-- normalized source DTOs compile into one `SiteReportSnapshot`;
+- four fixed period presets align to the latest factual Webmaster date;
+- every preset includes the immediately preceding equal-length comparison;
+- Webmaster totals come from all-query history, not popular-query sums;
+- Metrica counts unique target visits through the allowlisted goal union;
+- normalized current/previous DTOs compile into period-aware snapshots;
+- detailed normalized source bundles remain internal for analyst tooling;
 - snapshots and browser-safe client reports publish atomically;
 - endpoint/source failure produces `partial` and preserves last-known-good data;
-- client route loads protected runtime JSON instead of a fixture;
-- registry and navigation use `REDACTED_CLIENT_DATA`, not the incorrect legacy name;
+- client routes load protected runtime JSON instead of fixtures;
 - client navigation contains only its own subtree;
 - static export contract and server-only secrets are preserved.
 
@@ -76,35 +79,39 @@ REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
 REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
 ```
 
-## Remaining W6 analytics
+## W6 analytics status
 
 Implemented:
 
-- equal-period derivation/assertion;
-- Webmaster show/click pool merge by `queryId + device`;
-- initial deterministic opportunities;
-- unified report compiler;
-- aligned current source period;
-- atomic site/client report publication.
-
-Still required before executive deltas are final:
-
-- collect previous Webmaster/Metrica periods;
-- weighted current/previous deltas;
+- fixed presets: week 7, month 28, quarter 90, half-year 180 days;
+- immediately preceding equal-period comparison;
+- total Webmaster shows/clicks/position history;
+- popular query pool merge by `queryId + device`;
+- unique target organic visits without double counting;
+- conversion and organic-share calculation;
+- KPI percent/percentage-point deltas;
+- position improvement direction;
 - minimum-baseline trend alerts;
-- unique converted organic visits across allowlisted goals;
-- cluster and brand/nonbrand rules;
-- richer director priority selection.
+- initial deterministic opportunities;
+- deterministic query clusters from checked-in brand/topic terms;
+- period-aware report compiler/publication;
+- compact director dashboard.
 
-Current aggregate `goalReaches` remains cumulative and is not presented as unique conversion.
+Still useful as the next analytics refinement:
+
+- richer opportunity scoring;
+- separate analyst UI for the preserved full source bundles.
+
+Aggregate `goalReaches` stays available only as actions; director conversion uses unique target visits.
 
 ## Runtime pipeline acceptance
 
-- `pnpm collector:sync:REDACTED_CLIENT_DATA` publishes three valid reports;
-- source periods match for each site;
-- partial source refresh preserves LKG;
+- `pnpm collector:sync:REDACTED_CLIENT_DATA` publishes 12 current reports: 3 sites × 4 presets;
+- every report contains current and previous equal periods;
+- partial source refresh preserves period-specific LKG;
+- internal source bundles remain outside browser paths;
 - raw API responses and secrets are not published;
-- runtime report path follows `/c/{clientSlug}/data/{siteSlug}/latest.json`;
+- runtime report path follows `/c/{clientSlug}/data/{siteSlug}/{periodKey}/latest.json`;
 - Nginx alias/security activation remains Wave 3.
 
 ## Director cabinet UI foundation
@@ -115,10 +122,13 @@ Implemented against the approved REDACTED_CLIENT_DATA references:
 - canonical PT Root UI and CRM tokens;
 - fixed 260px sidebar and white mobile topbar;
 - project panel/KPI/table radius restored to 16px;
-- one route with bookmarkable `Сводка / SEO / Трафик` tabs;
-- default `Сводка` with 8 KPI + one priority section;
+- one route with bookmarkable `Сводка / SEO / Трафик и обращения` tabs;
+- functional `Неделя / Месяц / Квартал / Полгода` presets;
+- default weekly comparison;
+- approved 6 KPI director summary + result/risk/opportunity/action;
+- SEO shows 4 KPI, one trend, up to 5 demand clusters, coverage and up to 5 queries;
+- Traffic shows 4 KPI, target actions, up to 5 landing pages and quality;
 - client route navigation contains only its own client subtree;
-- detail tables moved to SEO/Traffic tabs;
 - `/demo/` remains separate from client data;
 - live client routes fetch protected runtime snapshots and show safe loading/error states.
 

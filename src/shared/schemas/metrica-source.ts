@@ -67,6 +67,8 @@ export const metricaSummarySchema = z.object({
   pageDepth: z.number().nonnegative(),
   averageVisitDurationSeconds: z.number().nonnegative(),
   goalReaches: z.number().nonnegative(),
+  targetVisits: z.number().nonnegative().default(0),
+  targetUsers: z.number().nonnegative().default(0),
   conversionRate: z.number().nonnegative().nullable(),
 });
 
@@ -74,6 +76,7 @@ export const metricaTrendPointSchema = z.object({
   date: z.string().min(1),
   visits: z.number().nonnegative(),
   goalReaches: z.number().nonnegative(),
+  targetVisits: z.number().nonnegative().default(0),
   conversionRate: z.number().nonnegative().nullable(),
 });
 
@@ -86,6 +89,7 @@ export const metricaLandingPageSchema = z.object({
   pageDepth: z.number().nonnegative(),
   averageVisitDurationSeconds: z.number().nonnegative(),
   goalReaches: z.number().nonnegative(),
+  targetVisits: z.number().nonnegative().default(0),
   conversionRate: z.number().nonnegative().nullable(),
 });
 

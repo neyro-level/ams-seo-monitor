@@ -20,6 +20,7 @@ const httpsUrlSchema = z
 export const clusterGroupSchema = z.object({
   slug: z.string().regex(slugPattern),
   label: z.string().min(1),
+  terms: z.array(z.string().min(1)).default([]),
 });
 
 export const clusterProfileSchema = z.object({

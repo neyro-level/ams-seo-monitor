@@ -32,9 +32,10 @@ MVP принципиально:
 
 - Wave 1 foundation зафиксирована в SourceCraft `main`.
 - W4 Webmaster и W5 Metrica завершены для Луганска, Алчевска и Мариуполя.
-- `pnpm collector:sync:REDACTED_CLIENT_DATA` собирает оба источника, выравнивает периоды и атомарно публикует три live snapshot/client-report.
-- Client routes загружают protected runtime JSON; `/demo/` остаётся отдельным fixture.
-- Следующий блок: previous-period deltas, unique converted visits, scheduled timers и production isolation/deploy.
+- `pnpm collector:sync:REDACTED_CLIENT_DATA` собирает оба источника и атомарно публикует 12 отчётов: 3 сайта × 4 периода.
+- Отчёты содержат равное previous-period сравнение, total Webmaster history, unique target visits и детерминированные кластеры спроса.
+- Client routes загружают period-aware protected runtime JSON; `/demo/` остаётся отдельным fixture.
+- Следующий блок: scheduled timers и production isolation/deploy.
 
 Предварительный production URL:
 

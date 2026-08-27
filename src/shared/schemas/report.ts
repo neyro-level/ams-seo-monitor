@@ -24,6 +24,38 @@ export const sourceStateSchema = z.object({
   safeErrorCode: z.string().nullable(),
 });
 
+export const reportPeriodKeySchema = z.enum(["week", "month", "quarter", "halfYear"]);
+
+export const comparisonMetricSchema = z.object({
+  current: z.number().nullable(),
+  previous: z.number().nullable(),
+  deltaPercent: z.number().nullable(),
+  deltaPoints: z.number().nullable(),
+});
+
+export const reportComparisonSchema = z.object({
+  periodKey: reportPeriodKeySchema,
+  currentPeriod: z.object({
+    dateFrom: isoDateSchema,
+    dateTo: isoDateSchema,
+  }),
+  previousPeriod: z.object({
+    dateFrom: isoDateSchema,
+    dateTo: isoDateSchema,
+  }),
+  metrics: z.object({
+    shows: comparisonMetricSchema,
+    clicks: comparisonMetricSchema,
+    ctr: comparisonMetricSchema,
+    avgPosition: comparisonMetricSchema,
+    organicVisits: comparisonMetricSchema,
+    targetVisits: comparisonMetricSchema,
+    conversionRate: comparisonMetricSchema,
+    pagesInSearch: comparisonMetricSchema,
+    organicShare: comparisonMetricSchema,
+  }),
+});
+
 const severitySchema = z.enum(["success", "info", "warning", "error"]);
 
 export const trendPointSchema = z.object({
@@ -60,6 +92,7 @@ export const landingPageSchema = z.object({
   depth: z.number().nonnegative(),
   durationSeconds: z.number().nonnegative(),
   goals: z.number().nonnegative(),
+  targetVisits: z.number().nonnegative().default(0),
   conversionRate: z.number().nonnegative().nullable(),
   trendLabel: z.string().min(1),
 });
@@ -121,6 +154,9 @@ export const metricaReportSchema = z.object({
     depth: z.number().nonnegative(),
     averageVisitDurationSeconds: z.number().nonnegative(),
     goalReaches: z.number().nonnegative(),
+    targetVisits: z.number().nonnegative().default(0),
+    targetUsers: z.number().nonnegative().default(0),
+    allVisits: z.number().nonnegative().default(0),
     conversionRate: z.number().nonnegative().nullable(),
   }),
   organicTrend: z.array(trendPointSchema),
@@ -167,6 +203,8 @@ export const siteReportSnapshotSchema = z.object({
     metrica: sourceStateSchema,
   }),
   webmaster: webmasterReportSchema.nullable(),
+  periodKey: reportPeriodKeySchema.default("week"),
+  comparison: reportComparisonSchema.nullable().default(null),
   metrica: metricaReportSchema.nullable(),
   combined: combinedSeoReportSchema,
 });
@@ -193,6 +231,8 @@ export const syncRunSchema = z.object({
 export type TrendPoint = z.infer<typeof trendPointSchema>;
 export type SiteReportSnapshot = z.infer<typeof siteReportSnapshotSchema>;
 export type SyncRun = z.infer<typeof syncRunSchema>;
+export type ReportPeriodKey = z.infer<typeof reportPeriodKeySchema>;
+export type ReportComparison = z.infer<typeof reportComparisonSchema>;
 export type WebmasterReport = z.infer<typeof webmasterReportSchema>;
 export type MetricaReport = z.infer<typeof metricaReportSchema>;
 export type CombinedSeoReport = z.infer<typeof combinedSeoReportSchema>;

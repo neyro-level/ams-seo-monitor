@@ -24,27 +24,55 @@ export function resolveStoragePaths(rootDir: string): StoragePaths {
   };
 }
 
-export function getSiteSnapshotDirectory(rootDir: string, clientSlug: string, siteSlug: string) {
-  return path.join(resolveStoragePaths(rootDir).snapshotsDir, clientSlug, siteSlug);
-}
-
-export function getLatestSnapshotPath(rootDir: string, clientSlug: string, siteSlug: string) {
-  return path.join(getSiteSnapshotDirectory(rootDir, clientSlug, siteSlug), "latest.json");
-}
-
-export function getClientReportPath(rootDir: string, clientSlug: string, siteSlug: string) {
+export function getSiteSnapshotDirectory(
+  rootDir: string,
+  clientSlug: string,
+  siteSlug: string,
+  periodKey?: string,
+) {
   return path.join(
-    resolveStoragePaths(rootDir).clientReportsDir,
+    resolveStoragePaths(rootDir).snapshotsDir,
     clientSlug,
     siteSlug,
+    ...(periodKey ? [periodKey] : []),
+  );
+}
+
+export function getLatestSnapshotPath(
+  rootDir: string,
+  clientSlug: string,
+  siteSlug: string,
+  periodKey?: string,
+) {
+  return path.join(
+    getSiteSnapshotDirectory(rootDir, clientSlug, siteSlug, periodKey),
     "latest.json",
   );
 }
 
-export function getVersionedSnapshotPath(rootDir: string, snapshot: SiteReportSnapshot) {
+export function getClientReportPath(
+  rootDir: string,
+  clientSlug: string,
+  siteSlug: string,
+  periodKey?: string,
+) {
+  return path.join(
+    resolveStoragePaths(rootDir).clientReportsDir,
+    clientSlug,
+    siteSlug,
+    ...(periodKey ? [periodKey] : []),
+    "latest.json",
+  );
+}
+
+export function getVersionedSnapshotPath(
+  rootDir: string,
+  snapshot: SiteReportSnapshot,
+  periodKey?: string,
+) {
   const safeTimestamp = snapshot.generatedAt.replace(/[+:]/g, "-");
   return path.join(
-    getSiteSnapshotDirectory(rootDir, snapshot.clientSlug, snapshot.siteSlug),
+    getSiteSnapshotDirectory(rootDir, snapshot.clientSlug, snapshot.siteSlug, periodKey),
     `snapshot-${safeTimestamp}.json`,
   );
 }

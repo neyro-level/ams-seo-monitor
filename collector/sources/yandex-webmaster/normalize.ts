@@ -236,6 +236,7 @@ export function buildWebmasterSiteData(args: {
   diagnostics: WebmasterDiagnostic[];
   sitemaps: WebmasterSitemap[];
   queryCollections: WebmasterQueryCollection[];
+  allQueryHistory: WebmasterIndicatorHistory[];
   indexingHistory: WebmasterIndicatorHistory[];
   pagesInSearchHistory: WebmasterHistoryPoint[];
   searchEventsHistory: WebmasterIndicatorHistory[];
@@ -251,6 +252,7 @@ export function buildWebmasterSiteData(args: {
     diagnostics: args.diagnostics,
     sitemaps: args.sitemaps,
     queryCollections: args.queryCollections,
+    allQueryHistory: args.allQueryHistory,
     indexingHistory: args.indexingHistory,
     pagesInSearchHistory: args.pagesInSearchHistory,
     searchEventsHistory: args.searchEventsHistory,

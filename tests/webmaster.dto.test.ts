@@ -37,6 +37,7 @@ describe("webmaster normalized dto", () => {
       createJsonResponse(await loadFixture("queries-total-clicks-all.json")),
       createJsonResponse(await loadFixture("queries-total-clicks-desktop.json")),
       createJsonResponse(await loadFixture("queries-total-clicks-mobile.json")),
+      createJsonResponse(await loadFixture("all-query-history.json")),
     ];
 
     const client = createWebmasterClient(
@@ -62,6 +63,9 @@ describe("webmaster normalized dto", () => {
     expect(dto.queryCollections).toHaveLength(6);
     expect(dto.queryCollections[0]?.queries[0]?.queryText).toBe("квартиры REDACTED_CLIENT_DATA новостройки");
     expect(dto.queryCollections[0]?.queries[0]?.ctrPercent).toBe(10.95);
+    expect(dto.allQueryHistory.find((item) => item.indicator === "TOTAL_SHOWS")?.points[0]?.value).toBe(
+      12000,
+    );
     expect(dto.indexingHistory[0]?.indicator).toBe("HTTP_2XX");
     expect(dto.pagesInSearchHistory[0]?.value).toBe(2123);
     expect(dto.searchEventsHistory).toHaveLength(2);

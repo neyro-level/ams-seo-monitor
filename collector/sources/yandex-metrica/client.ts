@@ -13,6 +13,7 @@ import {
   normalizeSampleMeta,
   normalizeSummaryFromNamedRow,
   normalizeSummaryFromTotals,
+  normalizeTargetVisitTotals,
   resolveCounterAccess,
 } from "./normalize";
 import {
@@ -49,6 +50,17 @@ function buildGoalStatMetrics(goalId: string) {
 
 function buildYandexOrganicFilter() {
   return "ym:s:lastsignSearchEngineRootName=='Yandex'";
+}
+
+function buildUniqueTargetFilter(goalIds: string[]) {
+  if (goalIds.length === 0) {
+    return null;
+  }
+
+  const targetFilter = goalIds
+    .map((goalId) => `ym:s:goal${goalId}IsReached=='Yes'`)
+    .join(" OR ");
+  return `${buildYandexOrganicFilter()} AND (${targetFilter})`;
 }
 
 export function readMetricaEnvironment(env: NodeJS.ProcessEnv = process.env): MetricaEnvironment {
@@ -170,6 +182,7 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
     date1?: string;
     date2?: string;
     landingLimit?: number;
+    includeDetails?: boolean;
   }) {
     const siteConfig = await findSiteConfigByUrl(`https://${config.targetSiteUrl}`);
     if (!siteConfig) {
@@ -181,12 +194,15 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
     }
 
     const access = await resolveCounterBySite();
-    const goals = normalizeGoals(await listGoals(access.counterId));
+    const includeDetails = options?.includeDetails ?? true;
+    const goals = includeDetails ? normalizeGoals(await listGoals(access.counterId)) : [];
     const allowedGoals = getAllowedGoalsForSite({
       site: siteConfig.site,
       goalProfile: siteConfig.goalProfile,
     });
-    const goalReachesMetrics = buildGoalReachMetrics(allowedGoals.map((goal) => goal.goalId));
+    const goalReachesMetrics = buildGoalReachMetrics(
+      allowedGoals.map((goal) => goal.goalId),
+    );
     const timezone = siteConfig.site.timezone;
     const commonDates = {
       date1: options?.date1 ?? "30daysAgo",
@@ -226,52 +242,96 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
     });
 
     const organicFilter = buildYandexOrganicFilter();
+    const uniqueTargetFilter = buildUniqueTargetFilter(
+      allowedGoals.map((goal) => goal.goalId),
+    );
+    const uniqueTargetPayload = uniqueTargetFilter
+      ? await getTableReport({
+          ids: access.counterId,
+          metrics: ["ym:s:visits", "ym:s:users"],
+          filters: uniqueTargetFilter,
+          ...commonDates,
+        })
+      : { totals: [0, 0], query: commonDates };
+    const uniqueTargetTotals = normalizeTargetVisitTotals(uniqueTargetPayload);
 
-    const byTimePayload = await getByTimeReport({
-      ids: access.counterId,
-      metrics: ["ym:s:visits", ...goalReachesMetrics],
-      filters: organicFilter,
-      group: "day",
-      ...commonDates,
-    });
+    const byTimePayload = includeDetails
+      ? await getByTimeReport({
+          ids: access.counterId,
+          metrics: ["ym:s:visits", ...goalReachesMetrics],
+          filters: organicFilter,
+          group: "day",
+          ...commonDates,
+        })
+      : { data: [], time_intervals: [] };
+    const targetByTimePayload =
+      includeDetails && uniqueTargetFilter
+        ? await getByTimeReport({
+            ids: access.counterId,
+            metrics: "ym:s:visits",
+            filters: uniqueTargetFilter,
+            group: "day",
+            ...commonDates,
+          })
+        : { data: [] };
 
-    const landingPayload = await getTableReport({
-      ids: access.counterId,
-      dimensions: "ym:s:startURLPath",
-      metrics: [
-        "ym:s:visits",
-        "ym:s:users",
-        "ym:s:pageviews",
-        "ym:s:bounceRate",
-        "ym:s:pageDepth",
-        "ym:s:avgVisitDurationSeconds",
-        ...goalReachesMetrics,
-      ],
-      filters: organicFilter,
-      sort: "-ym:s:visits",
-      limit: options?.landingLimit ?? 50,
-      ...commonDates,
-    });
+    const landingPayload = includeDetails
+      ? await getTableReport({
+          ids: access.counterId,
+          dimensions: "ym:s:startURLPath",
+          metrics: [
+            "ym:s:visits",
+            "ym:s:users",
+            "ym:s:pageviews",
+            "ym:s:bounceRate",
+            "ym:s:pageDepth",
+            "ym:s:avgVisitDurationSeconds",
+            ...goalReachesMetrics,
+          ],
+          filters: organicFilter,
+          sort: "-ym:s:visits",
+          limit: options?.landingLimit ?? 50,
+          ...commonDates,
+        })
+      : { data: [] };
+    const targetLandingPayload =
+      includeDetails && uniqueTargetFilter
+        ? await getTableReport({
+            ids: access.counterId,
+            dimensions: "ym:s:startURLPath",
+            metrics: "ym:s:visits",
+            filters: uniqueTargetFilter,
+            sort: "-ym:s:visits",
+            limit: options?.landingLimit ?? 50,
+            ...commonDates,
+          })
+        : { data: [] };
+    const devicesPayload = includeDetails
+      ? await getTableReport({
+          ids: access.counterId,
+          dimensions: "ym:s:deviceCategory",
+          metrics: ["ym:s:visits", "ym:s:users", ...goalReachesMetrics],
+          filters: organicFilter,
+          sort: "-ym:s:visits",
+          limit: 10,
+          ...commonDates,
+        })
+      : { data: [] };
 
-    const devicesPayload = await getTableReport({
-      ids: access.counterId,
-      dimensions: "ym:s:deviceCategory",
-      metrics: ["ym:s:visits", "ym:s:users", ...goalReachesMetrics],
-      filters: organicFilter,
-      sort: "-ym:s:visits",
-      limit: 10,
-      ...commonDates,
-    });
-
-    const goalsSummaryPayloads: Array<{ allowedGoal: MetricaAllowedGoal; payload: unknown }> = [];
-    for (const allowedGoal of allowedGoals) {
-      const payload = await getTableReport({
-        ids: access.counterId,
-        metrics: buildGoalStatMetrics(allowedGoal.goalId),
-        filters: organicFilter,
-        ...commonDates,
-      });
-      goalsSummaryPayloads.push({ allowedGoal, payload });
+    const goalsSummaryPayloads: Array<{
+      allowedGoal: MetricaAllowedGoal;
+      payload: unknown;
+    }> = [];
+    if (includeDetails) {
+      for (const allowedGoal of allowedGoals) {
+        const payload = await getTableReport({
+          ids: access.counterId,
+          metrics: buildGoalStatMetrics(allowedGoal.goalId),
+          filters: organicFilter,
+          ...commonDates,
+        });
+        goalsSummaryPayloads.push({ allowedGoal, payload });
+      }
     }
 
     return buildMetricaSiteAudit({
@@ -283,11 +343,18 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
       allTrafficSummary: normalizeSummaryFromTotals(allTrafficPayload),
       organicMeta: normalizeSampleMeta(searchEnginePayload),
       organicSummary: normalizeSummaryFromNamedRow(searchEnginePayload, "Yandex"),
-      byTime: normalizeByTimeReport(byTimePayload),
-      landingPages: normalizeLandingPages(landingPayload),
+      targetVisits: uniqueTargetTotals.targetVisits,
+      targetUsers: uniqueTargetTotals.targetUsers,
+      byTime: normalizeByTimeReport(byTimePayload, targetByTimePayload),
+      landingPages: normalizeLandingPages(landingPayload, targetLandingPayload),
       devices: normalizeDevices(devicesPayload),
-      goalsMeta: goalsSummaryPayloads.length > 0 ? normalizeSampleMeta(goalsSummaryPayloads[0].payload) : normalizeSampleMeta({}),
-      goalsSummary: goalsSummaryPayloads.map((item) => normalizeGoalTotals(item.payload, item.allowedGoal)),
+      goalsMeta:
+        goalsSummaryPayloads.length > 0
+          ? normalizeSampleMeta(goalsSummaryPayloads[0].payload)
+          : normalizeSampleMeta({}),
+      goalsSummary: goalsSummaryPayloads.map((item) =>
+        normalizeGoalTotals(item.payload, item.allowedGoal),
+      ),
     });
   }
 

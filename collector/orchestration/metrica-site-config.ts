@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import {
   clientRegistrySchema,
+  clusterProfileSchema,
   goalProfileSchema,
   thresholdsSchema,
   type GoalProfile,
@@ -22,16 +23,20 @@ async function readJsonDirectory<T>(dirPath: string, parse: (value: unknown) => 
 
 export async function loadCollectorRegistry(cwd = process.cwd()) {
   const clientsDir = path.join(cwd, "config", "clients");
+  const clustersDir = path.join(cwd, "config", "clusters");
   const goalsDir = path.join(cwd, "config", "goals");
   const clients = await readJsonDirectory(clientsDir, (value) =>
     clientRegistrySchema.parse(value),
+  );
+  const clusters = await readJsonDirectory(clustersDir, (value) =>
+    clusterProfileSchema.parse(value),
   );
   const goals = await readJsonDirectory(goalsDir, (value) => goalProfileSchema.parse(value));
   const thresholds = thresholdsSchema.parse(
     JSON.parse(await readFile(path.join(cwd, "config", "thresholds.json"), "utf8")),
   );
 
-  return { clients, goals, thresholds };
+  return { clients, clusters, goals, thresholds };
 }
 
 export async function findSiteConfigByUrl(targetSiteUrl: string, cwd = process.cwd()) {

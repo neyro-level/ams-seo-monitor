@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { PageHeader } from "../../components/dashboard/PageHeader";
+import { ReportPeriodSelector } from "../../components/dashboard/ReportPeriodSelector";
 import { StatePanel } from "../../components/states/StatePanel";
-import { SiteReportView } from "../dashboards/SiteReportView";
-import { siteReportSnapshotSchema, type SiteReportSnapshot } from "../../shared/schemas/report";
+import {
+  reportPeriodKeySchema,
+  siteReportSnapshotSchema,
+  type ReportPeriodKey,
+  type SiteReportSnapshot,
+} from "../../shared/schemas/report";
 import type { SiteRegistry } from "../../shared/schemas/registry";
+import { SiteReportView } from "../dashboards/SiteReportView";
 
 type LiveSiteReportProps = {
   clientName: string;
@@ -14,17 +20,40 @@ type LiveSiteReportProps = {
   backHref: string;
 };
 
+function readPeriodFromLocation(): ReportPeriodKey {
+  const requested = new URLSearchParams(window.location.search).get("period");
+  const parsed = reportPeriodKeySchema.safeParse(requested);
+  return parsed.success ? parsed.data : "week";
+}
+
+function subscribeToPeriod(callback: () => void) {
+  window.addEventListener("popstate", callback);
+  return () => window.removeEventListener("popstate", callback);
+}
+
 export function LiveSiteReport({
   clientName,
   clientSlug,
   site,
   backHref,
 }: LiveSiteReportProps) {
-  const [snapshot, setSnapshot] = useState<SiteReportSnapshot | null>(null);
-  const [failed, setFailed] = useState(false);
-  const dataUrl = `/c/${clientSlug}/data/${site.siteSlug}/latest.json`;
+  const activePeriod = useSyncExternalStore<ReportPeriodKey>(
+    subscribeToPeriod,
+    readPeriodFromLocation,
+    () => "week",
+  );
+  const [reports, setReports] = useState<
+    Partial<Record<ReportPeriodKey, SiteReportSnapshot>>
+  >({});
+  const [failedPeriods, setFailedPeriods] = useState<
+    Partial<Record<ReportPeriodKey, boolean>>
+  >({});
+  const snapshot = reports[activePeriod] ?? null;
+  const failed = failedPeriods[activePeriod] ?? false;
+  const dataUrl = `/c/${clientSlug}/data/${site.siteSlug}/${activePeriod}/latest.json`;
 
   useEffect(() => {
+    if (reports[activePeriod]) return;
     const controller = new AbortController();
 
     fetch(dataUrl, {
@@ -39,16 +68,29 @@ export function LiveSiteReport({
         return response.json();
       })
       .then((payload) => {
-        setSnapshot(siteReportSnapshotSchema.parse(payload));
-        setFailed(false);
+        const report = siteReportSnapshotSchema.parse(payload);
+        setReports((current) => ({ ...current, [activePeriod]: report }));
+        setFailedPeriods((current) => ({ ...current, [activePeriod]: false }));
       })
       .catch(() => {
         if (controller.signal.aborted) return;
-        setFailed(true);
+        setFailedPeriods((current) => ({ ...current, [activePeriod]: true }));
       });
 
     return () => controller.abort();
-  }, [dataUrl]);
+  }, [activePeriod, dataUrl, reports]);
+
+  const periodControl = (
+    <ReportPeriodSelector
+      active={activePeriod}
+      onChange={(period) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("period", period);
+        window.history.replaceState(null, "", url);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }}
+    />
+  );
 
   if (snapshot) {
     return (
@@ -58,6 +100,7 @@ export function LiveSiteReport({
         snapshot={snapshot}
         mode="live"
         backHref={backHref}
+        periodControl={periodControl}
       />
     );
   }
@@ -68,6 +111,7 @@ export function LiveSiteReport({
         eyebrow={clientName}
         title={site.name}
         description="Отчёт загружается из защищённого snapshot-хранилища."
+        actions={periodControl}
         backHref={backHref}
       />
       <StatePanel

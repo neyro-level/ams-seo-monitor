@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { compileSiteReportSnapshot } from "../collector/orchestration/report-compiler";
-import { getClientBySlug } from "../src/modules/client-registry/registry";
+import {
+  getClientBySlug,
+  getRegistryBundle,
+} from "../src/modules/client-registry/registry";
 import {
   createMetricaSourceFixture,
   createWebmasterSourceFixture,
@@ -18,32 +21,66 @@ const thresholds = {
   maximumAveragePosition: 10,
 };
 
+const clusterProfile = getRegistryBundle().clusters.find(
+  (profile) => profile.profileSlug === "real-estate",
+);
+if (!clusterProfile) throw new Error("Missing real-estate cluster profile");
+
 describe("SiteReportSnapshot compiler", () => {
   it("compiles both source DTOs into one validated snapshot", () => {
     const site = getREDACTED_CLIENT_DATASite();
+    const currentWebmaster = createWebmasterSourceFixture(site);
+    const previousWebmaster = createWebmasterSourceFixture(site);
+    previousWebmaster.allQueryHistory.find(
+      (history) => history.indicator === "TOTAL_SHOWS",
+    )!.points[0]!.value = 100;
+    previousWebmaster.allQueryHistory.find(
+      (history) => history.indicator === "TOTAL_CLICKS",
+    )!.points[0]!.value = 4;
+    previousWebmaster.allQueryHistory.find(
+      (history) => history.indicator === "AVG_SHOW_POSITION",
+    )!.points[0]!.value = 6;
+    const currentMetrica = createMetricaSourceFixture(site);
+    const previousMetrica = createMetricaSourceFixture(site);
+    previousMetrica.yandexOrganic.summary.visits = 80;
+    previousMetrica.yandexOrganic.summary.targetVisits = 3;
+    previousMetrica.yandexOrganic.summary.conversionRate = 3.75;
+    previousMetrica.allTraffic.summary.visits = 250;
     const snapshot = compileSiteReportSnapshot({
       clientSlug: "REDACTED_CLIENT_DATA",
       site,
       generatedAt: "2026-08-27T10:10:00.000Z",
-      webmasterData: createWebmasterSourceFixture(site),
-      metricaData: createMetricaSourceFixture(site),
+      clusterProfile,
+      webmasterData: currentWebmaster,
+      metricaData: currentMetrica,
+      previousWebmasterData: previousWebmaster,
+      previousMetricaData: previousMetrica,
+      periodKey: "week",
+      currentPeriod: { dateFrom: "2026-08-17", dateTo: "2026-08-23" },
+      previousPeriod: { dateFrom: "2026-08-10", dateTo: "2026-08-16" },
       queryThresholds: thresholds,
     });
 
     expect(snapshot.freshness).toBe("fresh");
     expect(snapshot.sources.webmaster.status).toBe("success");
     expect(snapshot.sources.metrica.status).toBe("success");
-    expect(snapshot.webmaster?.summary.shows).toBe(100);
+    expect(snapshot.webmaster?.summary.shows).toBe(120);
     expect(snapshot.metrica?.summary.visits).toBe(100);
     expect(snapshot.combined.funnel).toMatchObject({
-      shows: 100,
-      clicks: 5,
+      shows: 120,
+      clicks: 6,
       visits: 100,
       goalReaches: 5,
     });
     expect(snapshot.combined.methodology.join(" ")).toContain(
       "конкретная заявка не утверждается",
     );
+    expect(snapshot.comparison?.metrics.shows.deltaPercent).toBe(20);
+    expect(snapshot.comparison?.metrics.clicks.deltaPercent).toBe(50);
+    expect(snapshot.comparison?.metrics.avgPosition.deltaPoints).toBe(0.5);
+    expect(snapshot.comparison?.metrics.organicVisits.deltaPercent).toBe(25);
+    expect(snapshot.comparison?.metrics.targetVisits.current).toBe(5);
+    expect(snapshot.webmaster?.queries[0]?.cluster).not.toBe("Не классифицирован");
   });
 
   it("uses last-known-good source section and marks a failed refresh partial", () => {
@@ -52,6 +89,7 @@ describe("SiteReportSnapshot compiler", () => {
       clientSlug: "REDACTED_CLIENT_DATA",
       site,
       generatedAt: "2026-08-27T10:10:00.000Z",
+      clusterProfile,
       webmasterData: createWebmasterSourceFixture(site),
       metricaData: createMetricaSourceFixture(site),
       queryThresholds: thresholds,
@@ -60,6 +98,7 @@ describe("SiteReportSnapshot compiler", () => {
       clientSlug: "REDACTED_CLIENT_DATA",
       site,
       generatedAt: "2026-08-28T10:10:00.000Z",
+      clusterProfile,
       webmasterData: createWebmasterSourceFixture(site),
       metricaData: null,
       metricaFailure: { code: "RATE_LIMITED", status: 420 },

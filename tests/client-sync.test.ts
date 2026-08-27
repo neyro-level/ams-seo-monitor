@@ -25,7 +25,11 @@ afterEach(async () => {
 describe("REDACTED_CLIENT_DATA multi-site sync", () => {
   it("publishes a live snapshot for all three enabled cities", async () => {
     const sharedDir = await createTempRoot();
-    const metricaPeriods: Array<{ dateFrom: string; dateTo: string } | undefined> = [];
+    const metricaPeriods: Array<{
+      date1?: string;
+      date2?: string;
+      includeDetails?: boolean;
+    }> = [];
     const result = await syncClientSites({
       clientSlug: "REDACTED_CLIENT_DATA",
       sharedDir,
@@ -45,24 +49,58 @@ describe("REDACTED_CLIENT_DATA multi-site sync", () => {
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
     ]);
-    expect(metricaPeriods).toEqual([
-      { dateFrom: "2026-08-17", dateTo: "2026-08-23" },
-      { dateFrom: "2026-08-17", dateTo: "2026-08-23" },
-      { dateFrom: "2026-08-17", dateTo: "2026-08-23" },
+    expect(metricaPeriods).toHaveLength(24);
+    expect(metricaPeriods.slice(0, 2)).toEqual([
+      {
+        date1: "2026-08-17",
+        date2: "2026-08-23",
+        landingLimit: 10,
+        includeDetails: true,
+      },
+      {
+        date1: "2026-08-10",
+        date2: "2026-08-16",
+        landingLimit: 0,
+        includeDetails: false,
+      },
     ]);
+    expect(metricaPeriods.filter((_, index) => index % 2 === 0).every((item) => item.includeDetails)).toBe(
+      true,
+    );
 
     for (const siteSlug of ["REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA"]) {
-      const snapshot = await readLatestSiteSnapshot(sharedDir, "REDACTED_CLIENT_DATA", siteSlug);
+      const snapshot = await readLatestSiteSnapshot(sharedDir, "REDACTED_CLIENT_DATA", siteSlug, "week");
       expect(snapshot?.freshness).toBe("fresh");
       expect(snapshot?.webmaster).not.toBeNull();
       expect(snapshot?.metrica).not.toBeNull();
       const report = JSON.parse(
         await readFile(
-          path.join(sharedDir, "client-reports", "REDACTED_CLIENT_DATA", siteSlug, "latest.json"),
+          path.join(
+            sharedDir,
+            "client-reports",
+            "REDACTED_CLIENT_DATA",
+            siteSlug,
+            "week",
+            "latest.json",
+          ),
           "utf8",
         ),
       ) as { siteSlug: string };
       expect(report.siteSlug).toBe(siteSlug);
+      const sourceBundle = JSON.parse(
+        await readFile(
+          path.join(
+            sharedDir,
+            "snapshots",
+            "REDACTED_CLIENT_DATA",
+            siteSlug,
+            "week",
+            "latest-sources.json",
+          ),
+          "utf8",
+        ),
+      ) as { periodKey: string };
+      expect(sourceBundle.periodKey).toBe("week");
     }
   });
 
@@ -99,7 +137,12 @@ describe("REDACTED_CLIENT_DATA multi-site sync", () => {
     });
 
     expect(second.status).toBe("partial");
-    const REDACTED_CLIENT_DATA = await readLatestSiteSnapshot(sharedDir, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA");
+    const REDACTED_CLIENT_DATA = await readLatestSiteSnapshot(
+      sharedDir,
+      "REDACTED_CLIENT_DATA",
+      "REDACTED_CLIENT_DATA",
+      "week",
+    );
     expect(REDACTED_CLIENT_DATA?.freshness).toBe("partial");
     expect(REDACTED_CLIENT_DATA?.sources.metrica.status).toBe("quota_limited");
     expect(REDACTED_CLIENT_DATA?.metrica?.summary.visits).toBe(100);

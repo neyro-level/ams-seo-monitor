@@ -182,9 +182,13 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
     devices?: Array<"ALL" | "DESKTOP" | "MOBILE">;
     historyDateFrom?: string;
     historyDateTo?: string;
+    queryDateFrom?: string;
+    queryDateTo?: string;
+    includeTechnicalDetails?: boolean;
   }) {
     const access = await resolveVerifiedHost();
     const queryLimit = options?.queryLimit ?? 50;
+    const includeTechnicalDetails = options?.includeTechnicalDetails ?? true;
     const queryOrders = options?.queryOrders ?? ["TOTAL_SHOWS", "TOTAL_CLICKS"];
     const devices = options?.devices ?? ["ALL", "DESKTOP", "MOBILE"];
     const fetchedAt = now();
@@ -202,36 +206,45 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
     const baseEndpoint = `/user/${access.userId}/hosts/${access.hostId}`;
 
     const summaryPayload = await collectOptional(`${baseEndpoint}/summary`, endpointErrors);
-    const diagnosticsPayload = await collectOptional(
-      `${baseEndpoint}/diagnostics`,
-      endpointErrors,
-    );
-    const sitemapsPayload = await collectOptional(`${baseEndpoint}/sitemaps`, endpointErrors);
-    const indexingPayload = await collectOptional(
-      `${baseEndpoint}/indexing/history`,
-      endpointErrors,
-      historyQuery,
-    );
+    const diagnosticsPayload = includeTechnicalDetails
+      ? await collectOptional(`${baseEndpoint}/diagnostics`, endpointErrors)
+      : null;
+    const sitemapsPayload = includeTechnicalDetails
+      ? await collectOptional(`${baseEndpoint}/sitemaps`, endpointErrors)
+      : null;
+    const indexingPayload = includeTechnicalDetails
+      ? await collectOptional(
+          `${baseEndpoint}/indexing/history`,
+          endpointErrors,
+          historyQuery,
+        )
+      : null;
     const pagesInSearchPayload = await collectOptional(
       `${baseEndpoint}/search-urls/in-search/history`,
       endpointErrors,
       historyQuery,
     );
-    const searchEventsPayload = await collectOptional(
-      `${baseEndpoint}/search-urls/events/history`,
-      endpointErrors,
-      historyQuery,
-    );
-    const brokenInternalLinksPayload = await collectOptional(
-      `${baseEndpoint}/links/internal/broken/history`,
-      endpointErrors,
-      historyQuery,
-    );
-    const externalLinksPayload = await collectOptional(
-      `${baseEndpoint}/links/external/history`,
-      endpointErrors,
-      { indicator: "LINKS_TOTAL_COUNT" },
-    );
+    const searchEventsPayload = includeTechnicalDetails
+      ? await collectOptional(
+          `${baseEndpoint}/search-urls/events/history`,
+          endpointErrors,
+          historyQuery,
+        )
+      : null;
+    const brokenInternalLinksPayload = includeTechnicalDetails
+      ? await collectOptional(
+          `${baseEndpoint}/links/internal/broken/history`,
+          endpointErrors,
+          historyQuery,
+        )
+      : null;
+    const externalLinksPayload = includeTechnicalDetails
+      ? await collectOptional(
+          `${baseEndpoint}/links/external/history`,
+          endpointErrors,
+          { indicator: "LINKS_TOTAL_COUNT" },
+        )
+      : null;
 
     const queryCollections = [];
     for (const orderBy of queryOrders) {
@@ -251,6 +264,8 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
             ],
             device_type_indicator: device,
             limit: queryLimit,
+            date_from: options?.queryDateFrom,
+            date_to: options?.queryDateTo,
           },
         );
         if (queriesPayload === null) {
@@ -266,6 +281,24 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
         );
       }
     }
+    const actualQueryDateFrom =
+      queryCollections[0]?.dateFrom ?? options?.queryDateFrom ?? null;
+    const actualQueryDateTo = queryCollections[0]?.dateTo ?? options?.queryDateTo ?? null;
+    const allQueryHistoryPayload = await collectOptional(
+      `${baseEndpoint}/search-queries/all/history`,
+      endpointErrors,
+      {
+        query_indicator: [
+          "TOTAL_SHOWS",
+          "TOTAL_CLICKS",
+          "AVG_SHOW_POSITION",
+          "AVG_CLICK_POSITION",
+        ],
+        device_type_indicator: "ALL",
+        date_from: actualQueryDateFrom,
+        date_to: actualQueryDateTo,
+      },
+    );
 
     return buildWebmasterSiteData({
       fetchedAt,
@@ -274,6 +307,7 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
       diagnostics: normalizeDiagnostics(diagnosticsPayload),
       sitemaps: normalizeSitemaps(sitemapsPayload),
       queryCollections,
+      allQueryHistory: normalizeIndicatorHistory(allQueryHistoryPayload),
       indexingHistory: normalizeIndicatorHistory(indexingPayload),
       pagesInSearchHistory: normalizePlainHistory(pagesInSearchPayload),
       searchEventsHistory: normalizeIndicatorHistory(searchEventsPayload),

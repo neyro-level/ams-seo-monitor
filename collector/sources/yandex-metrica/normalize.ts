@@ -202,6 +202,15 @@ export function normalizeSummaryFromTotals(reportPayload: unknown) {
   return normalizeMetricSummary(totals);
 }
 
+export function normalizeTargetVisitTotals(reportPayload: unknown) {
+  const root = getRecord(reportPayload);
+  const totals = toMetricArray(root?.totals);
+  return {
+    targetVisits: totals[0] ?? 0,
+    targetUsers: totals[1] ?? 0,
+  };
+}
+
 export function normalizeSummaryFromNamedRow(reportPayload: unknown, rowName: string) {
   const root = getRecord(reportPayload);
   const rows = getArray(root?.data).map(getRecord).filter((value): value is Record<string, unknown> => value !== null);
@@ -213,13 +222,23 @@ export function normalizeSummaryFromNamedRow(reportPayload: unknown, rowName: st
   return normalizeMetricSummary(toMetricArray(matched.metrics));
 }
 
-export function normalizeByTimeReport(reportPayload: unknown): MetricaTrendPoint[] {
+export function normalizeByTimeReport(
+  reportPayload: unknown,
+  targetVisitsPayload?: unknown,
+): MetricaTrendPoint[] {
   const root = getRecord(reportPayload);
   const timeIntervals = getArray(root?.time_intervals);
-  const rows = getArray(root?.data).map(getRecord).filter((value): value is Record<string, unknown> => value !== null);
+  const rows = getArray(root?.data)
+    .map(getRecord)
+    .filter((value): value is Record<string, unknown> => value !== null);
   const metricsMatrix = getArray(rows[0]?.metrics).map(toMetricArray);
   const visitsSeries = metricsMatrix[0] ?? [];
   const goalSeries = metricsMatrix.slice(1);
+  const targetRoot = getRecord(targetVisitsPayload);
+  const targetRows = getArray(targetRoot?.data)
+    .map(getRecord)
+    .filter((value): value is Record<string, unknown> => value !== null);
+  const targetVisitsSeries = getArray(targetRows[0]?.metrics).map(toMetricArray)[0] ?? [];
   const points: MetricaTrendPoint[] = [];
 
   for (let index = 0; index < timeIntervals.length; index += 1) {
@@ -227,12 +246,15 @@ export function normalizeByTimeReport(reportPayload: unknown): MetricaTrendPoint
     const date = typeof interval[0] === "string" ? interval[0] : String(index);
     const visits = visitsSeries[index] ?? 0;
     const goalReaches = goalSeries.reduce((sum, series) => sum + (series[index] ?? 0), 0);
+    const targetVisits = targetVisitsSeries[index] ?? 0;
     points.push(
       metricaTrendPointSchema.parse({
         date,
         visits,
         goalReaches,
-        conversionRate: null,
+        targetVisits,
+        conversionRate:
+          visits > 0 ? Number(((targetVisits / visits) * 100).toFixed(2)) : null,
       }),
     );
   }
@@ -244,10 +266,24 @@ function normalizeRowMetrics(row: Record<string, unknown>) {
   return toMetricArray(row.metrics);
 }
 
-export function normalizeLandingPages(reportPayload: unknown): MetricaLandingPage[] {
+export function normalizeLandingPages(
+  reportPayload: unknown,
+  targetVisitsPayload?: unknown,
+): MetricaLandingPage[] {
   const root = getRecord(reportPayload);
-  const rows = getArray(root?.data).map(getRecord).filter((value): value is Record<string, unknown> => value !== null);
-
+  const rows = getArray(root?.data)
+    .map(getRecord)
+    .filter((value): value is Record<string, unknown> => value !== null);
+  const targetRoot = getRecord(targetVisitsPayload);
+  const targetVisitsByPath = new Map<string, number>();
+  for (const row of getArray(targetRoot?.data)
+    .map(getRecord)
+    .filter((value): value is Record<string, unknown> => value !== null)) {
+    const path = normalizeLandingPath(
+      getString(getArray(row.dimensions).map(getRecord)[0] ?? null, "name"),
+    );
+    targetVisitsByPath.set(path, normalizeRowMetrics(row)[0] ?? 0);
+  }
   return rows.map((row) => {
     const metrics = normalizeRowMetrics(row);
     const visits = metrics[0] ?? 0;
@@ -257,9 +293,13 @@ export function normalizeLandingPages(reportPayload: unknown): MetricaLandingPag
     const pageDepth = metrics[4] ?? 0;
     const averageVisitDurationSeconds = metrics[5] ?? 0;
     const goalReaches = sumGoalReaches(metrics, 6);
+    const path = normalizeLandingPath(
+      getString(getArray(row.dimensions).map(getRecord)[0] ?? null, "name"),
+    );
+    const targetVisits = targetVisitsByPath.get(path) ?? 0;
 
     return metricaLandingPageSchema.parse({
-      path: normalizeLandingPath(getString(getArray(row.dimensions).map(getRecord)[0] ?? null, "name")),
+      path,
       visits,
       users,
       pageviews,
@@ -267,7 +307,9 @@ export function normalizeLandingPages(reportPayload: unknown): MetricaLandingPag
       pageDepth,
       averageVisitDurationSeconds,
       goalReaches,
-      conversionRate: null,
+      targetVisits,
+      conversionRate:
+        visits > 0 ? Number(((targetVisits / visits) * 100).toFixed(2)) : null,
     });
   });
 }
@@ -347,6 +389,8 @@ export function buildMetricaSiteAudit(args: {
   allTrafficSummary: MetricaSummary;
   organicMeta: MetricaSampleMeta;
   organicSummary: MetricaSummary;
+  targetVisits: number;
+  targetUsers: number;
   byTime: MetricaTrendPoint[];
   landingPages: MetricaLandingPage[];
   devices: MetricaDeviceRow[];
@@ -365,7 +409,15 @@ export function buildMetricaSiteAudit(args: {
     },
     yandexOrganic: {
       meta: args.organicMeta,
-      summary: args.organicSummary,
+      summary: {
+        ...args.organicSummary,
+        targetVisits: args.targetVisits,
+        targetUsers: args.targetUsers,
+        conversionRate:
+          args.organicSummary.visits > 0
+            ? Number(((args.targetVisits / args.organicSummary.visits) * 100).toFixed(2))
+            : null,
+      },
       byTime: args.byTime,
       landingPages: args.landingPages,
       devices: args.devices,

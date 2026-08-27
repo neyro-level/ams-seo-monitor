@@ -1,9 +1,28 @@
+import type { ReportPeriodKey } from "../../src/shared/schemas/report";
+
 export type DatePeriod = {
   dateFrom: string;
   dateTo: string;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const REPORT_PERIODS: Record<
+  ReportPeriodKey,
+  { label: string; days: number }
+> = {
+  week: { label: "Неделя", days: 7 },
+  month: { label: "Месяц", days: 28 },
+  quarter: { label: "Квартал", days: 90 },
+  halfYear: { label: "Полгода", days: 180 },
+};
+
+export const REPORT_PERIOD_KEYS: ReportPeriodKey[] = [
+  "week",
+  "month",
+  "quarter",
+  "halfYear",
+];
 
 function parseDateOnly(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -30,6 +49,15 @@ function parseDateOnly(value: string) {
 
 function formatDateOnly(timestamp: number) {
   return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+export function derivePeriodEndingOn(dateTo: string, periodKey: ReportPeriodKey): DatePeriod {
+  const end = parseDateOnly(dateTo);
+  const dateFrom = end - (REPORT_PERIODS[periodKey].days - 1) * DAY_MS;
+  return {
+    dateFrom: formatDateOnly(dateFrom),
+    dateTo,
+  };
 }
 
 export function getInclusivePeriodDays(period: DatePeriod) {

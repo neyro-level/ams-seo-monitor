@@ -13,12 +13,18 @@ import { mergeWithLastKnownGood } from "./merge";
 type PublishOptions = {
   rootDir: string;
   snapshot: SiteReportSnapshot;
+  periodKey?: string;
   failStage?: "after-temp-write" | "before-latest-rename";
   staleLockMs?: number;
 };
 
-export async function readLatestSiteSnapshot(rootDir: string, clientSlug: string, siteSlug: string) {
-  const latestPath = getLatestSnapshotPath(rootDir, clientSlug, siteSlug);
+export async function readLatestSiteSnapshot(
+  rootDir: string,
+  clientSlug: string,
+  siteSlug: string,
+  periodKey?: string,
+) {
+  const latestPath = getLatestSnapshotPath(rootDir, clientSlug, siteSlug, periodKey);
   const text = await readFile(latestPath, "utf8").catch(() => null);
 
   if (text === null) {
@@ -35,6 +41,7 @@ export async function readLatestSiteSnapshot(rootDir: string, clientSlug: string
 export async function publishSiteSnapshot({
   rootDir,
   snapshot,
+  periodKey,
   failStage,
   staleLockMs,
 }: PublishOptions) {
@@ -47,14 +54,20 @@ export async function publishSiteSnapshot({
     staleAfterMs: staleLockMs,
   });
 
-  const versionedPath = getVersionedSnapshotPath(rootDir, validatedSnapshot);
-  const latestPath = getLatestSnapshotPath(rootDir, validatedSnapshot.clientSlug, validatedSnapshot.siteSlug);
+  const versionedPath = getVersionedSnapshotPath(rootDir, validatedSnapshot, periodKey);
+  const latestPath = getLatestSnapshotPath(
+    rootDir,
+    validatedSnapshot.clientSlug,
+    validatedSnapshot.siteSlug,
+    periodKey,
+  );
   const versionedTempPath = `${versionedPath}.tmp`;
   const latestTempPath = `${latestPath}.tmp`;
   const reportPath = getClientReportPath(
     rootDir,
     validatedSnapshot.clientSlug,
     validatedSnapshot.siteSlug,
+    periodKey,
   );
   const reportTempPath = `${reportPath}.tmp`;
 
@@ -63,6 +76,7 @@ export async function publishSiteSnapshot({
       rootDir,
       validatedSnapshot.clientSlug,
       validatedSnapshot.siteSlug,
+      periodKey,
     );
     const mergedSnapshot = mergeWithLastKnownGood(previous, validatedSnapshot);
     const serialized = `${JSON.stringify(mergedSnapshot, null, 2)}

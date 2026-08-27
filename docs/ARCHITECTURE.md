@@ -32,13 +32,14 @@ Production activation остаётся отдельной Wave 3/release зад�
 - three enabled REDACTED_CLIENT_DATA cities: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA;
 - frozen full-width dashboard shell;
 - complete read-only Webmaster/Metrica source adapters;
-- source-period alignment;
-- normalized source DTOs;
-- unified `SiteReportSnapshot` compiler;
-- atomic versioned snapshot and client-report publication;
-- endpoint/source partial handling and last-known-good preservation;
+- total Webmaster history and popular-query detail pools;
+- unique target organic visits across allowlisted goals;
+- 7/28/90/180-day current and previous aligned periods;
+- period-aware normalized source bundles and report compiler;
+- atomic internal snapshot and browser report publication;
+- endpoint/source partial handling and period-specific LKG;
 - protected runtime report loader with Zod validation;
-- live local proof for all three REDACTED_CLIENT_DATA sites.
+- live local proof for all sites and presets.
 
 Runtime chain:
 
@@ -46,10 +47,10 @@ Runtime chain:
 source DTO
 → report compiler
 → SiteReportSnapshot
-→ atomic snapshots/client-reports publish
-→ /c/{client}/data/{site}/latest.json
+→ atomic snapshots/source-bundles/client-reports publish
+→ /c/{client}/data/{site}/{period}/latest.json
 → browser validation
-→ Summary / SEO / Traffic
+→ Summary / SEO / Traffic and conversions
 ```
 
 ## Data dependency direction
@@ -68,12 +69,11 @@ registry/threshold/goal config
 
 ## Remaining runtime work
 
-1. Collect previous aligned source periods and calculate deltas.
-2. Calculate unique converted organic visits across allowlisted goals.
-3. Complete thresholded trend alerts and query clustering.
-4. Add scheduled `systemd` daily/weekly commands and sync-run state.
-5. Activate protected Nginx aliases and client isolation on production.
-6. Deploy reviewed exact `main` artifact to `https://seo-monitor.ams24.ru`.
+1. Refine query clusters, brand/nonbrand and opportunity scoring.
+2. Add scheduled `systemd` daily/weekly commands and sync-run state.
+3. Build analyst-only views from preserved source bundles.
+4. Activate protected Nginx aliases and client isolation.
+5. Deploy reviewed exact `main` artifact to `https://seo-monitor.ams24.ru`.
 
 ## Frontend IA
 
