@@ -79,7 +79,7 @@ Still required by original W4:
 ### Does not work end-to-end yet
 
 - collectors do not publish a unified live `SiteReportSnapshot`;
-- UI reads `demo-data.ts`, not collector output;
+- production client route честно показывает `Live-отчёт готовится`; только `/demo/` читает `demo-data.ts`;
 - no scheduled site sync orchestration;
 - no equal-period current/previous calculations;
 - no deterministic live opportunities/alerts;
@@ -122,7 +122,7 @@ Acceptance:
 
 - one local command collects both sources and publishes a valid snapshot;
 - source failure yields partial report and preserves LKG;
-- fixture is no longer used by the REDACTED_CLIENT_DATA client route;
+- REDACTED_CLIENT_DATA client route loads the newly published live snapshot instead of the preparation state;
 - every derived value identifies source, formula and period.
 
 ## Following block — Director cabinet UI

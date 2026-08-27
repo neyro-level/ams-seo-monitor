@@ -150,7 +150,7 @@ Client credentials в production открывают только свой subtre
 
 ## Current implementation gap
 
-Сейчас UI всё ещё читает synthetic fixture из `src/modules/report-data/demo-data.ts`. Live Webmaster и Metrica collectors уже работают, но не компилируют единый `SiteReportSnapshot` и не публикуют его в protected data path.
+Production client route уже не показывает fixture и честно сообщает `Live-отчёт готовится`; fixture остаётся только в `/demo/`. Live Webmaster и Metrica collectors работают, но ещё не компилируют единый `SiteReportSnapshot` и не публикуют его в protected data path.
 
 Следующий обязательный блок до production UI:
 
