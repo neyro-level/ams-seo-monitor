@@ -10,7 +10,7 @@ describe("static client navigation isolation", () => {
     expect(items.map((item) => item.label)).toEqual(["REDACTED_CLIENT_DATA"]);
     expect(items[0]?.children?.map((item) => item.label)).toEqual([
       "REDACTED_CLIENT_DATA",
-      "Волчевск",
+      "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
     ]);
     expect(JSON.stringify(sections)).not.toContain("Союз застройщиков REDACTED_CLIENT_DATA");

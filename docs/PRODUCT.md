@@ -46,8 +46,8 @@
 
 - `REDACTED_CLIENT_DATA`
   - `REDACTED_CLIENT_DATA` — подтверждённый URL `https://REDACTED_CLIENT_DATA`
-  - `volchevsk` — planned/not connected
-  - `REDACTED_CLIENT_DATA` — planned/not connected
+  - `REDACTED_CLIENT_DATA` — confirmed `https://REDACTED_CLIENT_DATA`
+  - `REDACTED_CLIENT_DATA` — confirmed `https://REDACTED_CLIENT_DATA`
 - `REDACTED_CLIENT_DATA`
   - `REDACTED_CLIENT_DATA` — planned until confirmed onboarding inputs
 

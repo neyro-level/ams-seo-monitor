@@ -2,14 +2,14 @@
 
 ## Статус
 
-Wave 1 reserves the onboarding contract only. Live onboarding starts later.
+Source discovery завершён для трёх сайтов Бастиона. Live report snapshots и production auth ещё не активированы.
 
-## Planned initial order
+## Initial order
 
-1. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA;
-2. SZ REDACTED_CLIENT_DATA;
-3. REDACTED_CLIENT_DATA Volchevsk after confirmed production inputs;
-4. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA after confirmed production inputs.
+1. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA — Webmaster/Metrica confirmed;
+2. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA — Webmaster/Metrica confirmed;
+3. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA — Webmaster/Metrica confirmed;
+4. SZ REDACTED_CLIENT_DATA — after confirmed production inputs.
 
 ## Required facts per site
 
@@ -27,9 +27,10 @@ Wave 1 reserves the onboarding contract only. Live onboarding starts later.
 - onboarding must not change route architecture;
 - onboarding must not expose OAuth, counter IDs or file paths in browser payload.
 
-## Wave 1 foundation already prepared
+## Foundation already prepared
 
 - registry-driven client and site routes;
-- planned-site state;
-- fixture snapshot DTO;
+- exact source config for three REDACTED_CLIENT_DATA cities;
+- per-site goal allowlists;
+- fixture snapshot DTO isolated to `/demo/`;
 - separate private SourceCraft repo.
