@@ -28,111 +28,84 @@ Domain уже создан владельцем. DNS/Nginx/SSL/deploy не вы�
 - snapshot schema/storage/locks/LKG;
 - responsive browser proof.
 
-### W4 Webmaster — partial, live proof exists
+### W4 Webmaster — complete for three REDACTED_CLIENT_DATA cities
 
-Implemented:
-
-- OAuth preflight;
-- exact verified host;
-- summary;
-- diagnostics;
-- sitemaps;
+- OAuth preflight and exact verified hosts;
+- summary, diagnostics and sitemaps;
 - popular query pools by shows/clicks and devices;
-- safe errors/retry;
-- live REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA proof.
-
-Still required by original W4:
-
-- indexing history;
+- indexing HTTP history;
 - pages-in-search history;
 - search appearance/removal events;
-- broken internal links;
-- external links;
-- additional source fields needed by final report;
-- partial endpoint orchestration instead of all-or-nothing audit.
+- broken internal links history;
+- external links history;
+- endpoint-level partial collection;
+- safe errors/retry;
+- live proof: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA.
 
-### W5 Metrica — adapter complete, live proof exists
+### W5 Metrica — complete for three REDACTED_CLIENT_DATA cities
 
 - separate Metrica OAuth app/token;
-- exact counter and goals discovery;
-- all traffic;
-- Yandex organic;
-- bytime;
-- landing pages;
-- devices;
+- exact counters and goals discovery;
+- per-site conversion allowlists;
+- all traffic and aligned Yandex organic periods;
+- bytime, landing pages and devices;
 - allowlisted per-goal stats;
 - sampling/privacy metadata;
 - safe 401/403/404/420/5xx behavior;
-- live REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA proof.
+- live proof: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA.
 
-## Product audit verdict
+## Current verified product state
 
-### Works
+Works end-to-end locally:
 
-- adapters return real normalized data;
-- registry supports several clients and sites;
-- planned sites remain honest `Не подключён`;
-- frozen shell and responsive primitives exist;
-- source secrets stay server-side;
-- static export contract is preserved.
+- one command synchronizes all three enabled REDACTED_CLIENT_DATA sites;
+- Webmaster and Metrica periods align to the factual Webmaster week;
+- normalized source DTOs compile into one `SiteReportSnapshot`;
+- snapshots and browser-safe client reports publish atomically;
+- endpoint/source failure produces `partial` and preserves last-known-good data;
+- client route loads protected runtime JSON instead of a fixture;
+- registry and navigation use `REDACTED_CLIENT_DATA`, not the incorrect legacy name;
+- client navigation contains only its own subtree;
+- static export contract and server-only secrets are preserved.
 
-### Does not work end-to-end yet
+Live local proof:
 
-- collectors do not publish a unified live `SiteReportSnapshot`;
-- production client route честно показывает `Live-отчёт готовится`; только `/demo/` читает `demo-data.ts`;
-- no scheduled site sync orchestration;
-- no equal-period current/previous calculations;
-- no deterministic live opportunities/alerts;
-- period buttons are presentation-only;
-- the current report is too long for a director and exposes details before summary;
-- current UI text still says fixture/foundation.
+```text
+REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA   → fresh
+REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
+REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
+```
 
-The product is a verified data-adapter prototype plus static UI foundation, not yet a live client cabinet.
+## Remaining W6 analytics
 
-## Next mandatory block — Data pipeline closure
+Implemented:
 
-Execution order:
-
-### A. W4 completion
-
-- finish remaining read-only Webmaster endpoints;
-- represent endpoint-level partial failures;
-- preserve factual source periods.
-
-### B. W6 analytics/report compiler
-
-- equal current/previous periods;
-- weighted metrics and correct delta direction;
-- query pool merge/deduplication;
-- deterministic opportunity rules;
-- alerts with minimum baselines;
-- unique converted organic visits across allowlisted goals;
-- no query → lead attribution;
-- compile one versioned `SiteReportSnapshot`.
-
-W6 foundation now implemented:
-
-- UTC-safe inclusive period length and previous-period derivation;
-- equal-period assertion;
+- equal-period derivation/assertion;
 - Webmaster show/click pool merge by `queryId + device`;
-- deterministic initial query opportunities from configured thresholds.
+- initial deterministic opportunities;
+- unified report compiler;
+- aligned current source period;
+- atomic site/client report publication.
 
-Still required: previous source collection, weighted deltas, alerts, unique converted visits, full compiler and publish orchestration.
+Still required before executive deltas are final:
 
-### C. Snapshot publish
+- collect previous Webmaster/Metrica periods;
+- weighted current/previous deltas;
+- minimum-baseline trend alerts;
+- unique converted organic visits across allowlisted goals;
+- cluster and brand/nonbrand rules;
+- richer director priority selection.
 
-- atomic publish through existing storage;
-- last-known-good per source;
-- client/site report DTO generation;
-- no raw API responses;
-- safe sync run state.
+Current aggregate `goalReaches` remains cumulative and is not presented as unique conversion.
 
-Acceptance:
+## Runtime pipeline acceptance
 
-- one local command collects both sources and publishes a valid snapshot;
-- source failure yields partial report and preserves LKG;
-- REDACTED_CLIENT_DATA client route loads the newly published live snapshot instead of the preparation state;
-- every derived value identifies source, formula and period.
+- `pnpm collector:sync:REDACTED_CLIENT_DATA` publishes three valid reports;
+- source periods match for each site;
+- partial source refresh preserves LKG;
+- raw API responses and secrets are not published;
+- runtime report path follows `/c/{clientSlug}/data/{siteSlug}/latest.json`;
+- Nginx alias/security activation remains Wave 3.
 
 ## Director cabinet UI foundation
 
@@ -146,19 +119,19 @@ Implemented against the approved REDACTED_CLIENT_DATA references:
 - default `Сводка` with 8 KPI + one priority section;
 - client route navigation contains only its own client subtree;
 - detail tables moved to SEO/Traffic tabs;
-- demo remains separate from the live preparation route.
-
-This UI still consumes a fixture only on `/demo/`. Live client wiring waits for the compiler and snapshot publish.
+- `/demo/` remains separate from client data;
+- live client routes fetch protected runtime snapshots and show safe loading/error states.
 
 Page contract: `docs/SITE_REPORT_IA.md`.
 
 ## Multi-site behavior
 
 - `/c/{clientSlug}/` shows one compact card per site;
+- REDACTED_CLIENT_DATA contains REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA and REDACTED_CLIENT_DATA as enabled sites;
 - each site keeps its own periods and comparison;
 - different cities/markets are not summed into fake rank;
 - one-site clients still use the same architecture;
-- disabled sites stay available as `Не подключён`.
+- disabled future sites stay available as `Не подключён`.
 
 ## Wave 3 — after reviewed UI/data completion
 

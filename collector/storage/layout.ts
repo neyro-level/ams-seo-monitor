@@ -32,6 +32,15 @@ export function getLatestSnapshotPath(rootDir: string, clientSlug: string, siteS
   return path.join(getSiteSnapshotDirectory(rootDir, clientSlug, siteSlug), "latest.json");
 }
 
+export function getClientReportPath(rootDir: string, clientSlug: string, siteSlug: string) {
+  return path.join(
+    resolveStoragePaths(rootDir).clientReportsDir,
+    clientSlug,
+    siteSlug,
+    "latest.json",
+  );
+}
+
 export function getVersionedSnapshotPath(rootDir: string, snapshot: SiteReportSnapshot) {
   const safeTimestamp = snapshot.generatedAt.replace(/[+:]/g, "-");
   return path.join(

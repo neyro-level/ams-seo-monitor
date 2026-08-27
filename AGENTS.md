@@ -52,18 +52,21 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 Реализовано:
 
-- Wave 1 static foundation;
-- W4 read-only Webmaster adapter foundation;
-- W5 read-only Metrica adapter;
-- live preflight/audit для Бастиона REDACTED_CLIENT_DATA.
+- Wave 1 static foundation and canonical REDACTED_CLIENT_DATA design;
+- complete read-only Webmaster/Metrica adapters;
+- exact source config for REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA and REDACTED_CLIENT_DATA;
+- aligned-period multi-site sync;
+- unified compiler and atomic snapshot/client-report publish;
+- protected live report loader;
+- partial/LKG tests and live local proof.
 
 Текущий обязательный блок:
 
-- закрыть недостающие W4 source endpoints;
-- собрать W6 equal-period analytics/report compiler;
-- публиковать единый `SiteReportSnapshot`;
-- убрать fixture из production client route;
-- после этого подключить UI `Сводка / SEO / Трафик` строго по frozen design system.
+- previous-period source collection and deltas;
+- unique converted visits across allowlisted goals;
+- scheduled sync-run state/timers;
+- Nginx protected data aliases and isolation proof;
+- production release only after explicit owner command.
 
 Без отдельной owner-команды не делать:
 
@@ -89,11 +92,11 @@ pnpm build
 
 ## Done
 
-Wave 1 считается завершённой, когда:
+Текущий data pipeline считается готовым к release-gate работе, когда:
 
-- core docs объясняют продукт и ограничения;
-- build создаёт `out/`;
-- routes строятся из registry;
-- disabled sites показывают honest `Не подключён`;
-- shell соответствует frozen REDACTED_CLIENT_DATA analytics contract;
-- invalid snapshot не заменяет latest valid snapshot.
+- all enabled sites publish valid snapshots;
+- source periods align;
+- partial failures preserve LKG;
+- client routes load only their own protected reports;
+- build/routes/design checks pass;
+- production deploy remains an explicit separate command.

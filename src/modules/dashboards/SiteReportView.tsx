@@ -5,7 +5,6 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { ReportTabs } from "../../components/dashboard/ReportTabs";
 import { SectionCard } from "../../components/dashboard/SectionCard";
 import { StatusBanner } from "../../components/dashboard/StatusBanner";
-import { PeriodPresetGroup } from "../../components/filters/PeriodPresetGroup";
 import { StatePanel } from "../../components/states/StatePanel";
 import { DataTable } from "../../components/tables/DataTable";
 import {
@@ -64,6 +63,11 @@ export function SiteReportView({
   const metrica = snapshot.metrica;
   const topOpportunity = snapshot.combined.opportunities[0] ?? null;
   const topAlert = snapshot.combined.alerts[0] ?? null;
+  const periodStart =
+    snapshot.sources.webmaster.periodStart ?? snapshot.sources.metrica.periodStart;
+  const periodEnd = snapshot.sources.webmaster.periodEnd ?? snapshot.sources.metrica.periodEnd;
+  const periodLabel =
+    periodStart && periodEnd ? `${periodStart} — ${periodEnd}` : "Фактический период источника";
 
   const summary = (
     <div className="space-y-6">
@@ -286,15 +290,15 @@ export function SiteReportView({
               <div className="rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4 text-sm text-[var(--crm-text-secondary)]">
                 <p>
                   <span className="font-semibold text-[var(--crm-text)]">Sitemap:</span>{" "}
-                  {webmaster.sitemap.url}
+                  {webmaster.sitemap?.url ?? "Не найден"}
                 </p>
                 <p className="mt-2">
                   <span className="font-semibold text-[var(--crm-text)]">URLs:</span>{" "}
-                  {formatInteger(webmaster.sitemap.urls)}
+                  {formatInteger(webmaster.sitemap?.urls)}
                 </p>
                 <p className="mt-2">
                   <span className="font-semibold text-[var(--crm-text)]">Ошибки:</span>{" "}
-                  {formatInteger(webmaster.sitemap.errors)}
+                  {formatInteger(webmaster.sitemap?.errors)}
                 </p>
                 <p className="mt-2">
                   <span className="font-semibold text-[var(--crm-text)]">Внешние ссылки:</span>{" "}
@@ -440,7 +444,13 @@ export function SiteReportView({
             ? "Демонстрационный набор проверяет структуру, адаптивность и дизайн-систему."
             : "Управленческая SEO-сводка по подтверждённым данным Яндекс.Вебмастера и Яндекс.Метрики."
         }
-        actions={mode === "live" ? <PeriodPresetGroup /> : undefined}
+        actions={
+          mode === "live" ? (
+            <span className="rounded-xl border border-[var(--crm-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--crm-text-secondary)] shadow-sm">
+              {periodLabel}
+            </span>
+          ) : undefined
+        }
         backHref={backHref}
       />
 

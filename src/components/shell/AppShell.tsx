@@ -18,7 +18,7 @@ export function AppShell({ currentPath, children }: AppShellProps) {
         <div className="flex h-full flex-col bg-[var(--crm-sidebar)] text-slate-100">
           <div className="flex min-h-[88px] items-center border-b border-white/10 px-3 py-3">
             <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.055] px-3.5 py-3 text-white shadow-[0_14px_36px_rgba(0,0,0,0.16)]">
-              <span className="grid h-9 shrink-0 place-items-center rounded-full bg-linear-to-r from-sky-300 to-blue-400 px-3 text-[11px] font-bold tracking-[0.16em] text-[var(--crm-sidebar)] shadow-[0_8px_20px_rgba(56,189,248,0.24)]">
+              <span className="grid h-9 shrink-0 place-items-center rounded-full bg-linear-to-r from-sky-300 to-blue-400 px-3 text-[11px] font-bold tracking-[0.16em] text-[#06253a] shadow-[0_8px_20px_rgba(56,189,248,0.24)]">
                 АМС
               </span>
               <span className="truncate text-[12px] font-light tracking-[0.06em] text-slate-200">

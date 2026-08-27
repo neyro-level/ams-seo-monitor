@@ -90,7 +90,7 @@ export const webmasterReportSchema = z.object({
     sitemapUrls: z.number().nonnegative(),
     sqi: z.number().nonnegative().nullable(),
   }),
-  visibilityTrend: z.array(trendPointSchema).min(1),
+  visibilityTrend: z.array(trendPointSchema),
   queries: z.array(webmasterQuerySchema),
   diagnostics: z.array(
     z.object({
@@ -99,11 +99,13 @@ export const webmasterReportSchema = z.object({
       description: z.string().min(1),
     }),
   ),
-  sitemap: z.object({
-    url: z.string().url(),
-    urls: z.number().nonnegative(),
-    errors: z.number().nonnegative(),
-  }),
+  sitemap: z
+    .object({
+      url: z.string().url(),
+      urls: z.number().nonnegative(),
+      errors: z.number().nonnegative(),
+    })
+    .nullable(),
   links: z.object({
     external: z.number().nonnegative(),
     brokenInternal: z.number().nonnegative(),
@@ -121,7 +123,7 @@ export const metricaReportSchema = z.object({
     goalReaches: z.number().nonnegative(),
     conversionRate: z.number().nonnegative().nullable(),
   }),
-  organicTrend: z.array(trendPointSchema).min(1),
+  organicTrend: z.array(trendPointSchema),
   landingPages: z.array(landingPageSchema),
   devices: z.array(
     z.object({

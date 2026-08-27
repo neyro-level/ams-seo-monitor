@@ -30,10 +30,11 @@ export function ShellNav({ sections, onNavigate }: ShellNavProps) {
                   <Link
                     href={item.href}
                     onClick={onNavigate}
+                    style={item.active ? { color: "var(--crm-sidebar)" } : undefined}
                     className={[
                       "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
                       item.active
-                        ? "bg-white text-[var(--crm-sidebar)] shadow-sm"
+                        ? "bg-white shadow-sm"
                         : "text-slate-200 hover:bg-white/9 hover:text-white",
                     ].join(" ")}
                   >
@@ -47,10 +48,11 @@ export function ShellNav({ sections, onNavigate }: ShellNavProps) {
                           <Link
                             href={child.href}
                             onClick={onNavigate}
+                            style={child.active ? { color: "var(--crm-sidebar)" } : undefined}
                             className={[
                               "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors",
                               child.active
-                                ? "bg-white text-[var(--crm-sidebar)] shadow-sm"
+                                ? "bg-white shadow-sm"
                                 : child.muted
                                   ? "text-slate-400 hover:bg-white/7 hover:text-slate-200"
                                   : "text-slate-300 hover:bg-white/7 hover:text-white",

@@ -119,17 +119,17 @@
 
 ## Period and device controls
 
-Controls едины для всех трёх вкладок:
+Current live report shows the exact aligned factual period and does not display fake controls.
 
-- 7 дней;
-- 28 дней;
-- квартал;
-- год;
+After scheduled period snapshots are implemented, controls become:
+
+- 7 days;
+- 28 days;
+- quarter;
+- year;
 - device: all/desktop/mobile.
 
-Webmaster weekly delay показывается явно. Нельзя показывать `Вчера` для недельных query данных.
-
-Состояние вкладки/периода/device должно быть bookmarkable без server runtime: query/hash или другой static-safe client state. Конкретная реализация фиксируется до UI-кода.
+Webmaster weekly delay remains explicit. `Вчера` is forbidden for weekly query data. Tabs are already bookmarkable through `#summary/#seo/#traffic`; period/device state must also be static-safe and bookmarkable when enabled.
 
 ## Multi-client navigation
 
@@ -140,28 +140,30 @@ Sidebar hierarchy:
 Клиенты
   REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
-    Волчевск — не подключён
-    REDACTED_CLIENT_DATA — не подключён
+    REDACTED_CLIENT_DATA
+    REDACTED_CLIENT_DATA
   Союз застройщиков REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA-на-Дону — не подключён
 ```
 
 Client credentials в production открывают только свой subtree. Analyst credentials открывают все subtrees.
 
-## Current implementation gap
+## Current implementation status
 
-Production client route уже не показывает fixture и честно сообщает `Live-отчёт готовится`; fixture остаётся только в `/demo/`. Live Webmaster и Metrica collectors работают, но ещё не компилируют единый `SiteReportSnapshot` и не публикуют его в protected data path.
+- three REDACTED_CLIENT_DATA city routes load live protected report JSON;
+- source periods are aligned;
+- report compiler and atomic publication are active;
+- `/demo/` remains the only fixture route;
+- loading/error states do not expose technical details;
+- client navigation renders only its own subtree.
 
-UI composition уже реализована на `/demo/`: full-width shell, вкладки, director summary и detail tabs. Production client route не подключается к fixture.
-
-Следующий обязательный runtime block:
+Remaining before production:
 
 ```text
-W4 completion
-→ W6 report compiler + equal-period analytics
-→ snapshot publish
-→ protected report loading
-→ live Summary/SEO/Traffic
+previous-period analytics
+→ scheduled sync/timers
+→ Nginx protected aliases + Basic Auth isolation
+→ exact-main release
 ```
 
 ## Visual contract

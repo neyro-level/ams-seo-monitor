@@ -28,26 +28,29 @@ Production activation остаётся отдельной Wave 3/release зад�
 
 ## Implemented now
 
-- static routes из checked-in registry;
-- frozen dashboard shell;
-- versioned snapshot schema и atomic storage primitives;
-- read-only Webmaster client: access, summary, diagnostics, sitemaps, popular queries;
-- read-only Metrica client: counter/goals discovery, all traffic, Yandex organic, bytime, landing pages, devices, allowlisted goals;
-- live proof на `REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA`.
+- static routes from checked-in registry;
+- three enabled REDACTED_CLIENT_DATA cities: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA;
+- frozen full-width dashboard shell;
+- complete read-only Webmaster/Metrica source adapters;
+- source-period alignment;
+- normalized source DTOs;
+- unified `SiteReportSnapshot` compiler;
+- atomic versioned snapshot and client-report publication;
+- endpoint/source partial handling and last-known-good preservation;
+- protected runtime report loader with Zod validation;
+- live local proof for all three REDACTED_CLIENT_DATA sites.
 
-## Critical current gap
-
-Source adapters сейчас выводят свои DTO в stdout. Между ними и UI отсутствует обязательный runtime слой:
+Runtime chain:
 
 ```text
 source DTO
 → report compiler
 → SiteReportSnapshot
-→ atomic publish
-→ protected browser data
+→ atomic snapshots/client-reports publish
+→ /c/{client}/data/{site}/latest.json
+→ browser validation
+→ Summary / SEO / Traffic
 ```
-
-Поэтому client route пока читает synthetic fixture. До закрытия этого gap интерфейс нельзя считать подключённым к live данным.
 
 ## Data dependency direction
 
@@ -63,14 +66,14 @@ registry/threshold/goal config
 
 Второй параллельный report format запрещён.
 
-## Required next block
+## Remaining runtime work
 
-1. Закрыть остаток W4: indexing/search events/links и требуемые source fields.
-2. W6: привести source periods, вычислить deltas/opportunities/alerts.
-3. Посчитать unique converted organic visits по union allowlisted goals; сумму reaches не выдавать за уникальную конверсию.
-4. Скомпилировать единый `SiteReportSnapshot`.
-5. Опубликовать snapshot через существующий atomic storage layer.
-6. После этого подключить UI `Сводка / SEO / Трафик`.
+1. Collect previous aligned source periods and calculate deltas.
+2. Calculate unique converted organic visits across allowlisted goals.
+3. Complete thresholded trend alerts and query clustering.
+4. Add scheduled `systemd` daily/weekly commands and sync-run state.
+5. Activate protected Nginx aliases and client isolation on production.
+6. Deploy reviewed exact `main` artifact to `https://seo-monitor.ams24.ru`.
 
 ## Frontend IA
 
@@ -93,7 +96,7 @@ src/shared/schemas/                       registry/source/snapshot schemas
 
 collector/sources/yandex-webmaster/        Webmaster adapter
 collector/sources/yandex-metrica/          Metrica adapter
-collector/orchestration/                   config and future sync/compiler
+collector/orchestration/                   config, sync and report compiler
 collector/storage/                         atomic publish/locks/LKG
 ```
 

@@ -1,6 +1,12 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { clientRegistrySchema, goalProfileSchema, type GoalProfile, type SiteRegistry } from "../../src/shared/schemas/registry";
+import {
+  clientRegistrySchema,
+  goalProfileSchema,
+  thresholdsSchema,
+  type GoalProfile,
+  type SiteRegistry,
+} from "../../src/shared/schemas/registry";
 import { type MetricaAllowedGoal } from "../../src/shared/schemas/metrica-source";
 
 function normalizeSiteUrl(url: string) {
@@ -14,11 +20,22 @@ async function readJsonDirectory<T>(dirPath: string, parse: (value: unknown) => 
   return Promise.all(entries.map(async (entry) => parse(JSON.parse(await readFile(path.join(dirPath, entry), "utf8")))));
 }
 
-export async function findSiteConfigByUrl(targetSiteUrl: string, cwd = process.cwd()) {
+export async function loadCollectorRegistry(cwd = process.cwd()) {
   const clientsDir = path.join(cwd, "config", "clients");
   const goalsDir = path.join(cwd, "config", "goals");
-  const clients = await readJsonDirectory(clientsDir, (value) => clientRegistrySchema.parse(value));
+  const clients = await readJsonDirectory(clientsDir, (value) =>
+    clientRegistrySchema.parse(value),
+  );
   const goals = await readJsonDirectory(goalsDir, (value) => goalProfileSchema.parse(value));
+  const thresholds = thresholdsSchema.parse(
+    JSON.parse(await readFile(path.join(cwd, "config", "thresholds.json"), "utf8")),
+  );
+
+  return { clients, goals, thresholds };
+}
+
+export async function findSiteConfigByUrl(targetSiteUrl: string, cwd = process.cwd()) {
+  const { clients, goals } = await loadCollectorRegistry(cwd);
   const target = normalizeSiteUrl(targetSiteUrl);
 
   for (const client of clients) {

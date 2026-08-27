@@ -31,9 +31,10 @@ MVP принципиально:
 ## Текущее состояние
 
 - Wave 1 foundation зафиксирована в SourceCraft `main`.
-- W4 Webmaster adapter и W5 Metrica adapter реализованы и проверены на Бастионе REDACTED_CLIENT_DATA.
-- Live collectors пока выводят нормализованные source DTO; единый `SiteReportSnapshot` ещё не компилируется и UI продолжает читать fixture.
-- Следующий обязательный блок: закрыть остаток W4, собрать W6 report compiler/analytics и только затем подключать `Сводка / SEO / Трафик`.
+- W4 Webmaster и W5 Metrica завершены для Луганска, Алчевска и Мариуполя.
+- `pnpm collector:sync:REDACTED_CLIENT_DATA` собирает оба источника, выравнивает периоды и атомарно публикует три live snapshot/client-report.
+- Client routes загружают protected runtime JSON; `/demo/` остаётся отдельным fixture.
+- Следующий блок: previous-period deltas, unique converted visits, scheduled timers и production isolation/deploy.
 
 Предварительный production URL:
 
@@ -65,6 +66,7 @@ pnpm collector:webmaster:preflight
 pnpm collector:webmaster:audit
 pnpm collector:metrica:preflight
 pnpm collector:metrica:audit
+pnpm collector:sync:REDACTED_CLIENT_DATA
 ```
 
 `pnpm build` должен создавать `out/`. `collector:webmaster:*` используют только environment secrets и печатают только safe JSON.

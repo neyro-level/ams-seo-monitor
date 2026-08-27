@@ -2,7 +2,12 @@ import path from "node:path";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { siteReportSnapshotSchema, type SiteReportSnapshot } from "../../src/shared/schemas/report";
 import { acquireSiteLock } from "./locks";
-import { ensureStorageRoots, getLatestSnapshotPath, getVersionedSnapshotPath } from "./layout";
+import {
+  ensureStorageRoots,
+  getClientReportPath,
+  getLatestSnapshotPath,
+  getVersionedSnapshotPath,
+} from "./layout";
 import { mergeWithLastKnownGood } from "./merge";
 
 type PublishOptions = {
@@ -46,6 +51,12 @@ export async function publishSiteSnapshot({
   const latestPath = getLatestSnapshotPath(rootDir, validatedSnapshot.clientSlug, validatedSnapshot.siteSlug);
   const versionedTempPath = `${versionedPath}.tmp`;
   const latestTempPath = `${latestPath}.tmp`;
+  const reportPath = getClientReportPath(
+    rootDir,
+    validatedSnapshot.clientSlug,
+    validatedSnapshot.siteSlug,
+  );
+  const reportTempPath = `${reportPath}.tmp`;
 
   try {
     const previous = await readLatestSiteSnapshot(
@@ -73,15 +84,20 @@ export async function publishSiteSnapshot({
     }
 
     await rename(latestTempPath, latestPath);
+    await mkdir(path.dirname(reportPath), { recursive: true });
+    await writeFile(reportTempPath, serialized, "utf8");
+    await rename(reportTempPath, reportPath);
 
     return {
       latestPath,
       versionedPath,
+      reportPath,
       snapshot: mergedSnapshot,
     };
   } finally {
     await rm(versionedTempPath, { force: true }).catch(() => undefined);
     await rm(latestTempPath, { force: true }).catch(() => undefined);
+    await rm(reportTempPath, { force: true }).catch(() => undefined);
     await lock.release();
   }
 }

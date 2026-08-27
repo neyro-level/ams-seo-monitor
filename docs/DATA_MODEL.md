@@ -69,18 +69,20 @@ shared/
 
 - temp-write и publish только в том же filesystem;
 - schema validation до publish;
-- `latest.json` обновляется последним;
-- invalid snapshot не затирает latest valid snapshot;
-- partial source не уничтожает last-known-good другого source;
-- raw responses и secret-bearing error bodies не сохраняются.
+- snapshot `latest.json` updates atomically;
+- browser-safe `client-reports/{client}/{site}/latest.json` publishes atomically;
+- invalid snapshot never replaces latest valid data;
+- partial source preserves last-known-good section;
+- raw responses and secret-bearing error bodies are never persisted.
 
 ## Current status
 
-- Registry and goal profiles are checked in and validated.
-- Atomic snapshot storage and last-known-good behavior are implemented.
-- Webmaster and Metrica have separate normalized source DTOs and live proof for REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA.
-- A compiler from source DTOs to `SiteReportSnapshot` is not implemented yet.
-- UI still reads a synthetic snapshot and must not be described as live.
+- Registry and per-site goal profiles are checked in and validated.
+- Three REDACTED_CLIENT_DATA sites have exact Webmaster/Metrica ownership.
+- Webmaster and Metrica normalized DTOs compile into `SiteReportSnapshot`.
+- Snapshot/client-report publication and LKG behavior are implemented.
+- Client UI fetches and validates protected runtime JSON.
+- Local live sync is proven for REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA and REDACTED_CLIENT_DATA.
 
 ## Conversion invariant
 
