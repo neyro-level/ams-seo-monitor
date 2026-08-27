@@ -1,0 +1,81 @@
+import { describe, expect, it } from "vitest";
+import { getWebmasterJson, WebmasterSafeError } from "../collector/sources/yandex-webmaster/http";
+import { readWebmasterEnvironment } from "../collector/sources/yandex-webmaster/client";
+
+function createJsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    headers: { "content-type": "application/json" },
+    status,
+  });
+}
+
+describe("webmaster error handling", () => {
+  it("maps 401 to UNAUTHORIZED", async () => {
+    await expect(
+      getWebmasterJson({
+        baseUrl: "https://api.webmaster.yandex.net/v4",
+        token: "token",
+        endpoint: "/user",
+        fetchImpl: async () => createJsonResponse({ error_code: "INVALID_OAUTH_TOKEN" }, 401),
+      }),
+    ).rejects.toMatchObject<WebmasterSafeError>({ code: "UNAUTHORIZED", status: 401 });
+  });
+
+  it("maps 403 to FORBIDDEN", async () => {
+    await expect(
+      getWebmasterJson({
+        baseUrl: "https://api.webmaster.yandex.net/v4",
+        token: "token",
+        endpoint: "/user/77/hosts",
+        fetchImpl: async () => createJsonResponse({ error_code: "INVALID_USER_ID" }, 403),
+      }),
+    ).rejects.toMatchObject<WebmasterSafeError>({ code: "FORBIDDEN", status: 403 });
+  });
+
+  it("maps 429 to RATE_LIMITED without retry loop", async () => {
+    let calls = 0;
+    await expect(
+      getWebmasterJson({
+        baseUrl: "https://api.webmaster.yandex.net/v4",
+        token: "token",
+        endpoint: "/user/77/hosts/host/search-queries/popular",
+        fetchImpl: async () => {
+          calls += 1;
+          return createJsonResponse({ error_code: "TOO_MANY_REQUESTS_ERROR" }, 429);
+        },
+      }),
+    ).rejects.toMatchObject<WebmasterSafeError>({ code: "RATE_LIMITED", status: 429 });
+    expect(calls).toBe(1);
+  });
+
+  it("retries one time on 5xx then succeeds", async () => {
+    let calls = 0;
+    const result = await getWebmasterJson({
+      baseUrl: "https://api.webmaster.yandex.net/v4",
+      token: "token",
+      endpoint: "/user",
+      retryDelayMs: 0,
+      fetchImpl: async () => {
+        calls += 1;
+        if (calls === 1) {
+          return createJsonResponse({ error_code: "INTERNAL_ERROR" }, 500);
+        }
+        return createJsonResponse({ user_id: 77 }, 200);
+      },
+    });
+
+    expect(result).toEqual({ user_id: 77 });
+    expect(calls).toBe(2);
+  });
+
+  it("fails early on inactive token status", () => {
+    expect(() =>
+      readWebmasterEnvironment({
+        YANDEX_WEBMASTER_OAUTH_TOKEN: "token",
+        YANDEX_WEBMASTER_API_BASE_URL: "https://api.webmaster.yandex.net/v4",
+        YANDEX_WEBMASTER_SITE_URL: "https://REDACTED_CLIENT_DATA",
+        YANDEX_WEBMASTER_TOKEN_STATUS: "REVOKED",
+      }),
+    ).toThrow("YANDEX_WEBMASTER_TOKEN_STATUS is not ACTIVE");
+  });
+});

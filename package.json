@@ -15,7 +15,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.collector.json",
     "test": "vitest run",
     "verify:config": "node scripts/verify-config.mjs",
-    "verify:snapshots": "node scripts/verify-snapshots.mjs"
+    "verify:snapshots": "node scripts/verify-snapshots.mjs",
+    "collector:webmaster:preflight": "pnpm build:collector && node dist-collector/collector/main.js webmaster-preflight",
+    "collector:webmaster:audit": "pnpm build:collector && node dist-collector/collector/main.js webmaster-audit"
   },
   "dependencies": {
     "lucide-react": "1.27.0",

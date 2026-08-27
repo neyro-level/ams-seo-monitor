@@ -32,7 +32,7 @@ AMS SEO Monitor идёт в 3 крупные волны.
 
 ## Current phase
 
-**Active:** Wave 1 Foundation.
+**Active:** W4 — Yandex Webmaster adapter на ветке `w4-webmaster-adapter`; frozen design system остаётся без редизайна.
 
 ## Wave 1 acceptance
 
@@ -41,13 +41,21 @@ AMS SEO Monitor идёт в 3 крупные волны.
 - routes are registry-driven;
 - disabled sites render honest `Не подключён` state;
 - invalid snapshot does not replace latest valid snapshot;
-- no live OAuth or production server changes.
+- no production server changes.
 
 ## Risks
 
 - переусложнить foundation ранними abstractions;
 - размыть frozen design contract;
 - сделать слабый snapshot contract перед live integrations.
+
+## W4 current scope
+
+- OAuth preflight;
+- exact verified host discovery;
+- normalized Webmaster DTO;
+- fixture tests and safe collector runner;
+- no secrets in stdout/stderr.
 
 ## Next checkpoint after Wave 1
 

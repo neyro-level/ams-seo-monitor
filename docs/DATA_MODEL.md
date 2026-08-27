@@ -76,4 +76,4 @@ shared/
 
 ## Wave 1 status
 
-На этом этапе registry, snapshot schemas и storage engine реализуются и проверяются на fixtures. Live source DTO появятся в Wave 2, но не должны ломать текущий contract.
+На этом этапе registry, snapshot schemas и storage engine реализуются и проверяются на fixtures. Webmaster source DTO уже добавляется в W4 и не должен ломать текущий snapshot contract. Metrica source DTO остаётся следующей задачей.

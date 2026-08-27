@@ -38,7 +38,7 @@ MVP принципиально:
 - static routes;
 - snapshot DTO и local storage engine на fixtures.
 
-Live OAuth, server release и production onboarding пока вне scope.
+Wave 1 foundation зафиксирована в SourceCraft `main`. Сейчас начат W4: read-only Yandex Webmaster adapter без UI-редизайна и без отступления от frozen design contract.
 
 ## Структура
 
@@ -60,9 +60,11 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
+pnpm collector:webmaster:preflight
+pnpm collector:webmaster:audit
 ```
 
-`pnpm build` должен создавать `out/`.
+`pnpm build` должен создавать `out/`. `collector:webmaster:*` используют только environment secrets и печатают только safe JSON.
 
 ## Source of truth
 

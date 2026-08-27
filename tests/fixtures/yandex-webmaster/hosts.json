@@ -1,0 +1,9 @@
+{
+  "hosts": [
+    {
+      "host_id": "https:REDACTED_CLIENT_DATA:443",
+      "ascii_host_url": "https://REDACTED_CLIENT_DATA/",
+      "verified": true
+    }
+  ]
+}
