@@ -1,145 +1,416 @@
-# AMS SEO Monitor — Frozen Design System
+# CRM Design System
 
-## Статус
+Универсальная дизайн-система личных кабинетов и внутренних CRM-продуктов АМС.
 
-Этот документ — обязательный визуальный контракт AMS SEO Monitor. Интерфейс повторяет утверждённый аналитический кабинет Бастиона. Редизайн, второй набор токенов и отдельная визуальная тема для каждого клиента запрещены.
+Статус: **канон интерфейса `/admin/*` проекта REDACTED_CLIENT_DATA** и переносимая основа для новых кабинетов АМС.
 
-## Характер
+## 1. Роль Документа
 
-```text
-операционный premium
-спокойно
-точно
-плотно, но не тесно
-без маркетингового декора
+Документ задаёт общий визуальный и поведенческий язык рабочего кабинета: оболочку, навигацию, цвета, типографику, размеры, дашборды, таблицы, фильтры, формы, тумблеры, состояния и адаптивность.
+
+Эталон текущего проекта — разделы `Объекты` и `Сотрудники`. Профильные page/module-документы определяют смысл и данные, а этот файл — их представление.
+
+При конфликте действует приоритет:
+
+1. security, роли и доменные ограничения;
+2. профильный документ модуля;
+3. этот CRM Design System для `/admin/*`;
+4. `03_DESIGN_SYSTEM.md` для публичного сайта;
+5. текущая реализация компонента, только если она не противоречит канону выше.
+
+## 2. Переносимость: CRM Core И Tenant Theme
+
+### CRM Core
+
+Переносится между проектами без изменений:
+
+- информационная архитектура и композиция экранов;
+- сетка, плотность, размеры, радиусы и типографика;
+- семантика цветов;
+- паттерны KPI, таблиц, фильтров, форм и состояний;
+- responsive, motion и accessibility.
+
+### Tenant Theme
+
+Меняется под клиента:
+
+- короткая марка и подпись в бренд-капсуле;
+- `crm-sidebar`, `crm-primary` и необязательный `crm-brand-accent`;
+- знак клиента, только если он остаётся компактным.
+
+Бизнес-логика, права и данные не зависят от визуальной темы.
+
+## 3. Характер Интерфейса
+
+Ключевая формула: **операционный premium** — спокойно, точно, плотно, но не тесно. Дорогой вид создаётся пропорциями, воздухом и типографикой, а не декором.
+
+Не использовать:
+
+- маркетинговые hero-блоки внутри кабинета;
+- glassmorphism, glow и декоративные градиенты;
+- гигантские кнопки и заголовки;
+- случайный новый цвет для одной карточки;
+- пояснения, повторяющие заголовок;
+- полностью круглые pills для каждого control;
+- горизонтальный scroll всей страницы;
+- темы пользователя и dashboard-builder.
+
+## 4. Семантические Цвета
+
+Компоненты используют токены по роли, а не случайные HEX.
+
+| Токен | REDACTED_CLIENT_DATA | Использование |
+|---|---:|---|
+| `crm-page` | `#EEF2F5` | фон рабочей области |
+| `crm-surface` | `#FFFFFF` | панели, таблицы, формы, modal |
+| `crm-surface-muted` | `#F8FAFC` | шапки таблиц, вложенные карточки, hover |
+| `crm-border` | `#E2E8F0` | обычные границы, `slate-200` |
+| `crm-border-strong` | `#CBD5E1` | поля и сильные разделители, `slate-300` |
+| `crm-text` | `#020617` | основной текст, `slate-950` |
+| `crm-text-secondary` | `#475569` | вторичный текст, `slate-600` |
+| `crm-text-muted` | `#64748B` | подписи, `slate-500` |
+| `crm-text-disabled` | `#94A3B8` | disabled, `slate-400` |
+| `crm-sidebar` | `#06253A` | sidebar и главное тёмное состояние |
+| `crm-primary` | `#06253A` | primary action, активный preset |
+| `crm-primary-hover` | `#0A3854` | hover primary |
+| `crm-link` | `#0A5277` | текстовые ссылки и inline-действия |
+| `crm-interactive` | `#0EA5E9` | включённый switch, focus-сигнал, `sky-500` |
+| `crm-focus` | `#BAE6FD` | focus-ring, `sky-200` |
+
+### Статусы
+
+| Роль | Фон | Граница | Текст |
+|---|---:|---:|---:|
+| Успех | `#ECFDF5` | `#A7F3D0` | `#022C22` |
+| Информация | `#F0F9FF` | `#BAE6FD` | `#082F49` |
+| Внимание | `#FFFBEB` | `#FDE68A` | `#451A03` |
+| Ошибка | `#FFF1F2` | `#FECDD3` | `#4C0519` |
+
+Статусный цвет сообщает смысл, а не украшает. Рядом всегда остаются текст, число или иконка.
+
+### Акцент Клиента
+
+Для REDACTED_CLIENT_DATAа `crm-brand-accent: #8A1515`. Он используется для метки `Эксклюзив` и редких брендовых акцентов, но не заменяет primary action и системный красный ошибки/удаления.
+
+### CSS-Контракт
+
+```css
+.admin-root {
+  --crm-page: #eef2f5;
+  --crm-surface: #fff;
+  --crm-surface-muted: #f8fafc;
+  --crm-border: #e2e8f0;
+  --crm-border-strong: #cbd5e1;
+  --crm-text: #020617;
+  --crm-text-secondary: #475569;
+  --crm-text-muted: #64748b;
+  --crm-sidebar: #06253a;
+  --crm-primary: #06253a;
+  --crm-primary-hover: #0a3854;
+  --crm-link: #0a5277;
+  --crm-interactive: #0ea5e9;
+  --crm-focus: #bae6fd;
+  --crm-brand-accent: #8a1515;
+}
 ```
 
-Не использовать: glassmorphism, glow, декоративные градиенты кроме малого AMS badge, гигантские заголовки и кнопки, rainbow KPI, dashboard builder, пользовательские темы, горизонтальный scroll всей страницы.
+## 5. Типографика
 
-## Typography
+Основной шрифт — self-hosted **PT Root UI**: Regular `400`, Medium `500`, Semibold `600`, Bold `700`. Fallback: `"Segoe UI", ui-sans-serif, system-ui, sans-serif`.
 
-Self-hosted PT Root UI, fallback: `"Segoe UI", ui-sans-serif, system-ui, sans-serif`.
+| Роль | Desktop | Mobile | Вес |
+|---|---|---|---:|
+| H1 страницы | 24/30 px | 20/26 px | 600 |
+| H2 раздела | 20/26 px | 18/24 px | 600 |
+| H3 панели | 16/22 px | 16/22 px | 600 |
+| KPI value | 30/36 px | 28/34 px | 600 |
+| Body | 14/22 px | 14/21 px | 400 |
+| Control | 14/20 px | 14/20 px | 600 |
+| Caption | 12/16 px | 12/16 px | 500 |
+| Micro label | 10–11/14 px | 10–11/14 px | 600–700 |
 
-| Role | Desktop | Mobile | Weight |
-|---|---:|---:|---:|
-| Page H1 | 24/30 | 20/26 | 600 |
-| Section H2 | 22/28 | 18–20/24–26 | 600 |
-| Panel H3 | 18/24 | 16/22 | 600 |
-| KPI | 30/30–36 | 28/34 | 600 |
-| Body | 14/22 | 14/21 | 400 |
-| Control | 14/20 | 14/20 | 600 |
-| Caption | 12/16 | 12/16 | 500–600 |
-| Micro label | 10–11/14 | 10–11/14 | 600–700 |
+Правила:
 
-Числа используют `tabular-nums`. Uppercase — только короткие KPI/system labels.
+- H1/H2/H3 одного уровня одинаковы на всех страницах и выровнены влево;
+- uppercase — только для коротких KPI-label и системных меток;
+- числа в KPI и таблицах используют `tabular-nums`;
+- длинная подпись меняет компоновку, а не уменьшается до нечитаемого размера.
 
-## Frozen tokens
+## 6. Сетка, Воздух И Радиусы
 
-| Token | Value |
+### Оболочка
+
+- desktop sidebar: `260px`, фиксирован слева и не сворачивается;
+- mobile topbar: `56px`, drawer: `min(86vw, 320px)`;
+- sticky page header: минимум `96px` на desktop;
+- внешние отступы: `16px` mobile, `24px` tablet, `32px` desktop;
+- вертикальный отступ main: `24px` mobile, `32px` desktop;
+- рабочая область использует всю оставшуюся ширину.
+
+Шкала отступов: `4, 8, 12, 16, 20, 24, 32, 40px`. Между панелями одного блока — `12–16px`, между крупными разделами — `32px`.
+
+| Элемент | Радиус |
 |---|---:|
-| `report-page` | `#EEF2F5` |
-| `report-surface` | `#FFFFFF` |
-| `report-surface-muted` | `#FAFAFA` |
-| `report-border` | `#E3E3E1` |
-| `report-text` | `#17161A` |
-| `report-text-secondary` | `#413F41` |
-| `report-text-muted` | `#827F81` |
-| `report-sidebar` | `#06253A` |
-| `report-sidebar-hover` | `#0A3854` |
-| `report-link` | `#0A5277` |
-| `report-accent` | `#8A1515` |
-| `report-focus` | `#BAE6FD` |
+| Панель, таблица, KPI | `16px` |
+| Поле, кнопка, navigation item | `12px` |
+| Иконка-подложка | `8px` |
+| Segmented control | максимум `15px` |
+| Badge | `6–8px`, pill только для короткой метки |
+| Avatar и knob switch | полный круг |
 
-Status colors:
+Панели держатся на фоне и границе без постоянной тени. Hover-card — `shadow-sm/md`, drawer/modal — `shadow-2xl`.
 
-| State | Background | Border | Text |
-|---|---:|---:|---:|
-| Success | `#ECFDF5` | `#A7F3D0` | `#022C22` |
-| Info | `#F0F9FF` | `#BAE6FD` | `#082F49` |
-| Warning | `#FFFBEB` | `#FDE68A` | `#451A03` |
-| Error | `#FFF1F2` | `#FECDD3` | `#4C0519` |
+## 7. Оболочка Кабинета
 
-Цвет никогда не остаётся единственным носителем смысла.
+### Sidebar
 
-## Shell
+- фон `crm-sidebar`;
+- сверху компактная капсула `АМС · Управление сайтом`, без длинного названия клиента;
+- меню начинается после заметного воздуха;
+- Lucide-иконки `20px`, stroke `1.8`;
+- пункт минимум `44px`, радиус `12px`;
+- обычный пункт светлый и прозрачный, hover — белый около 9%;
+- активный пункт белый с navy-текстом и `shadow-sm`;
+- пользователь и выход закреплены внизу в одной компактной строке: иконка, отображаемое имя и отдельная иконка выхода; логин, роль и служебные подписи не дублируются;
+- desktop-collapse отсутствует, mobile использует drawer.
 
-Desktop:
+Бренд-капсула: радиус 16px, тонкая белая граница, полупрозрачный фон. Знак `АМС` допускает единственный небольшой sky-to-blue градиент; подпись — 12px, лёгкая, с увеличенным tracking.
 
-- fixed sidebar `260px`;
-- content `padding-left: 260px`;
-- background `report-page`;
-- sidebar не сворачивается.
+### Page Header
 
-Mobile/tablet:
+Порядок: breadcrumbs → лёгкая стрелка назад → один H1 → глобальное действие справа.
 
-- topbar `56px`;
-- drawer `min(86vw, 320px)`;
-- overlay `slate-950/45`;
-- touch target 40px minimum, target 44px;
-- focus management и Escape обязательны.
+Стрелка назад не имеет подложки: 20px, stroke `1.7`, muted по умолчанию, navy на hover, сдвиг влево на 2px за 150–200ms. Она ведёт к ближайшему родительскому уровню.
 
-## Spacing and radius
+Header sticky и не перекрывается mobile topbar или локальными sticky-элементами.
 
-Spacing scale: `4, 8, 12, 16, 20, 24, 32, 40px`.
+## 8. Композиция Раздела
 
-- analytics KPI/panel/table/tooltip: `8px`;
-- shell/nav/control: `12px`;
-- brand capsule/high-level filter: `16px`;
-- постоянные shadows запрещены; допустимы tooltip, drawer и малый hover lift.
+Стандарт страницы списка:
 
-## KPI
+1. page header;
+2. KPI/аналитика, если помогает принять решение;
+3. уникальный разрез раздела;
+4. H2 списка и основное действие;
+5. фильтры;
+6. таблица или mobile-карточки;
+7. pagination;
+8. empty/error state.
 
-- 1 column mobile;
-- 2 columns tablet;
-- до 4 columns desktop;
-- gap `12px`;
-- border `1px`;
-- radius `8px`;
-- padding `16–20px`;
-- label `12px` uppercase muted;
-- value `30px` semibold tabular-nums.
+Аналитика не дублируется: `Посетители` — аудитория, `Заявки` — обращения, `Объекты` — каталог, `Сотрудники` — команда.
 
-Не раскрашивать каждый KPI отдельным декоративным цветом.
+## 9. Дашборды И KPI
 
-## Charts
+- grid: 1 колонка mobile, 2 tablet, 4 desktop;
+- gap 12px; карточка радиус 16px, border, padding 20px;
+- label 12px uppercase, число 30px через 12px;
+- вторичные пояснения внутри KPI по умолчанию удаляются;
+- главная карточка navy: белое число, label `slate-300`;
+- остальные только по смыслу: green — активно, sky — новое/информация, amber — внимание, rose — негатив;
+- не превращать четыре KPI в декоративную радугу;
+- кликабельная KPI целиком является ссылкой, hover поднимает максимум на 2px и хранит фильтр в URL.
 
-Recharts. Area chart:
+### Состав Базы
 
-- height `280px`;
-- horizontal grid `#E3E3E1`;
-- axis `#827F81`, 11px;
-- no axis/tick lines;
-- stroke `#8A1515`, width 2;
-- restrained accent area;
-- white panel, border, radius 8px, padding 20px.
+Белая панель с H3 и компактными карточками высотой от 80px. Иконка в подложке 36px, значение 20px, label 12px. Сетка: 2 колонки mobile/tablet, 3 laptop, до 6 desktop. Выбор типа меняет список ниже или открывает явный filtered URL.
 
-Bar chart: fill `#17161A`, top radius 6px, max bar 28px.
+## 10. Presets И Фильтры
 
-Каждый chart имеет текстовый summary или table equivalent. Reduced motion учитывается.
+### Периоды
 
-## Tables
+Группа `Вчера / 7 дней / Месяц / Квартал / Год`: muted-контейнер, border, радиус 12px, padding 6px. Пункт минимум 40px, горизонтальный padding 16px. Active — navy/white, inactive — white/slate. Группа переносится, но не ужимает текст. Sticky не является стандартом.
 
-- white container;
-- border `#E3E3E1`;
-- radius `8px`;
-- только local `overflow-x-auto`;
-- head `#FAFAFA`;
-- labels 12px uppercase muted;
-- cells `10–12px 16px`;
-- numeric columns right aligned, `tabular-nums`;
-- semantic table markup и `aria-sort` для сортировки.
+### Панель Фильтров
 
-## Responsive proof
+- белая панель, border, радиус 16px, padding 16px;
+- 1 колонка mobile, 2 tablet, до 4 desktop;
+- поля одинаковой высоты 44px;
+- select имеет минимум 48px правого padding под стрелку;
+- state отражается в URL;
+- reset виден только при активных фильтрах;
+- placeholder предметный: что именно можно найти.
 
-Обязательные viewports: `375`, `768`, `1280`, `1440`.
+## 11. Таблицы
 
-- `<640`: one KPI column, drawer;
-- `640–1023`: two KPI columns, drawer;
-- `>=1024`: fixed sidebar, up to four KPI;
-- no whole-page horizontal overflow;
-- freshness/source status не скрывается;
-- длинные client/site/query labels не уменьшают шрифт ниже контракта.
+### Desktop
 
-## Change rule
+- белый контейнер, border, радиус 16px;
+- `overflow-x-auto` только внутри контейнера;
+- header `crm-surface-muted`, 12px uppercase для коротких подписей;
+- padding ячейки обычно `12px 12–16px`;
+- строки разделены `slate-100`, hover — мягкий `slate-50`;
+- главное имя semibold, метаданные 11–12px muted;
+- текст влево, числа/действия центр или вправо по единому правилу страницы;
+- фото заметно, выровнено по тексту, но не превращает таблицу в каталог.
 
-Новые страницы `Summary`, `SEO`, `Traffic` используют только эти tokens и primitives. Новая метрика не является основанием для нового компонента, если существующий KPI/chart/table/status primitive решает задачу.
+### Сортировка
+
+Весь заголовок кликабелен. `ChevronUp/Down` 14px, active navy, inactive видим с пониженной opacity. Поле и направление находятся в URL; числа по умолчанию обычно `desc`.
+
+### Действия
+
+Простой переход `На сайте` — текстовая ссылка `crm-link` с плавным подчёркиванием слева направо за 200ms. Иконка нужна только если смысл без неё неясен. Меню появляется при трёх и более действиях.
+
+### Mobile
+
+Сложная operational-таблица становится карточками: identity → главное действие → метрики в 2 колонки → вторичные ссылки. Аналитическая таблица может сохранить локальный горизонтальный scroll, если карточки разрушат сравнение столбцов.
+
+## 12. Формы И Карточки Сущностей
+
+### Поля
+
+- label 14px medium, обязательность — компактная rose-звёздочка;
+- input/select минимум 44px, радиус 12px, `crm-border-strong`;
+- focus: контрастная граница и ring `crm-focus`;
+- select имеет безопасную правую зону 48px;
+- placeholder не заменяет label;
+- helper text используется только для предотвращения ошибки;
+- error объясняет способ исправления и не стирает ввод.
+
+### Длинная Форма
+
+Форма делится на смысловые секции. Сверху отдельная капсула `Раздел №N`, затем 16–20px воздуха, строка с Lucide-иконкой и заголовком. Зависимые поля меняются по типу сущности. Primary action находится в контексте последнего раздела и не создаёт отдельную огромную пустую полосу.
+
+### Create = View
+
+Создание максимально повторяет будущую карточку: те же портрет/галерея, порядок полей, панели и отступы. Различается доступность редактирования, а не композиция. После сохранения пользователь видит `Данные сохранены`; переход происходит только если этого требует сценарий.
+
+### Inline Edit
+
+Read-state выглядит как компактная строка, карандаш стоит в конце. Edit открывает поле на том же месте; save/cancel — иконки 36px. Save navy, cancel neutral. Read-only поле не показывает карандаш.
+
+## 13. Segmented Controls И Switch
+
+### Segmented Choice
+
+Для короткого взаимоисключающего выбора. Радиус максимум 15px, высота 40–44px. Default: white/slate; selected: navy/white. Элементы переносятся по строкам. Обязательность проверяется клиентом и сервером.
+
+### Publication Switch
+
+- внешний control: белый, border, радиус 12px;
+- track: 44×24px или compact 36×20px;
+- on `crm-interactive`, off `slate-300`;
+- knob белый круг с лёгкой тенью;
+- рядом текст текущего состояния;
+- `role="switch"`, `aria-checked`, pending блокирует повторное нажатие;
+- optimistic update допустим только с rollback при ошибке.
+
+Яркий голубой означает включённое/активное интерактивное состояние. Им не заливают крупные нейтральные панели.
+
+## 14. Кнопки И Ссылки
+
+| Тип | Правило |
+|---|---|
+| Primary | navy/white, hover `crm-primary-hover`, 40–44px, radius 12–15px, не растягивать на весь desktop |
+| Secondary | white, slate-border/text, muted hover |
+| Ghost/Icon | transparent, 36px минимум, 40px для самостоятельного действия, обязательный `aria-label` |
+| Destructive | системный rose/red, не tenant accent; необратимое действие требует подтверждения |
+| Text link | `crm-link`, underline-animation 200ms, не превращать переход в тяжёлую кнопку |
+
+## 15. Иконки, Медиа И Feedback
+
+### Иконки
+
+Lucide React: 16px inline, 20px navigation/action, 24px только для крупного состояния; stroke 1.7–1.8. Подложка допустима у аналитической категории, но не у стрелки назад.
+
+### Галерея
+
+Preview появляется сразу. Сетка: 2 mobile, 3 tablet, 5–6 desktop; карточка 4:3, radius 12px. У каждой виден статус loading/ready/error, общий счётчик показывает выбранные и загруженные файлы.
+
+### Портрет
+
+Портрет является частью карточки. Загрузка располагается на фото или сразу под ним. Без фото — единый neutral placeholder. Mobile складывает портрет и данные в одну колонку.
+
+### Состояния
+
+- loading сохраняет геометрию, кнопка пишет `Сохраняем…`, повтор блокируется;
+- success — compact toast/inline-status с emerald и текстом `Данные сохранены`;
+- error объясняет причину и следующий шаг, сохраняет ввод, критичный получает `role="alert"`;
+- empty — white/dashed panel, короткий текст и одно следующее действие;
+- warning modal — заголовок, один короткий абзац, `Назад` и понятное продолжение.
+
+## 16. Motion И Responsive
+
+Motion: 150–200ms, modal/drawer до 250ms. Анимируются opacity, transform, color, shadow. Hover-подъём максимум 2px. Учитывается `prefers-reduced-motion`.
+
+| Диапазон | Контракт |
+|---|---|
+| `<640px` | 1 колонка, padding 16px, KPI по одному, drawer, operational tables → cards |
+| `640–1023px` | 2 KPI, формы 1–2 колонки, локальный table scroll, drawer |
+| `≥1024px` | sidebar 260px, KPI до 4, полные формы и таблицы |
+
+Минимальная visual QA-матрица: `375`, `768`, `1280`, `1440px`.
+
+## 17. Доступность
+
+- контраст WCAG AA;
+- touch-target минимум 40px, целевой 44px;
+- поле связано с label;
+- icon-only action имеет `aria-label`;
+- switch — `role="switch"` и `aria-checked`;
+- active navigation/preset — `aria-current`;
+- `focus-visible` не удаляется;
+- Tab-порядок соответствует визуальному;
+- таблица сохраняет `thead/th/scope`;
+- цвет не является единственным носителем статуса.
+
+## 18. Эталонные Компоненты REDACTED_CLIENT_DATAа
+
+| Паттерн | Файл |
+|---|---|
+| Оболочка/sidebar | `apps/web/src/modules/admin-lite/AdminChrome.tsx` |
+| Header/back | `apps/web/src/modules/admin-lite/AdminFrame.tsx` |
+| KPI/состав базы | `apps/web/src/app/admin/(cabinet)/obekty/page.tsx` |
+| Presets/KPI команды | `apps/web/src/app/admin/(cabinet)/sotrudniki/page.tsx` |
+| Table/mobile cards | `apps/web/src/modules/admin-lite/AdminEmployeeList.tsx` |
+| Publication switch | `apps/web/src/modules/admin-lite/AdminEmployeePublicToggle.tsx` |
+| Таблица объектов | `apps/web/src/modules/admin-cabinet/properties/PropertyList.tsx` |
+| Типозависимая форма | `apps/web/src/modules/admin-cabinet/properties/PropertyForm.tsx` |
+| Gallery preview | `apps/web/src/modules/admin-cabinet/properties/MediaUploader.tsx` |
+
+Код показывает рабочий паттерн, но этот документ имеет приоритет при visual drift.
+
+## 19. Правила Для AI
+
+Перед правкой admin UI AI обязан:
+
+1. прочитать этот файл и профильный page/module brief;
+2. найти существующий компонент того же типа;
+3. использовать semantic token, а не новый HEX;
+4. сохранить стандартную композицию;
+5. реализовать реальные loading/success/error/empty states;
+6. проверить desktop и mobile;
+7. не вводить новый паттерн, если подходит существующий;
+8. описать намеренное исключение в профильном документе и `WORKLOG.md`.
+
+AI не должен копировать публичный стиль сайта, делать все KPI цветными, превращать text link в тяжёлую кнопку, менять порядок данных между create/view, показывать внутренние термины без пользы или считать legacy drift новым каноном.
+
+## 20. Checklist Приёмки
+
+- [ ] H1/H2/H3 соответствуют шкале и выровнены влево.
+- [ ] Page использует `crm-page`, панели — `crm-surface`.
+- [ ] Primary navy, включённый switch sky-blue.
+- [ ] Бордовый REDACTED_CLIENT_DATAа не используется как системная ошибка.
+- [ ] Панели 16px, controls 12px, segmented не более 15px.
+- [ ] Touch-target не меньше 40px.
+- [ ] Числа используют `tabular-nums`.
+- [ ] Таблица не создаёт scroll всей страницы.
+- [ ] Mobile — осознанная композиция, не просто уменьшенный desktop.
+- [ ] После mutation есть понятная обратная связь.
+- [ ] Focus и aria-семантика сохранены.
+- [ ] Удалены повторяющие и технические пояснения.
+- [ ] Проверены 375, 768, 1280 и 1440px.
+
+## 21. Текущий Drift И Следующий Этап
+
+Документ задаёт целевое состояние. Кабинет уже следует ему в `Объектах` и `Сотрудниках`, но не каждый экран полностью выровнен.
+
+Следующий отдельный UI-pass должен:
+
+- перевести повторяющиеся HEX/Tailwind-цвета на CRM-токены;
+- унифицировать H2, таблицы, primary/secondary/text actions;
+- привести панели к 16px, controls к 12px, segmented к 15px;
+- выровнять плотность таблиц и удалить legacy-пояснения;
+- проверить все admin-маршруты на desktop, laptop, tablet и mobile.
+
+До этого pass текущий код не является доказательством, что каждый экран уже соответствует канону.

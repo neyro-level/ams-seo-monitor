@@ -17,10 +17,10 @@ type DeviceBarChartProps = {
 
 export function DeviceBarChart({ data }: DeviceBarChartProps) {
   return (
-    <div className="rounded-[8px] border border-[var(--report-border)] bg-white p-4 sm:p-5">
+    <div className="rounded-2xl border border-[var(--crm-border)] bg-white p-4 sm:p-5">
       <div className="mb-4 space-y-1">
-        <h3 className="text-lg font-semibold leading-6 text-[var(--report-text)]">Устройства</h3>
-        <p className="text-sm leading-5 text-[var(--report-text-secondary)]">
+        <h3 className="text-lg font-semibold leading-6 text-[var(--crm-text)]">Устройства</h3>
+        <p className="text-sm leading-5 text-[var(--crm-text-secondary)]">
           Synthetic split нужен для проверки layout, local overflow и text fallback.
         </p>
       </div>
@@ -42,10 +42,10 @@ export function DeviceBarChart({ data }: DeviceBarChartProps) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <ul className="mt-4 grid gap-2 text-sm text-[var(--report-text-secondary)] sm:grid-cols-2">
+      <ul className="mt-4 grid gap-2 text-sm text-[var(--crm-text-secondary)] sm:grid-cols-2">
         {data.map((item) => (
-          <li key={item.device} className="rounded-[8px] border border-[var(--report-border)] bg-[var(--report-surface-muted)] px-3 py-2">
-            <span className="font-semibold text-[var(--report-text)]">{item.device}</span>: {formatInteger(item.visits)} визитов, {formatPercent(item.conversionRate)} конверсия
+          <li key={item.device} className="rounded-[8px] border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] px-3 py-2">
+            <span className="font-semibold text-[var(--crm-text)]">{item.device}</span>: {formatInteger(item.visits)} визитов, {formatPercent(item.conversionRate)} конверсия
           </li>
         ))}
       </ul>

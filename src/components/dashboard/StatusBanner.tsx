@@ -30,8 +30,8 @@ export function StatusBanner({ tone, title, description }: StatusBannerProps) {
   const Icon = config.Icon;
 
   return (
-    <div className={`flex gap-3 rounded-[8px] border p-4 ${config.wrapper}`}>
-      <Icon className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.8} />
+    <div className={`flex gap-3 rounded-2xl border p-4 ${config.wrapper}`}>
+      <Icon className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.8} aria-hidden />
       <div className="space-y-1">
         <p className="text-sm font-semibold leading-5">{title}</p>
         <p className="text-sm leading-5">{description}</p>

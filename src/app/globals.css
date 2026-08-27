@@ -9,18 +9,22 @@
 }
 
 :root {
-  --report-page: #eef2f5;
-  --report-surface: #ffffff;
-  --report-surface-muted: #fafafa;
-  --report-border: #e3e3e1;
-  --report-text: #17161a;
-  --report-text-secondary: #413f41;
-  --report-text-muted: #827f81;
-  --report-sidebar: #06253a;
-  --report-sidebar-hover: #0a3854;
-  --report-link: #0a5277;
-  --report-accent: #8a1515;
-  --report-focus: #bae6fd;
+  --crm-page: #eef2f5;
+  --crm-surface: #ffffff;
+  --crm-surface-muted: #f8fafc;
+  --crm-border: #e2e8f0;
+  --crm-border-strong: #cbd5e1;
+  --crm-text: #020617;
+  --crm-text-secondary: #475569;
+  --crm-text-muted: #64748b;
+  --crm-text-disabled: #94a3b8;
+  --crm-sidebar: #06253a;
+  --crm-primary: #06253a;
+  --crm-primary-hover: #0a3854;
+  --crm-link: #0a5277;
+  --crm-interactive: #0ea5e9;
+  --crm-focus: #bae6fd;
+  --crm-brand-accent: #8a1515;
 }
 
 * {
@@ -28,13 +32,13 @@
 }
 
 html {
-  background: var(--report-page);
+  background: var(--crm-page);
 }
 
 body {
   margin: 0;
-  background: var(--report-page);
-  color: var(--report-text);
+  background: var(--crm-page);
+  color: var(--crm-text);
   font-family: "PT Root UI", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
   line-height: 22px;
@@ -58,7 +62,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--report-focus);
+  outline: 2px solid var(--crm-focus);
   outline-offset: 2px;
 }
 

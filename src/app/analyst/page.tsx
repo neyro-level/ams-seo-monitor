@@ -34,14 +34,14 @@ export default function AnalystPage() {
         <SectionCard title="Клиенты" note="Registry-driven">
           <div className="grid gap-3 lg:grid-cols-2">
             {overview.clientCards.map((client) => (
-              <article key={client.clientSlug} className="rounded-[8px] border border-[var(--report-border)] bg-[var(--report-surface-muted)] p-4">
-                <h2 className="text-lg font-semibold text-[var(--report-text)]">{client.name}</h2>
-                <p className="mt-2 text-sm text-[var(--report-text-secondary)]">
+              <article key={client.clientSlug} className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4">
+                <h2 className="text-lg font-semibold text-[var(--crm-text)]">{client.name}</h2>
+                <p className="mt-2 text-sm text-[var(--crm-text-secondary)]">
                   {client.connectedSites} подключён / {client.plannedSites} ожидает onboarding.
                 </p>
                 <Link
                   href={`/c/${client.clientSlug}/`}
-                  className="mt-4 inline-flex rounded-xl bg-[var(--report-sidebar)] px-4 py-2 text-sm font-semibold text-white"
+                  className="mt-4 inline-flex rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
                 >
                   Открыть клиента
                 </Link>

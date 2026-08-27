@@ -21,41 +21,59 @@ export type NavigationSection = {
 
 export function buildNavigation(currentPath: string): NavigationSection[] {
   const clients = getClients();
+  const clientPathMatch = currentPath.match(/^\/c\/([^/]+)\//);
+  const currentClientSlug = clientPathMatch?.[1] ?? null;
+  const visibleClients = currentClientSlug
+    ? clients.filter((client) => client.clientSlug === currentClientSlug)
+    : clients;
+
+  const clientSection: NavigationSection = {
+    title: currentClientSlug ? "Сайты" : "Клиенты",
+    items: visibleClients.map((client) => ({
+      href: `/c/${client.clientSlug}/`,
+      label: client.name,
+      active:
+        currentPath === `/c/${client.clientSlug}/` ||
+        currentPath.startsWith(`/c/${client.clientSlug}/`),
+      children: client.sites.map((site) => ({
+        href: `/c/${client.clientSlug}/${site.siteSlug}/`,
+        label: site.name,
+        active: currentPath === `/c/${client.clientSlug}/${site.siteSlug}/`,
+        muted: !site.enabled,
+      })),
+    })),
+  };
+
+  if (currentClientSlug) {
+    return [clientSection];
+  }
+
+  const overviewItems: NavigationItem[] = [
+    {
+      href: "/analyst/",
+      label: "Аналитик",
+      active: currentPath === "/analyst/",
+    },
+  ];
+
+  if (currentPath === "/" || currentPath === "/demo/") {
+    overviewItems.unshift({
+      href: "/",
+      label: "Старт",
+      active: currentPath === "/",
+    });
+    overviewItems.push({
+      href: "/demo/",
+      label: "Демо",
+      active: currentPath === "/demo/",
+    });
+  }
 
   return [
     {
       title: "Обзор",
-      items: [
-        {
-          href: "/",
-          label: "Старт",
-          active: currentPath === "/",
-        },
-        {
-          href: "/demo/",
-          label: "Демо",
-          active: currentPath === "/demo/",
-        },
-        {
-          href: "/analyst/",
-          label: "Аналитик",
-          active: currentPath === "/analyst/",
-        },
-      ],
+      items: overviewItems,
     },
-    {
-      title: "Клиенты",
-      items: clients.map((client) => ({
-        href: `/c/${client.clientSlug}/`,
-        label: client.name,
-        active: currentPath === `/c/${client.clientSlug}/` || currentPath.startsWith(`/c/${client.clientSlug}/`),
-        children: client.sites.map((site) => ({
-          href: `/c/${client.clientSlug}/${site.siteSlug}/`,
-          label: site.name,
-          active: currentPath === `/c/${client.clientSlug}/${site.siteSlug}/`,
-          muted: !site.enabled,
-        })),
-      })),
-    },
+    clientSection,
   ];
 }

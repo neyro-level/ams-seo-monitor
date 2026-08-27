@@ -110,6 +110,15 @@ Execution order:
 - no query → lead attribution;
 - compile one versioned `SiteReportSnapshot`.
 
+W6 foundation now implemented:
+
+- UTC-safe inclusive period length and previous-period derivation;
+- equal-period assertion;
+- Webmaster show/click pool merge by `queryId + device`;
+- deterministic initial query opportunities from configured thresholds.
+
+Still required: previous source collection, weighted deltas, alerts, unique converted visits, full compiler and publish orchestration.
+
 ### C. Snapshot publish
 
 - atomic publish through existing storage;
@@ -125,18 +134,21 @@ Acceptance:
 - REDACTED_CLIENT_DATA client route loads the newly published live snapshot instead of the preparation state;
 - every derived value identifies source, formula and period.
 
-## Following block — Director cabinet UI
+## Director cabinet UI foundation
 
-Only after data pipeline closure:
+Implemented against the approved REDACTED_CLIENT_DATA references:
 
-- one site route;
-- local tabs `Сводка / SEO / Трафик`;
-- default `Сводка`;
-- 8 KPI + one priority panel;
-- top 3 alerts/opportunities;
-- details moved to SEO/Traffic tabs;
-- no redesign outside `docs/DESIGN_SYSTEM.md`;
-- viewport proof 375/768/1280/1440.
+- full remaining-width workspace; no artificial `max-width` frame;
+- canonical PT Root UI and CRM tokens;
+- fixed 260px sidebar and white mobile topbar;
+- project panel/KPI/table radius restored to 16px;
+- one route with bookmarkable `Сводка / SEO / Трафик` tabs;
+- default `Сводка` with 8 KPI + one priority section;
+- client route navigation contains only its own client subtree;
+- detail tables moved to SEO/Traffic tabs;
+- demo remains separate from the live preparation route.
+
+This UI still consumes a fixture only on `/demo/`. Live client wiring waits for the compiler and snapshot publish.
 
 Page contract: `docs/SITE_REPORT_IA.md`.
 

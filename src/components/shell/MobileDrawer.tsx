@@ -38,7 +38,7 @@ export function MobileDrawer({ sections }: MobileDrawerProps) {
     <>
       <button
         type="button"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/7 text-white"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50"
         aria-expanded={open}
         aria-controls="mobile-report-nav"
         onClick={() => setOpen(true)}
@@ -50,7 +50,7 @@ export function MobileDrawer({ sections }: MobileDrawerProps) {
         <div className="fixed inset-0 z-50 bg-slate-950/45 lg:hidden">
           <div
             id="mobile-report-nav"
-            className="h-full w-[min(86vw,320px)] overflow-y-auto bg-[var(--report-sidebar)] p-4 shadow-[0_24px_64px_rgba(2,6,23,0.42)]"
+            className="h-full w-[min(86vw,320px)] overflow-y-auto bg-[var(--crm-sidebar)] p-3 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-label="Навигация по отчётам"

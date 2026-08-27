@@ -1,25 +1,27 @@
 type KpiCardProps = {
   label: string;
   value: string;
-  tone?: "default" | "primary" | "accent" | "soft";
-  hint?: string;
+  tone?: "default" | "primary" | "soft" | "success";
 };
 
 const toneMap: Record<NonNullable<KpiCardProps["tone"]>, string> = {
-  default: "bg-white text-[var(--report-text)]",
-  primary: "bg-[var(--report-sidebar)] text-white",
-  accent: "bg-[var(--report-accent)] text-white",
-  soft: "bg-[var(--report-surface-muted)] text-[var(--report-text)]",
+  default: "border-[var(--crm-border)] bg-white text-[var(--crm-text)]",
+  primary: "border-[var(--crm-primary)] bg-[var(--crm-primary)] text-white",
+  soft: "border-sky-100 bg-sky-50 text-sky-950",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-950",
 };
 
-export function KpiCard({ label, value, tone = "default", hint }: KpiCardProps) {
+export function KpiCard({ label, value, tone = "default" }: KpiCardProps) {
   return (
-    <article
-      className={`rounded-[8px] border border-[var(--report-border)] p-4 sm:p-5 ${toneMap[tone]}`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] opacity-80">{label}</p>
-      <p className="mt-3 text-[30px] font-semibold leading-none tabular-nums sm:text-[32px]">{value}</p>
-      {hint ? <p className="mt-3 text-xs leading-4 opacity-85">{hint}</p> : null}
+    <article className={`rounded-2xl border p-5 ${toneMap[tone]}`}>
+      <p
+        className={`text-xs font-semibold uppercase ${
+          tone === "primary" ? "text-slate-300" : "text-[var(--crm-text-muted)]"
+        }`}
+      >
+        {label}
+      </p>
+      <p className="mt-3 text-[30px] font-semibold leading-9 tabular-nums">{value}</p>
     </article>
   );
 }

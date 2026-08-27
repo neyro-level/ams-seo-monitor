@@ -33,6 +33,7 @@ export default async function SiteReportPage({ params }: SiteReportPageProps) {
         site={site}
         snapshot={null}
         mode="live"
+        backHref={`/c/${clientSlug}/`}
       />
     </AppShell>
   );

@@ -37,10 +37,10 @@ export function MetricTrendChart({
   const gradientId = useId();
 
   return (
-    <div className="rounded-[8px] border border-[var(--report-border)] bg-white p-4 sm:p-5">
+    <div className="rounded-2xl border border-[var(--crm-border)] bg-white p-4 sm:p-5">
       <div className="mb-4 space-y-1">
-        <h3 className="text-lg font-semibold leading-6 text-[var(--report-text)]">{title}</h3>
-        <p className="text-sm leading-5 text-[var(--report-text-secondary)]">{subtitle}</p>
+        <h3 className="text-lg font-semibold leading-6 text-[var(--crm-text)]">{title}</h3>
+        <p className="text-sm leading-5 text-[var(--crm-text-secondary)]">{subtitle}</p>
       </div>
       <div className="h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -74,7 +74,7 @@ export function MetricTrendChart({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid gap-2 text-sm text-[var(--report-text-secondary)] sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 text-sm text-[var(--crm-text-secondary)] sm:grid-cols-3">
         <p>
           {metricLabel}: {formatInteger(data.at(-1)?.value)}
         </p>

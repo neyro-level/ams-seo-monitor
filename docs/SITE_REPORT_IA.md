@@ -152,14 +152,16 @@ Client credentials в production открывают только свой subtre
 
 Production client route уже не показывает fixture и честно сообщает `Live-отчёт готовится`; fixture остаётся только в `/demo/`. Live Webmaster и Metrica collectors работают, но ещё не компилируют единый `SiteReportSnapshot` и не публикуют его в protected data path.
 
-Следующий обязательный блок до production UI:
+UI composition уже реализована на `/demo/`: full-width shell, вкладки, director summary и detail tabs. Production client route не подключается к fixture.
+
+Следующий обязательный runtime block:
 
 ```text
 W4 completion
 → W6 report compiler + equal-period analytics
 → snapshot publish
-→ UI view model
-→ Summary/SEO/Traffic wiring
+→ protected report loading
+→ live Summary/SEO/Traffic
 ```
 
 ## Visual contract
