@@ -2,7 +2,7 @@
 
 ## Статус
 
-Wave 1: deploy не выполняется. Этот документ фиксирует будущий production contract, чтобы не изобретать его заново в Wave 3.
+Production target зарезервирован, deploy ещё не выполнялся. Activation остаётся отдельной Wave 3/release задачей после Merge Gate.
 
 ## Production target
 
@@ -11,6 +11,12 @@ Wave 1: deploy не выполняется. Этот документ фикси
 - shared snapshots outside release;
 - Nginx serves static `out/`;
 - collector runs separately through `systemd` oneshot + timers.
+
+Production URL:
+
+```text
+https://seo-monitor.ams24.ru
+```
 
 ## Planned release layout
 
@@ -38,15 +44,11 @@ Wave 1: deploy не выполняется. Этот документ фикси
 
 Required later:
 
-- owner deploy command;
+- DNS уже подготовлен владельцем для `seo-monitor.ams24.ru`;
+- owner production command;
+- SSL/Nginx validation;
 - server env materialization;
 - Nginx activation;
-- systemd activation;
-- DNS/SSL only when needed.
+- systemd activation.
 
-## Not in Wave 1
-
-- no production deploy;
-- no rollback execution;
-- no env writes;
-- no htpasswd generation.
+До release запрещены production env writes, htpasswd generation, Nginx/systemd changes и deploy.

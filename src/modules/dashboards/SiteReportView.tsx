@@ -15,22 +15,32 @@ type SiteReportViewProps = {
   clientName: string;
   site: SiteRegistry;
   snapshot: SiteReportSnapshot | null;
-  mode: "fixture" | "planned";
+  mode: "fixture" | "live";
 };
 
 export function SiteReportView({ clientName, site, snapshot, mode }: SiteReportViewProps) {
   if (!snapshot) {
+    const sourcesEnabled = site.webmaster.enabled || site.metrica.enabled;
+
     return (
       <div className="space-y-6">
         <PageHeader
           eyebrow={clientName}
           title={site.name}
-          description="Маршрут уже существует, но live onboarding этого сайта ещё не завершён. Это ожидаемое состояние Wave 1."
+          description={
+            sourcesEnabled
+              ? "Webmaster и Метрика подключены. Следующий блок публикует единый live snapshot для кабинета."
+              : "Сайт сохранён в структуре клиента, но источники данных ещё не подключены."
+          }
         />
         <StatePanel
-          state="not-connected"
-          title="Не подключён"
-          description="Сайт сохранён в registry и участвует в static route generation. После подтверждения URL, host и counter во второй и третьей волне здесь появится реальный отчёт."
+          state={sourcesEnabled ? "stale" : "not-connected"}
+          title={sourcesEnabled ? "Live-отчёт готовится" : "Не подключён"}
+          description={
+            sourcesEnabled
+              ? "Мы не показываем демонстрационные данные как реальные. До завершения report compiler откройте demo route для проверки интерфейса."
+              : "После подтверждения URL, Webmaster host и Metrica counter здесь появится отдельный отчёт сайта."
+          }
         />
       </div>
     );
@@ -40,18 +50,22 @@ export function SiteReportView({ clientName, site, snapshot, mode }: SiteReportV
     <div className="space-y-6">
       <PageHeader
         eyebrow={clientName}
-        title={`${site.name} — SEO report foundation`}
-        description="Wave 1 проверяет shell, route model и snapshot DTO. Данные синтетические, но структура отчёта уже соответствует MVP-контракту."
-        actions={<PeriodPresetGroup />}
+        title={mode === "fixture" ? `${site.name} — демонстрация` : site.name}
+        description={
+          mode === "fixture"
+            ? "Synthetic dataset проверяет структуру, responsive и frozen design system."
+            : "Управленческая SEO-сводка по подтверждённым данным Яндекс.Вебмастера и Яндекс.Метрики."
+        }
+        actions={mode === "live" ? <PeriodPresetGroup /> : undefined}
       />
 
       <StatusBanner
-        tone="info"
-        title="Wave 1 synthetic fixture"
+        tone={mode === "fixture" ? "info" : "success"}
+        title={mode === "fixture" ? "Демонстрационные данные" : "Источники обновлены"}
         description={
           mode === "fixture"
-            ? "UI рендерит fixture snapshot без live OAuth. Это осознанный этап foundation before Yandex adapters."
-            : "Site route существует, но live onboarding ещё не завершён."
+            ? "Этот route не содержит клиентских live-данных."
+            : "Фактические периоды и актуальность каждого источника указаны в отчёте."
         }
       />
 

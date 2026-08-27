@@ -13,21 +13,21 @@ export default function AnalystPage() {
     <AppShell currentPath="/analyst/">
       <div className="space-y-6">
         <PageHeader
-          eyebrow="SEO_ANALYST"
-          title="Analyst overview"
-          description="Owner view показывает статический foundation для всех первых клиентов. Live sync health появится после Wave 2 и Wave 3."
+          eyebrow="SEO-аналитик"
+          title="Контур клиентов"
+          description="Сайты и подключённые источники. Live report snapshots появятся после сборки единого data pipeline."
         />
 
         <StatusBanner
-          tone="info"
-          title="Foundation mode"
-          description="Текущие числа нужны для proof shell и report DTO. Дальше они будут заменены live read-only collection без смены маршрутов."
+          tone="warning"
+          title="Data pipeline ещё не замкнут"
+          description="Webmaster и Metrica уже читаются live, но client snapshots пока не публикуются. Ниже показана только registry readiness."
         />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard label="Клиенты" value={String(overview.totalClients)} tone="primary" />
           <KpiCard label="Всего сайтов" value={String(overview.totalSites)} />
-          <KpiCard label="Fixture snapshots" value={String(overview.activeSnapshots)} />
+          <KpiCard label="Подключённые источники" value={String(overview.enabledSources)} />
           <KpiCard label="Плановые сайты" value={String(overview.plannedSites)} tone="soft" />
         </section>
 

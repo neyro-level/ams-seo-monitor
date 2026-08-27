@@ -28,17 +28,18 @@ MVP принципиально:
 - Nginx Basic Auth
 - systemd oneshot + timers
 
-## Режим текущего репозитория
+## Текущее состояние
 
-Сейчас реализуется **Wave 1 Foundation**:
+- Wave 1 foundation зафиксирована в SourceCraft `main`.
+- W4 Webmaster adapter и W5 Metrica adapter реализованы и проверены на Бастионе REDACTED_CLIENT_DATA.
+- Live collectors пока выводят нормализованные source DTO; единый `SiteReportSnapshot` ещё не компилируется и UI продолжает читать fixture.
+- Следующий обязательный блок: закрыть остаток W4, собрать W6 report compiler/analytics и только затем подключать `Сводка / SEO / Трафик`.
 
-- core canon проекта;
-- static dashboard shell;
-- registry клиентов и сайтов;
-- static routes;
-- snapshot DTO и local storage engine на fixtures.
+Предварительный production URL:
 
-Wave 1 foundation зафиксирована в SourceCraft `main`. Сейчас начат W4: read-only Yandex Webmaster adapter без UI-редизайна и без отступления от frozen design contract.
+```text
+https://seo-monitor.ams24.ru
+```
 
 ## Структура
 
@@ -76,8 +77,10 @@ pnpm collector:metrica:audit
 2. `docs/PRODUCT.md`
 3. `docs/ARCHITECTURE.md`
 4. `docs/DATA_MODEL.md`
-5. `SECURITY.md`
-6. `docs/MASTER_PLAN.md`
+5. `docs/DESIGN_SYSTEM.md`
+6. `docs/SITE_REPORT_IA.md`
+7. `SECURITY.md`
+8. `docs/MASTER_PLAN.md`
 
 ## Ограничения
 

@@ -64,7 +64,7 @@ Planned auth files:
 └── REDACTED_CLIENT_DATA.htpasswd
 ```
 
-Wave 1 не создаёт live auth files, но резервирует контракт.
+Live OAuth adapters уже проверены локально через Doppler. Production env materialization и auth files ещё не создавались.
 
 ## Verification focus
 

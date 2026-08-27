@@ -19,8 +19,10 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 3. `docs/PRODUCT.md`
 4. `docs/ARCHITECTURE.md`
 5. `docs/DATA_MODEL.md`
-6. `SECURITY.md`
-7. `docs/MASTER_PLAN.md`
+6. `docs/DESIGN_SYSTEM.md`
+7. `docs/SITE_REPORT_IA.md`
+8. `SECURITY.md`
+9. `docs/MASTER_PLAN.md`
 
 Если задача только по UI shell, не нужно автоматически читать будущие server/runbook документы. Если задача расширяется в security, deploy или live onboarding — сначала дочитать профильный canon и переклассифицировать риск.
 
@@ -46,30 +48,37 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 Не вводить параллельный формат данных рядом со snapshot contract.
 
-## Wave 1 scope
+## Active scope
 
-Сейчас допустимы:
+Реализовано:
 
-- core docs;
-- static shell;
-- fixture data;
-- registry/routes;
-- storage engine и foundation tests.
+- Wave 1 static foundation;
+- W4 read-only Webmaster adapter foundation;
+- W5 read-only Metrica adapter;
+- live preflight/audit для Бастиона REDACTED_CLIENT_DATA.
 
-Сейчас не делать без отдельной команды:
+Текущий обязательный блок:
+
+- закрыть недостающие W4 source endpoints;
+- собрать W6 equal-period analytics/report compiler;
+- публиковать единый `SiteReportSnapshot`;
+- убрать fixture из production client route;
+- после этого подключить UI `Сводка / SEO / Трафик` строго по frozen design system.
+
+Без отдельной owner-команды не делать:
 
 - production deploy;
-- server env writes;
-- live OAuth collection;
+- Nginx/systemd activation;
 - htpasswd generation;
-- commit/push/PR/merge.
+- merge в `main`.
 
 ## Проверки
 
-Для Wave 1 обязательны:
+Для текущего data/compiler scope обязательны:
 
 ```bash
 pnpm verify:config
+pnpm verify:snapshots
 pnpm typecheck
 pnpm lint
 pnpm test

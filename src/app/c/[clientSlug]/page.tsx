@@ -32,25 +32,28 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
     <AppShell currentPath={`/c/${overview.client.clientSlug}/`}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="CLIENT_VIEWER"
+          eyebrow="Клиент"
           title={overview.client.name}
-          description="Client overview уже собирается из registry. Подключённые и плановые площадки разделены, route structure зафиксирована."
+          description="Каждый сайт сохраняет собственные источники, периоды и показатели. Разные города не складываются в искусственный общий рейтинг."
         />
 
         <StatusBanner
-          tone="info"
-          title="Registry proof"
-          description="Этот экран нужен, чтобы подтвердить multi-client static structure до live integrations и Nginx isolation."
+          tone="warning"
+          title="Live-отчёты готовятся"
+          description="Источники для подключённых сайтов уже подтверждены, но публикация единого snapshot ещё не включена."
         />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard label="Всего сайтов" value={String(overview.sites.length)} tone="primary" />
           <KpiCard label="Подключённые" value={String(overview.sites.filter((site) => site.enabled).length)} />
           <KpiCard label="Плановые" value={String(overview.sites.filter((site) => !site.enabled).length)} tone="soft" />
-          <KpiCard label="Fixture routes" value={String(overview.sites.filter((site) => site.snapshot).length)} />
+          <KpiCard
+            label="Подключённые источники"
+            value={String(overview.sites.reduce((count, site) => count + site.enabledSourceCount, 0))}
+          />
         </section>
 
-        <SectionCard title="Сайты клиента" note="Static routes">
+        <SectionCard title="Сайты клиента" note="Отдельный отчёт на сайт">
           <div className="grid gap-3 lg:grid-cols-2">
             {overview.sites.map((site) => (
               <article key={site.siteSlug} className="rounded-[8px] border border-[var(--report-border)] bg-[var(--report-surface-muted)] p-4">
@@ -62,7 +65,11 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
                     </p>
                   </div>
                   <span className="rounded-full border border-[var(--report-border)] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--report-text-muted)]">
-                    {site.enabled ? "fixture" : "planned"}
+                    {site.enabled
+                      ? `${site.enabledSourceCount} ${
+                          site.enabledSourceCount === 1 ? "источник" : "источника"
+                        }`
+                      : "Не подключён"}
                   </span>
                 </div>
                 <Link

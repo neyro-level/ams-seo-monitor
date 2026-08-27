@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { AppShell } from "../../../../components/shell/AppShell";
 import { getSiteStaticParams, getSiteBySlugs, getClientBySlug } from "../../../../modules/client-registry/registry";
 import { SiteReportView } from "../../../../modules/dashboards/SiteReportView";
-import { getFixtureSnapshot } from "../../../../modules/report-data/demo-data";
 
 export const dynamicParams = false;
 
@@ -26,15 +25,14 @@ export default async function SiteReportPage({ params }: SiteReportPageProps) {
     notFound();
   }
 
-  const snapshot = getFixtureSnapshot(clientSlug, siteSlug);
 
   return (
     <AppShell currentPath={`/c/${clientSlug}/${siteSlug}/`}>
       <SiteReportView
         clientName={client.name}
         site={site}
-        snapshot={snapshot}
-        mode={snapshot ? "fixture" : "planned"}
+        snapshot={null}
+        mode="live"
       />
     </AppShell>
   );

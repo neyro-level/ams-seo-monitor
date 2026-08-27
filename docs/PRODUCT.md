@@ -51,6 +51,16 @@
 - `REDACTED_CLIENT_DATA`
   - `REDACTED_CLIENT_DATA` — planned until confirmed onboarding inputs
 
+
+## Cabinet experience
+
+- директор по умолчанию видит короткую `Сводку`, а не полный технический отчёт;
+- один site route содержит локальные вкладки `Сводка / SEO / Трафик`;
+- клиент с несколькими сайтами сначала выбирает сайт на client overview;
+- показатели разных городов не складываются в искусственный общий рейтинг;
+- analyst может открыть технические детали, source periods и sync health;
+- production URL: `https://seo-monitor.ams24.ru`.
+
 ## Non-goals MVP
 
 - не CRM;

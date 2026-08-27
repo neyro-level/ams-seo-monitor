@@ -1,66 +1,105 @@
 # ARCHITECTURE
 
-## High-level shape
+## High-level target
 
 ```text
 systemd timer
 → compiled Node collector
-→ Yandex Webmaster API + Yandex Metrica API
-→ validate / normalize / sanitize
-→ versioned JSON snapshots
-→ Next.js static export out/
-→ Nginx HTTPS + Basic Auth
-→ analyst/client browser
+→ Webmaster/Metrica source adapters
+→ normalized source DTO
+→ equal-period analytics + report compiler
+→ validated SiteReportSnapshot
+→ atomic publish into shared/
+→ protected Nginx data aliases
+→ static Next.js dashboard
 ```
 
-## Почему без backend в MVP
+## Runtime model
 
-Отчёты приватные, но каждый просмотр не должен поднимать Node runtime и не должен зависеть от базы данных. Поэтому UI собирается как статический export, а обновление данных происходит отдельно по timer.
+Next.js использует `output: "export"` и не работает как постоянный web server. Nginx отдаёт immutable static release и отдельно защищённые report JSON. Collector запускается по `systemd` timer, читает Yandex APIs, публикует snapshots и завершается.
 
-## Frontend contract
-
-- Next.js App Router;
-- `output: "export"`;
-- `trailingSlash: true`;
-- static routes from checked-in registry;
-- build-time generation for `/analyst/`, `/c/{clientSlug}/`, `/c/{clientSlug}/{siteSlug}/`.
-
-## Data contract
-
-Единый data contract — snapshot schema.
-
-Направление зависимостей:
+Предварительный production URL:
 
 ```text
-config schemas
+https://seo-monitor.ams24.ru
+```
+
+Production activation остаётся отдельной Wave 3/release задачей.
+
+## Implemented now
+
+- static routes из checked-in registry;
+- frozen dashboard shell;
+- versioned snapshot schema и atomic storage primitives;
+- read-only Webmaster client: access, summary, diagnostics, sitemaps, popular queries;
+- read-only Metrica client: counter/goals discovery, all traffic, Yandex organic, bytime, landing pages, devices, allowlisted goals;
+- live proof на `REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA`.
+
+## Critical current gap
+
+Source adapters сейчас выводят свои DTO в stdout. Между ними и UI отсутствует обязательный runtime слой:
+
+```text
+source DTO
+→ report compiler
+→ SiteReportSnapshot
+→ atomic publish
+→ protected browser data
+```
+
+Поэтому client route пока читает synthetic fixture. До закрытия этого gap интерфейс нельзя считать подключённым к live данным.
+
+## Data dependency direction
+
+```text
+registry/threshold/goal config
 → source adapters
 → normalized source DTO
-→ snapshot DTO
-→ selectors/calculations
+→ equal-period selectors and deterministic calculations
+→ SiteReportSnapshot
+→ report view model
 → dashboard components
 ```
 
 Второй параллельный report format запрещён.
 
-## Кодовые зоны
+## Required next block
+
+1. Закрыть остаток W4: indexing/search events/links и требуемые source fields.
+2. W6: привести source periods, вычислить deltas/opportunities/alerts.
+3. Посчитать unique converted organic visits по union allowlisted goals; сумму reaches не выдавать за уникальную конверсию.
+4. Скомпилировать единый `SiteReportSnapshot`.
+5. Опубликовать snapshot через существующий atomic storage layer.
+6. После этого подключить UI `Сводка / SEO / Трафик`.
+
+## Frontend IA
+
+- `/analyst/` — owner operational overview;
+- `/c/{clientSlug}/` — выбор и сравнение сайтов клиента без fake aggregate ranking;
+- `/c/{clientSlug}/{siteSlug}/` — один site report с локальными вкладками `Сводка / SEO / Трафик`.
+
+Подробный contract: `docs/SITE_REPORT_IA.md`.
+
+## Code zones
 
 ```text
-src/app/                    static routes
-src/modules/access/         navigation and visibility metadata
-src/modules/client-registry/registry loading and route params
-src/modules/report-data/    fixture snapshot access
-src/modules/dashboards/     page selectors/view models
-src/components/*            shell and dashboard primitives
-src/shared/schemas/*        Zod schemas
+src/app/                                  static routes
+src/modules/access/                       navigation metadata
+src/modules/client-registry/              registry and static params
+src/modules/report-data/                  browser report loading
+src/modules/dashboards/                   report view models
+src/components/                           frozen UI primitives
+src/shared/schemas/                       registry/source/snapshot schemas
 
-collector/storage/          atomic publish, locks, retention helpers
+collector/sources/yandex-webmaster/        Webmaster adapter
+collector/sources/yandex-metrica/          Metrica adapter
+collector/orchestration/                   config and future sync/compiler
+collector/storage/                         atomic publish/locks/LKG
 ```
 
-## Wave 1 implementation decision
+## Security boundary
 
-Wave 1 не подключает live APIs. Вместо этого:
-
-- UI рендерится на synthetic fixture snapshots;
-- registry real/slotted;
-- storage engine тестируется локально на temp directories;
-- будущие adapters подключатся в Wave 2 поверх уже зафиксированного contract.
+- Browser never receives OAuth/client secrets.
+- Collector uses GET-only Yandex endpoints.
+- Nginx must protect HTML and matching data aliases.
+- Client isolation is a path/server invariant, not a frontend filter.

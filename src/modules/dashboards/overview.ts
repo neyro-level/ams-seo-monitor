@@ -1,5 +1,5 @@
-import { getFixtureSnapshot } from "../report-data/demo-data";
 import { getClientBySlug, getClients } from "../client-registry/registry";
+
 
 export function buildAnalystOverview() {
   const clients = getClients();
@@ -9,19 +9,23 @@ export function buildAnalystOverview() {
     0,
   );
   const plannedSites = totalSites - connectedSites;
-  const reports = clients.flatMap((client) =>
-    client.sites.map((site) => ({ client, site, snapshot: getFixtureSnapshot(client.clientSlug, site.siteSlug) })),
+  const enabledSources = clients.reduce(
+    (count, client) =>
+      count +
+      client.sites.reduce(
+        (siteCount, site) =>
+          siteCount + Number(site.webmaster.enabled) + Number(site.metrica.enabled),
+        0,
+      ),
+    0,
   );
-  const activeSnapshots = reports.filter((item) => item.snapshot !== null).length;
 
   return {
     totalClients: clients.length,
     totalSites,
     connectedSites,
     plannedSites,
-    activeSnapshots,
-    latestSyntheticUpdate:
-      reports.find((item) => item.snapshot)?.snapshot?.generatedAt ?? "Fixture not available",
+    enabledSources,
     clientCards: clients.map((client) => ({
       clientSlug: client.clientSlug,
       name: client.name,
@@ -40,12 +44,11 @@ export function buildClientOverview(clientSlug: string) {
 
   const sites = client.sites.map((site) => ({
     ...site,
-    snapshot: getFixtureSnapshot(client.clientSlug, site.siteSlug),
+    enabledSourceCount: Number(site.webmaster.enabled) + Number(site.metrica.enabled),
   }));
 
   return {
     client,
     sites,
-    latestSyntheticUpdate: sites.find((site) => site.snapshot)?.snapshot?.generatedAt ?? null,
   };
 }

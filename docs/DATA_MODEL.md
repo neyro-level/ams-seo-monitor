@@ -74,6 +74,24 @@ shared/
 - partial source не уничтожает last-known-good другого source;
 - raw responses и secret-bearing error bodies не сохраняются.
 
-## Wave 1 status
+## Current status
 
-На этом этапе registry, snapshot schemas и storage engine реализуются и проверяются на fixtures. Webmaster source DTO уже добавляется в W4 и не должен ломать текущий snapshot contract. Metrica source DTO остаётся следующей задачей.
+- Registry and goal profiles are checked in and validated.
+- Atomic snapshot storage and last-known-good behavior are implemented.
+- Webmaster and Metrica have separate normalized source DTOs and live proof for REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA.
+- A compiler from source DTOs to `SiteReportSnapshot` is not implemented yet.
+- UI still reads a synthetic snapshot and must not be described as live.
+
+## Conversion invariant
+
+- `goalReaches` may contain several reaches from one visit.
+- Sum of allowlisted goal reaches is not unique converted visits.
+- Aggregate conversion remains `null` until W6 computes union allowlisted converted visits without double counting.
+- Per-goal conversion may use the official Metrica `goal<ID>conversionRate`.
+
+## Period invariant
+
+- Current and previous periods have equal length.
+- Webmaster and Metrica retain their factual periods/timezones.
+- Combined metrics never hide a source-period mismatch.
+- Incomplete or suppressed values stay nullable; they do not become zero.
