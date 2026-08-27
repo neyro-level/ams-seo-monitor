@@ -1,9 +1,21 @@
-import { webmasterDeviceSchema, webmasterQueryOrderBySchema, type WebmasterHostAccess } from "../../../src/shared/schemas/webmaster-source";
-import { WebmasterSafeError, type FetchLike, getWebmasterJson } from "./http";
+import {
+  webmasterDeviceSchema,
+  webmasterQueryOrderBySchema,
+  type WebmasterEndpointError,
+  type WebmasterHostAccess,
+} from "../../../src/shared/schemas/webmaster-source";
+import {
+  WebmasterSafeError,
+  type FetchLike,
+  getWebmasterJson,
+  type QueryValue,
+} from "./http";
 import {
   buildWebmasterSiteData,
   findExactVerifiedHost,
   normalizeDiagnostics,
+  normalizeIndicatorHistory,
+  normalizePlainHistory,
   normalizePopularQueries,
   normalizeSiteUrl,
   normalizeSitemaps,
@@ -133,6 +145,33 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
     return access;
   }
 
+  async function collectOptional(
+    endpoint: string,
+    endpointErrors: WebmasterEndpointError[],
+    query?: Record<string, QueryValue>,
+  ) {
+    try {
+      return await getWebmasterJson({
+        baseUrl: config.baseUrl,
+        token: config.token,
+        endpoint,
+        query,
+        fetchImpl,
+      });
+    } catch (error) {
+      if (!(error instanceof WebmasterSafeError)) {
+        throw error;
+      }
+
+      endpointErrors.push({
+        endpoint,
+        code: error.code,
+        status: error.status,
+      });
+      return null;
+    }
+  }
+
   async function preflight() {
     return resolveVerifiedHost();
   }
@@ -141,48 +180,82 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
     queryLimit?: number;
     queryOrders?: Array<"TOTAL_SHOWS" | "TOTAL_CLICKS">;
     devices?: Array<"ALL" | "DESKTOP" | "MOBILE">;
+    historyDateFrom?: string;
+    historyDateTo?: string;
   }) {
     const access = await resolveVerifiedHost();
     const queryLimit = options?.queryLimit ?? 50;
     const queryOrders = options?.queryOrders ?? ["TOTAL_SHOWS", "TOTAL_CLICKS"];
     const devices = options?.devices ?? ["ALL", "DESKTOP", "MOBILE"];
+    const fetchedAt = now();
+    const historyDateTo = options?.historyDateTo ?? fetchedAt.slice(0, 10);
+    const historyDateFrom =
+      options?.historyDateFrom ??
+      new Date(Date.parse(`${historyDateTo}T00:00:00.000Z`) - 29 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+    const historyQuery = {
+      date_from: historyDateFrom,
+      date_to: historyDateTo,
+    };
+    const endpointErrors: WebmasterEndpointError[] = [];
+    const baseEndpoint = `/user/${access.userId}/hosts/${access.hostId}`;
 
-    const summaryPayload = await getWebmasterJson({
-      baseUrl: config.baseUrl,
-      token: config.token,
-      endpoint: `/user/${access.userId}/hosts/${access.hostId}/summary`,
-      fetchImpl,
-    });
-    const diagnosticsPayload = await getWebmasterJson({
-      baseUrl: config.baseUrl,
-      token: config.token,
-      endpoint: `/user/${access.userId}/hosts/${access.hostId}/diagnostics`,
-      fetchImpl,
-    });
-    const sitemapsPayload = await getWebmasterJson({
-      baseUrl: config.baseUrl,
-      token: config.token,
-      endpoint: `/user/${access.userId}/hosts/${access.hostId}/sitemaps`,
-      fetchImpl,
-    });
+    const summaryPayload = await collectOptional(`${baseEndpoint}/summary`, endpointErrors);
+    const diagnosticsPayload = await collectOptional(
+      `${baseEndpoint}/diagnostics`,
+      endpointErrors,
+    );
+    const sitemapsPayload = await collectOptional(`${baseEndpoint}/sitemaps`, endpointErrors);
+    const indexingPayload = await collectOptional(
+      `${baseEndpoint}/indexing/history`,
+      endpointErrors,
+      historyQuery,
+    );
+    const pagesInSearchPayload = await collectOptional(
+      `${baseEndpoint}/search-urls/in-search/history`,
+      endpointErrors,
+      historyQuery,
+    );
+    const searchEventsPayload = await collectOptional(
+      `${baseEndpoint}/search-urls/events/history`,
+      endpointErrors,
+      historyQuery,
+    );
+    const brokenInternalLinksPayload = await collectOptional(
+      `${baseEndpoint}/links/internal/broken/history`,
+      endpointErrors,
+      historyQuery,
+    );
+    const externalLinksPayload = await collectOptional(
+      `${baseEndpoint}/links/external/history`,
+      endpointErrors,
+      { indicator: "LINKS_TOTAL_COUNT" },
+    );
 
     const queryCollections = [];
     for (const orderBy of queryOrders) {
       webmasterQueryOrderBySchema.parse(orderBy);
       for (const device of devices) {
         webmasterDeviceSchema.parse(device);
-        const queriesPayload = await getWebmasterJson({
-          baseUrl: config.baseUrl,
-          token: config.token,
-          endpoint: `/user/${access.userId}/hosts/${access.hostId}/search-queries/popular`,
-          query: {
+        const queriesPayload = await collectOptional(
+          `${baseEndpoint}/search-queries/popular`,
+          endpointErrors,
+          {
             order_by: orderBy,
-            query_indicator: ["TOTAL_SHOWS", "TOTAL_CLICKS", "AVG_SHOW_POSITION", "AVG_CLICK_POSITION"],
+            query_indicator: [
+              "TOTAL_SHOWS",
+              "TOTAL_CLICKS",
+              "AVG_SHOW_POSITION",
+              "AVG_CLICK_POSITION",
+            ],
             device_type_indicator: device,
             limit: queryLimit,
           },
-          fetchImpl,
-        });
+        );
+        if (queriesPayload === null) {
+          continue;
+        }
         queryCollections.push(
           normalizePopularQueries({
             payload: queriesPayload,
@@ -195,12 +268,18 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
     }
 
     return buildWebmasterSiteData({
-      fetchedAt: now(),
+      fetchedAt,
       access,
       summary: normalizeSummary(summaryPayload, config.targetSiteUrl),
       diagnostics: normalizeDiagnostics(diagnosticsPayload),
       sitemaps: normalizeSitemaps(sitemapsPayload),
       queryCollections,
+      indexingHistory: normalizeIndicatorHistory(indexingPayload),
+      pagesInSearchHistory: normalizePlainHistory(pagesInSearchPayload),
+      searchEventsHistory: normalizeIndicatorHistory(searchEventsPayload),
+      brokenInternalLinksHistory: normalizeIndicatorHistory(brokenInternalLinksPayload),
+      externalLinksHistory: normalizeIndicatorHistory(externalLinksPayload),
+      endpointErrors,
     });
   }
 

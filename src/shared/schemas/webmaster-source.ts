@@ -80,6 +80,22 @@ export const webmasterQueryCollectionSchema = z.object({
   queries: z.array(webmasterQuerySchema),
 });
 
+export const webmasterHistoryPointSchema = z.object({
+  date: z.string().min(1),
+  value: z.number().nonnegative(),
+});
+
+export const webmasterIndicatorHistorySchema = z.object({
+  indicator: z.string().min(1),
+  points: z.array(webmasterHistoryPointSchema),
+});
+
+export const webmasterEndpointErrorSchema = z.object({
+  endpoint: z.string().min(1),
+  code: webmasterSafeErrorCodeSchema,
+  status: z.number().int().nullable(),
+});
+
 export const webmasterSiteDataSchema = z.object({
   schemaVersion: z.literal(1),
   fetchedAt: z.string().datetime({ offset: true }),
@@ -88,6 +104,13 @@ export const webmasterSiteDataSchema = z.object({
   diagnostics: z.array(webmasterDiagnosticSchema),
   sitemaps: z.array(webmasterSitemapSchema),
   queryCollections: z.array(webmasterQueryCollectionSchema),
+  indexingHistory: z.array(webmasterIndicatorHistorySchema),
+  pagesInSearchHistory: z.array(webmasterHistoryPointSchema),
+  searchEventsHistory: z.array(webmasterIndicatorHistorySchema),
+  brokenInternalLinksHistory: z.array(webmasterIndicatorHistorySchema),
+  externalLinksHistory: z.array(webmasterIndicatorHistorySchema),
+  partial: z.boolean(),
+  endpointErrors: z.array(webmasterEndpointErrorSchema),
 });
 
 export type WebmasterSafeErrorCode = z.infer<typeof webmasterSafeErrorCodeSchema>;
@@ -99,4 +122,7 @@ export type WebmasterQuery = z.infer<typeof webmasterQuerySchema>;
 export type WebmasterQueryOrderBy = z.infer<typeof webmasterQueryOrderBySchema>;
 export type WebmasterDevice = z.infer<typeof webmasterDeviceSchema>;
 export type WebmasterQueryCollection = z.infer<typeof webmasterQueryCollectionSchema>;
+export type WebmasterHistoryPoint = z.infer<typeof webmasterHistoryPointSchema>;
+export type WebmasterIndicatorHistory = z.infer<typeof webmasterIndicatorHistorySchema>;
+export type WebmasterEndpointError = z.infer<typeof webmasterEndpointErrorSchema>;
 export type WebmasterSiteData = z.infer<typeof webmasterSiteDataSchema>;

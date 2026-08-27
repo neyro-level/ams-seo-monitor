@@ -26,6 +26,11 @@ describe("webmaster normalized dto", () => {
       createJsonResponse(await loadFixture("summary.json")),
       createJsonResponse(await loadFixture("diagnostics.json")),
       createJsonResponse(await loadFixture("sitemaps.json")),
+      createJsonResponse(await loadFixture("indexing-history.json")),
+      createJsonResponse(await loadFixture("pages-in-search-history.json")),
+      createJsonResponse(await loadFixture("search-events-history.json")),
+      createJsonResponse(await loadFixture("internal-links-history.json")),
+      createJsonResponse(await loadFixture("external-links-history.json")),
       createJsonResponse(await loadFixture("queries-total-shows-all.json")),
       createJsonResponse(await loadFixture("queries-total-shows-desktop.json")),
       createJsonResponse(await loadFixture("queries-total-shows-mobile.json")),
@@ -57,5 +62,12 @@ describe("webmaster normalized dto", () => {
     expect(dto.queryCollections).toHaveLength(6);
     expect(dto.queryCollections[0]?.queries[0]?.queryText).toBe("квартиры REDACTED_CLIENT_DATA новостройки");
     expect(dto.queryCollections[0]?.queries[0]?.ctrPercent).toBe(10.95);
+    expect(dto.indexingHistory[0]?.indicator).toBe("HTTP_2XX");
+    expect(dto.pagesInSearchHistory[0]?.value).toBe(2123);
+    expect(dto.searchEventsHistory).toHaveLength(2);
+    expect(dto.brokenInternalLinksHistory[0]?.points[0]?.value).toBe(2);
+    expect(dto.externalLinksHistory[0]?.points[0]?.value).toBe(184);
+    expect(dto.partial).toBe(false);
+    expect(dto.endpointErrors).toEqual([]);
   });
 });

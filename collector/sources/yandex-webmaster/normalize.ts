@@ -1,12 +1,17 @@
 import {
   webmasterDiagnosticSchema,
   webmasterHostAccessSchema,
+  webmasterHistoryPointSchema,
+  webmasterIndicatorHistorySchema,
   webmasterQueryCollectionSchema,
   webmasterSiteDataSchema,
   webmasterSummarySchema,
   webmasterSitemapSchema,
   type WebmasterDiagnostic,
+  type WebmasterEndpointError,
+  type WebmasterHistoryPoint,
   type WebmasterHostAccess,
+  type WebmasterIndicatorHistory,
   type WebmasterQueryCollection,
   type WebmasterSummary,
   type WebmasterSitemap,
@@ -193,6 +198,37 @@ export function normalizePopularQueries(args: {
   });
 }
 
+export function normalizeIndicatorHistory(historyPayload: unknown): WebmasterIndicatorHistory[] {
+  const root = getRecord(historyPayload);
+  const indicators = getRecord(root?.indicators) ?? {};
+
+  return Object.entries(indicators).map(([indicator, rawPoints]) =>
+    webmasterIndicatorHistorySchema.parse({
+      indicator,
+      points: getArray(rawPoints)
+        .map(getRecord)
+        .filter((point): point is Record<string, unknown> => point !== null)
+        .map((point) => ({
+          date: getString(point, "date") ?? "",
+          value: getNumber(point, "value") ?? 0,
+        })),
+    }),
+  );
+}
+
+export function normalizePlainHistory(historyPayload: unknown): WebmasterHistoryPoint[] {
+  const root = getRecord(historyPayload);
+  return getArray(root?.history)
+    .map(getRecord)
+    .filter((point): point is Record<string, unknown> => point !== null)
+    .map((point) =>
+      webmasterHistoryPointSchema.parse({
+        date: getString(point, "date") ?? "",
+        value: getNumber(point, "value") ?? 0,
+      }),
+    );
+}
+
 export function buildWebmasterSiteData(args: {
   fetchedAt: string;
   access: WebmasterHostAccess;
@@ -200,6 +236,12 @@ export function buildWebmasterSiteData(args: {
   diagnostics: WebmasterDiagnostic[];
   sitemaps: WebmasterSitemap[];
   queryCollections: WebmasterQueryCollection[];
+  indexingHistory: WebmasterIndicatorHistory[];
+  pagesInSearchHistory: WebmasterHistoryPoint[];
+  searchEventsHistory: WebmasterIndicatorHistory[];
+  brokenInternalLinksHistory: WebmasterIndicatorHistory[];
+  externalLinksHistory: WebmasterIndicatorHistory[];
+  endpointErrors: WebmasterEndpointError[];
 }) {
   return webmasterSiteDataSchema.parse({
     schemaVersion: 1,
@@ -209,5 +251,12 @@ export function buildWebmasterSiteData(args: {
     diagnostics: args.diagnostics,
     sitemaps: args.sitemaps,
     queryCollections: args.queryCollections,
+    indexingHistory: args.indexingHistory,
+    pagesInSearchHistory: args.pagesInSearchHistory,
+    searchEventsHistory: args.searchEventsHistory,
+    brokenInternalLinksHistory: args.brokenInternalLinksHistory,
+    externalLinksHistory: args.externalLinksHistory,
+    partial: args.endpointErrors.length > 0,
+    endpointErrors: args.endpointErrors,
   });
 }
