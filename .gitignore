@@ -1,0 +1,23 @@
+# dependencies
+/node_modules
+
+# next
+/.next
+/out
+
+# collector
+/dist-collector
+
+# tests
+/coverage
+/playwright-report
+/test-results
+
+# misc
+.DS_Store
+*.log
+*.tsbuildinfo
+
+# env
+.env*
+__omp_shell(".env.example")

@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist-collector",
+    "rootDir": ".",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "jsx": "react-jsx",
+    "incremental": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": ["collector/**/*.ts", "src/shared/schemas/**/*.ts"],
+  "exclude": ["node_modules", "tests", ".next", "dist-collector"]
+}

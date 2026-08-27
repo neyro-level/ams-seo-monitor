@@ -1,0 +1,158 @@
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { z } from "zod";
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const timezonePattern = /^[+-](0\d|1[0-4]):[0-5]\d$/;
+const placeholderHost = "todo.invalid";
+
+const httpsUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => value.startsWith("https://"), "Expected https URL");
+
+const clientSchema = z.object({
+  schemaVersion: z.literal(1),
+  clientSlug: z.string().regex(slugPattern),
+  name: z.string().min(1),
+  enabled: z.boolean(),
+  clusterProfile: z.string().regex(slugPattern),
+  sites: z.array(
+    z.object({
+      siteSlug: z.string().regex(slugPattern),
+      name: z.string().min(1),
+      siteUrl: httpsUrlSchema,
+      timezone: z.string().regex(timezonePattern),
+      enabled: z.boolean(),
+      webmaster: z.object({
+        enabled: z.boolean(),
+        expectedHostUrl: httpsUrlSchema.nullable(),
+      }),
+      metrica: z.object({
+        enabled: z.boolean(),
+        counterId: z.string().regex(/^\d+$/).nullable(),
+        goalProfile: z.string().regex(slugPattern).nullable(),
+      }),
+    }),
+  ),
+});
+
+const clusterSchema = z.object({
+  schemaVersion: z.literal(1),
+  profileSlug: z.string().regex(slugPattern),
+  name: z.string().min(1),
+  brandTerms: z.array(z.string()),
+  groups: z.array(z.object({ slug: z.string().regex(slugPattern), label: z.string().min(1) })),
+});
+
+const goalProfileSchema = z.object({
+  schemaVersion: z.literal(1),
+  clientSlug: z.string().regex(slugPattern),
+  goals: z.array(z.object({
+    goalId: z.string().regex(/^\d+$/),
+    label: z.string().min(1),
+    category: z.string().min(1),
+    direction: z.string().min(1),
+    includeInSeoConversion: z.boolean(),
+    siteSlugs: z.array(z.string().regex(slugPattern)).default([]),
+  })),
+});
+
+const thresholdsSchema = z.object({
+  schemaVersion: z.literal(1),
+  queryOpportunity: z.object({
+    minimumShows: z.number().nonnegative(),
+    maximumCtrPercent: z.number().nonnegative(),
+    maximumAveragePosition: z.number().nonnegative(),
+  }),
+  trendAlerts: z.object({
+    showsDropPercent: z.number().nonnegative(),
+    clicksDropPercent: z.number().nonnegative(),
+    positionWorsenedDelta: z.number().nonnegative(),
+    pagesInSearchDropPercent: z.number().nonnegative(),
+    organicVisitsDropPercent: z.number().nonnegative(),
+    goalConversionDropPercent: z.number().nonnegative(),
+  }),
+});
+
+function isPlaceholderUrl(value) {
+  return new URL(value).hostname === placeholderHost;
+}
+
+async function readJsonDirectory(relativeDir) {
+  const absoluteDir = path.join(rootDir, relativeDir);
+  const entries = (await readdir(absoluteDir)).filter((entry) => entry.endsWith(".json")).sort();
+  return Promise.all(
+    entries.map(async (entry) => {
+      const absolutePath = path.join(absoluteDir, entry);
+      const raw = await readFile(absolutePath, "utf8");
+      return JSON.parse(raw);
+    }),
+  );
+}
+
+function assert(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+try {
+  const clients = (await readJsonDirectory("config/clients")).map((item) => clientSchema.parse(item));
+  const clusters = (await readJsonDirectory("config/clusters")).map((item) => clusterSchema.parse(item));
+  const goalProfiles = (await readJsonDirectory("config/goals")).map((item) => goalProfileSchema.parse(item));
+  const thresholds = thresholdsSchema.parse(
+    JSON.parse(await readFile(path.join(rootDir, "config/thresholds.json"), "utf8")),
+  );
+
+  const clusterSlugs = new Set(clusters.map((item) => item.profileSlug));
+  const goalClientSlugs = new Set(goalProfiles.map((item) => item.clientSlug));
+  const routeSet = new Set(["/", "/demo/", "/analyst/"]);
+  const clientSet = new Set();
+
+  for (const client of clients) {
+    assert(!clientSet.has(client.clientSlug), `Duplicate client slug: ${client.clientSlug}`);
+    clientSet.add(client.clientSlug);
+    assert(clusterSlugs.has(client.clusterProfile), `Unknown cluster profile: ${client.clusterProfile}`);
+    assert(goalClientSlugs.has(client.clientSlug), `Missing goal profile: ${client.clientSlug}`);
+
+    const clientRoute = `/c/${client.clientSlug}/`;
+    assert(!routeSet.has(clientRoute), `Route collision: ${clientRoute}`);
+    routeSet.add(clientRoute);
+
+    const siteSet = new Set();
+    for (const site of client.sites) {
+      assert(!siteSet.has(site.siteSlug), `Duplicate site slug: ${client.clientSlug}/${site.siteSlug}`);
+      siteSet.add(site.siteSlug);
+
+      if (site.enabled) {
+        assert(!isPlaceholderUrl(site.siteUrl), `Enabled site cannot use placeholder URL: ${client.clientSlug}/${site.siteSlug}`);
+      }
+
+      if (!site.enabled) {
+        assert(!site.webmaster.enabled, `Disabled site cannot enable webmaster: ${client.clientSlug}/${site.siteSlug}`);
+        assert(!site.metrica.enabled, `Disabled site cannot enable metrica: ${client.clientSlug}/${site.siteSlug}`);
+      }
+
+      if (site.webmaster.enabled) {
+        assert(site.webmaster.expectedHostUrl, `Enabled webmaster requires expectedHostUrl: ${client.clientSlug}/${site.siteSlug}`);
+      }
+
+      if (site.metrica.enabled) {
+        assert(site.metrica.counterId, `Enabled metrica requires counterId: ${client.clientSlug}/${site.siteSlug}`);
+        assert(site.metrica.goalProfile, `Enabled metrica requires goalProfile: ${client.clientSlug}/${site.siteSlug}`);
+      }
+
+      const siteRoute = `/c/${client.clientSlug}/${site.siteSlug}/`;
+      assert(!routeSet.has(siteRoute), `Route collision: ${siteRoute}`);
+      routeSet.add(siteRoute);
+    }
+  }
+
+  console.log(`Config verified: ${clients.length} clients, ${routeSet.size} routes, schemaVersion ${thresholds.schemaVersion}.`);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+}

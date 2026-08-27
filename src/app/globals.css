@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "PT Root UI";
+  src: url("/fonts/pt-root-ui/PT-Root-UI_VF.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --report-page: #eef2f5;
+  --report-surface: #ffffff;
+  --report-surface-muted: #fafafa;
+  --report-border: #e3e3e1;
+  --report-text: #17161a;
+  --report-text-secondary: #413f41;
+  --report-text-muted: #827f81;
+  --report-sidebar: #06253a;
+  --report-sidebar-hover: #0a3854;
+  --report-link: #0a5277;
+  --report-accent: #8a1515;
+  --report-focus: #bae6fd;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--report-page);
+}
+
+body {
+  margin: 0;
+  background: var(--report-page);
+  color: var(--report-text);
+  font-family: "PT Root UI", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 22px;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--report-focus);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

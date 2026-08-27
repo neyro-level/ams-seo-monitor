@@ -1,0 +1,32 @@
+on:
+  pull_request:
+    - workflows: [pr-check]
+      filter:
+        target_branches: ["main"]
+
+  push:
+    - workflows: [pr-check]
+      filter:
+        branches: ["main"]
+
+workflows:
+  pr-check:
+    checkout:
+      fetch_depth: 0
+    settings:
+      max_cube_duration: 35m
+    tasks:
+      - name: foundation-verify
+        cubes:
+          - name: install-and-check
+            image: docker.io/library/node:24-bookworm
+            script:
+              - corepack enable
+              - corepack prepare pnpm@11.5.1 --activate
+              - pnpm install --frozen-lockfile
+              - pnpm verify:config
+              - pnpm verify:snapshots
+              - pnpm typecheck
+              - pnpm lint
+              - pnpm test
+              - pnpm build

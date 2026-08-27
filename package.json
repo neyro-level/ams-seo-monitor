@@ -1,0 +1,39 @@
+{
+  "name": "ams-seo-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.5.1",
+  "engines": {
+    "node": ">=24.15.0 <25",
+    "pnpm": ">=11.5.1 <12"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "pnpm verify:config && next build",
+    "build:collector": "tsc -p tsconfig.collector.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.collector.json",
+    "test": "vitest run",
+    "verify:config": "node scripts/verify-config.mjs",
+    "verify:snapshots": "node scripts/verify-snapshots.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "1.27.0",
+    "next": "16.2.12",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "3.10.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.12",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
