@@ -1,0 +1,84 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { createMetricaClient, readMetricaEnvironment } from "../collector/sources/yandex-metrica/client";
+
+function fixturePath(name: string) {
+  return path.join(process.cwd(), "tests", "fixtures", "yandex-metrica", name);
+}
+
+async function loadFixture(name: string) {
+  return JSON.parse(await readFile(fixturePath(name), "utf8"));
+}
+
+function createJsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    headers: { "content-type": "application/json" },
+    status,
+  });
+}
+
+describe("metrica audit dto", () => {
+  it("builds normalized Metrica audit bundle", async () => {
+    const counters = await loadFixture("counters.json");
+    const goals = await loadFixture("goals.json");
+    const allTraffic = await loadFixture("all-traffic.json");
+    const searchEngines = await loadFixture("search-engines.json");
+    const byTime = await loadFixture("bytime.json");
+    const landing = await loadFixture("landing.json");
+    const devices = await loadFixture("devices.json");
+    const defaultGoalStat = await loadFixture("goal-stat-default.json");
+
+    const client = createMetricaClient(
+      readMetricaEnvironment({
+        YANDEX_METRICA_OAUTH_TOKEN: "token",
+        YANDEX_METRICA_API_BASE_URL: "https://api-metrika.yandex.net",
+        YANDEX_METRICA_SITE_URL: "https://REDACTED_CLIENT_DATA",
+        YANDEX_METRICA_TOKEN_STATUS: "ACTIVE",
+      }),
+      {
+        fetchImpl: async (url) => {
+          const target = new URL(typeof url === "string" ? url : String(url));
+          const metrics = target.searchParams.getAll("metrics");
+          if (target.pathname.endsWith("/management/v1/counters")) {
+            return createJsonResponse(counters);
+          }
+          if (target.pathname.endsWith("/management/v1/counter/REDACTED_CLIENT_DATA/goals")) {
+            return createJsonResponse(goals);
+          }
+          if (target.pathname.endsWith("/stat/v1/data/bytime")) {
+            return createJsonResponse(byTime);
+          }
+          if (target.pathname.endsWith("/stat/v1/data")) {
+            const dimensions = target.searchParams.getAll("dimensions");
+            if (dimensions.includes("ym:s:lastsignSearchEngineRootName")) {
+              return createJsonResponse(searchEngines);
+            }
+            if (dimensions.includes("ym:s:startURLPath")) {
+              return createJsonResponse(landing);
+            }
+            if (dimensions.includes("ym:s:deviceCategory")) {
+              return createJsonResponse(devices);
+            }
+            if (metrics.some((metric) => metric.includes("conversionRate"))) {
+              return createJsonResponse(defaultGoalStat);
+            }
+            return createJsonResponse(allTraffic);
+          }
+          throw new Error(`Unexpected URL: ${target}`);
+        },
+        now: () => "2026-08-27T12:30:00.000Z",
+      },
+    );
+
+    const result = await client.collectSiteData({ date1: "2026-07-28", date2: "2026-08-27", landingLimit: 2 });
+
+    expect(result.access.counterId).toBe("REDACTED_CLIENT_DATA");
+    expect(result.allTraffic.summary.goalReaches).toBe(398);
+    expect(result.yandexOrganic.summary.visits).toBe(5290);
+    expect(result.yandexOrganic.byTime).toHaveLength(3);
+    expect(result.yandexOrganic.landingPages[0]?.path).toBe("/");
+    expect(result.yandexOrganic.devices[0]?.device).toBe("mobile");
+    expect(result.goalsSummary.items).toHaveLength(6);
+  });
+});

@@ -1,0 +1,19 @@
+{
+  "rows": 2,
+  "counters": [
+    {
+      "id": REDACTED_CLIENT_DATA,
+      "site": "REDACTED_CLIENT_DATA",
+      "permission": "edit",
+      "name": "REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA",
+      "time_zone_name": "Europe/Moscow",
+      "time_zone_offset": 180
+    },
+    {
+      "id": 1,
+      "site": "other-site.ru",
+      "permission": "view",
+      "name": "Other"
+    }
+  ]
+}

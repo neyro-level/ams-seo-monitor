@@ -17,7 +17,9 @@
     "verify:config": "node scripts/verify-config.mjs",
     "verify:snapshots": "node scripts/verify-snapshots.mjs",
     "collector:webmaster:preflight": "pnpm build:collector && node dist-collector/collector/main.js webmaster-preflight",
-    "collector:webmaster:audit": "pnpm build:collector && node dist-collector/collector/main.js webmaster-audit"
+    "collector:webmaster:audit": "pnpm build:collector && node dist-collector/collector/main.js webmaster-audit",
+    "collector:metrica:preflight": "pnpm build:collector && node dist-collector/collector/main.js metrica-preflight",
+    "collector:metrica:audit": "pnpm build:collector && node dist-collector/collector/main.js metrica-audit"
   },
   "dependencies": {
     "lucide-react": "1.27.0",

@@ -62,6 +62,8 @@ pnpm test
 pnpm build
 pnpm collector:webmaster:preflight
 pnpm collector:webmaster:audit
+pnpm collector:metrica:preflight
+pnpm collector:metrica:audit
 ```
 
 `pnpm build` должен создавать `out/`. `collector:webmaster:*` используют только environment secrets и печатают только safe JSON.

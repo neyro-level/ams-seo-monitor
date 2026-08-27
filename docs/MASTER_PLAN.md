@@ -65,3 +65,12 @@ AMS SEO Monitor идёт в 3 крупные волны.
 - достаточно ли snapshot DTO;
 - нет ли лишнего слоя в registry/storage;
 - готовы ли мы к Wave 2 without redesign.
+
+## W5 live adapter status
+
+- Metrica OAuth and exact REDACTED_CLIENT_DATA counter verified;
+- counters and goals discovery implemented;
+- all traffic and Yandex organic bundles implemented;
+- bytime, landing pages, devices and allowlisted goal stats implemented;
+- aggregate goal reaches are not presented as unique conversion; per-goal conversion comes from the official API metric.
+- frozen design system remains unchanged; UI wiring is the next separate scope.
