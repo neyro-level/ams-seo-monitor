@@ -2,7 +2,7 @@
 
 ## Статус
 
-Production target зарезервирован, deploy ещё не выполнялся. Activation остаётся отдельной Wave 3/release задачей после Merge Gate.
+Production contract подготовлен. Первый deploy выполняется только после HEAVY Merge Gate и появления exact SHA в SourceCraft `main`.
 
 ## Production target
 
@@ -18,16 +18,32 @@ Production URL:
 https://seo-monitor.ams24.ru
 ```
 
-## Planned release layout
+## Release layout
 
 ```text
 /opt/ams-platform/ams-seo-monitor/
-├── releases/
+├── releases/<main-sha>/
+│   ├── out/
+│   ├── dist-collector/
+│   ├── config/
+│   ├── node_modules/
+│   └── release-manifest.json
 ├── shared/
-└── current -> releases/<release-id>
+│   ├── client-reports/
+│   ├── snapshots/
+│   └── runtime/current -> node-v24-linux-x64
+└── current -> releases/<main-sha>
 ```
 
-## Planned deploy sequence
+Checked-in production units:
+
+- `ops/nginx/ams-seo-monitor.conf`;
+- `ops/systemd/ams-seo-monitor.service`;
+- `ops/systemd/ams-seo-monitor.timer`.
+
+Daily timer rebuilds all four report presets; a second weekly API run is intentionally absent because it would duplicate the same collection.
+
+## Deploy sequence
 
 1. reviewed exact SourceCraft `main` SHA;
 2. build immutable artifact;
@@ -38,17 +54,15 @@ https://seo-monitor.ams24.ru
 7. `nginx -t`;
 8. reload Nginx;
 9. authenticated smoke;
-10. timer/source preflight.
+10. enable the daily timer and run one collector smoke.
 
-## Human gates
+## Required production inputs
 
-Required later:
+- DNS `seo-monitor.ams24.ru` points to AMS Main Server;
+- explicit owner production command;
+- exact reviewed SourceCraft `main` SHA;
+- project secrets materialized in `/etc/ams-platform/ams-seo-monitor.env`;
+- Basic Auth files in `/etc/ams-platform/ams-seo-monitor-auth/`;
+- Certbot-issued certificate after the HTTP virtual host passes `nginx -t`.
 
-- DNS уже подготовлен владельцем для `seo-monitor.ams24.ru`;
-- owner production command;
-- SSL/Nginx validation;
-- server env materialization;
-- Nginx activation;
-- systemd activation.
-
-До release запрещены production env writes, htpasswd generation, Nginx/systemd changes и deploy.
+Secrets, auth files and shared snapshots are never stored inside an immutable release.
