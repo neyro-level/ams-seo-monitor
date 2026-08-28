@@ -35,9 +35,10 @@ MVP принципиально:
 - `pnpm collector:sync:REDACTED_CLIENT_DATA` собирает оба источника и атомарно публикует 12 отчётов: 3 сайта × 4 периода.
 - Отчёты содержат равное previous-period сравнение, total Webmaster history, unique target visits и детерминированные кластеры спроса.
 - Client routes загружают period-aware protected runtime JSON; `/demo/` остаётся отдельным fixture.
-- Read-only раздел `Проекты` и operator wizard добавляют новые config-driven проекты без БД; production isolation/deploy остаются следующей отдельной волной.
-- Director Dashboard V2 и tracked ranking реализованы на `work/director-dashboard-v2`; ветка готовится к HEAVY review/merge.
+- Read-only раздел `Проекты` и operator wizard добавляют config-driven проекты без БД; следующий onboarding выполняется через Git + release workflow.
+- Director Dashboard V2, tracked ranking и production release tooling merged в SourceCraft `main`.
 - Topvisor adapter реализован read-only, но live mapping выключен; используется labelled owner baseline.
+- Production активен на `https://seo-monitor.ams24.ru`: TLS, Basic Auth isolation, protected report JSON, collector oneshot и daily timer проверены.
 
 Product hierarchy:
 

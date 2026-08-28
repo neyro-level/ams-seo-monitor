@@ -2,7 +2,7 @@
 
 ## Статус
 
-OAuth tokens используются в live local sync через Doppler. Production materialized env создаётся при deploy.
+OAuth tokens используются в production sync через root-owned materialized env; Doppler остаётся source of truth.
 
 ## Secret classes
 

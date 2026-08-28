@@ -66,11 +66,11 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 Текущий блок:
 
-- Director Dashboard V2 реализован на `work/director-dashboard-v2`;
-- unified report, tracked ranking, mobile constraints и softened sidebar states готовы;
-- Topvisor live mapping остаётся disabled, owner fallback явно маркирован;
-- branch требует documentation sync, HEAVY review, PR и merge;
-- production isolation/timers/deploy выполняются только после exact merged `main`.
+- Director Dashboard V2 и production release tooling merged в `main`;
+- production `seo-monitor.ams24.ru` active;
+- Nginx Basic Auth isolation, protected data aliases and daily timer verified;
+- Topvisor live mapping remains disabled; owner fallback labelled;
+- next product work: SZ REDACTED_CLIENT_DATA onboarding, analyst detail views or explicit Topvisor activation.
 
 Без отдельной owner-команды не делать:
 

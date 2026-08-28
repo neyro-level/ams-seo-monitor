@@ -54,7 +54,7 @@ Production access boundary — Nginx HTTPS + Basic Auth per protected location. 
 - alert thresholds.
 - tracked query text, owner baseline and nonsecret Topvisor project/region mapping.
 
-## Planned production model
+## Production model
 
 Секреты хранятся в Doppler как source of truth и материализуются в `/etc/ams-platform/ams-seo-monitor.env`. В Git этот файл не попадает.
 
@@ -67,7 +67,7 @@ Planned auth files:
 └── REDACTED_CLIENT_DATA.htpasswd
 ```
 
-Live OAuth adapters и local sync проверены через Doppler. Production materialized env, htpasswd files и Nginx aliases создаются только внутри exact-main deploy.
+Production materialized env, bcrypt htpasswd files, TLS and protected Nginx aliases are active. Values remain outside Git and release artifacts.
 
 ## Verification focus
 

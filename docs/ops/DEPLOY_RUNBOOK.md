@@ -2,7 +2,7 @@
 
 ## Статус
 
-Production уже активирован на SHA `797cf812688bf3b6c2405f73374e9340ab43e637`. Следующий release обновляет его только после HEAVY Merge Gate и появления нового exact SHA в SourceCraft `main`.
+Production active. Current exact SHA is read from `current/release-manifest.json` and `shared/deployed-sha.txt`; every subsequent release still requires SourceCraft gate and atomic deploy.
 
 ## Production target
 
