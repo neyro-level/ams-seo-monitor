@@ -83,7 +83,7 @@ REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
 
 Implemented:
 
-- fixed presets: two weeks 14, month 28, quarter 90, half-year 180 days;
+- fixed presets: week 7, month 28 (default), quarter 90, half-year 180 days;
 - immediately preceding equal-period comparison;
 - total Webmaster shows/clicks/position history;
 - popular query pool merge by `queryId + device`;
@@ -130,10 +130,10 @@ The approved contract is `docs/DIRECTOR_DASHBOARD_V2.md`:
 Implemented foundation:
 
 - one report without Summary/SEO/Traffic tabs;
-- visible `14 дней / Месяц / Квартал / Полгода` selector;
-- health-first hierarchy;
-- four Webmaster KPI and a real shows/clicks chart;
-- project-specific tracked query core with 20-row initial disclosure;
+- visible `Неделя / Месяц / 3 месяца / Полгода` selector with month default;
+- exact tracked-core ranking dashboard before site health;
+- Top-3/Top-10 KPI and history chart with owner-provided fallback;
+- four Webmaster KPI and a real shows/clicks chart below health;
 - Metrica traffic and landing-page section;
 - client route navigation contains only its own client subtree;
 - `/demo/` remains separate from client data;

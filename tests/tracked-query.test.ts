@@ -10,6 +10,34 @@ describe("tracked SEO query core", () => {
     expect(parsed.queries).toHaveLength(75);
   });
 
+  it("reproduces the approved position dashboard totals", () => {
+    const parsed = trackedQuerySetSchema.parse(luganskQueries);
+    const current = parsed.queries
+      .map((query) => query.position.current)
+      .filter((position): position is number => position !== null);
+    const baseline = parsed.queries
+      .map((query) => query.position.baseline)
+      .filter((position): position is number => position !== null);
+    const improved = parsed.queries.filter(
+      (query) =>
+        query.position.current !== null &&
+        query.position.baseline !== null &&
+        query.position.current < query.position.baseline,
+    ).length;
+    const declined = parsed.queries.filter(
+      (query) =>
+        query.position.current !== null &&
+        query.position.baseline !== null &&
+        query.position.current > query.position.baseline,
+    ).length;
+
+    expect(current.filter((position) => position <= 10)).toHaveLength(51);
+    expect(current.filter((position) => position <= 3)).toHaveLength(40);
+    expect(baseline.filter((position) => position <= 10)).toHaveLength(12);
+    expect(baseline.filter((position) => position <= 3)).toHaveLength(8);
+    expect({ improved, declined }).toEqual({ improved: 7, declined: 1 });
+  });
+
   it("preserves the supplied position baseline without inventing a year", () => {
     const parsed = trackedQuerySetSchema.parse(luganskQueries);
     const query = parsed.queries.find(

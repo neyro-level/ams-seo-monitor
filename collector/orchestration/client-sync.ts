@@ -1,4 +1,5 @@
 import type { MetricaSiteAudit } from "../../src/shared/schemas/metrica-source";
+import type { TopvisorSiteData } from "../../src/shared/schemas/rank-source";
 import type {
   ClientRegistry,
   ClusterProfile,
@@ -18,6 +19,11 @@ import {
   readLatestSiteSnapshot,
 } from "../storage/snapshots";
 import { publishSiteSourceBundle } from "../storage/source-bundles";
+import {
+  createTopvisorClient,
+  readTopvisorEnvironment,
+  TopvisorSafeError,
+} from "../sources/topvisor/client";
 import {
   createMetricaClient,
   readMetricaEnvironment,
@@ -52,6 +58,11 @@ type MetricaCollectOptions = {
   includeDetails?: boolean;
 };
 
+type TopvisorCollectOptions = {
+  dateFrom: string;
+  dateTo: string;
+};
+
 export type SiteSourceCollectors = {
   webmaster: (
     site: SiteRegistry,
@@ -61,6 +72,10 @@ export type SiteSourceCollectors = {
     site: SiteRegistry,
     options?: MetricaCollectOptions,
   ) => Promise<MetricaSiteAudit>;
+  topvisor?: (
+    site: SiteRegistry,
+    options: TopvisorCollectOptions,
+  ) => Promise<TopvisorSiteData>;
 };
 
 export type SiteSyncResult = {
@@ -78,7 +93,11 @@ export type SiteSyncResult = {
 };
 
 function safeFailure(error: unknown): SafeSourceFailure {
-  if (error instanceof WebmasterSafeError || error instanceof MetricaSafeError) {
+  if (
+    error instanceof WebmasterSafeError ||
+    error instanceof MetricaSafeError ||
+    error instanceof TopvisorSafeError
+  ) {
     return {
       code: error.code,
       status: error.status,
@@ -99,6 +118,7 @@ export function createLiveSiteCollectors(
     SiteSourceCollectors["webmaster"]
   >();
   const metricaCollectors = new Map<string, SiteSourceCollectors["metrica"]>();
+  let topvisorCollect: SiteSourceCollectors["topvisor"] | null = null;
 
   return {
     async webmaster(site, options) {
@@ -129,6 +149,15 @@ export function createLiveSiteCollectors(
       }
       return collect(site, options);
     },
+    async topvisor(site, options) {
+      if (!topvisorCollect) {
+        const config = readTopvisorEnvironment(env);
+        const client = createTopvisorClient(config);
+        topvisorCollect = (targetSite, collectOptions) =>
+          client.collectSiteData(targetSite, collectOptions);
+      }
+      return topvisorCollect(site, options);
+    },
   };
 }
 
@@ -143,6 +172,8 @@ async function collectPeriod(args: {
   previousPeriod: DatePeriod;
   baselineWebmaster: WebmasterSiteData | null;
   baselineFailure: SafeSourceFailure | null;
+  rankingData: TopvisorSiteData | null;
+  topvisorFailure: SafeSourceFailure | null;
   clusterProfile: ClusterProfile;
   trackedQuerySet: TrackedQuerySet | null;
   thresholds: {
@@ -234,10 +265,12 @@ async function collectPeriod(args: {
       current: {
         webmaster: webmasterData,
         metrica: metricaData,
+        topvisor: args.rankingData,
       },
       previous: {
         webmaster: previousWebmasterData,
         metrica: previousMetricaData,
+        topvisor: null,
       },
     },
   });
@@ -253,6 +286,8 @@ async function collectPeriod(args: {
     previousMetricaData,
     webmasterFailure,
     metricaFailure,
+    rankingData: args.rankingData,
+    topvisorFailure: args.topvisorFailure,
     previous: previousSnapshot,
     periodKey: args.periodKey,
     currentPeriod: args.currentPeriod,
@@ -269,9 +304,11 @@ async function collectPeriod(args: {
   return {
     snapshot,
     published,
-    safeErrorCodes: [webmasterFailure?.code, metricaFailure?.code].filter(
-      (code): code is string => Boolean(code),
-    ),
+    safeErrorCodes: [
+      webmasterFailure?.code,
+      metricaFailure?.code,
+      args.topvisorFailure?.code,
+    ].filter((code): code is string => Boolean(code)),
   };
 }
 
@@ -311,16 +348,36 @@ async function syncSite(args: {
       collection.orderBy === "TOTAL_SHOWS" &&
       collection.dateTo !== null,
   );
-  const fallbackTwoWeeks = await readLatestSiteSnapshot(
+  const fallbackMonth = await readLatestSiteSnapshot(
     args.sharedDir,
     args.client.clientSlug,
     args.site.siteSlug,
-    "twoWeeks",
+    "month",
   );
   const periodEnd =
     baselinePeriod?.dateTo ??
-    fallbackTwoWeeks?.comparison?.currentPeriod.dateTo ??
+    fallbackMonth?.comparison?.currentPeriod.dateTo ??
     args.generatedAt.slice(0, 10);
+  let rankingData: TopvisorSiteData | null = null;
+  let topvisorFailure: SafeSourceFailure | null = null;
+  if (args.site.topvisor.enabled) {
+    try {
+      if (!args.collectors.topvisor) {
+        throw new TopvisorSafeError(
+          "TOPVISOR_COLLECTOR_MISSING",
+          null,
+          "Topvisor collector is unavailable",
+        );
+      }
+      const historyPeriod = derivePeriodEndingOn(periodEnd, "halfYear");
+      rankingData = await args.collectors.topvisor(args.site, {
+        dateFrom: historyPeriod.dateFrom,
+        dateTo: historyPeriod.dateTo,
+      });
+    } catch (error) {
+      topvisorFailure = safeFailure(error);
+    }
+  }
   const periods: SiteSyncResult["periods"] = [];
   const safeErrorCodes = new Set<string>();
   let defaultLatestPath = "";
@@ -335,6 +392,8 @@ async function syncSite(args: {
       previousPeriod,
       baselineWebmaster,
       baselineFailure,
+      rankingData,
+      topvisorFailure,
       trackedQuerySet: args.trackedQuerySet,
     });
 
@@ -344,7 +403,7 @@ async function syncSite(args: {
       freshness: result.snapshot.freshness,
       reportPath: result.published.reportPath,
     });
-    if (periodKey === "twoWeeks") {
+    if (periodKey === "month") {
       defaultLatestPath = result.published.latestPath;
     }
   }

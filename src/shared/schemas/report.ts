@@ -24,7 +24,7 @@ export const sourceStateSchema = z.object({
   safeErrorCode: z.string().nullable(),
 });
 
-export const reportPeriodKeySchema = z.enum(["twoWeeks", "month", "quarter", "halfYear"]);
+export const reportPeriodKeySchema = z.enum(["week", "month", "quarter", "halfYear"]);
 
 export const comparisonMetricSchema = z.object({
   current: z.number().nullable(),
@@ -137,6 +137,57 @@ export const trackedCoreReportSchema = z.object({
   unmeasuredCount: z.number().int().nonnegative(),
   baselineLabel: z.string().min(1),
   queries: z.array(trackedCoreQueryReportSchema).max(100),
+});
+
+export const rankingMovementSchema = z.enum([
+  "improved",
+  "declined",
+  "unchanged",
+  "new",
+  "lost",
+  "unmeasured",
+]);
+
+export const rankingQueryReportSchema = z.object({
+  query: z.string().min(1),
+  cluster: z.string().min(1),
+  currentPosition: z.number().int().min(1).max(250).nullable(),
+  previousPosition: z.number().int().min(1).max(250).nullable(),
+  positionDelta: z.number().int().nullable(),
+  movement: rankingMovementSchema,
+  shows: z.number().nonnegative().nullable(),
+  clicks: z.number().nonnegative().nullable(),
+  ctr: z.number().nonnegative().nullable(),
+});
+
+export const rankingHistoryPointSchema = z.object({
+  date: isoDateSchema,
+  top3Count: z.number().int().nonnegative(),
+  top10Count: z.number().int().nonnegative(),
+  top3Share: z.number().min(0).max(100),
+  top10Share: z.number().min(0).max(100),
+});
+
+export const trackedRankingReportSchema = z.object({
+  source: z.enum(["topvisor", "owner-provided"]),
+  queryCount: z.number().int().min(1).max(100),
+  measuredCount: z.number().int().nonnegative(),
+  top3Count: z.number().int().nonnegative(),
+  top10Count: z.number().int().nonnegative(),
+  top3Share: z.number().min(0).max(100),
+  top10Share: z.number().min(0).max(100),
+  top3Delta: z.number().int().nullable(),
+  top10Delta: z.number().int().nullable(),
+  improvedCount: z.number().int().nonnegative(),
+  declinedCount: z.number().int().nonnegative(),
+  unchangedCount: z.number().int().nonnegative(),
+  newCount: z.number().int().nonnegative(),
+  lostCount: z.number().int().nonnegative(),
+  unmeasuredCount: z.number().int().nonnegative(),
+  baselineLabel: z.string().min(1),
+  lastCapturedAt: isoDateSchema.nullable(),
+  history: z.array(rankingHistoryPointSchema),
+  queries: z.array(rankingQueryReportSchema).min(1).max(100),
 });
 
 export const landingPageSchema = z.object({
@@ -260,11 +311,13 @@ export const siteReportSnapshotSchema = z.object({
   sources: z.object({
     webmaster: sourceStateSchema,
     metrica: sourceStateSchema,
+    topvisor: sourceStateSchema.optional(),
   }),
   webmaster: webmasterReportSchema.nullable(),
-  periodKey: reportPeriodKeySchema.default("twoWeeks"),
+  periodKey: reportPeriodKeySchema.default("month"),
   comparison: reportComparisonSchema.nullable().default(null),
   metrica: metricaReportSchema.nullable(),
+  ranking: trackedRankingReportSchema.nullable().default(null),
   combined: combinedSeoReportSchema,
 });
 
@@ -294,5 +347,7 @@ export type ReportPeriodKey = z.infer<typeof reportPeriodKeySchema>;
 export type ReportComparison = z.infer<typeof reportComparisonSchema>;
 export type WebmasterReport = z.infer<typeof webmasterReportSchema>;
 export type TrackedCoreReport = z.infer<typeof trackedCoreReportSchema>;
+export type TrackedRankingReport = z.infer<typeof trackedRankingReportSchema>;
+export type RankingMovement = z.infer<typeof rankingMovementSchema>;
 export type MetricaReport = z.infer<typeof metricaReportSchema>;
 export type CombinedSeoReport = z.infer<typeof combinedSeoReportSchema>;

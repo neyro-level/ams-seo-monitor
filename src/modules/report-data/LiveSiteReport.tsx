@@ -27,7 +27,7 @@ type LiveSiteReportProps = {
 function readPeriodFromLocation(): ReportPeriodKey {
   const requested = new URLSearchParams(window.location.search).get("period");
   const parsed = reportPeriodKeySchema.safeParse(requested);
-  return parsed.success ? parsed.data : "twoWeeks";
+  return parsed.success ? parsed.data : "month";
 }
 
 function subscribeToPeriod(callback: () => void) {
@@ -44,7 +44,7 @@ export function LiveSiteReport({
   const activePeriod = useSyncExternalStore<ReportPeriodKey>(
     subscribeToPeriod,
     readPeriodFromLocation,
-    () => "twoWeeks",
+    () => "month",
   );
   const [reports, setReports] = useState<
     Partial<Record<ReportPeriodKey, SiteReportSnapshot>>

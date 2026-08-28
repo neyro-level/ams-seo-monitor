@@ -35,6 +35,15 @@ const clientSchema = z.object({
         counterId: z.string().regex(/^\d+$/).nullable(),
         goalProfile: z.string().regex(slugPattern).nullable(),
       }),
+      topvisor: z.object({
+        enabled: z.boolean(),
+        projectId: z.number().int().positive().nullable(),
+        regionIndex: z.number().int().nonnegative().nullable(),
+      }).default({
+        enabled: false,
+        projectId: null,
+        regionIndex: null,
+      }),
     }),
   ),
 });
@@ -190,6 +199,7 @@ try {
       if (!site.enabled) {
         assert(!site.webmaster.enabled, `Disabled site cannot enable webmaster: ${client.clientSlug}/${site.siteSlug}`);
         assert(!site.metrica.enabled, `Disabled site cannot enable metrica: ${client.clientSlug}/${site.siteSlug}`);
+        assert(!site.topvisor.enabled, `Disabled site cannot enable Topvisor: ${client.clientSlug}/${site.siteSlug}`);
       }
 
       if (site.webmaster.enabled) {
@@ -199,6 +209,11 @@ try {
       if (site.metrica.enabled) {
         assert(site.metrica.counterId, `Enabled metrica requires counterId: ${client.clientSlug}/${site.siteSlug}`);
         assert(site.metrica.goalProfile, `Enabled metrica requires goalProfile: ${client.clientSlug}/${site.siteSlug}`);
+      }
+
+      if (site.topvisor.enabled) {
+        assert(site.topvisor.projectId, `Enabled Topvisor requires projectId: ${client.clientSlug}/${site.siteSlug}`);
+        assert(site.topvisor.regionIndex !== null, `Enabled Topvisor requires regionIndex: ${client.clientSlug}/${site.siteSlug}`);
       }
 
       const siteRoute = `/c/${client.clientSlug}/${site.siteSlug}/`;

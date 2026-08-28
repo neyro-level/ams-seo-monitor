@@ -1,60 +1,160 @@
 "use client";
 
-import { useState } from "react";
-import { formatInteger, formatPercent, formatPosition } from "../../shared/format/metrics";
-import type { TrackedCoreReport } from "../../shared/schemas/report";
+import { useMemo, useState } from "react";
+import { formatInteger, formatPercent } from "../../shared/format/metrics";
+import type {
+  RankingMovement,
+  TrackedRankingReport,
+} from "../../shared/schemas/report";
 import { DataTable } from "./DataTable";
 
+type RankingFilter =
+  | "all"
+  | "top3"
+  | "top10"
+  | "top20"
+  | "improved"
+  | "declined"
+  | "new"
+  | "lost";
+
 type TrackedQueryTableProps = {
-  core: TrackedCoreReport;
+  ranking: TrackedRankingReport;
 };
 
-function deltaLabel(value: number | null, suffix: string) {
-  if (value === null) return "—";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}${suffix}`;
+const movementLabels: Record<RankingMovement, string> = {
+  improved: "Вырос",
+  declined: "Упал",
+  unchanged: "Без изменений",
+  new: "Новый",
+  lost: "Потерян",
+  unmeasured: "Нет сравнения",
+};
+
+function positionLabel(value: number | null) {
+  return value === null ? "—" : String(value);
 }
 
-export function TrackedQueryTable({ core }: TrackedQueryTableProps) {
+function deltaLabel(value: number | null) {
+  if (value === null) return "—";
+  if (value === 0) return "0";
+  return `${value > 0 ? "+" : ""}${value}`;
+}
+
+export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
+  const [filter, setFilter] = useState<RankingFilter>("all");
   const [expanded, setExpanded] = useState(false);
-  const visibleQueries = expanded ? core.queries : core.queries.slice(0, 20);
+  const filters: Array<{ key: RankingFilter; label: string; count: number }> = [
+    { key: "all", label: "Все", count: ranking.queryCount },
+    { key: "top3", label: "Топ-3", count: ranking.top3Count },
+    { key: "top10", label: "Топ-10", count: ranking.top10Count },
+    {
+      key: "top20",
+      label: "11–20",
+      count: ranking.queries.filter(
+        (query) =>
+          query.currentPosition !== null &&
+          query.currentPosition >= 11 &&
+          query.currentPosition <= 20,
+      ).length,
+    },
+    { key: "improved", label: "Выросшие", count: ranking.improvedCount },
+    { key: "declined", label: "Упавшие", count: ranking.declinedCount },
+    { key: "new", label: "Новые", count: ranking.newCount },
+    { key: "lost", label: "Потерянные", count: ranking.lostCount },
+  ];
+  const filteredQueries = useMemo(
+    () =>
+      ranking.queries.filter((query) => {
+        if (filter === "all") return true;
+        if (filter === "top3")
+          return query.currentPosition !== null && query.currentPosition <= 3;
+        if (filter === "top10")
+          return query.currentPosition !== null && query.currentPosition <= 10;
+        if (filter === "top20")
+          return (
+            query.currentPosition !== null &&
+            query.currentPosition >= 11 &&
+            query.currentPosition <= 20
+          );
+        return query.movement === filter;
+      }),
+    [filter, ranking.queries],
+  );
+  const visibleQueries = expanded ? filteredQueries : filteredQueries.slice(0, 20);
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
+      <div className="flex max-w-full gap-2 overflow-x-auto pb-1" aria-label="Фильтры поискового ядра">
+        {filters.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            aria-pressed={filter === item.key}
+            onClick={() => {
+              setFilter(item.key);
+              setExpanded(false);
+            }}
+            className={[
+              "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition",
+              filter === item.key
+                ? "border-[var(--crm-primary)] bg-[var(--crm-primary)] text-white"
+                : "border-[var(--crm-border)] bg-white text-[var(--crm-text-secondary)] hover:border-[var(--crm-primary)]",
+            ].join(" ")}
+          >
+            {item.label}
+            <span className={filter === item.key ? "text-white/75" : "text-[var(--crm-text-muted)]"}>
+              {item.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       <DataTable
-        caption={`Отслеживаемое поисковое ядро: ${core.expectedCount} запросов`}
-        columns={["Запрос", "Показы", "Клики", "CTR", "Позиция", "Δ позиции", "Статус"]}
+        caption={`Отслеживаемое поисковое ядро: ${ranking.queryCount} запросов`}
+        columns={["Запрос", "Позиция", `На ${ranking.baselineLabel}`, "Изменение", "Показы", "Клики", "CTR"]}
         rows={visibleQueries.map((query) => ({
           key: query.query,
           cells: [
-            <div key="query" className="min-w-[260px]">
+            <div key="query" className="min-w-[250px]">
               <p className="font-semibold text-[var(--crm-text)]">{query.query}</p>
-              <p className="mt-1 text-xs text-[var(--crm-text-muted)]">{query.cluster}</p>
+              <p className="mt-1 text-xs text-[var(--crm-text-muted)]">
+                {query.cluster} · {movementLabels[query.movement]}
+              </p>
             </div>,
-            <span key="shows" className="tabular-nums">{formatInteger(query.shows)}</span>,
-            <div key="clicks" className="tabular-nums">
-              <p>{formatInteger(query.clicks)}</p>
-              <p className="text-xs text-[var(--crm-text-muted)]">{deltaLabel(query.deltaClicksPercent, "%")}</p>
-            </div>,
-            <div key="ctr" className="tabular-nums">
-              <p>{formatPercent(query.ctr, 2)}</p>
-              <p className="text-xs text-[var(--crm-text-muted)]">{deltaLabel(query.deltaCtrPoints, " п.п.")}</p>
-            </div>,
-            <span key="position" className="tabular-nums">{formatPosition(query.avgShowPosition)}</span>,
-            <span key="delta-position" className="tabular-nums">{deltaLabel(query.deltaPosition, "")}</span>,
-            <span key="status" className={query.observedInWebmaster ? "text-emerald-700" : "text-amber-700"}>
-              {query.observedInWebmaster ? query.opportunityType : "Нет в пуле Вебмастера"}
+            <span key="position" className="font-semibold tabular-nums text-[var(--crm-text)]">
+              {positionLabel(query.currentPosition)}
             </span>,
+            <span key="previous" className="tabular-nums">
+              {positionLabel(query.previousPosition)}
+            </span>,
+            <span
+              key="delta"
+              className={[
+                "font-semibold tabular-nums",
+                query.positionDelta !== null && query.positionDelta > 0
+                  ? "text-emerald-700"
+                  : query.positionDelta !== null && query.positionDelta < 0
+                    ? "text-rose-700"
+                    : "text-[var(--crm-text-muted)]",
+              ].join(" ")}
+            >
+              {deltaLabel(query.positionDelta)}
+            </span>,
+            <span key="shows" className="tabular-nums">{formatInteger(query.shows)}</span>,
+            <span key="clicks" className="tabular-nums">{formatInteger(query.clicks)}</span>,
+            <span key="ctr" className="tabular-nums">{formatPercent(query.ctr, 2)}</span>,
           ],
         }))}
       />
-      {core.queries.length > 20 ? (
+
+      {filteredQueries.length > 20 ? (
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="inline-flex min-h-10 items-center rounded-lg border border-[var(--crm-border)] bg-white px-4 text-sm font-semibold text-[var(--crm-text)] transition hover:border-[var(--crm-primary)] hover:text-[var(--crm-primary)]"
+          className="inline-flex min-h-11 items-center rounded-lg border border-[var(--crm-border)] bg-white px-4 text-sm font-semibold text-[var(--crm-text)] transition hover:border-[var(--crm-primary)] hover:text-[var(--crm-primary)]"
         >
-          {expanded ? "Показать первые 20" : `Показать все ${core.expectedCount}`}
+          {expanded ? "Показать первые 20" : `Показать все ${filteredQueries.length}`}
         </button>
       ) : null}
     </div>

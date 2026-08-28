@@ -94,6 +94,29 @@ export const metricaRegistrySchema = z
     }
   });
 
+export const topvisorRegistrySchema = z
+  .object({
+    enabled: z.boolean(),
+    projectId: z.number().int().positive().nullable(),
+    regionIndex: z.number().int().nonnegative().nullable(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.enabled && value.projectId === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enabled Topvisor source requires projectId",
+        path: ["projectId"],
+      });
+    }
+    if (value.enabled && value.regionIndex === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enabled Topvisor source requires regionIndex",
+        path: ["regionIndex"],
+      });
+    }
+  });
+
 export const siteRegistrySchema = z
   .object({
     siteSlug: z.string().regex(slugPattern),
@@ -103,6 +126,11 @@ export const siteRegistrySchema = z
     enabled: z.boolean(),
     webmaster: webmasterRegistrySchema,
     metrica: metricaRegistrySchema,
+    topvisor: topvisorRegistrySchema.default({
+      enabled: false,
+      projectId: null,
+      regionIndex: null,
+    }),
   })
   .superRefine((site, ctx) => {
     if (site.enabled && isPlaceholderSiteUrl(site.siteUrl)) {
@@ -126,6 +154,14 @@ export const siteRegistrySchema = z
         code: z.ZodIssueCode.custom,
         message: "Disabled site cannot enable metrica source",
         path: ["metrica", "enabled"],
+      });
+    }
+
+    if (!site.enabled && site.topvisor.enabled) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Disabled site cannot enable Topvisor source",
+        path: ["topvisor", "enabled"],
       });
     }
   });

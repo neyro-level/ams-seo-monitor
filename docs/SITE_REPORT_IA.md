@@ -119,12 +119,12 @@ Two charts remain:
 
 Approved fixed comparable periods ending on the latest factual Webmaster date:
 
-- `14 дней`: 14 days, default;
-- `Месяц`: 28 days;
-- `Квартал`: 90 days;
+- `Неделя`: 7 days;
+- `Месяц`: 28 days, default;
+- `3 месяца`: 90 days;
 - `Полгода`: 180 days.
 
-Each period compares with the immediately preceding equal-length period. Period selection is bookmarkable through `?period=twoWeeks|month|quarter|halfYear`. `Вчера` is forbidden for Webmaster query data.
+Webmaster and Metrica compare with the immediately preceding equal-length period. Ranking compares the first and last capture inside the selected period. Period selection is bookmarkable through `?period=week|month|quarter|halfYear`.
 
 ## Projects level
 

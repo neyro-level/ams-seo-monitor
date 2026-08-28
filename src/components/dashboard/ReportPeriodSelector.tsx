@@ -8,9 +8,9 @@ type ReportPeriodSelectorProps = {
 };
 
 const periods: Array<{ key: ReportPeriodKey; label: string }> = [
-  { key: "twoWeeks", label: "14 дней" },
+  { key: "week", label: "Неделя" },
   { key: "month", label: "Месяц" },
-  { key: "quarter", label: "Квартал" },
+  { key: "quarter", label: "3 месяца" },
   { key: "halfYear", label: "Полгода" },
 ];
 

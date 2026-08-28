@@ -55,9 +55,9 @@ describe("SiteReportSnapshot compiler", () => {
       metricaData: currentMetrica,
       previousWebmasterData: previousWebmaster,
       previousMetricaData: previousMetrica,
-      periodKey: "twoWeeks",
-      currentPeriod: { dateFrom: "2026-08-10", dateTo: "2026-08-23" },
-      previousPeriod: { dateFrom: "2026-07-27", dateTo: "2026-08-09" },
+      periodKey: "week",
+      currentPeriod: { dateFrom: "2026-08-17", dateTo: "2026-08-23" },
+      previousPeriod: { dateFrom: "2026-08-10", dateTo: "2026-08-16" },
       queryThresholds: thresholds,
       trackedQuerySet: {
         schemaVersion: 1,
@@ -115,6 +115,16 @@ describe("SiteReportSnapshot compiler", () => {
       previousSqi: 18,
       sqiDelta: 2,
     });
+    expect(snapshot.ranking).toMatchObject({
+      source: "owner-provided",
+      queryCount: 1,
+      measuredCount: 1,
+      top3Count: 1,
+      top10Count: 1,
+      improvedCount: 1,
+      declinedCount: 0,
+      baselineLabel: "02.06",
+    });
   });
 
 
@@ -141,6 +151,79 @@ describe("SiteReportSnapshot compiler", () => {
       id: "webmaster-health-critical",
       tone: "error",
     });
+  });
+
+  it("compiles Topvisor capture history into ranking movements", () => {
+    const site = {
+      ...getREDACTED_CLIENT_DATASite(),
+      topvisor: { enabled: true, projectId: REDACTED_CLIENT_DATA, regionIndex: 0 },
+    };
+    const snapshot = compileSiteReportSnapshot({
+      clientSlug: "REDACTED_CLIENT_DATA",
+      site,
+      generatedAt: "2026-08-23T10:10:00.000Z",
+      clusterProfile,
+      webmasterData: createWebmasterSourceFixture(site),
+      metricaData: createMetricaSourceFixture(site),
+      periodKey: "month",
+      currentPeriod: { dateFrom: "2026-07-27", dateTo: "2026-08-23" },
+      previousPeriod: { dateFrom: "2026-06-29", dateTo: "2026-07-26" },
+      queryThresholds: thresholds,
+      trackedQuerySet: {
+        schemaVersion: 1,
+        clientSlug: "REDACTED_CLIENT_DATA",
+        siteSlug: "REDACTED_CLIENT_DATA",
+        source: "owner-provided",
+        baselineLabel: "02.06",
+        expectedCount: 2,
+        queries: [
+          {
+            query: "квартиры REDACTED_CLIENT_DATA",
+            position: { current: 4, baseline: 9, delta: 5 },
+          },
+          {
+            query: "новостройки REDACTED_CLIENT_DATA",
+            position: { current: 8, baseline: null, delta: 0 },
+          },
+        ],
+      },
+      rankingData: {
+        schemaVersion: 1,
+        fetchedAt: "2026-08-23T10:00:00.000Z",
+        projectId: REDACTED_CLIENT_DATA,
+        regionIndex: 0,
+        snapshots: [
+          {
+            capturedAt: "2026-08-01",
+            queries: [
+              { query: "квартиры REDACTED_CLIENT_DATA", position: 12 },
+              { query: "новостройки REDACTED_CLIENT_DATA", position: null },
+            ],
+          },
+          {
+            capturedAt: "2026-08-22",
+            queries: [
+              { query: "квартиры REDACTED_CLIENT_DATA", position: 5 },
+              { query: "новостройки REDACTED_CLIENT_DATA", position: 3 },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(snapshot.sources.topvisor?.status).toBe("success");
+    expect(snapshot.ranking).toMatchObject({
+      source: "topvisor",
+      queryCount: 2,
+      top3Count: 1,
+      top10Count: 2,
+      top3Delta: 1,
+      top10Delta: 2,
+      improvedCount: 1,
+      newCount: 1,
+      lastCapturedAt: "2026-08-22",
+    });
+    expect(snapshot.ranking?.history).toHaveLength(2);
   });
   it("uses last-known-good source section and marks a failed refresh partial", () => {
     const site = getREDACTED_CLIENT_DATASite();

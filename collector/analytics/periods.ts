@@ -11,14 +11,14 @@ export const REPORT_PERIODS: Record<
   ReportPeriodKey,
   { label: string; days: number }
 > = {
-  twoWeeks: { label: "14 дней", days: 14 },
+  week: { label: "Неделя", days: 7 },
   month: { label: "Месяц", days: 28 },
   quarter: { label: "Квартал", days: 90 },
   halfYear: { label: "Полгода", days: 180 },
 };
 
 export const REPORT_PERIOD_KEYS: ReportPeriodKey[] = [
-  "twoWeeks",
+  "week",
   "month",
   "quarter",
   "halfYear",

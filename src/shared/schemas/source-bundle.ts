@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { topvisorSiteDataSchema } from "./rank-source";
 import { metricaSiteAuditSchema } from "./metrica-source";
 import { reportPeriodKeySchema } from "./report";
 import { slugPattern } from "./registry";
@@ -13,10 +14,12 @@ export const siteSourceBundleSchema = z.object({
   current: z.object({
     webmaster: webmasterSiteDataSchema.nullable(),
     metrica: metricaSiteAuditSchema.nullable(),
+    topvisor: topvisorSiteDataSchema.nullable(),
   }),
   previous: z.object({
     webmaster: webmasterSiteDataSchema.nullable(),
     metrica: metricaSiteAuditSchema.nullable(),
+    topvisor: z.null(),
   }),
 });
 

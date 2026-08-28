@@ -6,6 +6,8 @@ import {
   type ReportPeriodKey,
   type SiteReportSnapshot,
   type WebmasterReport,
+  type RankingMovement,
+  type TrackedRankingReport,
 } from "../../src/shared/schemas/report";
 import type {
   ClusterProfile,
@@ -13,6 +15,7 @@ import type {
 } from "../../src/shared/schemas/registry";
 import type { MetricaSiteAudit } from "../../src/shared/schemas/metrica-source";
 import type { WebmasterSiteData } from "../../src/shared/schemas/webmaster-source";
+import type { TopvisorSiteData } from "../../src/shared/schemas/rank-source";
 import type { TrackedQuerySet } from "../../src/shared/schemas/tracked-query";
 import {
   buildQueryOpportunities,
@@ -46,6 +49,8 @@ type CompileSiteReportArgs = {
     maximumAveragePosition: number;
   };
   trackedQuerySet?: TrackedQuerySet | null;
+  rankingData?: TopvisorSiteData | null;
+  topvisorFailure?: SafeSourceFailure | null;
 };
 
 function latestHistoryValue(
@@ -218,6 +223,140 @@ function compileTrackedCore(args: {
     below20Count: measuredPositions.filter((position) => position > 20).length,
     unmeasuredCount: queries.length - measuredPositions.length,
     baselineLabel: args.trackedQuerySet.baselineLabel,
+    queries,
+  };
+}
+
+function movementForPositions(args: {
+  current: number | null;
+  previous: number | null;
+  exactSnapshots: boolean;
+}): RankingMovement {
+  if (args.current !== null && args.previous !== null) {
+    if (args.current < args.previous) return "improved";
+    if (args.current > args.previous) return "declined";
+    return "unchanged";
+  }
+  if (args.exactSnapshots && args.current !== null) return "new";
+  if (args.exactSnapshots && args.previous !== null) return "lost";
+  return "unmeasured";
+}
+
+function positionShare(count: number, total: number) {
+  return Number(((count / total) * 100).toFixed(1));
+}
+
+function compileTrackedRanking(args: {
+  trackedQuerySet: TrackedQuerySet;
+  rankingData: TopvisorSiteData | null;
+  currentPeriod?: { dateFrom: string; dateTo: string };
+  webmaster: WebmasterReport | null;
+  clusterProfile: ClusterProfile;
+}): TrackedRankingReport {
+  const periodSnapshots = args.rankingData?.snapshots
+    .filter(
+      (snapshot) =>
+        !args.currentPeriod ||
+        (snapshot.capturedAt >= args.currentPeriod.dateFrom &&
+          snapshot.capturedAt <= args.currentPeriod.dateTo),
+    )
+    .sort((left, right) => left.capturedAt.localeCompare(right.capturedAt)) ?? [];
+  const exactSnapshots = periodSnapshots.length > 0;
+  const currentSnapshot = periodSnapshots.at(-1) ?? null;
+  const previousSnapshot = periodSnapshots[0] ?? null;
+  const snapshotMap = (snapshot: typeof currentSnapshot) =>
+    new Map(
+      snapshot?.queries.map((query) => [
+        normalizeQueryKey(query.query),
+        query.position,
+      ]) ?? [],
+    );
+  const currentPositions = snapshotMap(currentSnapshot);
+  const previousPositions = snapshotMap(previousSnapshot);
+  const webmasterQueries = new Map(
+    (args.webmaster?.trackedCore?.queries ?? []).map((query) => [
+      normalizeQueryKey(query.query),
+      query,
+    ]),
+  );
+
+  const queries = args.trackedQuerySet.queries.map((tracked) => {
+    const key = normalizeQueryKey(tracked.query);
+    const webmasterQuery = webmasterQueries.get(key);
+    const current = exactSnapshots
+      ? currentPositions.get(key) ?? null
+      : tracked.position.current;
+    const previous = exactSnapshots
+      ? previousPositions.get(key) ?? null
+      : tracked.position.baseline;
+    const movement = movementForPositions({
+      current,
+      previous,
+      exactSnapshots,
+    });
+
+    return {
+      query: tracked.query,
+      cluster: classifyQuery(tracked.query, args.clusterProfile),
+      currentPosition: current,
+      previousPosition: previous,
+      positionDelta:
+        current !== null && previous !== null ? previous - current : null,
+      movement,
+      shows: webmasterQuery?.shows ?? null,
+      clicks: webmasterQuery?.clicks ?? null,
+      ctr: webmasterQuery?.ctr ?? null,
+    };
+  });
+  const currentMeasured = queries
+    .map((query) => query.currentPosition)
+    .filter((position): position is number => position !== null);
+  const previousMeasured = queries
+    .map((query) => query.previousPosition)
+    .filter((position): position is number => position !== null);
+  const top3Count = currentMeasured.filter((position) => position <= 3).length;
+  const top10Count = currentMeasured.filter((position) => position <= 10).length;
+  const previousTop3 = previousMeasured.filter((position) => position <= 3).length;
+  const previousTop10 = previousMeasured.filter((position) => position <= 10).length;
+  const queryCount = args.trackedQuerySet.expectedCount;
+  const history = periodSnapshots.map((snapshot) => {
+    const positions = snapshot.queries
+      .map((query) => query.position)
+      .filter((position): position is number => position !== null);
+    const pointTop3 = positions.filter((position) => position <= 3).length;
+    const pointTop10 = positions.filter((position) => position <= 10).length;
+    return {
+      date: snapshot.capturedAt,
+      top3Count: pointTop3,
+      top10Count: pointTop10,
+      top3Share: positionShare(pointTop3, queryCount),
+      top10Share: positionShare(pointTop10, queryCount),
+    };
+  });
+  const countMovement = (movement: RankingMovement) =>
+    queries.filter((query) => query.movement === movement).length;
+
+  return {
+    source: exactSnapshots ? "topvisor" : "owner-provided",
+    queryCount,
+    measuredCount: currentMeasured.length,
+    top3Count,
+    top10Count,
+    top3Share: positionShare(top3Count, queryCount),
+    top10Share: positionShare(top10Count, queryCount),
+    top3Delta: top3Count - previousTop3,
+    top10Delta: top10Count - previousTop10,
+    improvedCount: countMovement("improved"),
+    declinedCount: countMovement("declined"),
+    unchangedCount: countMovement("unchanged"),
+    newCount: countMovement("new"),
+    lostCount: countMovement("lost"),
+    unmeasuredCount: countMovement("unmeasured"),
+    baselineLabel: exactSnapshots
+      ? previousSnapshot?.capturedAt ?? args.trackedQuerySet.baselineLabel
+      : args.trackedQuerySet.baselineLabel,
+    lastCapturedAt: currentSnapshot?.capturedAt ?? null,
+    history,
     queries,
   };
 }
@@ -780,7 +919,7 @@ export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteRepo
   const previousMetrica = args.previousMetricaData
     ? compileMetricaReport(args.previousMetricaData)
     : null;
-  const periodKey = args.periodKey ?? "twoWeeks";
+  const periodKey = args.periodKey ?? "month";
   const webmaster = currentWebmaster ?? args.previous?.webmaster ?? null;
   const metrica = currentMetrica ?? args.previous?.metrica ?? null;
   const webmasterStatus = sourceStatus(
@@ -795,10 +934,28 @@ export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteRepo
     false,
     args.metricaFailure,
   );
+  const topvisorStatus = sourceStatus(
+    args.site.topvisor.enabled,
+    (args.rankingData?.snapshots.length ?? 0) > 0,
+    false,
+    args.topvisorFailure,
+  );
   const webmasterPeriod = args.webmasterData?.queryCollections[0] ?? null;
   const metricaPeriod = args.metricaData?.yandexOrganic.meta ?? null;
   const hasAnyReport = webmaster !== null || metrica !== null;
-  const partial = webmasterStatus !== "success" || metricaStatus !== "success";
+  const partial =
+    webmasterStatus !== "success" ||
+    metricaStatus !== "success" ||
+    (args.site.topvisor.enabled && topvisorStatus !== "success");
+  const ranking = args.trackedQuerySet
+    ? compileTrackedRanking({
+        trackedQuerySet: args.trackedQuerySet,
+        rankingData: args.rankingData ?? null,
+        currentPeriod: args.currentPeriod,
+        webmaster,
+        clusterProfile: args.clusterProfile,
+      })
+    : null;
   const comparison = buildReportComparison({
     periodKey,
     currentPeriod: args.currentPeriod,
@@ -839,9 +996,26 @@ export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteRepo
         note: metricaPeriod?.sampled ? "Отчёт построен с семплированием" : null,
         safeErrorCode: args.metricaFailure?.code ?? null,
       },
+      topvisor: {
+        status: topvisorStatus,
+        fetchedAt:
+          args.rankingData?.fetchedAt ??
+          args.previous?.sources.topvisor?.fetchedAt ??
+          args.generatedAt,
+        periodStart: args.currentPeriod?.dateFrom ?? null,
+        periodEnd: args.currentPeriod?.dateTo ?? null,
+        timezone: args.site.timezone,
+        note: args.site.topvisor.enabled
+          ? null
+          : ranking
+            ? "Используется утверждённый исходный снимок позиций"
+            : null,
+        safeErrorCode: args.topvisorFailure?.code ?? null,
+      },
     },
     webmaster,
     metrica,
+    ranking,
     combined: compileCombinedReport({
       webmaster,
       metrica,

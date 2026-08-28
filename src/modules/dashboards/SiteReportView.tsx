@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MetricTrendChart } from "../../components/charts/MetricTrendChart";
+import { RankingShareChart } from "../../components/charts/RankingShareChart";
 import { KpiCard } from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { SectionCard } from "../../components/dashboard/SectionCard";
@@ -39,6 +40,12 @@ function factCard(label: string, value: string, note?: string) {
   );
 }
 
+function countDelta(value: number | null, label: string) {
+  if (value === null) return "Нет сравнения";
+  if (value === 0) return `Без изменений ${label}`;
+  return `${value > 0 ? "+" : ""}${value} ${label}`;
+}
+
 type SiteReportViewProps = {
   clientName: string;
   site: SiteRegistry;
@@ -62,6 +69,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
 
   const webmaster = snapshot.webmaster;
   const metrica = snapshot.metrica;
+  const ranking = snapshot.ranking;
   const health = webmaster?.health ?? null;
   const comparison = snapshot.comparison?.metrics;
   const periodStart = snapshot.sources.webmaster.periodStart ?? snapshot.sources.metrica.periodStart;
@@ -86,6 +94,54 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
         {periodControl}
         <p className="text-xs text-[var(--crm-text-muted)]">{mode === "live" ? "Live-данные" : "Демонстрационные данные"}</p>
       </div>
+
+      {ranking ? (
+        <section className="space-y-4" aria-labelledby="ranking-title">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--crm-primary)]">Поисковое ядро</p>
+              <h2 id="ranking-title" className="mt-1 text-2xl font-semibold text-[var(--crm-text)]">Позиции утверждённых запросов</h2>
+            </div>
+            <p className="text-xs text-[var(--crm-text-muted)]">
+              {ranking.source === "topvisor" && ranking.lastCapturedAt
+                ? `Последний съём Topvisor: ${ranking.lastCapturedAt}`
+                : `Исходный снимок · сравнение с ${ranking.baselineLabel}`}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiCard
+              label="Ядро запросов"
+              value={formatInteger(ranking.queryCount)}
+              delta={`${ranking.measuredCount} с текущей позицией`}
+              deltaTone="neutral"
+            />
+            <KpiCard
+              label="Запросы в Топ-10"
+              value={`${ranking.top10Count} из ${ranking.queryCount}`}
+              tone="primary"
+              delta={`${formatPercent(ranking.top10Share)} · ${countDelta(ranking.top10Delta, "к началу периода")}`}
+              deltaTone={(ranking.top10Delta ?? 0) > 0 ? "positive" : (ranking.top10Delta ?? 0) < 0 ? "negative" : "neutral"}
+            />
+            <KpiCard
+              label="Запросы в Топ-3"
+              value={`${ranking.top3Count} из ${ranking.queryCount}`}
+              tone="soft"
+              delta={`${formatPercent(ranking.top3Share)} · ${countDelta(ranking.top3Delta, "к началу периода")}`}
+              deltaTone={(ranking.top3Delta ?? 0) > 0 ? "positive" : (ranking.top3Delta ?? 0) < 0 ? "negative" : "neutral"}
+            />
+            <KpiCard
+              label="Динамика ядра"
+              value={`+${ranking.improvedCount} / −${ranking.declinedCount}`}
+              delta={`Новые ${ranking.newCount} · потеряны ${ranking.lostCount}`}
+              deltaTone={ranking.improvedCount > ranking.declinedCount ? "positive" : ranking.declinedCount > ranking.improvedCount ? "negative" : "neutral"}
+            />
+          </div>
+          <RankingShareChart ranking={ranking} />
+          <SectionCard title="Поисковые запросы" note={`${ranking.measuredCount} из ${ranking.queryCount} с текущей позицией`}>
+            <TrackedQueryTable ranking={ranking} />
+          </SectionCard>
+        </section>
+      ) : null}
 
       {health ? (
         <section className="space-y-4" aria-labelledby="health-title">
@@ -117,23 +173,6 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
               <KpiCard label="Средняя позиция" value={formatPosition(webmaster.summary.avgPosition)} delta={positionDelta.text} deltaTone={positionDelta.tone} />
             </div>
             <MetricTrendChart title="Динамика показов и кликов" subtitle="Ежедневные значения по всем запросам сайта." data={webmaster.visibilityTrend} metricLabel="Показы" secondaryMetricLabel="Клики" tertiaryMetricLabel="Средняя позиция" />
-            {webmaster.trackedCore ? (
-              <SectionCard title="Отслеживаемое поисковое ядро" note={`${webmaster.trackedCore.observedCount} из ${webmaster.trackedCore.expectedCount} запросов найдено в Вебмастере`}>
-                <div className="mb-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
-                  {factCard("Покрытие", formatPercent(webmaster.trackedCore.coveragePercent))}
-                  {factCard("Топ-3", formatInteger(webmaster.trackedCore.top3Count))}
-                  {factCard("4–10", formatInteger(webmaster.trackedCore.top10Count))}
-                  {factCard("11–20", formatInteger(webmaster.trackedCore.top20Count))}
-                  {factCard("Ниже 20", formatInteger(webmaster.trackedCore.below20Count))}
-                  {factCard("Нет замера", formatInteger(webmaster.trackedCore.unmeasuredCount))}
-                </div>
-                <TrackedQueryTable core={webmaster.trackedCore} />
-              </SectionCard>
-            ) : (
-              <SectionCard title="Наблюдаемые запросы" note="Данные Яндекс.Вебмастера">
-                <DataTable caption="Запросы, по которым сайт показывался" columns={["Запрос", "Показы", "Клики", "CTR", "Позиция"]} rows={webmaster.queries.filter((query) => query.device === "ALL").slice(0, 20).map((query) => ({ key: query.queryId, cells: [query.query, formatInteger(query.shows), formatInteger(query.clicks), formatPercent(query.ctr, 2), formatPosition(query.avgShowPosition)] }))} />
-              </SectionCard>
-            )}
           </>
         ) : <StatePanel state="empty" title="Нет данных Вебмастера" description="Источник не подключён или временно недоступен." />}
       </section>
@@ -167,8 +206,8 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
       </SectionCard>
 
       <footer className="border-t border-[var(--crm-border)] pt-5 text-xs leading-5 text-[var(--crm-text-muted)]">
-        <p>Источники: Яндекс.Вебмастер — видимость, индексация и диагностика; Яндекс.Метрика — обезличенный трафик и целевые действия.</p>
-        <p>Позиция Вебмастера — средняя позиция показа за период, а не точный ежедневный rank-check. Клики и визиты считаются разными системами.</p>
+        <p>Источники: Topvisor или утверждённый исходный снимок — точные позиции ядра; Яндекс.Вебмастер — спрос, индексация и диагностика; Яндекс.Метрика — обезличенный трафик и целевые действия.</p>
+        <p>Позиция Вебмастера остаётся средней позицией показа за период и не подменяет rank-check. Клики и визиты считаются разными системами.</p>
       </footer>
     </div>
   );
