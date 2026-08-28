@@ -71,13 +71,13 @@ if [ ! -d "$RELEASE" ]; then
   tar -xzf "$ARTIFACT" -C "$RELEASE"
 fi
 
-MANIFEST_SHA="$(jq -r .commitSha "$RELEASE/release-manifest.json")"
+MANIFEST_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commitSha"])' "$RELEASE/release-manifest.json")"
 if [ "$MANIFEST_SHA" != "$SHA" ]; then
   echo "Release manifest mismatch" >&2
   exit 1
 fi
 
-EXPECTED_LOCK="$(jq -r .dependencyLockSha256 "$RELEASE/release-manifest.json")"
+EXPECTED_LOCK="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["dependencyLockSha256"])' "$RELEASE/release-manifest.json")"
 ACTUAL_LOCK="$(sha256sum "$RELEASE/pnpm-lock.yaml" | cut -d ' ' -f1)"
 if [ "$EXPECTED_LOCK" != "$ACTUAL_LOCK" ]; then
   echo "Dependency lock checksum mismatch" >&2
