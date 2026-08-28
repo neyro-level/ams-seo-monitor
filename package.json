@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:live": "node scripts/dev-live.mjs",
+    "dev:reports": "node scripts/serve-local-reports.mjs",
     "build": "pnpm verify:config && next build",
     "build:collector": "tsc -p tsconfig.collector.json",
     "lint": "eslint .",

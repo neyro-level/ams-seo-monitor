@@ -70,6 +70,30 @@ pnpm collector:metrica:audit
 pnpm collector:sync:REDACTED_CLIENT_DATA
 ```
 
+## Локальный live-кабинет
+
+Один раз обновить локальные browser-safe reports:
+
+```bash
+doppler run --project ams-seo-monitor --config prd -- pnpm collector:sync:REDACTED_CLIENT_DATA
+```
+
+Запустить Next dev и loopback-only report server одной командой:
+
+```bash
+pnpm dev:live
+```
+
+Открыть:
+
+```text
+http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
+http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
+http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
+```
+
+Report server слушает только `127.0.0.1:3001`, читает `.local/shared/client-reports` и не меняет production/static-export contract.
+
 `pnpm build` должен создавать `out/`. `collector:webmaster:*` используют только environment secrets и печатают только safe JSON.
 
 ## Source of truth
