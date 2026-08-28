@@ -21,8 +21,9 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 5. `docs/DATA_MODEL.md`
 6. `docs/DESIGN_SYSTEM.md`
 7. `docs/SITE_REPORT_IA.md`
-8. `SECURITY.md`
-9. `docs/MASTER_PLAN.md`
+8. `docs/DIRECTOR_DASHBOARD_V2.md` — только для active dashboard V2 scope
+9. `SECURITY.md`
+10. `docs/MASTER_PLAN.md`
 
 Если задача только по UI shell, не нужно автоматически читать будущие server/runbook документы. Если задача расширяется в security, deploy или live onboarding — сначала дочитать профильный canon и переклассифицировать риск.
 
@@ -36,7 +37,7 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 - Snapshot schema — единый data contract.
 - Клиентская изоляция в production обеспечивается Nginx Basic Auth, не фронтендом.
 - Секреты, OAuth tokens, htpasswd и чувствительные error bodies не попадают в Git, build output, browser payload и logs.
-- Product hierarchy: `Общий кабинет → Проекты → Сайты → Отчёты`; внутренние `clientSlug` и `/c/*` сохраняются как совместимый data contract.
+- Product hierarchy: `Все проекты → Проект → Сайты → Отчёты`; внутренние `clientSlug` и `/c/*` сохраняются как совместимый data contract.
 
 ## Архитектурные границы
 
@@ -63,10 +64,11 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 Текущий блок:
 
-- read-only `/analyst/projects/`;
-- config-driven `pnpm project:add` без секретов и production mutations;
-- автоматическое build-time discovery новых project config files;
-- следующая отдельная волна: Nginx isolation, timers и production release.
+- read-only `/analyst/` = `Все проекты`; отдельного overview-route нет;
+- agreed navigation-only change: `Все проекты → Проект → Сайты`;
+- `docs/DIRECTOR_DASHBOARD_V2.md` remains discussion-only;
+- Summary/SEO/Traffic KPI and graph implementation is blocked until explicit owner approval;
+- production isolation/timers/deploy remain a later separate wave.
 
 Без отдельной owner-команды не делать:
 

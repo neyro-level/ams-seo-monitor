@@ -128,20 +128,20 @@ Each period compares with the immediately preceding equal-length period. Period 
 
 ## Projects level
 
-`/analyst/projects/` показывает проекты и их readiness. Новый project config создаётся через `pnpm project:add`; browser page остаётся read-only.
+`/analyst/` — единственный верхний экран `Все проекты`. Отдельного «Общего кабинета» и `/analyst/projects/` нет. Новый project config создаётся через `pnpm project:add`; browser page остаётся read-only.
 
 ## Projects navigation
 
 Sidebar hierarchy:
 
 ```text
-Общий кабинет
+Все проекты
 Проекты
-  REDACTED_CLIENT_DATA
+  Проект REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
-  Союз застройщиков
+  Проект Союз застройщиков
     Ростов-на-Дону — не подключён
 ```
 

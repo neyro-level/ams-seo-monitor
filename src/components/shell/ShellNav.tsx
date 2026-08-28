@@ -1,4 +1,4 @@
-import { Building2, ChartNoAxesCombined, FlaskConical, Globe2, House } from "lucide-react";
+import { Building2, ChartNoAxesCombined, Globe2 } from "lucide-react";
 import Link from "next/link";
 import type { NavigationSection } from "../../modules/access/navigation";
 
@@ -12,18 +12,14 @@ export function ShellNav({ sections, onNavigate }: ShellNavProps) {
     <nav className="space-y-6" aria-label="Навигация по отчётам">
       {sections.map((section) => (
         <div key={section.title} className="space-y-2">
-          <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
-            {section.title}
-          </p>
+          {section.title ? (
+            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">
+              {section.title}
+            </p>
+          ) : null}
           <ul className="space-y-1">
             {section.items.map((item) => {
-              const Icon = item.children?.length
-                ? Building2
-                : item.href === "/analyst/"
-                  ? ChartNoAxesCombined
-                  : item.href === "/demo/"
-                    ? FlaskConical
-                    : House;
+              const Icon = item.children?.length ? Building2 : ChartNoAxesCombined;
 
               return (
                 <li key={item.href} className="space-y-1">

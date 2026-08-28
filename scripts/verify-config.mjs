@@ -109,7 +109,7 @@ try {
 
   const clusterSlugs = new Set(clusters.map((item) => item.profileSlug));
   const goalClientSlugs = new Set(goalProfiles.map((item) => item.clientSlug));
-  const routeSet = new Set(["/", "/demo/", "/analyst/", "/analyst/projects/"]);
+  const routeSet = new Set(["/", "/demo/", "/analyst/"]);
   const clientSet = new Set();
   const siteUrlSet = new Set();
 

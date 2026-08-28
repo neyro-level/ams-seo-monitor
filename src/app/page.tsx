@@ -16,14 +16,12 @@ export default function HomePage() {
           title="AMS SEO Monitor"
           description="Приватный SEO-кабинет: проекты, сайты, Яндекс.Вебмастер, Метрика и управленческие отчёты."
           actions={
-            <div className="flex flex-wrap gap-2">
-              <Link href="/analyst/projects/" className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white">
-                Проекты
-              </Link>
-              <Link href="/analyst/" className="rounded-xl border border-[var(--crm-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--crm-text)]">
-                Общий кабинет
-              </Link>
-            </div>
+            <Link
+              href="/analyst/"
+              className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Все проекты
+            </Link>
           }
         />
 

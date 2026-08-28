@@ -27,11 +27,22 @@ export function buildNavigation(currentPath: string): NavigationSection[] {
     ? clients.filter((client) => client.clientSlug === currentClientSlug)
     : clients;
 
-  const clientSection: NavigationSection = {
-    title: currentClientSlug ? "Сайты проекта" : "Проекты",
+  const allProjectsSection: NavigationSection = {
+    title: "",
+    items: [
+      {
+        href: "/analyst/",
+        label: "Все проекты",
+        active: currentPath === "/analyst/",
+      },
+    ],
+  };
+
+  const projectsSection: NavigationSection = {
+    title: "Проекты",
     items: visibleClients.map((client) => ({
       href: `/c/${client.clientSlug}/`,
-      label: client.name,
+      label: `Проект ${client.name}`,
       active:
         currentPath === `/c/${client.clientSlug}/` ||
         currentPath.startsWith(`/c/${client.clientSlug}/`),
@@ -44,58 +55,5 @@ export function buildNavigation(currentPath: string): NavigationSection[] {
     })),
   };
 
-  if (currentClientSlug) {
-    return [
-      {
-        title: "Обзор",
-        items: [
-          {
-            href: "/analyst/",
-            label: "Общий кабинет",
-            active: false,
-          },
-          {
-            href: "/analyst/projects/",
-            label: "Проекты",
-            active: false,
-          },
-        ],
-      },
-      clientSection,
-    ];
-  }
-
-  const overviewItems: NavigationItem[] = [
-    {
-      href: "/analyst/",
-      label: "Общий кабинет",
-      active: currentPath === "/analyst/",
-    },
-    {
-      href: "/analyst/projects/",
-      label: "Проекты",
-      active: currentPath.startsWith("/analyst/projects/"),
-    },
-  ];
-
-  if (currentPath === "/" || currentPath === "/demo/") {
-    overviewItems.unshift({
-      href: "/",
-      label: "Старт",
-      active: currentPath === "/",
-    });
-    overviewItems.push({
-      href: "/demo/",
-      label: "Демо",
-      active: currentPath === "/demo/",
-    });
-  }
-
-  return [
-    {
-      title: "Обзор",
-      items: overviewItems,
-    },
-    clientSection,
-  ];
+  return [allProjectsSection, projectsSection];
 }

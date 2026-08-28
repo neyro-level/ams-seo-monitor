@@ -7,24 +7,29 @@ describe("static client navigation isolation", () => {
     const items = sections.flatMap((section) => section.items);
 
     expect(sections).toHaveLength(2);
-    expect(items.map((item) => item.label)).toEqual(["Общий кабинет", "Проекты", "REDACTED_CLIENT_DATA"]);
-    expect(items[2]?.children?.map((item) => item.label)).toEqual([
+    expect(items.map((item) => item.label)).toEqual(["Все проекты", "Проект REDACTED_CLIENT_DATA"]);
+    expect(items[1]?.children?.map((item) => item.label)).toEqual([
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
     ]);
     expect(JSON.stringify(sections)).not.toContain("Союз застройщиков");
-    expect(JSON.stringify(sections)).not.toContain("\"label\":\"Аналитик\"");
+    expect(items[0]?.active).toBe(false);
   });
 
-  it("renders every project and the projects route for the analyst", () => {
-    const sections = buildNavigation("/analyst/projects/");
+  it("renders all projects directly on the analyst root", () => {
+    const sections = buildNavigation("/analyst/");
     const serialized = JSON.stringify(sections);
-    const overviewItems = sections[0]?.items ?? [];
+    const mainItems = sections[0]?.items ?? [];
+    const projectItems = sections[1]?.items ?? [];
 
-    expect(serialized).toContain("REDACTED_CLIENT_DATA");
-    expect(serialized).toContain("Союз застройщиков");
-    expect(overviewItems.map((item) => item.label)).toEqual(["Общий кабинет", "Проекты"]);
-    expect(overviewItems[1]?.active).toBe(true);
+    expect(sections[0]?.title).toBe("");
+    expect(mainItems.map((item) => item.label)).toEqual(["Все проекты"]);
+    expect(mainItems[0]?.active).toBe(true);
+    expect(projectItems.map((item) => item.label)).toEqual([
+      "Проект REDACTED_CLIENT_DATA",
+      "Проект Союз застройщиков",
+    ]);
+    expect(serialized).not.toContain("Общий кабинет");
   });
 });

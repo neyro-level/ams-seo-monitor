@@ -29,7 +29,7 @@ export default async function SiteReportPage({ params }: SiteReportPageProps) {
   return (
     <AppShell currentPath={`/c/${clientSlug}/${siteSlug}/`}>
       <LiveSiteReport
-        clientName={client.name}
+        clientName={`Проект ${client.name}`}
         clientSlug={clientSlug}
         site={site}
         backHref={`/c/${clientSlug}/`}

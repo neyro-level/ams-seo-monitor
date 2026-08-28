@@ -114,6 +114,24 @@ Aggregate `goalReaches` stays available only as actions; director conversion use
 - runtime report path follows `/c/{clientSlug}/data/{siteSlug}/{periodKey}/latest.json`;
 - Nginx alias/security activation remains Wave 3.
 
+## Dashboard V2 discussion
+
+Branch: `work/director-dashboard-v2`.
+
+`docs/DIRECTOR_DASHBOARD_V2.md` is a discussion draft, not an approved implementation contract. Until owner approval, only the agreed navigation hierarchy is implemented:
+
+```text
+Все проекты
+→ Проект REDACTED_CLIENT_DATA
+  → REDACTED_CLIENT_DATA
+  → REDACTED_CLIENT_DATA
+  → REDACTED_CLIENT_DATA
+→ Проект Союз застройщиков
+  → Ростов-на-Дону
+```
+
+Summary/SEO/Traffic composition, KPI set and graph redesign remain blocked pending discussion.
+
 ## Director cabinet UI foundation
 
 Implemented against the approved REDACTED_CLIENT_DATA references:
@@ -138,8 +156,8 @@ Page contract: `docs/SITE_REPORT_IA.md`.
 
 Implemented without changing static/no-DB architecture:
 
-- product hierarchy `Общий кабинет → Проекты → Сайты → Отчёты`;
-- read-only `/analyst/projects/`;
+- product hierarchy `Все проекты → Проект → Сайты → Отчёты`;
+- read-only `/analyst/` replaces the removed common overview;
 - automatic build-time discovery of `config/clients/*.json`;
 - project readiness cards and source/site counts;
 - `pnpm project:add` interactive operator wizard;

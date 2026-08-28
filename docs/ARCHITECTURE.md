@@ -79,9 +79,8 @@ registry/threshold/goal config
 
 ## Frontend IA
 
-- `/analyst/` — owner operational overview;
-- `/analyst/projects/` — read-only project registry and readiness;
-- `/c/{clientSlug}/` — project overview and site selection without fake aggregate ranking;
+- `/analyst/` — read-only `Все проекты` and readiness;
+- `/c/{clientSlug}/` — explicit project overview and site selection without fake aggregate ranking;
 - `/c/{clientSlug}/{siteSlug}/` — one site report with local tabs `Сводка / SEO / Трафик`.
 
 Подробный contract: `docs/SITE_REPORT_IA.md`.

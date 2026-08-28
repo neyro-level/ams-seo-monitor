@@ -53,7 +53,7 @@ function validateBundle(bundle: RegistryBundle) {
   const clientSlugs = new Set<string>();
   const clusterSlugs = new Set(bundle.clusters.map((cluster) => cluster.profileSlug));
   const goalClientSlugs = new Set(bundle.goals.map((profile) => profile.clientSlug));
-  const routePaths = new Set(["/analyst/", "/analyst/projects/"]);
+  const routePaths = new Set(["/analyst/"]);
 
   const siteUrls = new Set<string>();
   for (const client of bundle.clients) {
@@ -143,7 +143,7 @@ export function getSiteStaticParams() {
 }
 
 export function getApprovedRoutes() {
-  const routes = ["/", "/demo/", "/analyst/", "/analyst/projects/"];
+  const routes = ["/", "/demo/", "/analyst/"];
   for (const client of parsedBundle.clients) {
     routes.push(`/c/${client.clientSlug}/`);
     for (const site of client.sites) {
