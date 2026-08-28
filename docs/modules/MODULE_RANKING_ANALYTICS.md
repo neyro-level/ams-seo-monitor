@@ -63,11 +63,11 @@ enabled: false
 
 Нет отдельной mutation-команды. Ranking входит в normal site sync/report compilation.
 
-Разрешённые Topvisor methods:
+Разрешённые read-only `/get` services (HTTP POST transport):
 
 ```text
-GET positions_2/summary/chart
-GET positions_2/history
+positions_2/summary/chart
+positions_2/history
 ```
 
 ## Инварианты

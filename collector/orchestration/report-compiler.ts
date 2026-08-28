@@ -214,9 +214,7 @@ function compileTrackedCore(args: {
       ((observedCount / args.trackedQuerySet.expectedCount) * 100).toFixed(1),
     ),
     top3Count: measuredPositions.filter((position) => position <= 3).length,
-    top10Count: measuredPositions.filter(
-      (position) => position > 3 && position <= 10,
-    ).length,
+    top10Count: measuredPositions.filter((position) => position <= 10).length,
     top20Count: measuredPositions.filter(
       (position) => position > 10 && position <= 20,
     ).length,

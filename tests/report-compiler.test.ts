@@ -30,6 +30,7 @@ describe("SiteReportSnapshot compiler", () => {
   it("compiles both source DTOs into one validated snapshot", () => {
     const site = getREDACTED_CLIENT_DATASite();
     const currentWebmaster = createWebmasterSourceFixture(site);
+    currentWebmaster.queryCollections[0]!.queries[0]!.avgShowPosition = 2;
     const previousWebmaster = createWebmasterSourceFixture(site);
     previousWebmaster.allQueryHistory.find(
       (history) => history.indicator === "TOTAL_SHOWS",
@@ -100,6 +101,7 @@ describe("SiteReportSnapshot compiler", () => {
       observedCount: 1,
       coveragePercent: 100,
       top10Count: 1,
+      top3Count: 1,
     });
     expect(snapshot.webmaster?.trackedCore?.queries[0]).toMatchObject({
       query: "квартиры REDACTED_CLIENT_DATA",

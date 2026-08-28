@@ -120,11 +120,11 @@ Webmaster и Metrica сравниваются с непосредственно 
 
 ## Topvisor contract
 
-Direct read-only adapter использует только:
+Topvisor JSON API uses read-only `/get` services (HTTP POST transport):
 
 ```text
-GET positions_2/summary/chart
-GET positions_2/history
+positions_2/summary/chart
+positions_2/history
 ```
 
 Платный `checker/go`, keyword import, project mutations и любые `add/edit/del` операции не входят в sync pipeline.
