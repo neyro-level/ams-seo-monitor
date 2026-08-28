@@ -20,6 +20,20 @@
 - честные caveats и точки роста;
 - печать/PDF без ручной сборки.
 
+## Product hierarchy
+
+```text
+Общий кабинет
+→ Проекты
+  → Проект
+    → Сайты
+      → Отчёты
+```
+
+В пользовательском интерфейсе `REDACTED_CLIENT_DATA` и `Союз застройщиков` — проекты. Внутренние `clientSlug`, `CLIENT_VIEWER` и `/c/*` временно сохраняются как совместимый access/data contract.
+
+Новый проект в MVP создаётся через `pnpm project:add`: wizard пишет только nonsecret config, не перезаписывает существующие файлы и не выполняет commit/push/deploy.
+
 ## Пользователи
 
 ### SEO_ANALYST
@@ -42,7 +56,7 @@
 - пишет snapshots;
 - не обслуживает browser requests.
 
-## Первые клиенты
+## Первые проекты
 
 - `REDACTED_CLIENT_DATA`
   - `REDACTED_CLIENT_DATA` — подтверждённый URL `https://REDACTED_CLIENT_DATA`
@@ -75,6 +89,6 @@
 - static private dashboard;
 - read-only Yandex data;
 - history via versioned JSON snapshots;
-- multiple clients and sites;
+- multiple projects and sites;
 - no database in MVP;
 - clean migration path to future DB/auth stack.

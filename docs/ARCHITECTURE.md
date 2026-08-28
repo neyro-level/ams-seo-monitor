@@ -29,6 +29,8 @@ Production activation остаётся отдельной Wave 3/release зад�
 ## Implemented now
 
 - static routes from checked-in registry;
+- build-time project registry discovers every `config/clients/*.json` and matching goal profile;
+- `pnpm project:add` creates new nonsecret project/site config without a backend or DB;
 - three enabled REDACTED_CLIENT_DATA cities: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA;
 - frozen full-width dashboard shell;
 - complete read-only Webmaster/Metrica source adapters;
@@ -78,8 +80,9 @@ registry/threshold/goal config
 ## Frontend IA
 
 - `/analyst/` — owner operational overview;
-- `/c/{clientSlug}/` — выбор и сравнение сайтов клиента без fake aggregate ranking;
-- `/c/{clientSlug}/{siteSlug}/` — один site report с локальными вкладками `Сводка / SEO / Трафик`.
+- `/analyst/projects/` — read-only project registry and readiness;
+- `/c/{clientSlug}/` — project overview and site selection without fake aggregate ranking;
+- `/c/{clientSlug}/{siteSlug}/` — one site report with local tabs `Сводка / SEO / Трафик`.
 
 Подробный contract: `docs/SITE_REPORT_IA.md`.
 
@@ -98,6 +101,8 @@ collector/sources/yandex-webmaster/        Webmaster adapter
 collector/sources/yandex-metrica/          Metrica adapter
 collector/orchestration/                   config, sync and report compiler
 collector/storage/                         atomic publish/locks/LKG
+scripts/project-add.mjs                     interactive operator wizard
+scripts/project-config.mjs                  safe config builder/write boundary
 ```
 
 ## Security boundary

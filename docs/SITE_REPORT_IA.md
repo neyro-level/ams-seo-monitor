@@ -126,13 +126,17 @@ Approved fixed comparable periods ending on the latest factual Webmaster date:
 
 Each period compares with the immediately preceding equal-length period. Period selection is bookmarkable through `?period=week|month|quarter|halfYear`. `Вчера` is forbidden for weekly Webmaster query data.
 
-## Multi-client navigation
+## Projects level
+
+`/analyst/projects/` показывает проекты и их readiness. Новый project config создаётся через `pnpm project:add`; browser page остаётся read-only.
+
+## Projects navigation
 
 Sidebar hierarchy:
 
 ```text
-Аналитик
-Клиенты
+Общий кабинет
+Проекты
   REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA

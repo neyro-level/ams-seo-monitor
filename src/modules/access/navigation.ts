@@ -28,7 +28,7 @@ export function buildNavigation(currentPath: string): NavigationSection[] {
     : clients;
 
   const clientSection: NavigationSection = {
-    title: currentClientSlug ? "Сайты" : "Клиенты",
+    title: currentClientSlug ? "Сайты проекта" : "Проекты",
     items: visibleClients.map((client) => ({
       href: `/c/${client.clientSlug}/`,
       label: client.name,
@@ -54,6 +54,11 @@ export function buildNavigation(currentPath: string): NavigationSection[] {
             label: "Общий кабинет",
             active: false,
           },
+          {
+            href: "/analyst/projects/",
+            label: "Проекты",
+            active: false,
+          },
         ],
       },
       clientSection,
@@ -63,8 +68,13 @@ export function buildNavigation(currentPath: string): NavigationSection[] {
   const overviewItems: NavigationItem[] = [
     {
       href: "/analyst/",
-      label: "Аналитик",
+      label: "Общий кабинет",
       active: currentPath === "/analyst/",
+    },
+    {
+      href: "/analyst/projects/",
+      label: "Проекты",
+      active: currentPath.startsWith("/analyst/projects/"),
     },
   ];
 

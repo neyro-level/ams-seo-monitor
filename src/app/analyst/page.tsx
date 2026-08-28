@@ -13,40 +13,53 @@ export default function AnalystPage() {
     <AppShell currentPath="/analyst/">
       <div className="space-y-6">
         <PageHeader
-          eyebrow="SEO-аналитик"
-          title="Контур клиентов"
-          description="Сайты и подключённые источники. Live report snapshots появятся после сборки единого data pipeline."
+          eyebrow="АМС"
+          title="Общий кабинет"
+          description="Верхний уровень AMS SEO Monitor: проекты, сайты и готовность источников."
         />
 
         <StatusBanner
-          tone="warning"
-          title="Data pipeline ещё не замкнут"
-          description="Webmaster и Metrica уже читаются live, но client snapshots пока не публикуются. Ниже показана только registry readiness."
+          tone="info"
+          title="Read-only контур готов к обкатке"
+          description="Проекты пока создаются через безопасный operator wizard. Полноценная browser-админка и БД остаются будущей волной."
         />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <KpiCard label="Клиенты" value={String(overview.totalClients)} tone="primary" />
+          <KpiCard label="Проекты" value={String(overview.totalProjects)} tone="primary" />
           <KpiCard label="Всего сайтов" value={String(overview.totalSites)} />
           <KpiCard label="Подключённые источники" value={String(overview.enabledSources)} />
           <KpiCard label="Плановые сайты" value={String(overview.plannedSites)} tone="soft" />
         </section>
 
-        <SectionCard title="Клиенты" note="Registry-driven">
+        <SectionCard title="Управление" note="Без БД">
           <div className="grid gap-3 lg:grid-cols-2">
-            {overview.clientCards.map((client) => (
-              <article key={client.clientSlug} className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4">
-                <h2 className="text-lg font-semibold text-[var(--crm-text)]">{client.name}</h2>
-                <p className="mt-2 text-sm text-[var(--crm-text-secondary)]">
-                  {client.connectedSites} подключён / {client.plannedSites} ожидает onboarding.
-                </p>
-                <Link
-                  href={`/c/${client.clientSlug}/`}
-                  className="mt-4 inline-flex rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
-                >
-                  Открыть клиента
-                </Link>
-              </article>
-            ))}
+            <article className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--crm-text-muted)]">
+                Реестр
+              </p>
+              <h2 className="mt-2 text-lg font-semibold text-[var(--crm-text)]">Проекты и сайты</h2>
+              <p className="mt-2 text-sm leading-5 text-[var(--crm-text-secondary)]">
+                REDACTED_CLIENT_DATA, Союз застройщиков и следующие проекты в одной проверяемой иерархии.
+              </p>
+              <Link
+                href="/analyst/projects/"
+                className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
+              >
+                Открыть проекты
+              </Link>
+            </article>
+            <article className="rounded-2xl border border-[var(--crm-border)] bg-white p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--crm-text-muted)]">
+                Добавление
+              </p>
+              <h2 className="mt-2 text-lg font-semibold text-[var(--crm-text)]">Operator wizard</h2>
+              <p className="mt-2 text-sm leading-5 text-[var(--crm-text-secondary)]">
+                Новый проект создаётся локальной командой, проходит validation и не затрагивает production автоматически.
+              </p>
+              <code className="mt-4 block rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] px-3 py-2 text-sm text-[var(--crm-text)]">
+                pnpm project:add
+              </code>
+            </article>
           </div>
         </SectionCard>
       </div>
