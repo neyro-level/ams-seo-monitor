@@ -2,12 +2,13 @@
 
 ## Статус
 
-Wave 1: no live token rotation yet. This document fixes the safe future rule-set.
+OAuth tokens используются в live local sync через Doppler. Production materialized env создаётся при deploy.
 
-## Planned secret classes
+## Secret classes
 
 - `YANDEX_WEBMASTER_OAUTH_TOKEN`
 - `YANDEX_METRICA_OAUTH_TOKEN`
+- optional `TOPVISOR_USER_ID` / `TOPVISOR_API_KEY`
 - runtime env materialization file
 - client Basic Auth credentials
 
@@ -19,11 +20,13 @@ Wave 1: no live token rotation yet. This document fixes the safe future rule-set
 - tokens are never printed to chat, logs, Git or browser payload;
 - 401/403 must stop blind retry and trigger operator action.
 
-## Future rotation sequence
+## Rotation sequence
 
-1. obtain fresh token with read-only scope;
-2. update Doppler value;
-3. materialize server env safely;
-4. run preflight;
-5. verify next sync success;
-6. retire obsolete token.
+1. obtain fresh token/key with required read-only scope;
+2. update `ams-seo-monitor/prd` in Doppler;
+3. run provider preflight without printing values;
+4. materialize server env with root ownership and mode `0600`;
+5. run one manual site/client sync;
+6. validate published report freshness and systemd result;
+7. retire obsolete token/key;
+8. record safe rotation proof without values.

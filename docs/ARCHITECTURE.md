@@ -52,7 +52,7 @@ source DTO
 → atomic snapshots/source-bundles/client-reports publish
 → /c/{client}/data/{site}/{period}/latest.json
 → browser validation
-→ Summary / SEO / Traffic and conversions
+→ unified director report
 ```
 
 ## Data dependency direction
@@ -71,19 +71,20 @@ registry/threshold/goal config
 
 ## Remaining runtime work
 
-1. Refine query clusters, brand/nonbrand and opportunity scoring.
-2. Add scheduled `systemd` daily/weekly commands and sync-run state.
-3. Build analyst-only views from preserved source bundles.
-4. Activate protected Nginx aliases and client isolation.
-5. Deploy reviewed exact `main` artifact to `https://seo-monitor.ams24.ru`.
+1. Activate production Nginx aliases and Basic Auth isolation.
+2. Materialize server env and install daily/weekly systemd units.
+3. Add sync-run/stale operational monitoring.
+4. Build analyst-only views from preserved internal source bundles.
+5. Optionally enable live Topvisor mapping after credentials/owner decision.
+6. Deploy reviewed exact `main` artifact to `https://seo-monitor.ams24.ru`.
 
 ## Frontend IA
 
 - `/analyst/` — read-only `Все проекты` and readiness;
-- `/c/{clientSlug}/` — explicit project overview and site selection without fake aggregate ranking;
-- `/c/{clientSlug}/{siteSlug}/` — one site report with local tabs `Сводка / SEO / Трафик`.
+- `/c/{clientSlug}/` — project overview and site selection without fake aggregate ranking;
+- `/c/{clientSlug}/{siteSlug}/` — one unified director report.
 
-Подробный contract: `docs/SITE_REPORT_IA.md`.
+Contracts: `docs/SITE_REPORT_IA.md`, `docs/DIRECTOR_DASHBOARD_V2.md`.
 
 ## Code zones
 
@@ -98,11 +99,20 @@ src/shared/schemas/                       registry/source/snapshot schemas
 
 collector/sources/yandex-webmaster/        Webmaster adapter
 collector/sources/yandex-metrica/          Metrica adapter
+collector/sources/topvisor/                optional ranking source
+collector/analytics/                       periods/query analytics
 collector/orchestration/                   config, sync and report compiler
 collector/storage/                         atomic publish/locks/LKG
-scripts/project-add.mjs                     interactive operator wizard
-scripts/project-config.mjs                  safe config builder/write boundary
+scripts/project-add.mjs                    interactive operator wizard
+scripts/project-config.mjs                 safe config builder/write boundary
 ```
+
+Module contracts:
+
+- `docs/modules/MODULE_PROJECT_REGISTRY.md`;
+- `docs/modules/MODULE_DATA_PIPELINE.md`;
+- `docs/modules/MODULE_RANKING_ANALYTICS.md`;
+- `docs/DIRECTOR_DASHBOARD_V2.md`.
 
 ## Security boundary
 

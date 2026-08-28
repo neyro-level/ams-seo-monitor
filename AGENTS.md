@@ -16,14 +16,16 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 1. `README.md`
 2. `AGENTS.md`
-3. `docs/PRODUCT.md`
-4. `docs/ARCHITECTURE.md`
-5. `docs/DATA_MODEL.md`
-6. `docs/DESIGN_SYSTEM.md`
-7. `docs/SITE_REPORT_IA.md`
-8. `docs/DIRECTOR_DASHBOARD_V2.md` — только для active dashboard V2 scope
-9. `SECURITY.md`
-10. `docs/MASTER_PLAN.md`
+3. `docs/PROJECT_PASSPORT.md`
+4. `docs/PRODUCT.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/DATA_MODEL.md`
+7. `docs/DESIGN_SYSTEM.md`
+8. `docs/SITE_REPORT_IA.md`
+9. `docs/DIRECTOR_DASHBOARD_V2.md` — для dashboard scope
+10. профильный `docs/modules/MODULE_*.md`
+11. `SECURITY.md`
+12. `docs/MASTER_PLAN.md`
 
 Если задача только по UI shell, не нужно автоматически читать будущие server/runbook документы. Если задача расширяется в security, deploy или live onboarding — сначала дочитать профильный canon и переклассифицировать риск.
 
@@ -64,11 +66,11 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 Текущий блок:
 
-- read-only `/analyst/` = `Все проекты`; отдельного overview-route нет;
-- agreed navigation-only change: `Все проекты → Проект → Сайты`;
-- `docs/DIRECTOR_DASHBOARD_V2.md` remains discussion-only;
-- Summary/SEO/Traffic KPI and graph implementation is blocked until explicit owner approval;
-- production isolation/timers/deploy remain a later separate wave.
+- Director Dashboard V2 реализован на `work/director-dashboard-v2`;
+- unified report, tracked ranking, mobile constraints и softened sidebar states готовы;
+- Topvisor live mapping остаётся disabled, owner fallback явно маркирован;
+- branch требует documentation sync, HEAVY review, PR и merge;
+- production isolation/timers/deploy выполняются только после exact merged `main`.
 
 Без отдельной owner-команды не делать:
 

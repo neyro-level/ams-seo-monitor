@@ -2,7 +2,7 @@
 
 ## Статус
 
-`APPROVED / IN IMPLEMENTATION`.
+`IMPLEMENTED / READY FOR REVIEW`.
 
 Цель: единый управленческий отчёт по сайту без вкладок. Первый экран показывает результат утверждённого поискового ядра; ниже остаются техническое здоровье, поисковый спрос и органический трафик.
 
@@ -16,6 +16,25 @@
 ```
 
 Route сайта: `/c/{clientSlug}/{siteSlug}/`.
+
+## Роли и права
+
+- `CLIENT_VIEWER` читает единый отчёт только своего project/site subtree.
+- `SEO_ANALYST` читает все отчёты и source/freshness detail.
+- Dashboard не выполняет mutations и не получает provider credentials.
+
+## Владение данными
+
+Dashboard не владеет provider/source DTO. Его единственный вход — validated browser-safe `SiteReportSnapshot`.
+
+UI state:
+
+- period query `week|month|quarter|halfYear`;
+- tracked-query table filter;
+- loading/error/partial/stale states;
+- раскрытие первых 20 строк ядра.
+
+Provider calculations, periods, conversion/ranking semantics принадлежат compiler/source modules, не JSX.
 
 ## Периоды
 
@@ -121,6 +140,32 @@ GET positions_2/history
 - Webmaster clicks и Metrica visits не объединяются в одну конверсию;
 - goal reaches не называются уникальными лидами;
 - разные сайты не суммируются в фиктивную среднюю позицию.
+
+## Взаимодействия
+
+- Project Registry задаёт project/site navigation.
+- Data Pipeline публикует period-aware report JSON.
+- Ranking Analytics формирует `ranking`.
+- `LiveSiteReport` загружает и валидирует protected report.
+- Frozen primitives и tokens задаёт `docs/DESIGN_SYSTEM.md`.
+
+## Audit и privacy
+
+- browser payload не содержит credentials, raw source bundles, host/counter IDs и stack traces;
+- source/freshness/baseline labels остаются видимыми;
+- report view не ведёт application audit log в MVP;
+- authenticated access evidence принадлежит Nginx/system logs в Wave 3.
+
+## Проверки
+
+- month default and URL-preserved selector;
+- loading/error/partial/stale;
+- tracked query filter counts;
+- exact source and baseline labels;
+- no whole-page overflow at 375/768/1280/1440;
+- local table overflow only;
+- keyboard/focus/touch targets;
+- build with all static project/site routes.
 
 ## Responsive acceptance
 

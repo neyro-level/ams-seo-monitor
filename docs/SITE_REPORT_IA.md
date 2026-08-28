@@ -2,171 +2,118 @@
 
 ## Решение
 
-Один сайт = один route отчёта:
+Один site = один единый director report:
 
 ```text
 /c/{clientSlug}/{siteSlug}/
 ```
 
-Внутри route — три локальные вкладки:
+Вкладок `Сводка / SEO / Трафик` нет. Периоды переключают данные на одной странице:
 
-1. `Сводка`
-2. `SEO`
-3. `Трафик и обращения`
+```text
+?period=week|month|quarter|halfYear
+```
 
-По умолчанию открывается `Сводка`. Отдельные Webmaster/Metrica top-level routes не создаются: это раздробит один управленческий отчёт и усложнит работу клиента.
+Подробный screen contract: `docs/DIRECTOR_DASHBOARD_V2.md`.
 
-## Роли экранов
+## Product hierarchy
 
-### Client overview `/c/{clientSlug}/`
+```text
+Все проекты
+→ Проект
+  → Сайты
+    → Единый отчёт
+```
 
-Нужен для клиента с несколькими сайтами.
+Внешний термин — `Проект`. Internal `clientSlug`, `CLIENT_VIEWER` и `/c/*` пока сохраняются для совместимости.
 
-- одна карточка на сайт;
-- статус источников и актуальность;
-- четыре компактных KPI сайта;
-- один главный вывод/риск;
-- переход в отчёт сайта;
-- planned site честно показывает `Не подключён`.
+## `/analyst/` — Все проекты
 
-Показатели разных рынков и городов не суммируются в «общую позицию». Каждый сайт сравнивается со своим предыдущим периодом.
+- единственный верхний read-only экран;
+- project readiness;
+- sites/source counts;
+- переход в project overview;
+- нет отдельного `/analyst/projects/`;
+- browser не создаёт/редактирует config.
 
-Для клиента с одним сайтом overview остаётся короткой точкой входа, а не дублирует весь site report.
+## `/c/{clientSlug}/` — Проект
 
-### Site summary `/c/{clientSlug}/{siteSlug}/`
+- одна compact card на site;
+- source readiness/freshness;
+- переход в site report;
+- planned site честно показывает `Не подключён`;
+- разные города/рынки не суммируются в fake rank.
 
-Целевая аудитория: директор/владелец. Ответ за 30–60 секунд:
+## `/c/{clientSlug}/{siteSlug}/` — Единый отчёт
 
-- что изменилось;
-- есть ли проблема;
-- сколько поискового трафика и целевых визитов;
-- что делать следующим.
+Порядок:
 
-### SEO tab
+1. позиции утверждённого ядра;
+2. KPI Топ-3/Топ-10 и изменения;
+3. history share chart;
+4. tracked query table;
+5. site health;
+6. Webmaster demand KPI/chart;
+7. Metrica traffic/conversion KPI/chart;
+8. landing pages;
+9. main risk and growth opportunity.
 
-Director-level SEO detail:
+Цель: директор сначала видит результат утверждённого ядра, затем причины и бизнес-трафик. Полные provider/source bundles остаются analyst-only.
 
-- 4 KPI: total shows, clicks, CTR, average position;
-- one visibility trend;
-- up to 5 deterministic demand clusters;
-- up to 5 priority queries and compact search coverage: pages in search, excluded pages, sitemap status, critical issues.
+## Period contract
 
-Full 500-query pool, HTTP histories, links and raw diagnostics stay in internal source bundles for analyst tooling.
+| Key | Label | Days |
+|---|---|---:|
+| `week` | Неделя | 7 |
+| `month` | Месяц | 28 |
+| `quarter` | 3 месяца | 90 |
+| `halfYear` | Полгода | 180 |
 
-### Traffic and conversions tab
-
-- 4 KPI: Yandex organic visits, unique target visits, conversion, organic share;
-- organic and target-visit trend;
-- up to 4 main target-action types;
-- up to 5 landing pages with visits, unique target visits and conversion;
-- compact quality block: bounce rate, depth and average duration.
-
-Device tables, all goals, 50 landing pages and sampling details stay analyst-only.
-
-## Director summary
-
-Six approved KPI:
-
-1. Total search shows from Webmaster all-query history.
-2. Search clicks from Webmaster all-query history.
-3. Yandex organic visits from Metrica.
-4. Unique target visits across the allowlisted goals.
-5. Organic conversion: target visits / organic visits.
-6. Pages in Yandex search.
-
-Each KPI shows current value and equal-period change.
-
-One management panel contains:
-
-- main result;
-- main risk;
-- main growth opportunity;
-- recommended action.
-
-Two charts remain:
-
-- total search shows/clicks;
-- organic/unique target visits.
+`month` — default. Webmaster/Metrica используют непосредственно предшествующий equal period. Ranking использует первый/последний exact capture внутри периода либо явно labelled owner baseline.
 
 ## Data semantics
 
-- Webmaster clicks and Metrica visits remain separate.
-- Their ratio is diagnostic, not conversion.
-- Goal reaches are cumulative actions, not unique leads.
-- Unique target visits use an OR union of allowlisted goals and count one visit once.
-- Current and previous periods always have equal fixed length.
-- Webmaster totals come from `/search-queries/all/history`; popular pools are used only for opportunities.
-- Partial/stale/suppressed values never become zero silently.
+- exact rank source: Topvisor or owner fallback;
+- Webmaster average display position не заменяет tracked ranking;
+- Webmaster clicks и Metrica visits не называются одной conversion;
+- unique target visits используют OR union allowlisted goals;
+- goal reaches остаются cumulative actions;
+- null/partial/stale не превращаются в zero;
+- source/baseline/period labels видимы.
 
-## Progressive disclosure
+## Navigation
 
-На `Сводке` запрещены:
-
-- полная таблица запросов;
-- полный список diagnostics;
-- 50 landing pages;
-- технические IDs;
-- длинная методология.
-
-Вместо этого:
-
-- top 3 opportunities;
-- top 3 alerts;
-- один combined trend block;
-- ссылки/вкладки на detail.
-
-## Period presets
-
-Approved fixed comparable periods ending on the latest factual Webmaster date:
-
-- `Неделя`: 7 days;
-- `Месяц`: 28 days, default;
-- `3 месяца`: 90 days;
-- `Полгода`: 180 days.
-
-Webmaster and Metrica compare with the immediately preceding equal-length period. Ranking compares the first and last capture inside the selected period. Period selection is bookmarkable through `?period=week|month|quarter|halfYear`.
-
-## Projects level
-
-`/analyst/` — единственный верхний экран `Все проекты`. Отдельного «Общего кабинета» и `/analyst/projects/` нет. Новый project config создаётся через `pnpm project:add`; browser page остаётся read-only.
-
-## Projects navigation
-
-Sidebar hierarchy:
+Analyst:
 
 ```text
 Все проекты
 Проекты
-  Проект REDACTED_CLIENT_DATA
+  REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
-  Проект Союз застройщиков
+  Союз застройщиков
     Ростов-на-Дону — не подключён
 ```
 
-Client credentials в production открывают только свой subtree. Analyst credentials открывают все subtrees.
+Client credentials в production открывают только свой project subtree. Analyst credentials открывают все subtrees.
 
-## Current implementation status
+## Responsive contract
 
-- three REDACTED_CLIENT_DATA city routes load live protected report JSON;
-- source periods are aligned across four presets;
-- equal previous-period comparison and unique target visits are active;
-- query clusters use checked-in deterministic brand/topic rules;
-- report compiler and atomic period-aware publication are active;
-- detailed current/previous source bundles stay internal;
-- `/demo/` remains the only fixture route;
-- loading/error states do not expose technical details;
-- client navigation renders only its own subtree.
+- 375/768: drawer, local table/control overflow, touch targets ≥44px;
+- 1280/1440: fixed 260px sidebar, four KPI per row;
+- report wrapper never exceeds workspace;
+- whole-page horizontal overflow prohibited;
+- tracked-query table scrolls only inside own container.
 
-Remaining before production:
+## Current status
 
-```text
-scheduled sync/timers
-→ Nginx protected aliases + Basic Auth isolation
-→ exact-main release
-```
+- three REDACTED_CLIENT_DATA sites load protected live reports;
+- four period presets and equal comparisons are active;
+- unified dashboard and tracked ranking foundation implemented;
+- `/demo/` remains isolated fixture;
+- production auth/timers/deploy remain Wave 3.
 
 ## Visual contract
 
-Все три вкладки используют `docs/DESIGN_SYSTEM.md`. Новая вкладка не создаёт новую дизайн-систему, палитру, радиусы или плотность.
+Only `docs/DESIGN_SYSTEM.md` tokens/primitives. Ranking, Webmaster and Metrica sections do not introduce separate visual languages.

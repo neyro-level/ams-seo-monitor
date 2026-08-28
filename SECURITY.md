@@ -21,13 +21,15 @@ Production access boundary — Nginx HTTPS + Basic Auth per protected location. 
 ## MVP security rules
 
 - Только read-only Yandex scopes: `webmaster:hostinfo` и `metrika:read`.
-- Никаких write endpoints Яндекса.
+- Topvisor разрешает только read-only position history; checker/import/add/edit/delete запрещены.
+- Никаких write endpoints providers.
 - Никаких URL tokens, secret links и password query params.
 - Никаких cookies/sessions/application auth в MVP.
-- Никаких секретов в `config/`.
+- Никаких секретов в `config/` или tracked query sets.
 - Никаких raw API responses и secret-bearing error bodies в snapshots.
+- Internal source bundles не публикуются в browser paths.
 - Никаких secrets в logs.
-- Никаких browser-to-Yandex API calls.
+- Никаких browser-to-provider API calls.
 
 ## Что считается секретом
 
@@ -50,6 +52,7 @@ Production access boundary — Nginx HTTPS + Basic Auth per protected location. 
 - cluster profiles;
 - goal-profile names;
 - alert thresholds.
+- tracked query text, owner baseline and nonsecret Topvisor project/region mapping.
 
 ## Planned production model
 
@@ -64,14 +67,18 @@ Planned auth files:
 └── REDACTED_CLIENT_DATA.htpasswd
 ```
 
-Live OAuth adapters уже проверены локально через Doppler. Production env materialization и auth files ещё не создавались.
+Live OAuth adapters и local sync проверены через Doppler. Production materialized env, htpasswd files и Nginx aliases создаются только внутри exact-main deploy.
 
 ## Verification focus
 
 Проверки должны ловить:
 
-- секреты в Git/build/browser/logs;
-- неправильную client isolation;
-- публичные bypass paths;
-- неверный enabled placeholder config;
-- snapshot schema drift.
+- secret absence in Git/build/browser/logs;
+- wrong client auth denial;
+- matching HTML/data path protection;
+- analyst access to allowed subtrees;
+- no directory index/default-host bypass;
+- no raw/internal source bundle in client paths;
+- valid project/source/tracked-query config;
+- snapshot schema drift;
+- exact deployed SHA and rollback readiness.

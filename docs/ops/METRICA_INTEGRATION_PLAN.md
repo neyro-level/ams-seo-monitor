@@ -1,16 +1,18 @@
 # Yandex Metrica integration plan
 
+## Статус
+
+`COMPLETED / OPERATIONAL REFERENCE`.
+
 ## Decision
 
-Для AMS SEO Monitor используем **тот же Yandex login**, если у него уже есть доступ к счётчику Бастиона.
+- отдельное Yandex OAuth приложение с `metrika:read`;
+- тот же service Yandex login, имеющий доступ к counters;
+- отдельный Metrica token/env contract;
+- exact per-site counter and goal allowlist in checked-in nonsecret config;
+- browser never calls Metrica API.
 
-OAuth app:
-
-- **можно использовать то же приложение**, если токен выпущен для app с доступом `metrika:read`;
-- **не требуется отдельное приложение только потому, что уже есть Webmaster**;
-- внутри проекта всё равно держим **отдельные env variables для Metrica token**, даже если app общий.
-
-Это самый boring и безопасный вариант: один сервисный Yandex login, один или два OAuth app по фактической доступности, но раздельные токены и раздельные env names.
+Live local sync подтверждён для REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA и REDACTED_CLIENT_DATA.
 
 ## Official basis
 

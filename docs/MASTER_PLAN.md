@@ -127,17 +127,19 @@ The approved contract is `docs/DIRECTOR_DASHBOARD_V2.md`:
     → Единый отчёт
 ```
 
-Implemented foundation:
+Implemented:
 
-- one report without Summary/SEO/Traffic tabs;
+- one unified report without tabs;
 - visible `Неделя / Месяц / 3 месяца / Полгода` selector with month default;
-- exact tracked-core ranking dashboard before site health;
-- Top-3/Top-10 KPI and history chart with owner-provided fallback;
-- four Webmaster KPI and a real shows/clicks chart below health;
-- Metrica traffic and landing-page section;
-- client route navigation contains only its own client subtree;
+- tracked query ranking dashboard before site health;
+- Top-3/Top-10 KPI and share chart with owner-provided fallback;
+- tracked-query table and filters;
+- Webmaster health, demand KPI and real shows/clicks chart;
+- Metrica traffic, target visits and landing pages;
+- client route navigation contains only its own project subtree;
 - `/demo/` remains separate from client data;
-- live client routes fetch protected runtime snapshots and show safe loading/error states.
+- live client routes fetch protected runtime snapshots and show safe loading/error states;
+- mobile width constraints and softened active sidebar states.
 
 Page contract: `docs/SITE_REPORT_IA.md`.
 
@@ -176,19 +178,20 @@ Internal `clientSlug`, `CLIENT_VIEWER` and `/c/*` remain compatible until a futu
 - stale/partial operations;
 - token rotation/recovery/rollback.
 
-## Quality risk
+## Current release route
 
-Current next block is **HEAVY**: critical integrations, background collection, snapshot publication and future production impact.
+Current branch: `work/director-dashboard-v2`, pushed and clean before release preparation.
 
-Required checks:
+Risk: **HEAVY** — analytics/compiler, provider adapter, browser report schema, UI and future production impact.
+
+Required route:
 
 ```text
-pnpm verify:config
-pnpm verify:snapshots
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
-live read-only preflight/audit
-behavioral partial/LKG tests
+documentation sync
+→ full diff review
+→ exact-head HEAVY gate
+→ SourceCraft PR merge
+→ exact main artifact
+→ AMS Main Server deploy
+→ Nginx/auth/timers/live proof
 ```

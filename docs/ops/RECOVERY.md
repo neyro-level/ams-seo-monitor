@@ -2,7 +2,7 @@
 
 ## Статус
 
-Wave 1 prepares recovery assumptions; production recovery is implemented in Wave 3.
+Local data recovery behavior verified. Production release rollback is configured during Wave 3 deployment.
 
 ## Recovery principles
 
@@ -11,18 +11,23 @@ Wave 1 prepares recovery assumptions; production recovery is implemented in Wave
 - immutable releases enable static rollback;
 - `shared/` snapshots are not deleted during release rollback.
 
-## Current proof from Wave 1
+## Current proof
 
-Verified locally:
+Verified:
 
 - atomic publish keeps previous latest on simulated failure;
 - stale lock recovery works;
-- partial metrica payload keeps previous last-known-good section.
+- endpoint/source partial failure preserves period-specific last-known-good;
+- current/previous internal bundles remain separate from browser-safe reports;
+- three sites × four presets publish valid reports.
 
-## Future production recovery targets
+## Production recovery targets
 
-- rollback to previous `current` symlink;
-- validate `nginx -t` before reload;
-- detect stale/failed timers;
-- bounded lock cleanup;
-- operator checklist for token/access incidents.
+- releases are immutable;
+- `current` symlink switches atomically;
+- previous release remains until authenticated smoke passes;
+- rollback never deletes `shared/`;
+- `nginx -t` precedes reload;
+- timer/service failures are visible through systemd status/logs;
+- stale locks have bounded cleanup;
+- token/access incidents use `TOKEN_ROTATION.md`.
