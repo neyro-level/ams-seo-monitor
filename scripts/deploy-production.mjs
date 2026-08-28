@@ -60,6 +60,8 @@ RELEASE="$ROOT/releases/$SHA"
 ARTIFACT="/tmp/$ARTIFACT_NAME"
 CHECKSUM="/tmp/$ARTIFACT_NAME.sha256"
 PREVIOUS="$(readlink -f "$ROOT/current" || true)"
+NGINX_LIVE=/etc/nginx/sites-available/ams-seo-monitor.conf
+NGINX_BACKUP="$ROOT/shared/previous-nginx.conf"
 
 cd /tmp
 sha256sum -c "$ARTIFACT_NAME.sha256"
@@ -106,6 +108,8 @@ mv -Tf "$ROOT/current.next" "$ROOT/current"
 
 install -m 0644 "$RELEASE/ops/systemd/ams-seo-monitor.service" /etc/systemd/system/ams-seo-monitor.service
 install -m 0644 "$RELEASE/ops/systemd/ams-seo-monitor.timer" /etc/systemd/system/ams-seo-monitor.timer
+cp "$NGINX_LIVE" "$NGINX_BACKUP"
+install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
 systemctl daemon-reload
 
 if ! nginx -t; then
@@ -114,6 +118,8 @@ if ! nginx -t; then
     ln -s "$PREVIOUS" "$ROOT/current.rollback"
     mv -Tf "$ROOT/current.rollback" "$ROOT/current"
   fi
+  cp "$NGINX_BACKUP" "$NGINX_LIVE"
+  nginx -t
   exit 1
 fi
 systemctl reload nginx
@@ -123,8 +129,10 @@ if ! systemctl start ams-seo-monitor.service; then
     rm -f "$ROOT/current.rollback"
     ln -s "$PREVIOUS" "$ROOT/current.rollback"
     mv -Tf "$ROOT/current.rollback" "$ROOT/current"
-    systemctl reload nginx
   fi
+  cp "$NGINX_BACKUP" "$NGINX_LIVE"
+  nginx -t
+  systemctl reload nginx
   exit 1
 fi
 

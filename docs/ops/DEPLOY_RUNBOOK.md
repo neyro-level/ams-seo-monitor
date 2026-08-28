@@ -77,7 +77,7 @@ Secrets, auth files and shared snapshots are never stored inside an immutable re
 
 ## Nginx rule
 
-Checked-in `ops/nginx/ams-seo-monitor.conf` is the pre-Certbot canonical server body. Existing Certbot certificate lines on production are preserved. Deployment must not blindly replace the managed live file; apply reviewed body/header changes, run `nginx -t`, then reload.
+Checked-in `ops/nginx/ams-seo-monitor.conf` is the canonical TLS config with existing Certbot certificate paths. Deploy backs up the live config, installs the reviewed file, runs `nginx -t` and restores the backup on failure.
 
 Private HTML/data responses require:
 
