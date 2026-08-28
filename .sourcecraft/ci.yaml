@@ -30,3 +30,32 @@ workflows:
               - pnpm lint
               - pnpm test
               - pnpm build
+
+  merge-heavy:
+    inputs:
+      expected_commit_sha:
+        type: string
+        required: true
+        description: "Full reviewed PR head SHA"
+    checkout:
+      fetch_depth: 0
+    settings:
+      max_cube_duration: 45m
+    tasks:
+      - name: exact-head-heavy-gate
+        env:
+          EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+        cubes:
+          - name: verify
+            image: docker.io/library/node:24-bookworm
+            script:
+              - corepack enable
+              - corepack prepare pnpm@11.5.1 --activate
+              - pnpm install --frozen-lockfile
+              - node scripts/ci/verify-exact-head.mjs
+              - pnpm verify:config
+              - pnpm verify:snapshots
+              - pnpm typecheck
+              - pnpm lint
+              - pnpm test
+              - pnpm build

@@ -13,6 +13,8 @@
     "dev:reports": "node scripts/serve-local-reports.mjs",
     "build": "pnpm verify:config && next build",
     "build:collector": "tsc -p tsconfig.collector.json",
+    "release:build": "pnpm build && pnpm build:collector && node scripts/build-release.mjs",
+    "release:deploy": "node scripts/deploy-production.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.collector.json",
     "test": "vitest run",
