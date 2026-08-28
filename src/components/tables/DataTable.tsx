@@ -11,7 +11,7 @@ type DataTableProps = {
 
 export function DataTable({ caption, columns, rows }: DataTableProps) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-[var(--crm-border)] bg-white">
+    <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-2xl border border-[var(--crm-border)] bg-white">
       <table className="min-w-full border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-[var(--crm-surface-muted)]">

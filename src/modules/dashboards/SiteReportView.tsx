@@ -80,7 +80,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
   const healthTitle = health?.status === "critical" ? "Есть критичные проблемы" : health?.status === "attention" ? "Сайт требует внимания" : "Сайт работает стабильно";
 
   return (
-    <div className="space-y-8">
+    <div className="w-[calc(100vw-2rem)] min-w-0 max-w-full space-y-8 sm:w-[calc(100vw-3rem)] lg:w-auto">
       <PageHeader eyebrow={clientName} title={site.name} description={`Единый отчёт за ${periodLabel}. Обновлён ${new Date(snapshot.generatedAt).toLocaleString("ru-RU")}.`} backHref={backHref} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         {periodControl}
@@ -91,7 +91,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
         <section className="space-y-4" aria-labelledby="health-title">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-[var(--crm-primary)]">Состояние сайта</p>
-            <h2 id="health-title" className="mt-1 text-2xl font-semibold text-[var(--crm-text)]">Индексация и техническое здоровье</h2>
+            <h2 id="health-title" className="max-w-full break-words text-2xl font-semibold text-[var(--crm-text)]">Индексация и техническое здоровье</h2>
           </div>
           <StatusBanner tone={healthTone} title={healthTitle} description={`${health.fatalCount + health.criticalCount} критичных диагностик, ${health.possibleProblemCount} возможных проблем; HTTP 5xx: ${health.http5xx}; Sitemap: ${health.sitemapErrors} ошибок.`} />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

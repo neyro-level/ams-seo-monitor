@@ -44,7 +44,7 @@ export function AppShell({ currentPath, children }: AppShellProps) {
         </div>
       </aside>
 
-      <div className="min-h-screen lg:pl-[260px]">
+      <div className="min-w-0 min-h-screen overflow-x-hidden lg:pl-[260px]">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200/90 bg-white/95 px-4 backdrop-blur lg:hidden">
           <MobileDrawer sections={sections} />
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
@@ -52,7 +52,7 @@ export function AppShell({ currentPath, children }: AppShellProps) {
           </p>
         </header>
 
-        <main className="w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+        <main className="min-w-0 w-full overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );
