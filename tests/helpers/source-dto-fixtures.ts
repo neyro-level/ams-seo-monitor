@@ -87,6 +87,10 @@ export function createWebmasterSourceFixture(site: SiteRegistry) {
         points: [{ date: "2026-08-27T00:00:00+03:00", value: 100 }],
       },
     ],
+    sqiHistory: [
+      { date: "2026-05-01T00:00:00+03:00", value: 18 },
+      { date: "2026-08-01T00:00:00+03:00", value: 20 },
+    ],
     pagesInSearchHistory: [{ date: "2026-08-27T00:00:00+03:00", value: 120 }],
     searchEventsHistory: [],
     brokenInternalLinksHistory: [

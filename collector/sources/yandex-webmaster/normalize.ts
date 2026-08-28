@@ -218,7 +218,7 @@ export function normalizeIndicatorHistory(historyPayload: unknown): WebmasterInd
 
 export function normalizePlainHistory(historyPayload: unknown): WebmasterHistoryPoint[] {
   const root = getRecord(historyPayload);
-  return getArray(root?.history)
+  return getArray(root?.history ?? root?.points)
     .map(getRecord)
     .filter((point): point is Record<string, unknown> => point !== null)
     .map((point) =>
@@ -238,6 +238,7 @@ export function buildWebmasterSiteData(args: {
   queryCollections: WebmasterQueryCollection[];
   allQueryHistory: WebmasterIndicatorHistory[];
   indexingHistory: WebmasterIndicatorHistory[];
+  sqiHistory: WebmasterHistoryPoint[];
   pagesInSearchHistory: WebmasterHistoryPoint[];
   searchEventsHistory: WebmasterIndicatorHistory[];
   brokenInternalLinksHistory: WebmasterIndicatorHistory[];
@@ -254,6 +255,7 @@ export function buildWebmasterSiteData(args: {
     queryCollections: args.queryCollections,
     allQueryHistory: args.allQueryHistory,
     indexingHistory: args.indexingHistory,
+    sqiHistory: args.sqiHistory,
     pagesInSearchHistory: args.pagesInSearchHistory,
     searchEventsHistory: args.searchEventsHistory,
     brokenInternalLinksHistory: args.brokenInternalLinksHistory,

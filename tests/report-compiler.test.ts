@@ -30,6 +30,7 @@ describe("SiteReportSnapshot compiler", () => {
   it("compiles both source DTOs into one validated snapshot", () => {
     const site = getREDACTED_CLIENT_DATASite();
     const currentWebmaster = createWebmasterSourceFixture(site);
+    currentWebmaster.queryCollections[0]!.queries[0]!.avgShowPosition = 2;
     const previousWebmaster = createWebmasterSourceFixture(site);
     previousWebmaster.allQueryHistory.find(
       (history) => history.indicator === "TOTAL_SHOWS",
@@ -59,6 +60,20 @@ describe("SiteReportSnapshot compiler", () => {
       currentPeriod: { dateFrom: "2026-08-17", dateTo: "2026-08-23" },
       previousPeriod: { dateFrom: "2026-08-10", dateTo: "2026-08-16" },
       queryThresholds: thresholds,
+      trackedQuerySet: {
+        schemaVersion: 1,
+        clientSlug: "REDACTED_CLIENT_DATA",
+        siteSlug: "REDACTED_CLIENT_DATA",
+        source: "owner-provided",
+        baselineLabel: "02.06",
+        expectedCount: 1,
+        queries: [
+          {
+            query: "квартиры REDACTED_CLIENT_DATA",
+            position: { current: 1, baseline: 3, delta: 2 },
+          },
+        ],
+      },
     });
 
     expect(snapshot.freshness).toBe("fresh");
@@ -81,8 +96,137 @@ describe("SiteReportSnapshot compiler", () => {
     expect(snapshot.comparison?.metrics.organicVisits.deltaPercent).toBe(25);
     expect(snapshot.comparison?.metrics.targetVisits.current).toBe(5);
     expect(snapshot.webmaster?.queries[0]?.cluster).not.toBe("Не классифицирован");
+    expect(snapshot.webmaster?.trackedCore).toMatchObject({
+      expectedCount: 1,
+      observedCount: 1,
+      coveragePercent: 100,
+      top10Count: 1,
+      top3Count: 1,
+    });
+    expect(snapshot.webmaster?.trackedCore?.queries[0]).toMatchObject({
+      query: "квартиры REDACTED_CLIENT_DATA",
+      shows: 100,
+      previousShows: 100,
+      ownerPosition: 1,
+      ownerBaselinePosition: 3,
+      ownerPositionDelta: 2,
+    });
+    expect(snapshot.webmaster?.health).toMatchObject({
+      status: "stable",
+      sqi: 20,
+      previousSqi: 18,
+      sqiDelta: 2,
+    });
+    expect(snapshot.ranking).toMatchObject({
+      source: "owner-provided",
+      queryCount: 1,
+      measuredCount: 1,
+      top3Count: 1,
+      top10Count: 1,
+      improvedCount: 1,
+      declinedCount: 0,
+      baselineLabel: "02.06",
+    });
   });
 
+
+  it("promotes critical crawl health into the management risk", () => {
+    const site = getREDACTED_CLIENT_DATASite();
+    const webmasterData = createWebmasterSourceFixture(site);
+    webmasterData.indexingHistory.push({
+      indicator: "HTTP_5XX",
+      points: [{ date: "2026-08-27T00:00:00+03:00", value: 2 }],
+    });
+
+    const snapshot = compileSiteReportSnapshot({
+      clientSlug: "REDACTED_CLIENT_DATA",
+      site,
+      generatedAt: "2026-08-27T10:10:00.000Z",
+      clusterProfile,
+      webmasterData,
+      metricaData: createMetricaSourceFixture(site),
+      queryThresholds: thresholds,
+    });
+
+    expect(snapshot.webmaster?.health?.status).toBe("critical");
+    expect(snapshot.combined.alerts[0]).toMatchObject({
+      id: "webmaster-health-critical",
+      tone: "error",
+    });
+  });
+
+  it("compiles Topvisor capture history into ranking movements", () => {
+    const site = {
+      ...getREDACTED_CLIENT_DATASite(),
+      topvisor: { enabled: true, projectId: REDACTED_CLIENT_DATA, regionIndex: 0 },
+    };
+    const snapshot = compileSiteReportSnapshot({
+      clientSlug: "REDACTED_CLIENT_DATA",
+      site,
+      generatedAt: "2026-08-23T10:10:00.000Z",
+      clusterProfile,
+      webmasterData: createWebmasterSourceFixture(site),
+      metricaData: createMetricaSourceFixture(site),
+      periodKey: "month",
+      currentPeriod: { dateFrom: "2026-07-27", dateTo: "2026-08-23" },
+      previousPeriod: { dateFrom: "2026-06-29", dateTo: "2026-07-26" },
+      queryThresholds: thresholds,
+      trackedQuerySet: {
+        schemaVersion: 1,
+        clientSlug: "REDACTED_CLIENT_DATA",
+        siteSlug: "REDACTED_CLIENT_DATA",
+        source: "owner-provided",
+        baselineLabel: "02.06",
+        expectedCount: 2,
+        queries: [
+          {
+            query: "квартиры REDACTED_CLIENT_DATA",
+            position: { current: 4, baseline: 9, delta: 5 },
+          },
+          {
+            query: "новостройки REDACTED_CLIENT_DATA",
+            position: { current: 8, baseline: null, delta: 0 },
+          },
+        ],
+      },
+      rankingData: {
+        schemaVersion: 1,
+        fetchedAt: "2026-08-23T10:00:00.000Z",
+        projectId: REDACTED_CLIENT_DATA,
+        regionIndex: 0,
+        snapshots: [
+          {
+            capturedAt: "2026-08-01",
+            queries: [
+              { query: "квартиры REDACTED_CLIENT_DATA", position: 12 },
+              { query: "новостройки REDACTED_CLIENT_DATA", position: null },
+            ],
+          },
+          {
+            capturedAt: "2026-08-22",
+            queries: [
+              { query: "квартиры REDACTED_CLIENT_DATA", position: 5 },
+              { query: "новостройки REDACTED_CLIENT_DATA", position: 3 },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(snapshot.sources.topvisor?.status).toBe("success");
+    expect(snapshot.ranking).toMatchObject({
+      source: "topvisor",
+      queryCount: 2,
+      top3Count: 1,
+      top10Count: 2,
+      top3Delta: 1,
+      top10Delta: 2,
+      improvedCount: 1,
+      newCount: 1,
+      lastCapturedAt: "2026-08-22",
+    });
+    expect(snapshot.ranking?.history).toHaveLength(2);
+  });
   it("uses last-known-good source section and marks a failed refresh partial", () => {
     const site = getREDACTED_CLIENT_DATASite();
     const previous = compileSiteReportSnapshot({

@@ -16,13 +16,16 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 1. `README.md`
 2. `AGENTS.md`
-3. `docs/PRODUCT.md`
-4. `docs/ARCHITECTURE.md`
-5. `docs/DATA_MODEL.md`
-6. `docs/DESIGN_SYSTEM.md`
-7. `docs/SITE_REPORT_IA.md`
-8. `SECURITY.md`
-9. `docs/MASTER_PLAN.md`
+3. `docs/PROJECT_PASSPORT.md`
+4. `docs/PRODUCT.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/DATA_MODEL.md`
+7. `docs/DESIGN_SYSTEM.md`
+8. `docs/SITE_REPORT_IA.md`
+9. `docs/DIRECTOR_DASHBOARD_V2.md` — для dashboard scope
+10. профильный `docs/modules/MODULE_*.md`
+11. `SECURITY.md`
+12. `docs/MASTER_PLAN.md`
 
 Если задача только по UI shell, не нужно автоматически читать будущие server/runbook документы. Если задача расширяется в security, deploy или live onboarding — сначала дочитать профильный canon и переклассифицировать риск.
 
@@ -36,7 +39,7 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 - Snapshot schema — единый data contract.
 - Клиентская изоляция в production обеспечивается Nginx Basic Auth, не фронтендом.
 - Секреты, OAuth tokens, htpasswd и чувствительные error bodies не попадают в Git, build output, browser payload и logs.
-- Product hierarchy: `Общий кабинет → Проекты → Сайты → Отчёты`; внутренние `clientSlug` и `/c/*` сохраняются как совместимый data contract.
+- Product hierarchy: `Все проекты → Проект → Сайты → Отчёты`; внутренние `clientSlug` и `/c/*` сохраняются как совместимый data contract.
 
 ## Архитектурные границы
 
@@ -63,10 +66,11 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 
 Текущий блок:
 
-- read-only `/analyst/projects/`;
-- config-driven `pnpm project:add` без секретов и production mutations;
-- автоматическое build-time discovery новых project config files;
-- следующая отдельная волна: Nginx isolation, timers и production release.
+- Director Dashboard V2 реализован на `work/director-dashboard-v2`;
+- unified report, tracked ranking, mobile constraints и softened sidebar states готовы;
+- Topvisor live mapping остаётся disabled, owner fallback явно маркирован;
+- branch требует documentation sync, HEAVY review, PR и merge;
+- production isolation/timers/deploy выполняются только после exact merged `main`.
 
 Без отдельной owner-команды не делать:
 

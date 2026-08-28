@@ -26,6 +26,8 @@ Checked-in nonsecret files в `config/` описывают:
 - `freshness`
 - `sources.webmaster`
 - `sources.metrica`
+- `sources.topvisor`
+- `ranking`
 - `webmaster`
 - `metrica`
 - `combined`
@@ -90,12 +92,15 @@ client-reports/{client}/{site}/{period}/latest.json
 - partial source preserves last-known-good section;
 - raw responses and secret-bearing error bodies are never persisted.
 
+Topvisor source bundle stores only normalized dates and positions. API credentials, raw payloads and paid checker operations are never persisted.
+
 ## Current status
 
 - Registry and per-site goal profiles are checked in and validated.
 - Three REDACTED_CLIENT_DATA sites have exact Webmaster/Metrica ownership.
 - Webmaster all-query totals and popular-query pools are stored separately.
 - Metrica stores both cumulative goal actions and unique target visits.
+- Topvisor read-only source and owner-provided ranking fallback are stored separately from Webmaster metrics.
 - Every preset stores current and immediately preceding equal periods.
 - Detailed current/previous source bundles remain internal.
 - Period snapshots compile into browser-safe `SiteReportSnapshot`.
@@ -114,7 +119,8 @@ client-reports/{client}/{site}/{period}/latest.json
 ## Period invariant
 
 - `week` = 7, `month` = 28, `quarter` = 90, `halfYear` = 180 days.
-- Every current period ends on the same latest factual Webmaster date.
-- Previous period is immediately preceding and equal in length.
-- Webmaster and Metrica use the same explicit `dateFrom/dateTo`.
+- `month` is the UI default.
+- Every Webmaster/Metrica current period ends on the same latest factual Webmaster date.
+- Their previous period is immediately preceding and equal in length.
+- Ranking deltas compare the first and last exact capture inside the selected period; owner fallback uses its explicit baseline label.
 - Partial/stale/suppressed values never become zero silently.

@@ -83,7 +83,7 @@ REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
 
 Implemented:
 
-- fixed presets: week 7, month 28, quarter 90, half-year 180 days;
+- fixed presets: week 7, month 28 (default), quarter 90, half-year 180 days;
 - immediately preceding equal-period comparison;
 - total Webmaster shows/clicks/position history;
 - popular query pool merge by `queryId + device`;
@@ -114,23 +114,32 @@ Aggregate `goalReaches` stays available only as actions; director conversion use
 - runtime report path follows `/c/{clientSlug}/data/{siteSlug}/{periodKey}/latest.json`;
 - Nginx alias/security activation remains Wave 3.
 
-## Director cabinet UI foundation
+## Director dashboard V2
 
-Implemented against the approved REDACTED_CLIENT_DATA references:
+Branch: `work/director-dashboard-v2`.
 
-- full remaining-width workspace; no artificial `max-width` frame;
-- canonical PT Root UI and CRM tokens;
-- fixed 260px sidebar and white mobile topbar;
-- project panel/KPI/table radius restored to 16px;
-- one route with bookmarkable `Сводка / SEO / Трафик и обращения` tabs;
-- functional `Неделя / Месяц / Квартал / Полгода` presets;
-- default weekly comparison;
-- approved 6 KPI director summary + result/risk/opportunity/action;
-- SEO shows 4 KPI, one trend, up to 5 demand clusters, coverage and up to 5 queries;
-- Traffic shows 4 KPI, target actions, up to 5 landing pages and quality;
-- client route navigation contains only its own client subtree;
+The approved contract is `docs/DIRECTOR_DASHBOARD_V2.md`:
+
+```text
+Все проекты
+→ Проект
+  → Сайт
+    → Единый отчёт
+```
+
+Implemented:
+
+- one unified report without tabs;
+- visible `Неделя / Месяц / 3 месяца / Полгода` selector with month default;
+- tracked query ranking dashboard before site health;
+- Top-3/Top-10 KPI and share chart with owner-provided fallback;
+- tracked-query table and filters;
+- Webmaster health, demand KPI and real shows/clicks chart;
+- Metrica traffic, target visits and landing pages;
+- client route navigation contains only its own project subtree;
 - `/demo/` remains separate from client data;
-- live client routes fetch protected runtime snapshots and show safe loading/error states.
+- live client routes fetch protected runtime snapshots and show safe loading/error states;
+- mobile width constraints and softened active sidebar states.
 
 Page contract: `docs/SITE_REPORT_IA.md`.
 
@@ -138,8 +147,8 @@ Page contract: `docs/SITE_REPORT_IA.md`.
 
 Implemented without changing static/no-DB architecture:
 
-- product hierarchy `Общий кабинет → Проекты → Сайты → Отчёты`;
-- read-only `/analyst/projects/`;
+- product hierarchy `Все проекты → Проект → Сайты → Отчёты`;
+- read-only `/analyst/` replaces the removed common overview;
 - automatic build-time discovery of `config/clients/*.json`;
 - project readiness cards and source/site counts;
 - `pnpm project:add` interactive operator wizard;
@@ -169,19 +178,20 @@ Internal `clientSlug`, `CLIENT_VIEWER` and `/c/*` remain compatible until a futu
 - stale/partial operations;
 - token rotation/recovery/rollback.
 
-## Quality risk
+## Current release route
 
-Current next block is **HEAVY**: critical integrations, background collection, snapshot publication and future production impact.
+Current branch: `work/director-dashboard-v2`, pushed and clean before release preparation.
 
-Required checks:
+Risk: **HEAVY** — analytics/compiler, provider adapter, browser report schema, UI and future production impact.
+
+Required route:
 
 ```text
-pnpm verify:config
-pnpm verify:snapshots
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
-live read-only preflight/audit
-behavioral partial/LKG tests
+documentation sync
+→ full diff review
+→ exact-head HEAVY gate
+→ SourceCraft PR merge
+→ exact main artifact
+→ AMS Main Server deploy
+→ Nginx/auth/timers/live proof
 ```

@@ -28,24 +28,34 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
     notFound();
   }
 
+  const connectedSites = overview.sites.filter((site) => site.enabled).length;
+  const readySites = overview.sites.filter(
+    (site) => site.enabled && site.enabledSourceCount === 2,
+  ).length;
+  const projectReady = connectedSites > 0 && readySites === connectedSites;
+
   return (
     <AppShell currentPath={`/c/${overview.client.clientSlug}/`}>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Клиент"
-          title={overview.client.name}
-          description="Каждый сайт сохраняет собственные источники, периоды и показатели. Разные города не складываются в искусственный общий рейтинг."
+          eyebrow="Проект"
+          title={`Проект ${overview.client.name}`}
+          description="Сайты проекта, подключённые источники и переходы к отдельным отчётам."
         />
 
         <StatusBanner
-          tone="warning"
-          title="Live-отчёты готовятся"
-          description="Источники для подключённых сайтов уже подтверждены, но публикация единого snapshot ещё не включена."
+          tone={projectReady ? "success" : "info"}
+          title={projectReady ? "Источники подключены" : "Проект в настройке"}
+          description={
+            projectReady
+              ? "Для всех подключённых сайтов настроены Яндекс.Вебмастер и Яндекс.Метрика."
+              : "Подключайте сайты и источники по мере готовности; плановые сайты остаются видимыми."
+          }
         />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard label="Всего сайтов" value={String(overview.sites.length)} tone="primary" />
-          <KpiCard label="Подключённые" value={String(overview.sites.filter((site) => site.enabled).length)} />
+          <KpiCard label="Подключённые" value={String(connectedSites)} />
           <KpiCard label="Плановые" value={String(overview.sites.filter((site) => !site.enabled).length)} tone="soft" />
           <KpiCard
             label="Подключённые источники"
@@ -53,7 +63,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
           />
         </section>
 
-        <SectionCard title="Сайты клиента" note="Отдельный отчёт на сайт">
+        <SectionCard title="Сайты проекта" note="Отдельный отчёт на сайт">
           <div className="grid gap-3 lg:grid-cols-2">
             {overview.sites.map((site) => (
               <article key={site.siteSlug} className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4">

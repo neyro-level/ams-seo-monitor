@@ -1,4 +1,5 @@
 import type { MetricaSiteAudit } from "../../src/shared/schemas/metrica-source";
+import type { TopvisorSiteData } from "../../src/shared/schemas/rank-source";
 import type {
   ClientRegistry,
   ClusterProfile,
@@ -6,6 +7,7 @@ import type {
 } from "../../src/shared/schemas/registry";
 import type { ReportPeriodKey } from "../../src/shared/schemas/report";
 import type { WebmasterSiteData } from "../../src/shared/schemas/webmaster-source";
+import type { TrackedQuerySet } from "../../src/shared/schemas/tracked-query";
 import {
   derivePeriodEndingOn,
   derivePreviousPeriod,
@@ -17,6 +19,11 @@ import {
   readLatestSiteSnapshot,
 } from "../storage/snapshots";
 import { publishSiteSourceBundle } from "../storage/source-bundles";
+import {
+  createTopvisorClient,
+  readTopvisorEnvironment,
+  TopvisorSafeError,
+} from "../sources/topvisor/client";
 import {
   createMetricaClient,
   readMetricaEnvironment,
@@ -51,6 +58,11 @@ type MetricaCollectOptions = {
   includeDetails?: boolean;
 };
 
+type TopvisorCollectOptions = {
+  dateFrom: string;
+  dateTo: string;
+};
+
 export type SiteSourceCollectors = {
   webmaster: (
     site: SiteRegistry,
@@ -60,6 +72,10 @@ export type SiteSourceCollectors = {
     site: SiteRegistry,
     options?: MetricaCollectOptions,
   ) => Promise<MetricaSiteAudit>;
+  topvisor?: (
+    site: SiteRegistry,
+    options: TopvisorCollectOptions,
+  ) => Promise<TopvisorSiteData>;
 };
 
 export type SiteSyncResult = {
@@ -77,7 +93,11 @@ export type SiteSyncResult = {
 };
 
 function safeFailure(error: unknown): SafeSourceFailure {
-  if (error instanceof WebmasterSafeError || error instanceof MetricaSafeError) {
+  if (
+    error instanceof WebmasterSafeError ||
+    error instanceof MetricaSafeError ||
+    error instanceof TopvisorSafeError
+  ) {
     return {
       code: error.code,
       status: error.status,
@@ -98,6 +118,7 @@ export function createLiveSiteCollectors(
     SiteSourceCollectors["webmaster"]
   >();
   const metricaCollectors = new Map<string, SiteSourceCollectors["metrica"]>();
+  let topvisorCollect: SiteSourceCollectors["topvisor"] | null = null;
 
   return {
     async webmaster(site, options) {
@@ -128,6 +149,15 @@ export function createLiveSiteCollectors(
       }
       return collect(site, options);
     },
+    async topvisor(site, options) {
+      if (!topvisorCollect) {
+        const config = readTopvisorEnvironment(env);
+        const client = createTopvisorClient(config);
+        topvisorCollect = (targetSite, collectOptions) =>
+          client.collectSiteData(targetSite, collectOptions);
+      }
+      return topvisorCollect(site, options);
+    },
   };
 }
 
@@ -142,7 +172,10 @@ async function collectPeriod(args: {
   previousPeriod: DatePeriod;
   baselineWebmaster: WebmasterSiteData | null;
   baselineFailure: SafeSourceFailure | null;
+  rankingData: TopvisorSiteData | null;
+  topvisorFailure: SafeSourceFailure | null;
   clusterProfile: ClusterProfile;
+  trackedQuerySet: TrackedQuerySet | null;
   thresholds: {
     minimumShows: number;
     maximumCtrPercent: number;
@@ -164,35 +197,32 @@ async function collectPeriod(args: {
 
   if (args.site.webmaster.enabled) {
     try {
-      if (args.periodKey === "week" && args.baselineWebmaster) {
-        webmasterData = args.baselineWebmaster;
-      } else {
-        webmasterData = await args.collectors.webmaster(args.site, {
-          queryLimit: 100,
-          queryOrders: ["TOTAL_SHOWS", "TOTAL_CLICKS"],
-          devices: ["ALL"],
-          historyDateFrom: args.currentPeriod.dateFrom,
-          historyDateTo: args.currentPeriod.dateTo,
-          queryDateFrom: args.currentPeriod.dateFrom,
-          queryDateTo: args.currentPeriod.dateTo,
-          includeTechnicalDetails: false,
-        });
-        if (args.baselineWebmaster) {
-          webmasterData = {
-            ...webmasterData,
-            diagnostics: args.baselineWebmaster.diagnostics,
-            sitemaps: args.baselineWebmaster.sitemaps,
-            indexingHistory: args.baselineWebmaster.indexingHistory,
-            searchEventsHistory: args.baselineWebmaster.searchEventsHistory,
-            brokenInternalLinksHistory:
-              args.baselineWebmaster.brokenInternalLinksHistory,
-            externalLinksHistory: args.baselineWebmaster.externalLinksHistory,
-          };
-        }
+      webmasterData = await args.collectors.webmaster(args.site, {
+        queryLimit: 500,
+        queryOrders: ["TOTAL_SHOWS", "TOTAL_CLICKS"],
+        devices: ["ALL"],
+        historyDateFrom: args.currentPeriod.dateFrom,
+        historyDateTo: args.currentPeriod.dateTo,
+        queryDateFrom: args.currentPeriod.dateFrom,
+        queryDateTo: args.currentPeriod.dateTo,
+        includeTechnicalDetails: false,
+      });
+      if (args.baselineWebmaster) {
+        webmasterData = {
+          ...webmasterData,
+          diagnostics: args.baselineWebmaster.diagnostics,
+          sitemaps: args.baselineWebmaster.sitemaps,
+          indexingHistory: args.baselineWebmaster.indexingHistory,
+          sqiHistory: args.baselineWebmaster.sqiHistory,
+          searchEventsHistory: args.baselineWebmaster.searchEventsHistory,
+          brokenInternalLinksHistory:
+            args.baselineWebmaster.brokenInternalLinksHistory,
+          externalLinksHistory: args.baselineWebmaster.externalLinksHistory,
+        };
       }
       previousWebmasterData = await args.collectors.webmaster(args.site, {
-        queryLimit: 1,
-        queryOrders: ["TOTAL_SHOWS"],
+        queryLimit: 500,
+        queryOrders: ["TOTAL_SHOWS", "TOTAL_CLICKS"],
         devices: ["ALL"],
         historyDateFrom: args.previousPeriod.dateFrom,
         historyDateTo: args.previousPeriod.dateTo,
@@ -235,10 +265,12 @@ async function collectPeriod(args: {
       current: {
         webmaster: webmasterData,
         metrica: metricaData,
+        topvisor: args.rankingData,
       },
       previous: {
         webmaster: previousWebmasterData,
         metrica: previousMetricaData,
+        topvisor: null,
       },
     },
   });
@@ -254,11 +286,14 @@ async function collectPeriod(args: {
     previousMetricaData,
     webmasterFailure,
     metricaFailure,
+    rankingData: args.rankingData,
+    topvisorFailure: args.topvisorFailure,
     previous: previousSnapshot,
     periodKey: args.periodKey,
     currentPeriod: args.currentPeriod,
     previousPeriod: args.previousPeriod,
     queryThresholds: args.thresholds,
+    trackedQuerySet: args.trackedQuerySet,
   });
   const published = await publishSiteSnapshot({
     rootDir: args.sharedDir,
@@ -269,9 +304,11 @@ async function collectPeriod(args: {
   return {
     snapshot,
     published,
-    safeErrorCodes: [webmasterFailure?.code, metricaFailure?.code].filter(
-      (code): code is string => Boolean(code),
-    ),
+    safeErrorCodes: [
+      webmasterFailure?.code,
+      metricaFailure?.code,
+      args.topvisorFailure?.code,
+    ].filter((code): code is string => Boolean(code)),
   };
 }
 
@@ -287,6 +324,7 @@ async function syncSite(args: {
     maximumCtrPercent: number;
     maximumAveragePosition: number;
   };
+  trackedQuerySet: TrackedQuerySet | null;
 }) {
   let baselineWebmaster: WebmasterSiteData | null = null;
   let baselineFailure: SafeSourceFailure | null = null;
@@ -310,19 +348,39 @@ async function syncSite(args: {
       collection.orderBy === "TOTAL_SHOWS" &&
       collection.dateTo !== null,
   );
-  const fallbackWeek = await readLatestSiteSnapshot(
+  const fallbackMonth = await readLatestSiteSnapshot(
     args.sharedDir,
     args.client.clientSlug,
     args.site.siteSlug,
-    "week",
+    "month",
   );
   const periodEnd =
     baselinePeriod?.dateTo ??
-    fallbackWeek?.comparison?.currentPeriod.dateTo ??
+    fallbackMonth?.comparison?.currentPeriod.dateTo ??
     args.generatedAt.slice(0, 10);
+  let rankingData: TopvisorSiteData | null = null;
+  let topvisorFailure: SafeSourceFailure | null = null;
+  if (args.site.topvisor.enabled) {
+    try {
+      if (!args.collectors.topvisor) {
+        throw new TopvisorSafeError(
+          "TOPVISOR_COLLECTOR_MISSING",
+          null,
+          "Topvisor collector is unavailable",
+        );
+      }
+      const historyPeriod = derivePeriodEndingOn(periodEnd, "halfYear");
+      rankingData = await args.collectors.topvisor(args.site, {
+        dateFrom: historyPeriod.dateFrom,
+        dateTo: historyPeriod.dateTo,
+      });
+    } catch (error) {
+      topvisorFailure = safeFailure(error);
+    }
+  }
   const periods: SiteSyncResult["periods"] = [];
   const safeErrorCodes = new Set<string>();
-  let weekLatestPath = "";
+  let defaultLatestPath = "";
 
   for (const periodKey of REPORT_PERIOD_KEYS) {
     const currentPeriod = derivePeriodEndingOn(periodEnd, periodKey);
@@ -334,6 +392,9 @@ async function syncSite(args: {
       previousPeriod,
       baselineWebmaster,
       baselineFailure,
+      rankingData,
+      topvisorFailure,
+      trackedQuerySet: args.trackedQuerySet,
     });
 
     for (const code of result.safeErrorCodes) safeErrorCodes.add(code);
@@ -342,8 +403,8 @@ async function syncSite(args: {
       freshness: result.snapshot.freshness,
       reportPath: result.published.reportPath,
     });
-    if (periodKey === "week") {
-      weekLatestPath = result.published.latestPath;
+    if (periodKey === "month") {
+      defaultLatestPath = result.published.latestPath;
     }
   }
 
@@ -355,7 +416,7 @@ async function syncSite(args: {
     siteSlug: args.site.siteSlug,
     status: failed ? "failed" : partial ? "partial" : "success",
     freshness: failed ? "unavailable" : partial ? "partial" : "fresh",
-    latestPath: weekLatestPath,
+    latestPath: defaultLatestPath,
     safeErrorCodes: [...safeErrorCodes],
     periods,
   } satisfies SiteSyncResult;
@@ -382,12 +443,17 @@ export async function syncClientSites(args: {
     throw new Error(`Unknown cluster profile: ${client.clusterProfile}`);
   }
 
-
   const collectors = args.collectors ?? createLiveSiteCollectors(args.env);
   const now = args.now ?? (() => new Date().toISOString());
   const results: SiteSyncResult[] = [];
 
   for (const site of client.sites.filter((item) => item.enabled)) {
+    const trackedQuerySet =
+      registry.trackedQuerySets.find(
+        (querySet) =>
+          querySet.clientSlug === client.clientSlug &&
+          querySet.siteSlug === site.siteSlug,
+      ) ?? null;
     results.push(
       await syncSite({
         client,
@@ -397,6 +463,7 @@ export async function syncClientSites(args: {
         generatedAt: now(),
         clusterProfile,
         thresholds: registry.thresholds.queryOpportunity,
+        trackedQuerySet,
       }),
     );
   }

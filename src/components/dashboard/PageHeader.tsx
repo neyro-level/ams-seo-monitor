@@ -72,7 +72,7 @@ export function PageHeader({
               {title}
             </h1>
           </div>
-          <p className="max-w-4xl text-sm leading-6 text-[var(--crm-text-secondary)]">
+          <p className="max-w-4xl break-words text-sm leading-6 text-[var(--crm-text-secondary)]">
             {description}
           </p>
         </div>

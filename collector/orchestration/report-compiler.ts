@@ -6,6 +6,8 @@ import {
   type ReportPeriodKey,
   type SiteReportSnapshot,
   type WebmasterReport,
+  type RankingMovement,
+  type TrackedRankingReport,
 } from "../../src/shared/schemas/report";
 import type {
   ClusterProfile,
@@ -13,9 +15,12 @@ import type {
 } from "../../src/shared/schemas/registry";
 import type { MetricaSiteAudit } from "../../src/shared/schemas/metrica-source";
 import type { WebmasterSiteData } from "../../src/shared/schemas/webmaster-source";
+import type { TopvisorSiteData } from "../../src/shared/schemas/rank-source";
+import type { TrackedQuerySet } from "../../src/shared/schemas/tracked-query";
 import {
   buildQueryOpportunities,
   mergeWebmasterQueryCollections,
+  type MergedWebmasterQuery,
 } from "../analytics/webmaster-queries";
 
 export type SafeSourceFailure = {
@@ -43,12 +48,315 @@ type CompileSiteReportArgs = {
     maximumCtrPercent: number;
     maximumAveragePosition: number;
   };
+  trackedQuerySet?: TrackedQuerySet | null;
+  rankingData?: TopvisorSiteData | null;
+  topvisorFailure?: SafeSourceFailure | null;
 };
 
 function latestHistoryValue(
   histories: Array<{ points: Array<{ date: string; value: number }> }>,
 ) {
   return histories.reduce((sum, history) => sum + (history.points.at(-1)?.value ?? 0), 0);
+}
+
+function normalizeQueryKey(value: string) {
+  return value
+    .toLocaleLowerCase("ru-RU")
+    .replace(/ё/g, "е")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function calculatePercentDelta(current: number, previous: number) {
+  if (previous === 0) return null;
+  return Number((((current - previous) / previous) * 100).toFixed(2));
+}
+
+function compileWebmasterHealth(
+  data: WebmasterSiteData,
+): NonNullable<WebmasterReport["health"]> {
+  const presentDiagnostics = data.diagnostics.filter(
+    (diagnostic) => diagnostic.state === "PRESENT",
+  );
+  const countSeverity = (severity: string) =>
+    presentDiagnostics.filter((diagnostic) => diagnostic.severity === severity).length;
+  const latestByIndicator = (indicator: string) =>
+    data.indexingHistory
+      .find((history) => history.indicator === indicator)
+      ?.points.at(-1)?.value ?? 0;
+  const sumSearchEvents = (indicator: string) =>
+    data.searchEventsHistory
+      .find((history) => history.indicator === indicator)
+      ?.points.reduce((sum, point) => sum + point.value, 0) ?? 0;
+  const sitemap = data.sitemaps.find((item) => item.url !== null) ?? null;
+  const fatalCount = countSeverity("FATAL");
+  const criticalCount = countSeverity("CRITICAL");
+  const possibleProblemCount = countSeverity("POSSIBLE_PROBLEM");
+  const recommendationCount = countSeverity("RECOMMENDATION");
+  const appearedInSearch = sumSearchEvents("APPEARED_IN_SEARCH");
+  const removedFromSearch = sumSearchEvents("REMOVED_FROM_SEARCH");
+  const http4xx = latestByIndicator("HTTP_4XX");
+  const http5xx = latestByIndicator("HTTP_5XX");
+  const sitemapErrors = sitemap?.errorsCount ?? 0;
+  const status =
+    fatalCount > 0 || criticalCount > 0 || http5xx > 0
+      ? "critical"
+      : possibleProblemCount > 0 ||
+          sitemapErrors > 0 ||
+          http4xx > 0 ||
+          (removedFromSearch - appearedInSearch >= 10 &&
+            removedFromSearch > appearedInSearch)
+        ? "attention"
+        : "stable";
+  const currentSqi = data.sqiHistory.at(-1)?.value ?? data.summary.sqi;
+  const previousSqi = data.sqiHistory.at(-2)?.value ?? null;
+
+  return {
+    status,
+    fatalCount,
+    criticalCount,
+    possibleProblemCount,
+    recommendationCount,
+    sitemapUrls: sitemap?.urlsTotal ?? 0,
+    sitemapErrors,
+    pagesInSearch:
+      data.pagesInSearchHistory.at(-1)?.value ?? data.summary.searchablePages ?? 0,
+    excludedPages: data.summary.excludedPages ?? 0,
+    appearedInSearch,
+    removedFromSearch,
+    searchBalance: appearedInSearch - removedFromSearch,
+    http2xx: latestByIndicator("HTTP_2XX"),
+    http3xx: latestByIndicator("HTTP_3XX"),
+    http4xx,
+    http5xx,
+    otherHttp: latestByIndicator("OTHER"),
+    sqi: currentSqi,
+    previousSqi,
+    sqiDelta:
+      currentSqi !== null && previousSqi !== null ? currentSqi - previousSqi : null,
+  };
+}
+
+function compileTrackedCore(args: {
+  trackedQuerySet: TrackedQuerySet;
+  currentQueries: MergedWebmasterQuery[];
+  previousQueries: MergedWebmasterQuery[];
+  clusterProfile: ClusterProfile;
+  opportunityTypes: Map<string, string[]>;
+}): NonNullable<WebmasterReport["trackedCore"]> {
+  const currentAll = args.currentQueries.filter((query) => query.device === "ALL");
+  const previousAll = args.previousQueries.filter((query) => query.device === "ALL");
+  const currentByText = new Map(
+    currentAll.map((query) => [normalizeQueryKey(query.queryText), query]),
+  );
+  const previousByText = new Map(
+    previousAll.map((query) => [normalizeQueryKey(query.queryText), query]),
+  );
+
+  const queries = args.trackedQuerySet.queries.map((trackedQuery) => {
+    const key = normalizeQueryKey(trackedQuery.query);
+    const current = currentByText.get(key) ?? null;
+    const previous = previousByText.get(key) ?? null;
+    const currentCtr = current?.ctrPercent ?? null;
+    const previousCtr = previous?.ctrPercent ?? null;
+    const labels = current
+      ? args.opportunityTypes.get(`${current.queryId}::${current.device}`) ?? []
+      : [];
+
+    return {
+      query: trackedQuery.query,
+      cluster: classifyQuery(trackedQuery.query, args.clusterProfile),
+      observedInWebmaster: current !== null,
+      shows: current?.shows ?? null,
+      clicks: current?.clicks ?? null,
+      ctr: currentCtr,
+      avgShowPosition: current?.avgShowPosition ?? null,
+      previousShows: previous?.shows ?? null,
+      previousClicks: previous?.clicks ?? null,
+      previousAvgShowPosition: previous?.avgShowPosition ?? null,
+      deltaClicksPercent:
+        current && previous
+          ? calculatePercentDelta(current.clicks, previous.clicks)
+          : null,
+      deltaCtrPoints:
+        currentCtr !== null && previousCtr !== null
+          ? Number((currentCtr - previousCtr).toFixed(2))
+          : null,
+      deltaPosition:
+        current?.avgShowPosition !== null &&
+        current?.avgShowPosition !== undefined &&
+        previous?.avgShowPosition !== null &&
+        previous?.avgShowPosition !== undefined
+          ? Number(
+              (previous.avgShowPosition - current.avgShowPosition).toFixed(2),
+            )
+          : null,
+      ownerPosition: trackedQuery.position.current,
+      ownerBaselinePosition: trackedQuery.position.baseline,
+      ownerPositionDelta: trackedQuery.position.delta,
+      opportunityType:
+        labels.length > 0
+          ? labels.join(", ")
+          : current
+            ? "наблюдение"
+            : "не найден в наблюдаемом пуле",
+    };
+  });
+  const measuredPositions = queries
+    .map((query) => query.avgShowPosition)
+    .filter((position): position is number => position !== null);
+  const observedCount = queries.filter((query) => query.observedInWebmaster).length;
+
+  return {
+    expectedCount: args.trackedQuerySet.expectedCount,
+    observedCount,
+    coveragePercent: Number(
+      ((observedCount / args.trackedQuerySet.expectedCount) * 100).toFixed(1),
+    ),
+    top3Count: measuredPositions.filter((position) => position <= 3).length,
+    top10Count: measuredPositions.filter((position) => position <= 10).length,
+    top20Count: measuredPositions.filter(
+      (position) => position > 10 && position <= 20,
+    ).length,
+    below20Count: measuredPositions.filter((position) => position > 20).length,
+    unmeasuredCount: queries.length - measuredPositions.length,
+    baselineLabel: args.trackedQuerySet.baselineLabel,
+    queries,
+  };
+}
+
+function movementForPositions(args: {
+  current: number | null;
+  previous: number | null;
+  exactSnapshots: boolean;
+}): RankingMovement {
+  if (args.current !== null && args.previous !== null) {
+    if (args.current < args.previous) return "improved";
+    if (args.current > args.previous) return "declined";
+    return "unchanged";
+  }
+  if (args.exactSnapshots && args.current !== null) return "new";
+  if (args.exactSnapshots && args.previous !== null) return "lost";
+  return "unmeasured";
+}
+
+function positionShare(count: number, total: number) {
+  return Number(((count / total) * 100).toFixed(1));
+}
+
+function compileTrackedRanking(args: {
+  trackedQuerySet: TrackedQuerySet;
+  rankingData: TopvisorSiteData | null;
+  currentPeriod?: { dateFrom: string; dateTo: string };
+  webmaster: WebmasterReport | null;
+  clusterProfile: ClusterProfile;
+}): TrackedRankingReport {
+  const periodSnapshots = args.rankingData?.snapshots
+    .filter(
+      (snapshot) =>
+        !args.currentPeriod ||
+        (snapshot.capturedAt >= args.currentPeriod.dateFrom &&
+          snapshot.capturedAt <= args.currentPeriod.dateTo),
+    )
+    .sort((left, right) => left.capturedAt.localeCompare(right.capturedAt)) ?? [];
+  const exactSnapshots = periodSnapshots.length > 0;
+  const currentSnapshot = periodSnapshots.at(-1) ?? null;
+  const previousSnapshot = periodSnapshots[0] ?? null;
+  const snapshotMap = (snapshot: typeof currentSnapshot) =>
+    new Map(
+      snapshot?.queries.map((query) => [
+        normalizeQueryKey(query.query),
+        query.position,
+      ]) ?? [],
+    );
+  const currentPositions = snapshotMap(currentSnapshot);
+  const previousPositions = snapshotMap(previousSnapshot);
+  const webmasterQueries = new Map(
+    (args.webmaster?.trackedCore?.queries ?? []).map((query) => [
+      normalizeQueryKey(query.query),
+      query,
+    ]),
+  );
+
+  const queries = args.trackedQuerySet.queries.map((tracked) => {
+    const key = normalizeQueryKey(tracked.query);
+    const webmasterQuery = webmasterQueries.get(key);
+    const current = exactSnapshots
+      ? currentPositions.get(key) ?? null
+      : tracked.position.current;
+    const previous = exactSnapshots
+      ? previousPositions.get(key) ?? null
+      : tracked.position.baseline;
+    const movement = movementForPositions({
+      current,
+      previous,
+      exactSnapshots,
+    });
+
+    return {
+      query: tracked.query,
+      cluster: classifyQuery(tracked.query, args.clusterProfile),
+      currentPosition: current,
+      previousPosition: previous,
+      positionDelta:
+        current !== null && previous !== null ? previous - current : null,
+      movement,
+      shows: webmasterQuery?.shows ?? null,
+      clicks: webmasterQuery?.clicks ?? null,
+      ctr: webmasterQuery?.ctr ?? null,
+    };
+  });
+  const currentMeasured = queries
+    .map((query) => query.currentPosition)
+    .filter((position): position is number => position !== null);
+  const previousMeasured = queries
+    .map((query) => query.previousPosition)
+    .filter((position): position is number => position !== null);
+  const top3Count = currentMeasured.filter((position) => position <= 3).length;
+  const top10Count = currentMeasured.filter((position) => position <= 10).length;
+  const previousTop3 = previousMeasured.filter((position) => position <= 3).length;
+  const previousTop10 = previousMeasured.filter((position) => position <= 10).length;
+  const queryCount = args.trackedQuerySet.expectedCount;
+  const history = periodSnapshots.map((snapshot) => {
+    const positions = snapshot.queries
+      .map((query) => query.position)
+      .filter((position): position is number => position !== null);
+    const pointTop3 = positions.filter((position) => position <= 3).length;
+    const pointTop10 = positions.filter((position) => position <= 10).length;
+    return {
+      date: snapshot.capturedAt,
+      top3Count: pointTop3,
+      top10Count: pointTop10,
+      top3Share: positionShare(pointTop3, queryCount),
+      top10Share: positionShare(pointTop10, queryCount),
+    };
+  });
+  const countMovement = (movement: RankingMovement) =>
+    queries.filter((query) => query.movement === movement).length;
+
+  return {
+    source: exactSnapshots ? "topvisor" : "owner-provided",
+    queryCount,
+    measuredCount: currentMeasured.length,
+    top3Count,
+    top10Count,
+    top3Share: positionShare(top3Count, queryCount),
+    top10Share: positionShare(top10Count, queryCount),
+    top3Delta: top3Count - previousTop3,
+    top10Delta: top10Count - previousTop10,
+    improvedCount: countMovement("improved"),
+    declinedCount: countMovement("declined"),
+    unchangedCount: countMovement("unchanged"),
+    newCount: countMovement("new"),
+    lostCount: countMovement("lost"),
+    unmeasuredCount: countMovement("unmeasured"),
+    baselineLabel: exactSnapshots
+      ? previousSnapshot?.capturedAt ?? args.trackedQuerySet.baselineLabel
+      : args.trackedQuerySet.baselineLabel,
+    lastCapturedAt: currentSnapshot?.capturedAt ?? null,
+    history,
+    queries,
+  };
 }
 
 function classifyQuery(query: string, profile: ClusterProfile) {
@@ -72,8 +380,19 @@ function compileWebmasterReport(
   data: WebmasterSiteData,
   thresholds: CompileSiteReportArgs["queryThresholds"],
   clusterProfile: ClusterProfile,
+  previousData: WebmasterSiteData | null = null,
+  trackedQuerySet: TrackedQuerySet | null = null,
 ): WebmasterReport {
   const mergedQueries = mergeWebmasterQueryCollections(data.queryCollections);
+  const previousQueries = previousData
+    ? mergeWebmasterQueryCollections(previousData.queryCollections)
+    : [];
+  const previousByIdAndDevice = new Map(
+    previousQueries.map((query) => [
+      `${query.queryId}::${query.device}`,
+      query,
+    ]),
+  );
   const opportunities = buildQueryOpportunities(mergedQueries, thresholds);
   const opportunityTypes = new Map<string, string[]>();
 
@@ -166,6 +485,61 @@ function compileWebmasterReport(
           },
         ];
   const sitemap = data.sitemaps.find((item) => item.url !== null) ?? null;
+  const reportQueries = mergedQueries.slice(0, 500).map((query) => {
+    const previous = previousByIdAndDevice.get(
+      `${query.queryId}::${query.device}`,
+    );
+    const currentCtr = query.ctrPercent ?? 0;
+    const previousCtr = previous?.ctrPercent ?? null;
+
+    return {
+      queryId: query.queryId,
+      query: query.queryText,
+      cluster: classifyQuery(query.queryText, clusterProfile),
+      device:
+        query.device === "MOBILE_AND_TABLET" || query.device === "TABLET"
+          ? ("MOBILE" as const)
+          : query.device,
+      shows: query.shows,
+      clicks: query.clicks,
+      ctr: currentCtr,
+      avgShowPosition: query.avgShowPosition ?? 0,
+      avgClickPosition: query.avgClickPosition,
+      previousShows: previous?.shows ?? null,
+      previousClicks: previous?.clicks ?? null,
+      deltaClicksPercent: previous
+        ? calculatePercentDelta(query.clicks, previous.clicks)
+        : null,
+      deltaCtrPoints:
+        previousCtr !== null
+          ? Number((currentCtr - previousCtr).toFixed(2))
+          : null,
+      opportunityType:
+        opportunityTypes.get(`${query.queryId}::${query.device}`)?.join(", ") ??
+        "наблюдение",
+    };
+  });
+  const trackedCore = trackedQuerySet
+    ? compileTrackedCore({
+        trackedQuerySet,
+        currentQueries: mergedQueries,
+        previousQueries,
+        clusterProfile,
+        opportunityTypes,
+      })
+    : null;
+  const trackedKeys = new Set(
+    trackedQuerySet?.queries.map((query) => normalizeQueryKey(query.query)) ?? [],
+  );
+  const observedOutsideCore = trackedQuerySet
+    ? reportQueries
+        .filter(
+          (query) =>
+            query.device === "ALL" &&
+            !trackedKeys.has(normalizeQueryKey(query.query)),
+        )
+        .slice(0, 100)
+    : [];
 
   return {
     summary: {
@@ -183,23 +557,7 @@ function compileWebmasterReport(
       sqi: data.summary.sqi,
     },
     visibilityTrend,
-    queries: mergedQueries.slice(0, 500).map((query) => ({
-      queryId: query.queryId,
-      query: query.queryText,
-      cluster: classifyQuery(query.queryText, clusterProfile),
-      device: query.device === "MOBILE_AND_TABLET" || query.device === "TABLET" ? "MOBILE" : query.device,
-      shows: query.shows,
-      clicks: query.clicks,
-      ctr: query.ctrPercent ?? 0,
-      avgShowPosition: query.avgShowPosition ?? 0,
-      avgClickPosition: query.avgClickPosition,
-      previousShows: null,
-      previousClicks: null,
-      deltaClicksPercent: null,
-      deltaCtrPoints: null,
-      opportunityType:
-        opportunityTypes.get(`${query.queryId}::${query.device}`)?.join(", ") ?? "наблюдение",
-    })),
+    queries: reportQueries,
     diagnostics: data.diagnostics
       .filter((diagnostic) => diagnostic.state === "PRESENT")
       .map((diagnostic) => ({
@@ -223,6 +581,9 @@ function compileWebmasterReport(
       external: latestHistoryValue(data.externalLinksHistory),
       brokenInternal: latestHistoryValue(data.brokenInternalLinksHistory),
     },
+    health: compileWebmasterHealth(data),
+    trackedCore,
+    observedOutsideCore,
   };
 }
 
@@ -306,6 +667,19 @@ function compileCombinedReport(args: {
       id: `webmaster-${diagnostic.title}`,
       title: diagnostic.title,
       summary: diagnostic.description,
+      tone: "error",
+    });
+  }
+
+  const health = args.webmaster?.health;
+  if (
+    health?.status === "critical" &&
+    !alerts.some((alert) => alert.id === "webmaster-health-critical")
+  ) {
+    alerts.push({
+      id: "webmaster-health-critical",
+      title: "Критичное техническое состояние",
+      summary: `HTTP 5xx: ${health.http5xx}; критичных диагностик: ${health.fatalCount + health.criticalCount}; ошибок Sitemap: ${health.sitemapErrors}.`,
       tone: "error",
     });
   }
@@ -524,7 +898,13 @@ function buildReportComparison(args: {
 
 export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteReportSnapshot {
   const currentWebmaster = args.webmasterData
-    ? compileWebmasterReport(args.webmasterData, args.queryThresholds, args.clusterProfile)
+    ? compileWebmasterReport(
+        args.webmasterData,
+        args.queryThresholds,
+        args.clusterProfile,
+        args.previousWebmasterData ?? null,
+        args.trackedQuerySet ?? null,
+      )
     : null;
   const currentMetrica = args.metricaData ? compileMetricaReport(args.metricaData) : null;
   const previousWebmaster = args.previousWebmasterData
@@ -537,7 +917,7 @@ export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteRepo
   const previousMetrica = args.previousMetricaData
     ? compileMetricaReport(args.previousMetricaData)
     : null;
-  const periodKey = args.periodKey ?? "week";
+  const periodKey = args.periodKey ?? "month";
   const webmaster = currentWebmaster ?? args.previous?.webmaster ?? null;
   const metrica = currentMetrica ?? args.previous?.metrica ?? null;
   const webmasterStatus = sourceStatus(
@@ -552,10 +932,28 @@ export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteRepo
     false,
     args.metricaFailure,
   );
+  const topvisorStatus = sourceStatus(
+    args.site.topvisor.enabled,
+    (args.rankingData?.snapshots.length ?? 0) > 0,
+    false,
+    args.topvisorFailure,
+  );
   const webmasterPeriod = args.webmasterData?.queryCollections[0] ?? null;
   const metricaPeriod = args.metricaData?.yandexOrganic.meta ?? null;
   const hasAnyReport = webmaster !== null || metrica !== null;
-  const partial = webmasterStatus !== "success" || metricaStatus !== "success";
+  const partial =
+    webmasterStatus !== "success" ||
+    metricaStatus !== "success" ||
+    (args.site.topvisor.enabled && topvisorStatus !== "success");
+  const ranking = args.trackedQuerySet
+    ? compileTrackedRanking({
+        trackedQuerySet: args.trackedQuerySet,
+        rankingData: args.rankingData ?? null,
+        currentPeriod: args.currentPeriod,
+        webmaster,
+        clusterProfile: args.clusterProfile,
+      })
+    : null;
   const comparison = buildReportComparison({
     periodKey,
     currentPeriod: args.currentPeriod,
@@ -596,9 +994,26 @@ export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteRepo
         note: metricaPeriod?.sampled ? "Отчёт построен с семплированием" : null,
         safeErrorCode: args.metricaFailure?.code ?? null,
       },
+      topvisor: {
+        status: topvisorStatus,
+        fetchedAt:
+          args.rankingData?.fetchedAt ??
+          args.previous?.sources.topvisor?.fetchedAt ??
+          args.generatedAt,
+        periodStart: args.currentPeriod?.dateFrom ?? null,
+        periodEnd: args.currentPeriod?.dateTo ?? null,
+        timezone: args.site.timezone,
+        note: args.site.topvisor.enabled
+          ? null
+          : ranking
+            ? "Используется утверждённый исходный снимок позиций"
+            : null,
+        safeErrorCode: args.topvisorFailure?.code ?? null,
+      },
     },
     webmaster,
     metrica,
+    ranking,
     combined: compileCombinedReport({
       webmaster,
       metrica,

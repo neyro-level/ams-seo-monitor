@@ -36,15 +36,16 @@ MVP принципиально:
 - Отчёты содержат равное previous-period сравнение, total Webmaster history, unique target visits и детерминированные кластеры спроса.
 - Client routes загружают period-aware protected runtime JSON; `/demo/` остаётся отдельным fixture.
 - Read-only раздел `Проекты` и operator wizard добавляют новые config-driven проекты без БД; production isolation/deploy остаются следующей отдельной волной.
+- Director Dashboard V2 и tracked ranking реализованы на `work/director-dashboard-v2`; ветка готовится к HEAVY review/merge.
+- Topvisor adapter реализован read-only, но live mapping выключен; используется labelled owner baseline.
 
 Product hierarchy:
 
 ```text
-Общий кабинет
-→ Проекты
-  → Проект
-    → Сайты
-      → Сводка / SEO / Трафик и обращения
+Все проекты
+→ Проект
+  → Сайты
+    → Единый отчёт
 ```
 
 Внутреннее поле `clientSlug` и route `/c/*` временно сохраняются как совместимый data contract; в пользовательском интерфейсе верхний уровень называется `Проект`.
@@ -114,13 +115,18 @@ Report server слушает только `127.0.0.1:3001`, читает `.local
 Сначала читать:
 
 1. `AGENTS.md`
-2. `docs/PRODUCT.md`
-3. `docs/ARCHITECTURE.md`
-4. `docs/DATA_MODEL.md`
-5. `docs/DESIGN_SYSTEM.md`
-6. `docs/SITE_REPORT_IA.md`
-7. `SECURITY.md`
-8. `docs/MASTER_PLAN.md`
+2. `docs/PROJECT_PASSPORT.md`
+3. `docs/PRODUCT.md`
+4. `docs/ARCHITECTURE.md`
+5. `docs/DATA_MODEL.md`
+6. `docs/DESIGN_SYSTEM.md`
+7. `docs/SITE_REPORT_IA.md`
+8. `docs/DIRECTOR_DASHBOARD_V2.md`
+9. `docs/modules/MODULE_PROJECT_REGISTRY.md`
+10. `docs/modules/MODULE_DATA_PIPELINE.md`
+11. `docs/modules/MODULE_RANKING_ANALYTICS.md`
+12. `SECURITY.md`
+13. `docs/MASTER_PLAN.md`
 
 ## Ограничения
 

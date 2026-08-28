@@ -23,11 +23,10 @@
 ## Product hierarchy
 
 ```text
-Общий кабинет
-→ Проекты
-  → Проект
-    → Сайты
-      → Отчёты
+Все проекты
+→ Проект
+  → Сайты
+    → Отчёты
 ```
 
 В пользовательском интерфейсе `REDACTED_CLIENT_DATA` и `Союз застройщиков` — проекты. Внутренние `clientSlug`, `CLIENT_VIEWER` и `/c/*` временно сохраняются как совместимый access/data contract.
@@ -68,11 +67,12 @@
 
 ## Cabinet experience
 
-- директор по умолчанию видит короткую `Сводку`, а не полный технический отчёт;
-- один site route содержит локальные вкладки `Сводка / SEO / Трафик`;
-- клиент с несколькими сайтами сначала выбирает сайт на client overview;
+- директор открывает один единый report сайта без вкладок;
+- первым идёт результат утверждённого поискового ядра: Топ-3/Топ-10 и ranking dynamics;
+- ниже расположены техническое здоровье, Webmaster demand и Metrica traffic/conversions;
+- client с несколькими sites сначала выбирает site на project overview;
 - показатели разных городов не складываются в искусственный общий рейтинг;
-- analyst может открыть технические детали, source periods и sync health;
+- analyst получает readiness/source detail и будущие internal analyst views;
 - production URL: `https://seo-monitor.ams24.ru`.
 
 ## Non-goals MVP

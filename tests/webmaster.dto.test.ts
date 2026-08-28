@@ -27,6 +27,7 @@ describe("webmaster normalized dto", () => {
       createJsonResponse(await loadFixture("diagnostics.json")),
       createJsonResponse(await loadFixture("sitemaps.json")),
       createJsonResponse(await loadFixture("indexing-history.json")),
+      createJsonResponse(await loadFixture("sqi-history.json")),
       createJsonResponse(await loadFixture("pages-in-search-history.json")),
       createJsonResponse(await loadFixture("search-events-history.json")),
       createJsonResponse(await loadFixture("internal-links-history.json")),
@@ -67,6 +68,7 @@ describe("webmaster normalized dto", () => {
       12000,
     );
     expect(dto.indexingHistory[0]?.indicator).toBe("HTTP_2XX");
+    expect(dto.sqiHistory.map((point) => point.value)).toEqual([210, 230]);
     expect(dto.pagesInSearchHistory[0]?.value).toBe(2123);
     expect(dto.searchEventsHistory).toHaveLength(2);
     expect(dto.brokenInternalLinksHistory[0]?.points[0]?.value).toBe(2);

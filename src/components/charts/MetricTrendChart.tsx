@@ -5,6 +5,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -53,7 +54,7 @@ export function MetricTrendChart({
             </defs>
             <CartesianGrid vertical={false} stroke="#E3E3E1" />
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
+            <YAxis yAxisId="primary" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
             <Tooltip
               contentStyle={{
                 borderRadius: 8,
@@ -61,16 +62,35 @@ export function MetricTrendChart({
                 boxShadow: "0 12px 32px rgba(23,22,26,0.1)",
               }}
               labelStyle={{ color: "#827F81", fontSize: 12 }}
-              formatter={(value) => [formatInteger(toDisplayNumber(value)), metricLabel]}
+              formatter={(value, name) => [
+                formatInteger(toDisplayNumber(value)),
+                name === "secondaryValue" ? secondaryMetricLabel : metricLabel,
+              ]}
             />
             <Area
               type="monotone"
+              yAxisId="primary"
               dataKey="value"
               stroke="#8A1515"
               strokeWidth={2}
               fill={`url(#${gradientId})`}
               activeDot={{ r: 4 }}
             />
+            {secondaryMetricLabel ? (
+              <>
+                <YAxis yAxisId="secondary" orientation="right" hide domain={[0, "auto"]} />
+                <Line
+                  type="monotone"
+                  dataKey="secondaryValue"
+                  yAxisId="secondary"
+                  stroke="#2563EB"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                  connectNulls
+                />
+              </>
+            ) : null}
           </AreaChart>
         </ResponsiveContainer>
       </div>
