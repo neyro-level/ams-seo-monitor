@@ -137,8 +137,8 @@ Sidebar hierarchy:
     REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
     REDACTED_CLIENT_DATA
-  Союз застройщиков REDACTED_CLIENT_DATA
-    REDACTED_CLIENT_DATA-на-Дону — не подключён
+  Союз застройщиков
+    Ростов-на-Дону — не подключён
 ```
 
 Client credentials в production открывают только свой subtree. Analyst credentials открывают все subtrees.

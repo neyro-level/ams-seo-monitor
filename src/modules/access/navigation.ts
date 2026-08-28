@@ -45,7 +45,19 @@ export function buildNavigation(currentPath: string): NavigationSection[] {
   };
 
   if (currentClientSlug) {
-    return [clientSection];
+    return [
+      {
+        title: "Обзор",
+        items: [
+          {
+            href: "/analyst/",
+            label: "Общий кабинет",
+            active: false,
+          },
+        ],
+      },
+      clientSection,
+    ];
   }
 
   const overviewItems: NavigationItem[] = [

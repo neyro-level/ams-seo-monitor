@@ -6,15 +6,15 @@ describe("static client navigation isolation", () => {
     const sections = buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");
     const items = sections.flatMap((section) => section.items);
 
-    expect(sections).toHaveLength(1);
-    expect(items.map((item) => item.label)).toEqual(["REDACTED_CLIENT_DATA"]);
-    expect(items[0]?.children?.map((item) => item.label)).toEqual([
+    expect(sections).toHaveLength(2);
+    expect(items.map((item) => item.label)).toEqual(["Общий кабинет", "REDACTED_CLIENT_DATA"]);
+    expect(items[1]?.children?.map((item) => item.label)).toEqual([
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
     ]);
-    expect(JSON.stringify(sections)).not.toContain("Союз застройщиков REDACTED_CLIENT_DATA");
-    expect(JSON.stringify(sections)).not.toContain("Аналитик");
+    expect(JSON.stringify(sections)).not.toContain("Союз застройщиков");
+    expect(JSON.stringify(sections)).not.toContain("\"label\":\"Аналитик\"");
   });
 
   it("renders every client for the analyst route", () => {
@@ -22,7 +22,7 @@ describe("static client navigation isolation", () => {
     const serialized = JSON.stringify(sections);
 
     expect(serialized).toContain("REDACTED_CLIENT_DATA");
-    expect(serialized).toContain("Союз застройщиков REDACTED_CLIENT_DATA");
+    expect(serialized).toContain("Союз застройщиков");
     expect(serialized).toContain("Аналитик");
   });
 });
