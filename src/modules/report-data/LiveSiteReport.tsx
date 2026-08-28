@@ -13,6 +13,10 @@ import {
 import type { SiteRegistry } from "../../shared/schemas/registry";
 import { SiteReportView } from "../dashboards/SiteReportView";
 
+const reportDataBaseUrl = (
+  process.env.NEXT_PUBLIC_REPORT_DATA_BASE_URL ?? ""
+).replace(/\/$/, "");
+
 type LiveSiteReportProps = {
   clientName: string;
   clientSlug: string;
@@ -50,7 +54,8 @@ export function LiveSiteReport({
   >({});
   const snapshot = reports[activePeriod] ?? null;
   const failed = failedPeriods[activePeriod] ?? false;
-  const dataUrl = `/c/${clientSlug}/data/${site.siteSlug}/${activePeriod}/latest.json`;
+  const dataPath = `/c/${clientSlug}/data/${site.siteSlug}/${activePeriod}/latest.json`;
+  const dataUrl = `${reportDataBaseUrl}${dataPath}`;
 
   useEffect(() => {
     if (reports[activePeriod]) return;
@@ -58,7 +63,7 @@ export function LiveSiteReport({
 
     fetch(dataUrl, {
       cache: "no-store",
-      credentials: "same-origin",
+      credentials: reportDataBaseUrl ? "omit" : "same-origin",
       signal: controller.signal,
     })
       .then((response) => {

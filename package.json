@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:live": "node scripts/dev-live.mjs",
+    "dev:reports": "node scripts/serve-local-reports.mjs",
     "build": "pnpm verify:config && next build",
     "build:collector": "tsc -p tsconfig.collector.json",
     "lint": "eslint .",
@@ -16,6 +18,7 @@
     "test": "vitest run",
     "verify:config": "node scripts/verify-config.mjs",
     "verify:snapshots": "node scripts/verify-snapshots.mjs",
+    "project:add": "node scripts/project-add.mjs",
     "collector:webmaster:preflight": "pnpm build:collector && node dist-collector/collector/main.js webmaster-preflight",
     "collector:webmaster:audit": "pnpm build:collector && node dist-collector/collector/main.js webmaster-audit",
     "collector:metrica:preflight": "pnpm build:collector && node dist-collector/collector/main.js metrica-preflight",

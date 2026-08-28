@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 
 type PageHeaderProps = {
   eyebrow?: string;
+  eyebrowHref?: string;
+  cabinetHref?: string;
   title: string;
   description: string;
   actions?: ReactNode;
@@ -12,20 +14,46 @@ type PageHeaderProps = {
 
 export function PageHeader({
   eyebrow,
+  eyebrowHref,
+  cabinetHref = "/analyst/",
   title,
   description,
   actions,
   backHref,
 }: PageHeaderProps) {
+  const resolvedEyebrowHref = eyebrowHref ?? backHref;
   return (
     <header className="sticky top-14 z-20 -mx-4 -mt-6 border-b border-slate-200/90 bg-white/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:-mt-8 lg:px-8">
       <div className="flex min-h-[64px] items-center gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          {eyebrow ? (
-            <p className="text-[12px] font-medium text-[var(--crm-text-muted)]">
-              Кабинет <span className="px-1.5 text-slate-300">›</span> {eyebrow}
-            </p>
-          ) : null}
+          <nav
+            aria-label="Хлебные крошки"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--crm-text-muted)]"
+          >
+            <Link
+              href={cabinetHref}
+              className="rounded-sm transition-colors hover:text-[var(--crm-link)] hover:underline focus-visible:text-[var(--crm-link)]"
+            >
+              Кабинет
+            </Link>
+            {eyebrow ? (
+              <>
+                <span aria-hidden className="text-slate-300">
+                  ›
+                </span>
+                {resolvedEyebrowHref ? (
+                  <Link
+                    href={resolvedEyebrowHref}
+                    className="rounded-sm transition-colors hover:text-[var(--crm-link)] hover:underline focus-visible:text-[var(--crm-link)]"
+                  >
+                    {eyebrow}
+                  </Link>
+                ) : (
+                  <span aria-current="page">{eyebrow}</span>
+                )}
+              </>
+            ) : null}
+          </nav>
           <div className="flex min-w-0 items-center gap-2.5">
             {backHref ? (
               <Link

@@ -17,6 +17,8 @@ describe("registry bundle", () => {
   it("keeps connected and planned sites in approved routes", () => {
     const routes = getApprovedRoutes();
 
+    expect(routes).toContain("/analyst/projects/");
+
     expect(routes).toContain("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");
     expect(routes).toContain("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");
     expect(routes).toContain("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");

@@ -35,7 +35,19 @@ MVP принципиально:
 - `pnpm collector:sync:REDACTED_CLIENT_DATA` собирает оба источника и атомарно публикует 12 отчётов: 3 сайта × 4 периода.
 - Отчёты содержат равное previous-period сравнение, total Webmaster history, unique target visits и детерминированные кластеры спроса.
 - Client routes загружают period-aware protected runtime JSON; `/demo/` остаётся отдельным fixture.
-- Следующий блок: scheduled timers и production isolation/deploy.
+- Read-only раздел `Проекты` и operator wizard добавляют новые config-driven проекты без БД; production isolation/deploy остаются следующей отдельной волной.
+
+Product hierarchy:
+
+```text
+Общий кабинет
+→ Проекты
+  → Проект
+    → Сайты
+      → Сводка / SEO / Трафик и обращения
+```
+
+Внутреннее поле `clientSlug` и route `/c/*` временно сохраняются как совместимый data contract; в пользовательском интерфейсе верхний уровень называется `Проект`.
 
 Предварительный production URL:
 
@@ -63,12 +75,37 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
+pnpm project:add
 pnpm collector:webmaster:preflight
 pnpm collector:webmaster:audit
 pnpm collector:metrica:preflight
 pnpm collector:metrica:audit
 pnpm collector:sync:REDACTED_CLIENT_DATA
 ```
+
+## Локальный live-кабинет
+
+Один раз обновить локальные browser-safe reports:
+
+```bash
+doppler run --project ams-seo-monitor --config prd -- pnpm collector:sync:REDACTED_CLIENT_DATA
+```
+
+Запустить Next dev и loopback-only report server одной командой:
+
+```bash
+pnpm dev:live
+```
+
+Открыть:
+
+```text
+http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
+http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
+http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
+```
+
+Report server слушает только `127.0.0.1:3001`, читает `.local/shared/client-reports` и не меняет production/static-export contract.
 
 `pnpm build` должен создавать `out/`. `collector:webmaster:*` используют только environment secrets и печатают только safe JSON.
 

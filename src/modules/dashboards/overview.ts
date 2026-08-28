@@ -1,6 +1,5 @@
 import { getClientBySlug, getClients } from "../client-registry/registry";
 
-
 export function buildAnalystOverview() {
   const clients = getClients();
   const totalSites = clients.reduce((count, client) => count + client.sites.length, 0);
@@ -21,18 +20,31 @@ export function buildAnalystOverview() {
   );
 
   return {
-    totalClients: clients.length,
+    totalProjects: clients.length,
     totalSites,
     connectedSites,
     plannedSites,
     enabledSources,
-    clientCards: clients.map((client) => ({
-      clientSlug: client.clientSlug,
-      name: client.name,
-      totalSites: client.sites.length,
-      connectedSites: client.sites.filter((site) => site.enabled).length,
-      plannedSites: client.sites.filter((site) => !site.enabled).length,
-    })),
+    projectCards: clients.map((project) => {
+      const projectEnabledSources = project.sites.reduce(
+        (count, site) => count + Number(site.webmaster.enabled) + Number(site.metrica.enabled),
+        0,
+      );
+      const readySites = project.sites.filter(
+        (site) => site.enabled && site.webmaster.enabled && site.metrica.enabled,
+      ).length;
+
+      return {
+        projectSlug: project.clientSlug,
+        name: project.name,
+        enabled: project.enabled,
+        totalSites: project.sites.length,
+        connectedSites: project.sites.filter((site) => site.enabled).length,
+        plannedSites: project.sites.filter((site) => !site.enabled).length,
+        enabledSources: projectEnabledSources,
+        readySites,
+      };
+    }),
   };
 }
 

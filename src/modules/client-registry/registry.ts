@@ -1,10 +1,5 @@
-import REDACTED_CLIENT_DATAClient from "../../../config/clients/REDACTED_CLIENT_DATA.json";
-import szRostovClient from "../../../config/clients/REDACTED_CLIENT_DATA.json";
-import defaultCluster from "../../../config/clusters/default.json";
-import realEstateCluster from "../../../config/clusters/real-estate.json";
-import REDACTED_CLIENT_DATAGoals from "../../../config/goals/REDACTED_CLIENT_DATA.json";
-import szRostovGoals from "../../../config/goals/REDACTED_CLIENT_DATA.json";
-import thresholdsConfig from "../../../config/thresholds.json";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import {
   clientRegistrySchema,
   clusterProfileSchema,
@@ -18,6 +13,22 @@ import {
   type ThresholdsConfig,
 } from "../../shared/schemas/registry";
 
+const configRoot = path.join(process.cwd(), "config");
+
+function readJsonDirectory(relativePath: string) {
+  const directory = path.join(configRoot, relativePath);
+  return readdirSync(directory)
+    .filter((entry) => entry.endsWith(".json"))
+    .sort()
+    .map((entry) => JSON.parse(readFileSync(path.join(directory, entry), "utf8")) as unknown);
+}
+
+function readJsonFile(relativePath: string) {
+  return JSON.parse(
+    readFileSync(path.join(configRoot, relativePath), "utf8"),
+  ) as unknown;
+}
+
 export type RegistryBundle = {
   clients: ClientRegistry[];
   clusters: ClusterProfile[];
@@ -28,10 +39,10 @@ export type RegistryBundle = {
 const parsedBundle = createRegistryBundle();
 
 function createRegistryBundle(): RegistryBundle {
-  const clients = [REDACTED_CLIENT_DATAClient, szRostovClient].map((item) => clientRegistrySchema.parse(item));
-  const clusters = [defaultCluster, realEstateCluster].map((item) => clusterProfileSchema.parse(item));
-  const goals = [REDACTED_CLIENT_DATAGoals, szRostovGoals].map((item) => goalProfileSchema.parse(item));
-  const thresholds = thresholdsSchema.parse(thresholdsConfig);
+  const clients = readJsonDirectory("clients").map((item) => clientRegistrySchema.parse(item));
+  const clusters = readJsonDirectory("clusters").map((item) => clusterProfileSchema.parse(item));
+  const goals = readJsonDirectory("goals").map((item) => goalProfileSchema.parse(item));
+  const thresholds = thresholdsSchema.parse(readJsonFile("thresholds.json"));
 
   validateBundle({ clients, clusters, goals, thresholds });
 
@@ -42,8 +53,9 @@ function validateBundle(bundle: RegistryBundle) {
   const clientSlugs = new Set<string>();
   const clusterSlugs = new Set(bundle.clusters.map((cluster) => cluster.profileSlug));
   const goalClientSlugs = new Set(bundle.goals.map((profile) => profile.clientSlug));
-  const routePaths = new Set(["/analyst/"]);
+  const routePaths = new Set(["/analyst/", "/analyst/projects/"]);
 
+  const siteUrls = new Set<string>();
   for (const client of bundle.clients) {
     if (clientSlugs.has(client.clientSlug)) {
       throw new Error(`Duplicate client slug: ${client.clientSlug}`);
@@ -74,6 +86,16 @@ function validateBundle(bundle: RegistryBundle) {
       if (site.enabled && isPlaceholderSiteUrl(site.siteUrl)) {
         throw new Error(`Enabled site has placeholder URL: ${client.clientSlug}/${site.siteSlug}`);
       }
+
+      const parsedSiteUrl = new URL(site.siteUrl);
+      const normalizedSitePath =
+        parsedSiteUrl.pathname === "/" ? "" : parsedSiteUrl.pathname.replace(/\/$/, "");
+      const normalizedSiteUrl =
+        `${parsedSiteUrl.protocol.toLowerCase()}//${parsedSiteUrl.hostname.toLowerCase()}${normalizedSitePath}`;
+      if (siteUrls.has(normalizedSiteUrl)) {
+        throw new Error(`Duplicate site URL: ${site.siteUrl}`);
+      }
+      siteUrls.add(normalizedSiteUrl);
 
       const siteRoute = `/c/${client.clientSlug}/${site.siteSlug}/`;
       assertUniqueRoute(routePaths, siteRoute);
@@ -121,7 +143,7 @@ export function getSiteStaticParams() {
 }
 
 export function getApprovedRoutes() {
-  const routes = ["/", "/demo/", "/analyst/"];
+  const routes = ["/", "/demo/", "/analyst/", "/analyst/projects/"];
   for (const client of parsedBundle.clients) {
     routes.push(`/c/${client.clientSlug}/`);
     for (const site of client.sites) {

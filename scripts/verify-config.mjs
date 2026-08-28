@@ -109,8 +109,9 @@ try {
 
   const clusterSlugs = new Set(clusters.map((item) => item.profileSlug));
   const goalClientSlugs = new Set(goalProfiles.map((item) => item.clientSlug));
-  const routeSet = new Set(["/", "/demo/", "/analyst/"]);
+  const routeSet = new Set(["/", "/demo/", "/analyst/", "/analyst/projects/"]);
   const clientSet = new Set();
+  const siteUrlSet = new Set();
 
   for (const client of clients) {
     assert(!clientSet.has(client.clientSlug), `Duplicate client slug: ${client.clientSlug}`);
@@ -126,6 +127,14 @@ try {
     for (const site of client.sites) {
       assert(!siteSet.has(site.siteSlug), `Duplicate site slug: ${client.clientSlug}/${site.siteSlug}`);
       siteSet.add(site.siteSlug);
+
+      const parsedSiteUrl = new URL(site.siteUrl);
+      const normalizedSitePath =
+        parsedSiteUrl.pathname === "/" ? "" : parsedSiteUrl.pathname.replace(/\/$/, "");
+      const normalizedSiteUrl =
+        `${parsedSiteUrl.protocol.toLowerCase()}//${parsedSiteUrl.hostname.toLowerCase()}${normalizedSitePath}`;
+      assert(!siteUrlSet.has(normalizedSiteUrl), `Duplicate site URL: ${site.siteUrl}`);
+      siteUrlSet.add(normalizedSiteUrl);
 
       if (site.enabled) {
         assert(!isPlaceholderUrl(site.siteUrl), `Enabled site cannot use placeholder URL: ${client.clientSlug}/${site.siteSlug}`);
@@ -151,7 +160,7 @@ try {
     }
   }
 
-  console.log(`Config verified: ${clients.length} clients, ${routeSet.size} routes, schemaVersion ${thresholds.schemaVersion}.`);
+  console.log(`Config verified: ${clients.length} projects, ${routeSet.size} routes, schemaVersion ${thresholds.schemaVersion}.`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

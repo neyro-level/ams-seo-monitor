@@ -8,7 +8,7 @@
 
 ## Что это за проект
 
-AMS SEO Monitor — отдельный приватный AMS-продукт для SEO-отчётности по нескольким клиентам и нескольким сайтам. Он не является модулем Бастиона и не должен использовать его runtime-код или его базу данных.
+AMS SEO Monitor — отдельный приватный AMS-продукт для SEO-отчётности по нескольким проектам и сайтам. Он не является модулем Бастиона и не должен использовать его runtime-код или его базу данных.
 
 ## Source of truth
 
@@ -36,6 +36,7 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 - Snapshot schema — единый data contract.
 - Клиентская изоляция в production обеспечивается Nginx Basic Auth, не фронтендом.
 - Секреты, OAuth tokens, htpasswd и чувствительные error bodies не попадают в Git, build output, browser payload и logs.
+- Product hierarchy: `Общий кабинет → Проекты → Сайты → Отчёты`; внутренние `clientSlug` и `/c/*` сохраняются как совместимый data contract.
 
 ## Архитектурные границы
 
@@ -60,13 +61,12 @@ AMS SEO Monitor — отдельный приватный AMS-продукт д�
 - protected live report loader;
 - partial/LKG tests and live local proof.
 
-Текущий обязательный блок:
+Текущий блок:
 
-- previous-period source collection and deltas;
-- unique converted visits across allowlisted goals;
-- scheduled sync-run state/timers;
-- Nginx protected data aliases and isolation proof;
-- production release only after explicit owner command.
+- read-only `/analyst/projects/`;
+- config-driven `pnpm project:add` без секретов и production mutations;
+- автоматическое build-time discovery новых project config files;
+- следующая отдельная волна: Nginx isolation, timers и production release.
 
 Без отдельной owner-команды не делать:
 

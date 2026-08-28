@@ -134,6 +134,21 @@ Implemented against the approved REDACTED_CLIENT_DATA references:
 
 Page contract: `docs/SITE_REPORT_IA.md`.
 
+## Projects registry foundation
+
+Implemented without changing static/no-DB architecture:
+
+- product hierarchy `Общий кабинет → Проекты → Сайты → Отчёты`;
+- read-only `/analyst/projects/`;
+- automatic build-time discovery of `config/clients/*.json`;
+- project readiness cards and source/site counts;
+- `pnpm project:add` interactive operator wizard;
+- dry-run and non-interactive flags;
+- no overwrite, no secrets, no commit/push/deploy;
+- rollback of generated files when registry validation fails.
+
+Internal `clientSlug`, `CLIENT_VIEWER` and `/c/*` remain compatible until a future standalone/database migration.
+
 ## Multi-site behavior
 
 - `/c/{clientSlug}/` shows one compact card per site;
