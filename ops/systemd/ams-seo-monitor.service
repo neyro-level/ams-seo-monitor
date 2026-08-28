@@ -11,6 +11,7 @@ WorkingDirectory=/opt/ams-platform/ams-seo-monitor/current
 Environment=NODE_ENV=production
 EnvironmentFile=/etc/ams-platform/ams-seo-monitor.env
 ExecStart=/opt/ams-platform/ams-seo-monitor/shared/runtime/current/bin/node /opt/ams-platform/ams-seo-monitor/current/dist-collector/collector/main.js client-sync REDACTED_CLIENT_DATA
+TimeoutStartSec=30min
 UMask=0007
 NoNewPrivileges=true
 PrivateTmp=true

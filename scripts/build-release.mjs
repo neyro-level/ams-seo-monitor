@@ -48,6 +48,16 @@ for (const file of ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]) {
   await cp(path.join(rootDir, file), path.join(stagingDir, file));
 }
 
+for (const relativePath of [
+  "ops/nginx/ams-seo-monitor.conf",
+  "ops/systemd/ams-seo-monitor.service",
+  "ops/systemd/ams-seo-monitor.timer",
+]) {
+  const targetPath = path.join(stagingDir, relativePath);
+  const content = await readFile(targetPath, "utf8");
+  await writeFile(targetPath, content.replace(/\r\n/g, "\n"), "utf8");
+}
+
 const lockBytes = await readFile(path.join(rootDir, "pnpm-lock.yaml"));
 const dependencyLockSha256 = createHash("sha256").update(lockBytes).digest("hex");
 const manifest = {
