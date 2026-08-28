@@ -144,26 +144,26 @@ registry + goals + tracked query sets
 - client isolation обеспечивается server path policy, не frontend filter;
 - raw API responses и secret-bearing errors не сохраняются.
 
-## Что реализовано
+## Production status
 
-- multi-project registry и safe `pnpm project:add` wizard;
-- three-site REDACTED_CLIENT_DATA live sync;
-- 12 period reports за один sync;
-- aligned current/previous periods;
-- partial/LKG behavior;
-- unified director dashboard;
-- owner-provided REDACTED_CLIENT_DATA query core и ranking fallback;
-- responsive fixes и softened sidebar active states;
-- local live report server.
+`ACTIVE`.
 
-## Что не выпущено
+- SourceCraft dashboard and deploy hotfix PRs merged;
+- immutable exact-main artifact deployed;
+- Nginx TLS + Basic Auth protects HTML and data paths;
+- REDACTED_CLIENT_DATA/analyst isolation matrix passes;
+- collector oneshot and daily timer active;
+- REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA and REDACTED_CLIENT_DATA reports fresh;
+- private/no-store/noindex headers active;
+- previous release remains rollback-ready;
+- release proof stored in production `shared/`.
 
-- SourceCraft PR текущей dashboard ветки;
-- live Topvisor credentials/mapping;
-- production Nginx Basic Auth и isolation matrix;
-- systemd daily/weekly timers;
-- immutable production release/deploy;
-- production smoke and rollback proof.
+## Remaining product work
+
+- optional live Topvisor credentials/mapping;
+- SZ REDACTED_CLIENT_DATA source onboarding;
+- analyst-only detailed source-bundle views;
+- scheduled external availability alerting.
 
 ## Команды
 
@@ -181,11 +181,13 @@ pnpm dev:live
 
 ## Definition of Done production
 
+Achieved:
+
 - reviewed exact SourceCraft `main` SHA;
 - immutable release artifact and manifest;
 - static UI + protected report aliases on `seo-monitor.ams24.ru`;
-- analyst/client Basic Auth isolation matrix passes;
-- daily/weekly timers active;
+- analyst/client Basic Auth isolation matrix;
+- daily timer and successful collector oneshot;
 - three REDACTED_CLIENT_DATA sites publish fresh reports;
-- live revision/route/data/auth proof recorded;
-- previous release remains rollback-ready.
+- live revision/route/data/auth/header proof;
+- previous release retained for rollback.

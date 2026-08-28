@@ -167,31 +167,40 @@ Internal `clientSlug`, `CLIENT_VIEWER` and `/c/*` remain compatible until a futu
 - one-site clients still use the same architecture;
 - disabled future sites stay available as `Не подключён`.
 
-## Wave 3 — after reviewed UI/data completion
+## Wave 3 — production active
 
-- Nginx Basic Auth and isolation matrix;
-- protected data aliases;
-- exact main artifact;
-- AMS Main Server release;
-- `systemd` daily/weekly timers;
-- initial onboarding;
-- stale/partial operations;
-- token rotation/recovery/rollback.
+Implemented:
 
-## Current release route
+- Nginx TLS and Basic Auth isolation matrix;
+- protected browser-safe report aliases;
+- immutable exact-main release artifact;
+- AMS Main Server atomic release switch;
+- hardened collector oneshot;
+- enabled daily timer;
+- live three-site sync;
+- private/no-store/noindex headers;
+- rollback pointer and release proof.
 
-Current branch: `work/director-dashboard-v2`, pushed and clean before release preparation.
+Remaining operations:
 
-Risk: **HEAVY** — analytics/compiler, provider adapter, browser report schema, UI and future production impact.
+- external availability alerts;
+- token rotation drill;
+- SZ REDACTED_CLIENT_DATA production onboarding.
 
-Required route:
+## Current release state
+
+SourceCraft dashboard PR and deploy hotfix PR merged into `main`. Production deploy and authenticated smoke completed.
+
+Risk for future releases remains **HEAVY** when analytics/compiler/provider/runtime/infra changes are present.
+
+Release route:
 
 ```text
-documentation sync
-→ full diff review
+reviewed branch
 → exact-head HEAVY gate
-→ SourceCraft PR merge
-→ exact main artifact
-→ AMS Main Server deploy
-→ Nginx/auth/timers/live proof
+→ SourceCraft main
+→ immutable artifact
+→ atomic AMS Main Server deploy
+→ auth/data/header/timer smoke
+→ rollback proof
 ```

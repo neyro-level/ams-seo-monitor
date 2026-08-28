@@ -2,7 +2,7 @@
 
 ## Статус
 
-Local data recovery behavior verified. Production release rollback is configured during Wave 3 deployment.
+Local data recovery and production release rollback are active and verified.
 
 ## Recovery principles
 
@@ -21,7 +21,7 @@ Verified:
 - current/previous internal bundles remain separate from browser-safe reports;
 - three sites × four presets publish valid reports.
 
-## Production recovery targets
+## Production recovery contract
 
 - releases are immutable;
 - `current` symlink switches atomically;

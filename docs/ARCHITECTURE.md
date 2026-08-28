@@ -71,12 +71,12 @@ registry/threshold/goal config
 
 ## Remaining runtime work
 
-1. Activate production Nginx aliases and Basic Auth isolation.
-2. Materialize server env and install daily/weekly systemd units.
-3. Add sync-run/stale operational monitoring.
-4. Build analyst-only views from preserved internal source bundles.
-5. Optionally enable live Topvisor mapping after credentials/owner decision.
-6. Deploy reviewed exact `main` artifact to `https://seo-monitor.ams24.ru`.
+1. Add external availability/freshness alerting.
+2. Build analyst-only views from preserved internal source bundles.
+3. Optionally enable live Topvisor mapping after credentials/owner decision.
+4. Onboard SZ REDACTED_CLIENT_DATA after exact sources/auth inputs.
+
+Production static release, protected aliases, collector oneshot and daily timer are active.
 
 ## Frontend IA
 

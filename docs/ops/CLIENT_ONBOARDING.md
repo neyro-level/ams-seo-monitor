@@ -2,7 +2,7 @@
 
 ## Статус
 
-Live local onboarding завершён для трёх сайтов Бастиона. Production auth/deploy ещё не активированы.
+REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA production onboarding, auth isolation and daily sync are active. SZ REDACTED_CLIENT_DATA remains pending.
 
 ## Initial order
 
