@@ -27,7 +27,8 @@ export function formatDuration(seconds: number | null | undefined) {
     return "—";
   }
 
-  const minutes = Math.floor(seconds / 60);
-  const remainder = Math.round(seconds % 60);
+  const roundedSeconds = Math.round(seconds);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const remainder = roundedSeconds % 60;
   return `${minutes}м ${remainder.toString().padStart(2, "0")}с`;
 }

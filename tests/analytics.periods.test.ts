@@ -33,8 +33,8 @@ describe("equal comparison periods", () => {
   });
 
   it("defines approved fixed presets ending on the same factual day", () => {
-    expect(REPORT_PERIOD_KEYS).toEqual(["week", "month", "quarter", "halfYear"]);
-    expect(getInclusivePeriodDays(derivePeriodEndingOn("2026-08-23", "week"))).toBe(7);
+    expect(REPORT_PERIOD_KEYS).toEqual(["twoWeeks", "month", "quarter", "halfYear"]);
+    expect(getInclusivePeriodDays(derivePeriodEndingOn("2026-08-23", "twoWeeks"))).toBe(14);
     expect(getInclusivePeriodDays(derivePeriodEndingOn("2026-08-23", "month"))).toBe(28);
     expect(getInclusivePeriodDays(derivePeriodEndingOn("2026-08-23", "quarter"))).toBe(90);
     expect(getInclusivePeriodDays(derivePeriodEndingOn("2026-08-23", "halfYear"))).toBe(180);

@@ -83,7 +83,7 @@ REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
 
 Implemented:
 
-- fixed presets: week 7, month 28, quarter 90, half-year 180 days;
+- fixed presets: two weeks 14, month 28, quarter 90, half-year 180 days;
 - immediately preceding equal-period comparison;
 - total Webmaster shows/clicks/position history;
 - popular query pool merge by `queryId + device`;
@@ -114,38 +114,27 @@ Aggregate `goalReaches` stays available only as actions; director conversion use
 - runtime report path follows `/c/{clientSlug}/data/{siteSlug}/{periodKey}/latest.json`;
 - Nginx alias/security activation remains Wave 3.
 
-## Dashboard V2 discussion
+## Director dashboard V2
 
 Branch: `work/director-dashboard-v2`.
 
-`docs/DIRECTOR_DASHBOARD_V2.md` is a discussion draft, not an approved implementation contract. Until owner approval, only the agreed navigation hierarchy is implemented:
+The approved contract is `docs/DIRECTOR_DASHBOARD_V2.md`:
 
 ```text
 Все проекты
-→ Проект REDACTED_CLIENT_DATA
-  → REDACTED_CLIENT_DATA
-  → REDACTED_CLIENT_DATA
-  → REDACTED_CLIENT_DATA
-→ Проект Союз застройщиков
-  → Ростов-на-Дону
+→ Проект
+  → Сайт
+    → Единый отчёт
 ```
 
-Summary/SEO/Traffic composition, KPI set and graph redesign remain blocked pending discussion.
+Implemented foundation:
 
-## Director cabinet UI foundation
-
-Implemented against the approved REDACTED_CLIENT_DATA references:
-
-- full remaining-width workspace; no artificial `max-width` frame;
-- canonical PT Root UI and CRM tokens;
-- fixed 260px sidebar and white mobile topbar;
-- project panel/KPI/table radius restored to 16px;
-- one route with bookmarkable `Сводка / SEO / Трафик и обращения` tabs;
-- functional `Неделя / Месяц / Квартал / Полгода` presets;
-- default weekly comparison;
-- approved 6 KPI director summary + result/risk/opportunity/action;
-- SEO shows 4 KPI, one trend, up to 5 demand clusters, coverage and up to 5 queries;
-- Traffic shows 4 KPI, target actions, up to 5 landing pages and quality;
+- one report without Summary/SEO/Traffic tabs;
+- visible `14 дней / Месяц / Квартал / Полгода` selector;
+- health-first hierarchy;
+- four Webmaster KPI and a real shows/clicks chart;
+- project-specific tracked query core with 20-row initial disclosure;
+- Metrica traffic and landing-page section;
 - client route navigation contains only its own client subtree;
 - `/demo/` remains separate from client data;
 - live client routes fetch protected runtime snapshots and show safe loading/error states.

@@ -2,79 +2,41 @@ import type { ReactNode } from "react";
 import { MetricTrendChart } from "../../components/charts/MetricTrendChart";
 import { KpiCard } from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/dashboard/PageHeader";
-import { ReportTabs } from "../../components/dashboard/ReportTabs";
 import { SectionCard } from "../../components/dashboard/SectionCard";
 import { StatusBanner } from "../../components/dashboard/StatusBanner";
 import { StatePanel } from "../../components/states/StatePanel";
 import { DataTable } from "../../components/tables/DataTable";
-import {
-  formatDuration,
-  formatInteger,
-  formatPercent,
-  formatPosition,
-} from "../../shared/format/metrics";
-import type {
-  ReportComparison,
-  SiteReportSnapshot,
-  WebmasterReport,
-} from "../../shared/schemas/report";
+import { TrackedQueryTable } from "../../components/tables/TrackedQueryTable";
+import { formatDuration, formatInteger, formatPercent, formatPosition } from "../../shared/format/metrics";
+import type { ReportComparison, SiteReportSnapshot } from "../../shared/schemas/report";
 import type { SiteRegistry } from "../../shared/schemas/registry";
 
 type ComparisonMetric = ReportComparison["metrics"]["shows"];
 
-function formatDelta(
-  metric: ComparisonMetric | undefined,
-  mode: "percent" | "points" | "position" = "percent",
-) {
+function formatDelta(metric: ComparisonMetric | undefined, mode: "percent" | "points" | "position" = "percent") {
   const value = mode === "percent" ? metric?.deltaPercent : metric?.deltaPoints;
-  if (value === null || value === undefined) {
-    return { text: undefined, tone: "neutral" as const };
-  }
-
-  const formatted = new Intl.NumberFormat("ru-RU", {
-    maximumFractionDigits: 1,
-    signDisplay: "exceptZero",
-  }).format(value);
-
+  if (value === null || value === undefined) return { text: undefined, tone: "neutral" as const };
   if (mode === "position") {
     return {
-      text:
-        value > 0
-          ? `Улучшение на ${Math.abs(value).toFixed(1)}`
-          : value < 0
-            ? `Ухудшение на ${Math.abs(value).toFixed(1)}`
-            : "Без изменений",
+      text: value > 0 ? `Улучшение на ${Math.abs(value).toFixed(1)}` : value < 0 ? `Ухудшение на ${Math.abs(value).toFixed(1)}` : "Без изменений",
       tone: value > 0 ? ("positive" as const) : value < 0 ? ("negative" as const) : ("neutral" as const),
     };
   }
-
+  const formatted = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1, signDisplay: "exceptZero" }).format(value);
   return {
     text: mode === "points" ? `${formatted} п.п.` : `${formatted}%`,
     tone: value > 0 ? ("positive" as const) : value < 0 ? ("negative" as const) : ("neutral" as const),
   };
 }
 
-function buildClusterSummary(queries: WebmasterReport["queries"]) {
-  const clusters = new Map<
-    string,
-    { label: string; shows: number; clicks: number }
-  >();
-
-  for (const query of queries) {
-    if (query.device !== "ALL") continue;
-    const current = clusters.get(query.cluster) ?? {
-      label: query.cluster,
-      shows: 0,
-      clicks: 0,
-    };
-    current.shows += query.shows;
-    current.clicks += query.clicks;
-    clusters.set(query.cluster, current);
-  }
-
-  return [...clusters.values()]
-    .sort((left, right) => right.shows - left.shows)
-    .slice(0, 5);
+function factCard(label: string, value: string, note?: string) {
+  return (
+    <div className="rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--crm-text-muted)]">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums text-[var(--crm-text)]">{value}</p>
+      {note ? <p className="mt-1 text-xs text-[var(--crm-text-secondary)]">{note}</p> : null}
+    </div>
+  );
 }
 
 type SiteReportViewProps = {
@@ -86,557 +48,128 @@ type SiteReportViewProps = {
   periodControl?: ReactNode;
 };
 
-export function SiteReportView({
-  clientName,
-  site,
-  snapshot,
-  mode,
-  backHref,
-  periodControl,
-}: SiteReportViewProps) {
+export function SiteReportView({ clientName, site, snapshot, mode, backHref, periodControl }: SiteReportViewProps) {
   if (!snapshot) {
     const sourcesEnabled = site.webmaster.enabled || site.metrica.enabled;
-
     return (
       <div className="space-y-6">
-        <PageHeader
-          eyebrow={clientName}
-          title={site.name}
-          description={
-            sourcesEnabled
-              ? "Webmaster и Метрика подключены. Следующий блок публикует единый live snapshot для кабинета."
-              : "Сайт сохранён в структуре клиента, но источники данных ещё не подключены."
-          }
-          backHref={backHref}
-        />
-        <StatePanel
-          state={sourcesEnabled ? "stale" : "not-connected"}
-          title={sourcesEnabled ? "Live-отчёт готовится" : "Не подключён"}
-          description={
-            sourcesEnabled
-              ? "Мы не показываем демонстрационные данные как реальные. До завершения report compiler откройте demo route для проверки интерфейса."
-              : "После подтверждения URL, Webmaster host и Metrica counter здесь появится отдельный отчёт сайта."
-          }
-        />
+        <PageHeader eyebrow={clientName} title={site.name} description="Единый отчёт по поисковой видимости, техническому состоянию и органическому трафику." backHref={backHref} />
+        {periodControl}
+        <StatePanel state={sourcesEnabled ? "stale" : "not-connected"} title={sourcesEnabled ? "Live-отчёт готовится" : "Источники не подключены"} description={sourcesEnabled ? "Данные появятся после успешной публикации snapshot." : "Для отчёта нужны доступы к Яндекс.Вебмастеру и Яндекс.Метрике."} />
       </div>
     );
   }
 
   const webmaster = snapshot.webmaster;
   const metrica = snapshot.metrica;
-  const topOpportunity = snapshot.combined.opportunities[0] ?? null;
-  const topAlert = snapshot.combined.alerts[0] ?? null;
-  const periodStart =
-    snapshot.sources.webmaster.periodStart ?? snapshot.sources.metrica.periodStart;
+  const health = webmaster?.health ?? null;
+  const comparison = snapshot.comparison?.metrics;
+  const periodStart = snapshot.sources.webmaster.periodStart ?? snapshot.sources.metrica.periodStart;
   const periodEnd = snapshot.sources.webmaster.periodEnd ?? snapshot.sources.metrica.periodEnd;
-  const periodLabel =
-    periodStart && periodEnd ? `${periodStart} — ${periodEnd}` : "Фактический период источника";
-  const showsDelta = formatDelta(snapshot.comparison?.metrics.shows);
-  const clicksDelta = formatDelta(snapshot.comparison?.metrics.clicks);
-  const organicVisitsDelta = formatDelta(snapshot.comparison?.metrics.organicVisits);
-  const targetVisitsDelta = formatDelta(snapshot.comparison?.metrics.targetVisits);
-  const conversionDelta = formatDelta(
-    snapshot.comparison?.metrics.conversionRate,
-    "points",
-  );
-  const pagesDelta = formatDelta(snapshot.comparison?.metrics.pagesInSearch);
-  const ctrDelta = formatDelta(snapshot.comparison?.metrics.ctr, "points");
-  const positionDelta = formatDelta(
-    snapshot.comparison?.metrics.avgPosition,
-    "position",
-  );
-  const organicShare =
-    metrica && metrica.summary.allVisits > 0
-      ? (metrica.summary.visits / metrica.summary.allVisits) * 100
-      : null;
-  const organicShareDelta = formatDelta(
-    snapshot.comparison?.metrics.organicShare,
-    "points",
-  );
-  const mainResult =
-    organicVisitsDelta.text && organicVisitsDelta.tone !== "neutral"
-      ? `Органические визиты: ${organicVisitsDelta.text}`
-      : clicksDelta.text && clicksDelta.tone !== "neutral"
-        ? `Клики из поиска: ${clicksDelta.text}`
-        : "Недостаточно данных для сравнения";
-  const recommendedAction = topAlert
-    ? "Сначала устранить главный риск и проверить обновление источников."
-    : topOpportunity
-      ? "Проверить посадочную страницу и поисковый сниппет приоритетного запроса."
-      : "Сохранить текущий курс и контролировать следующий период.";
-  const clusterSummary = webmaster ? buildClusterSummary(webmaster.queries) : [];
+  const periodLabel = periodStart && periodEnd ? `${periodStart} — ${periodEnd}` : "период источника";
+  const showsDelta = formatDelta(comparison?.shows);
+  const clicksDelta = formatDelta(comparison?.clicks);
+  const ctrDelta = formatDelta(comparison?.ctr, "points");
+  const positionDelta = formatDelta(comparison?.avgPosition, "position");
+  const visitsDelta = formatDelta(comparison?.organicVisits);
+  const targetsDelta = formatDelta(comparison?.targetVisits);
+  const conversionDelta = formatDelta(comparison?.conversionRate, "points");
+  const topAlert = snapshot.combined.alerts[0] ?? null;
+  const topOpportunity = snapshot.combined.opportunities[0] ?? null;
+  const healthTone = health?.status === "critical" ? "error" : health?.status === "attention" ? "warning" : "success";
+  const healthTitle = health?.status === "critical" ? "Есть критичные проблемы" : health?.status === "attention" ? "Сайт требует внимания" : "Сайт работает стабильно";
 
-  const summary = (
-    <div className="space-y-6">
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <KpiCard
-          label="Показы в поиске"
-          value={formatInteger(webmaster?.summary.shows ?? null)}
-          tone="primary"
-          delta={showsDelta.text}
-          deltaTone={showsDelta.tone}
-        />
-        <KpiCard
-          label="Клики из поиска"
-          value={formatInteger(webmaster?.summary.clicks ?? null)}
-          delta={clicksDelta.text}
-          deltaTone={clicksDelta.tone}
-        />
-        <KpiCard
-          label="Органические визиты"
-          value={formatInteger(metrica?.summary.visits ?? null)}
-          tone="soft"
-          delta={organicVisitsDelta.text}
-          deltaTone={organicVisitsDelta.tone}
-        />
-        <KpiCard
-          label="Целевые визиты"
-          value={formatInteger(metrica?.summary.targetVisits ?? null)}
-          tone="soft"
-          delta={targetVisitsDelta.text}
-          deltaTone={targetVisitsDelta.tone}
-        />
-        <KpiCard
-          label="Конверсия"
-          value={formatPercent(metrica?.summary.conversionRate ?? null)}
-          tone="success"
-          delta={conversionDelta.text}
-          deltaTone={conversionDelta.tone}
-        />
-        <KpiCard
-          label="Страницы в поиске"
-          value={formatInteger(webmaster?.summary.pagesInSearch ?? null)}
-          delta={pagesDelta.text}
-          deltaTone={pagesDelta.tone}
-        />
+  return (
+    <div className="space-y-8">
+      <PageHeader eyebrow={clientName} title={site.name} description={`Единый отчёт за ${periodLabel}. Обновлён ${new Date(snapshot.generatedAt).toLocaleString("ru-RU")}.`} backHref={backHref} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {periodControl}
+        <p className="text-xs text-[var(--crm-text-muted)]">{mode === "live" ? "Live-данные" : "Демонстрационные данные"}</p>
+      </div>
+
+      {health ? (
+        <section className="space-y-4" aria-labelledby="health-title">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--crm-primary)]">Состояние сайта</p>
+            <h2 id="health-title" className="mt-1 text-2xl font-semibold text-[var(--crm-text)]">Индексация и техническое здоровье</h2>
+          </div>
+          <StatusBanner tone={healthTone} title={healthTitle} description={`${health.fatalCount + health.criticalCount} критичных диагностик, ${health.possibleProblemCount} возможных проблем; HTTP 5xx: ${health.http5xx}; Sitemap: ${health.sitemapErrors} ошибок.`} />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {factCard("Страницы в поиске", formatInteger(health.pagesInSearch), `${formatInteger(health.excludedPages)} исключено`)}
+            {factCard("Sitemap", formatInteger(health.sitemapUrls), health.sitemapErrors > 0 ? `${health.sitemapErrors} ошибок` : "без ошибок")}
+            {factCard("Обновление поиска", health.searchBalance >= 0 ? `+${formatInteger(health.searchBalance)}` : formatInteger(health.searchBalance), `${health.appearedInSearch} появилось · ${health.removedFromSearch} удалено`)}
+            {factCard("ИКС", formatInteger(health.sqi), health.sqiDelta === null ? "нет сравнения" : `${health.sqiDelta > 0 ? "+" : ""}${health.sqiDelta} к прошлому замеру`)}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="space-y-4" aria-labelledby="seo-title">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--crm-primary)]">SEO-результат</p>
+          <h2 id="seo-title" className="mt-1 text-2xl font-semibold text-[var(--crm-text)]">Видимость в поиске Яндекса</h2>
+        </div>
+        {webmaster ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <KpiCard label="Показы" value={formatInteger(webmaster.summary.shows)} tone="primary" delta={showsDelta.text} deltaTone={showsDelta.tone} />
+              <KpiCard label="Клики" value={formatInteger(webmaster.summary.clicks)} delta={clicksDelta.text} deltaTone={clicksDelta.tone} />
+              <KpiCard label="CTR" value={formatPercent(webmaster.summary.ctr, 2)} delta={ctrDelta.text} deltaTone={ctrDelta.tone} />
+              <KpiCard label="Средняя позиция" value={formatPosition(webmaster.summary.avgPosition)} delta={positionDelta.text} deltaTone={positionDelta.tone} />
+            </div>
+            <MetricTrendChart title="Динамика показов и кликов" subtitle="Ежедневные значения по всем запросам сайта." data={webmaster.visibilityTrend} metricLabel="Показы" secondaryMetricLabel="Клики" tertiaryMetricLabel="Средняя позиция" />
+            {webmaster.trackedCore ? (
+              <SectionCard title="Отслеживаемое поисковое ядро" note={`${webmaster.trackedCore.observedCount} из ${webmaster.trackedCore.expectedCount} запросов найдено в Вебмастере`}>
+                <div className="mb-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+                  {factCard("Покрытие", formatPercent(webmaster.trackedCore.coveragePercent))}
+                  {factCard("Топ-3", formatInteger(webmaster.trackedCore.top3Count))}
+                  {factCard("4–10", formatInteger(webmaster.trackedCore.top10Count))}
+                  {factCard("11–20", formatInteger(webmaster.trackedCore.top20Count))}
+                  {factCard("Ниже 20", formatInteger(webmaster.trackedCore.below20Count))}
+                  {factCard("Нет замера", formatInteger(webmaster.trackedCore.unmeasuredCount))}
+                </div>
+                <TrackedQueryTable core={webmaster.trackedCore} />
+              </SectionCard>
+            ) : (
+              <SectionCard title="Наблюдаемые запросы" note="Данные Яндекс.Вебмастера">
+                <DataTable caption="Запросы, по которым сайт показывался" columns={["Запрос", "Показы", "Клики", "CTR", "Позиция"]} rows={webmaster.queries.filter((query) => query.device === "ALL").slice(0, 20).map((query) => ({ key: query.queryId, cells: [query.query, formatInteger(query.shows), formatInteger(query.clicks), formatPercent(query.ctr, 2), formatPosition(query.avgShowPosition)] }))} />
+              </SectionCard>
+            )}
+          </>
+        ) : <StatePanel state="empty" title="Нет данных Вебмастера" description="Источник не подключён или временно недоступен." />}
       </section>
 
-      <SectionCard title="Главное за период" note="Управленческая сводка">
-        <div className="grid gap-3 xl:grid-cols-4">
-          <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-            <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-              Главный результат
-            </p>
-            <p className="mt-2 text-base font-semibold text-[var(--crm-text)]">
-              {mainResult}
-            </p>
-          </div>
-          <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-            <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-              Главная точка роста
-            </p>
-            <p className="mt-2 text-base font-semibold text-[var(--crm-text)]">
-              {topOpportunity?.title ?? "Критичных возможностей не выделено"}
-            </p>
-            {topOpportunity ? (
-              <p className="mt-2 text-sm text-[var(--crm-text-secondary)]">
-                {topOpportunity.summary}
-              </p>
-            ) : null}
-          </div>
-          <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-            <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-              Главный риск
-            </p>
-            <p className="mt-2 text-base font-semibold text-[var(--crm-text)]">
-              {topAlert?.title ?? "Критичных рисков нет"}
-            </p>
-            {topAlert ? (
-              <p className="mt-2 text-sm text-[var(--crm-text-secondary)]">
-                {topAlert.summary}
-              </p>
-            ) : null}
-          </div>
-          <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-            <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-              Рекомендуемое действие
-            </p>
-            <p className="mt-2 text-base font-semibold text-[var(--crm-text)]">
-              {recommendedAction}
-            </p>
-          </div>
+      <section className="space-y-4" aria-labelledby="traffic-title">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--crm-primary)]">Трафик</p>
+          <h2 id="traffic-title" className="mt-1 text-2xl font-semibold text-[var(--crm-text)]">Органические визиты и целевые действия</h2>
+        </div>
+        {metrica ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <KpiCard label="Органические визиты" value={formatInteger(metrica.summary.visits)} tone="primary" delta={visitsDelta.text} deltaTone={visitsDelta.tone} />
+              <KpiCard label="Целевые визиты" value={formatInteger(metrica.summary.targetVisits)} tone="soft" delta={targetsDelta.text} deltaTone={targetsDelta.tone} />
+              <KpiCard label="Конверсия" value={formatPercent(metrica.summary.conversionRate)} tone="success" delta={conversionDelta.text} deltaTone={conversionDelta.tone} />
+              <KpiCard label="Среднее время" value={formatDuration(metrica.summary.averageVisitDurationSeconds)} />
+            </div>
+            <MetricTrendChart title="Органический трафик" subtitle="Визиты и целевые визиты из поиска Яндекса." data={metrica.organicTrend} metricLabel="Визиты" secondaryMetricLabel="Целевые визиты" tertiaryMetricLabel="Конверсия" />
+            <SectionCard title="Посадочные страницы" note="Основные входы из органического поиска">
+              <DataTable caption="Эффективность посадочных страниц" columns={["Страница", "Визиты", "Целевые визиты", "Конверсия", "Отказы"]} rows={metrica.landingPages.slice(0, 10).map((page) => ({ key: page.path, cells: [<span key="path" className="font-semibold text-[var(--crm-text)]">{page.path}</span>, formatInteger(page.visits), formatInteger(page.targetVisits), formatPercent(page.conversionRate), formatPercent(page.bounceRate)] }))} />
+            </SectionCard>
+          </>
+        ) : <StatePanel state="empty" title="Нет данных Метрики" description="Источник не подключён или временно недоступен." />}
+      </section>
+
+      <SectionCard title="Что делать дальше" note="Приоритеты по фактическим данным">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4"><p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">Главный риск</p><p className="mt-2 font-semibold">{topAlert?.title ?? "Критичных рисков не обнаружено"}</p>{topAlert ? <p className="mt-1 text-sm text-[var(--crm-text-secondary)]">{topAlert.summary}</p> : null}</div>
+          <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4"><p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">Точка роста</p><p className="mt-2 font-semibold">{topOpportunity?.title ?? "Сохранить текущий курс"}</p>{topOpportunity ? <p className="mt-1 text-sm text-[var(--crm-text-secondary)]">{topOpportunity.summary}</p> : null}</div>
         </div>
       </SectionCard>
 
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {webmaster ? (
-          <MetricTrendChart
-            title="Видимость в поиске"
-            subtitle="Показы и клики по всем запросам сайта."
-            data={webmaster.visibilityTrend}
-            metricLabel="Показы"
-            secondaryMetricLabel="Клики"
-            tertiaryMetricLabel="Средняя позиция"
-          />
-        ) : null}
-        {metrica ? (
-          <MetricTrendChart
-            title="Органический трафик и обращения"
-            subtitle="Визиты и уникальные целевые визиты из поиска Яндекса."
-            data={metrica.organicTrend}
-            metricLabel="Визиты"
-            secondaryMetricLabel="Целевые визиты"
-            tertiaryMetricLabel="Конверсия"
-          />
-        ) : null}
-      </div>
-    </div>
-  );
-
-  const seo = (
-    <div className="space-y-6">
-      {webmaster ? (
-        <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard
-              label="Показы"
-              value={formatInteger(webmaster.summary.shows)}
-              tone="primary"
-              delta={showsDelta.text}
-              deltaTone={showsDelta.tone}
-            />
-            <KpiCard
-              label="Клики"
-              value={formatInteger(webmaster.summary.clicks)}
-              delta={clicksDelta.text}
-              deltaTone={clicksDelta.tone}
-            />
-            <KpiCard
-              label="CTR"
-              value={formatPercent(webmaster.summary.ctr, 2)}
-              delta={ctrDelta.text}
-              deltaTone={ctrDelta.tone}
-            />
-            <KpiCard
-              label="Средняя позиция"
-              value={formatPosition(webmaster.summary.avgPosition)}
-              delta={positionDelta.text}
-              deltaTone={positionDelta.tone}
-            />
-          </section>
-          <MetricTrendChart
-            title="Видимость Яндекса"
-            subtitle="Показы, клики и средняя позиция по фактическому периоду Вебмастера."
-            data={webmaster.visibilityTrend}
-            metricLabel="Показы"
-            secondaryMetricLabel="Клики"
-            tertiaryMetricLabel="Средняя позиция"
-          />
-
-          {clusterSummary.length > 0 ? (
-            <SectionCard title="Темы спроса" note="До 5 кластеров">
-              <DataTable
-                caption="Темы поискового спроса"
-                columns={["Тема", "Показы", "Клики", "CTR"]}
-                rows={clusterSummary.map((cluster) => ({
-                  key: cluster.label,
-                  cells: [
-                    <span key="label" className="font-semibold text-[var(--crm-text)]">
-                      {cluster.label}
-                    </span>,
-                    <span key="shows" className="tabular-nums">
-                      {formatInteger(cluster.shows)}
-                    </span>,
-                    <span key="clicks" className="tabular-nums">
-                      {formatInteger(cluster.clicks)}
-                    </span>,
-                    <span key="ctr" className="tabular-nums">
-                      {formatPercent(
-                        cluster.shows > 0 ? (cluster.clicks / cluster.shows) * 100 : 0,
-                        2,
-                      )}
-                    </span>,
-                  ],
-                }))}
-              />
-            </SectionCard>
-          ) : null}
-
-          <SectionCard title="Точки роста" note="Детерминированные правила">
-            <ul className="grid gap-3 xl:grid-cols-3">
-              {snapshot.combined.opportunities.slice(0, 5).map((opportunity) => (
-                <li
-                  key={opportunity.id}
-                  className="rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4"
-                >
-                  <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                    {opportunity.source}
-                  </p>
-                  <h3 className="mt-2 text-base font-semibold text-[var(--crm-text)]">
-                    {opportunity.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-5 text-[var(--crm-text-secondary)]">
-                    {opportunity.summary}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </SectionCard>
-
-          <SectionCard title="Главные запросы" note="До 5 точек роста">
-            <DataTable
-              caption="Главные запросы Вебмастера"
-              columns={["Запрос", "Показы", "Клики", "CTR", "Позиция", "Возможность"]}
-              rows={webmaster.queries.slice(0, 5).map((query) => ({
-                key: `${query.queryId}-${query.device}`,
-                cells: [
-                  <span key="query" className="min-w-[220px] font-semibold text-[var(--crm-text)]">
-                    {query.query}
-                  </span>,
-                  <span key="shows" className="tabular-nums">
-                    {formatInteger(query.shows)}
-                  </span>,
-                  <span key="clicks" className="tabular-nums">
-                    {formatInteger(query.clicks)}
-                  </span>,
-                  <span key="ctr" className="tabular-nums">
-                    {formatPercent(query.ctr, 2)}
-                  </span>,
-                  <span key="position" className="tabular-nums">
-                    {formatPosition(query.avgShowPosition)}
-                  </span>,
-                  query.opportunityType,
-                ],
-              }))}
-            />
-          </SectionCard>
-
-          <SectionCard title="Поисковый охват" note="Кратко для руководителя">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-                <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                  Страниц в поиске
-                </p>
-                <p className="mt-2 text-2xl font-semibold tabular-nums">
-                  {formatInteger(webmaster.summary.pagesInSearch)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-                <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                  Исключено
-                </p>
-                <p className="mt-2 text-2xl font-semibold tabular-nums">
-                  {formatInteger(webmaster.summary.excludedPages)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-                <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                  Sitemap
-                </p>
-                <p className="mt-2 text-lg font-semibold">
-                  {webmaster.sitemap
-                    ? webmaster.sitemap.errors > 0
-                      ? `${webmaster.sitemap.errors} ошибок`
-                      : "Без ошибок"
-                    : "Не найден"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-                <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                  Критические проблемы
-                </p>
-                <p className="mt-2 text-2xl font-semibold tabular-nums">
-                  {
-                    webmaster.diagnostics.filter(
-                      (diagnostic) => diagnostic.severity === "error",
-                    ).length
-                  }
-                </p>
-              </div>
-            </div>
-            {webmaster.diagnostics.some((diagnostic) => diagnostic.severity === "error") ? (
-              <ul className="mt-4 grid gap-3 xl:grid-cols-3">
-                {webmaster.diagnostics
-                  .filter((diagnostic) => diagnostic.severity === "error")
-                  .slice(0, 3)
-                  .map((diagnostic) => (
-                    <li
-                      key={diagnostic.title}
-                      className="rounded-xl border border-rose-200 bg-rose-50 p-4"
-                    >
-                      <p className="font-semibold text-rose-950">{diagnostic.title}</p>
-                      <p className="mt-2 text-sm text-rose-900">{diagnostic.description}</p>
-                    </li>
-                  ))}
-              </ul>
-            ) : null}
-          </SectionCard>
-        </>
-      ) : (
-        <StatePanel
-          state="empty"
-          title="Нет данных Вебмастера"
-          description="Источник не подключён или временно недоступен."
-        />
-      )}
-    </div>
-  );
-
-  const traffic = (
-    <div className="space-y-6">
-      {metrica ? (
-        <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard
-              label="Органические визиты"
-              value={formatInteger(metrica.summary.visits)}
-              tone="primary"
-              delta={organicVisitsDelta.text}
-              deltaTone={organicVisitsDelta.tone}
-            />
-            <KpiCard
-              label="Целевые визиты"
-              value={formatInteger(metrica.summary.targetVisits)}
-              tone="soft"
-              delta={targetVisitsDelta.text}
-              deltaTone={targetVisitsDelta.tone}
-            />
-            <KpiCard
-              label="Конверсия"
-              value={formatPercent(metrica.summary.conversionRate)}
-              tone="success"
-              delta={conversionDelta.text}
-              deltaTone={conversionDelta.tone}
-            />
-            <KpiCard
-              label="Доля органики"
-              value={formatPercent(organicShare)}
-              delta={organicShareDelta.text}
-              deltaTone={organicShareDelta.tone}
-            />
-          </section>
-
-          <MetricTrendChart
-            title="Органический трафик и обращения"
-            subtitle="Визиты и уникальные целевые визиты из поиска Яндекса."
-            data={metrica.organicTrend}
-            metricLabel="Визиты"
-            secondaryMetricLabel="Целевые визиты"
-            tertiaryMetricLabel="Конверсия"
-          />
-
-          <SectionCard title="Целевые действия" note="До 4 основных типов">
-            <DataTable
-              caption="Ключевые целевые действия"
-              columns={["Действие", "Категория", "Достижения", "Конверсия"]}
-              rows={metrica.goals
-                .filter((goal) => goal.reaches > 0)
-                .slice(0, 4)
-                .map((goal) => ({
-                  key: `${goal.label}-${goal.category}`,
-                  cells: [
-                    <span key="label" className="font-semibold text-[var(--crm-text)]">
-                      {goal.label}
-                    </span>,
-                    goal.category,
-                    <span key="reaches" className="tabular-nums">
-                      {formatInteger(goal.reaches)}
-                    </span>,
-                    <span key="conversion" className="tabular-nums">
-                      {formatPercent(goal.conversionRate)}
-                    </span>,
-                  ],
-                }))}
-            />
-          </SectionCard>
-
-          <SectionCard title="Лучшие посадочные страницы" note="До 5 страниц">
-            <DataTable
-              caption="Лучшие посадочные страницы"
-              columns={["Страница", "Визиты", "Целевые визиты", "Конверсия"]}
-              rows={metrica.landingPages.slice(0, 5).map((page) => ({
-                key: page.path,
-                cells: [
-                  <span key="path" className="min-w-[220px] font-semibold text-[var(--crm-text)]">
-                    {page.path}
-                  </span>,
-                  <span key="visits" className="tabular-nums">
-                    {formatInteger(page.visits)}
-                  </span>,
-                  <span key="targets" className="tabular-nums">
-                    {formatInteger(page.targetVisits)}
-                  </span>,
-                  <span key="conversion" className="tabular-nums">
-                    {formatPercent(page.conversionRate)}
-                  </span>,
-                ],
-              }))}
-            />
-          </SectionCard>
-
-          <SectionCard title="Качество трафика" note="Вторичные показатели">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-                <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                  Отказы
-                </p>
-                <p className="mt-2 text-2xl font-semibold tabular-nums">
-                  {formatPercent(metrica.summary.bounceRate)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-                <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                  Глубина
-                </p>
-                <p className="mt-2 text-2xl font-semibold tabular-nums">
-                  {metrica.summary.depth.toFixed(1)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[var(--crm-surface-muted)] p-4">
-                <p className="text-xs font-semibold uppercase text-[var(--crm-text-muted)]">
-                  Среднее время
-                </p>
-                <p className="mt-2 text-2xl font-semibold tabular-nums">
-                  {formatDuration(metrica.summary.averageVisitDurationSeconds)}
-                </p>
-              </div>
-            </div>
-          </SectionCard>
-        </>
-      ) : (
-        <StatePanel
-          state="empty"
-          title="Нет данных Метрики"
-          description="Источник не подключён или временно недоступен."
-        />
-      )}
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow={clientName}
-        title={mode === "fixture" ? `${site.name} — демонстрация` : site.name}
-        description={
-          mode === "fixture"
-            ? "Демонстрационный набор проверяет структуру, адаптивность и дизайн-систему."
-            : "Управленческая SEO-сводка по подтверждённым данным Яндекс.Вебмастера и Яндекс.Метрики."
-        }
-        actions={
-          mode === "live"
-            ? periodControl ?? (
-                <span className="rounded-xl border border-[var(--crm-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--crm-text-secondary)] shadow-sm">
-                  {periodLabel}
-                </span>
-              )
-            : undefined
-        }
-        backHref={backHref}
-      />
-
-      <StatusBanner
-        tone={mode === "fixture" ? "info" : "success"}
-        title={mode === "fixture" ? "Демонстрационные данные" : "Источники обновлены"}
-        description={
-          mode === "fixture"
-            ? "Этот route не содержит клиентских live-данных."
-            : "Фактические периоды и актуальность каждого источника указаны в отчёте."
-        }
-      />
-
-      <ReportTabs summary={summary} seo={seo} traffic={traffic} />
+      <footer className="border-t border-[var(--crm-border)] pt-5 text-xs leading-5 text-[var(--crm-text-muted)]">
+        <p>Источники: Яндекс.Вебмастер — видимость, индексация и диагностика; Яндекс.Метрика — обезличенный трафик и целевые действия.</p>
+        <p>Позиция Вебмастера — средняя позиция показа за период, а не точный ежедневный rank-check. Клики и визиты считаются разными системами.</p>
+      </footer>
     </div>
   );
 }

@@ -14,7 +14,7 @@ const allowedOrigins = new Set([
   "http://localhost:3000",
 ]);
 const reportPathPattern =
-  /^\/c\/([a-z0-9]+(?:-[a-z0-9]+)*)\/data\/([a-z0-9]+(?:-[a-z0-9]+)*)\/(week|month|quarter|halfYear)\/latest\.json$/;
+  /^\/c\/([a-z0-9]+(?:-[a-z0-9]+)*)\/data\/([a-z0-9]+(?:-[a-z0-9]+)*)\/(twoWeeks|month|quarter|halfYear)\/latest\.json$/;
 
 function setCommonHeaders(response, origin) {
   response.setHeader("Cache-Control", "private, no-store, max-age=0");

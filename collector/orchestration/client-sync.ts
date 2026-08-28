@@ -6,6 +6,7 @@ import type {
 } from "../../src/shared/schemas/registry";
 import type { ReportPeriodKey } from "../../src/shared/schemas/report";
 import type { WebmasterSiteData } from "../../src/shared/schemas/webmaster-source";
+import type { TrackedQuerySet } from "../../src/shared/schemas/tracked-query";
 import {
   derivePeriodEndingOn,
   derivePreviousPeriod,
@@ -143,6 +144,7 @@ async function collectPeriod(args: {
   baselineWebmaster: WebmasterSiteData | null;
   baselineFailure: SafeSourceFailure | null;
   clusterProfile: ClusterProfile;
+  trackedQuerySet: TrackedQuerySet | null;
   thresholds: {
     minimumShows: number;
     maximumCtrPercent: number;
@@ -164,35 +166,32 @@ async function collectPeriod(args: {
 
   if (args.site.webmaster.enabled) {
     try {
-      if (args.periodKey === "week" && args.baselineWebmaster) {
-        webmasterData = args.baselineWebmaster;
-      } else {
-        webmasterData = await args.collectors.webmaster(args.site, {
-          queryLimit: 100,
-          queryOrders: ["TOTAL_SHOWS", "TOTAL_CLICKS"],
-          devices: ["ALL"],
-          historyDateFrom: args.currentPeriod.dateFrom,
-          historyDateTo: args.currentPeriod.dateTo,
-          queryDateFrom: args.currentPeriod.dateFrom,
-          queryDateTo: args.currentPeriod.dateTo,
-          includeTechnicalDetails: false,
-        });
-        if (args.baselineWebmaster) {
-          webmasterData = {
-            ...webmasterData,
-            diagnostics: args.baselineWebmaster.diagnostics,
-            sitemaps: args.baselineWebmaster.sitemaps,
-            indexingHistory: args.baselineWebmaster.indexingHistory,
-            searchEventsHistory: args.baselineWebmaster.searchEventsHistory,
-            brokenInternalLinksHistory:
-              args.baselineWebmaster.brokenInternalLinksHistory,
-            externalLinksHistory: args.baselineWebmaster.externalLinksHistory,
-          };
-        }
+      webmasterData = await args.collectors.webmaster(args.site, {
+        queryLimit: 500,
+        queryOrders: ["TOTAL_SHOWS", "TOTAL_CLICKS"],
+        devices: ["ALL"],
+        historyDateFrom: args.currentPeriod.dateFrom,
+        historyDateTo: args.currentPeriod.dateTo,
+        queryDateFrom: args.currentPeriod.dateFrom,
+        queryDateTo: args.currentPeriod.dateTo,
+        includeTechnicalDetails: false,
+      });
+      if (args.baselineWebmaster) {
+        webmasterData = {
+          ...webmasterData,
+          diagnostics: args.baselineWebmaster.diagnostics,
+          sitemaps: args.baselineWebmaster.sitemaps,
+          indexingHistory: args.baselineWebmaster.indexingHistory,
+          sqiHistory: args.baselineWebmaster.sqiHistory,
+          searchEventsHistory: args.baselineWebmaster.searchEventsHistory,
+          brokenInternalLinksHistory:
+            args.baselineWebmaster.brokenInternalLinksHistory,
+          externalLinksHistory: args.baselineWebmaster.externalLinksHistory,
+        };
       }
       previousWebmasterData = await args.collectors.webmaster(args.site, {
-        queryLimit: 1,
-        queryOrders: ["TOTAL_SHOWS"],
+        queryLimit: 500,
+        queryOrders: ["TOTAL_SHOWS", "TOTAL_CLICKS"],
         devices: ["ALL"],
         historyDateFrom: args.previousPeriod.dateFrom,
         historyDateTo: args.previousPeriod.dateTo,
@@ -259,6 +258,7 @@ async function collectPeriod(args: {
     currentPeriod: args.currentPeriod,
     previousPeriod: args.previousPeriod,
     queryThresholds: args.thresholds,
+    trackedQuerySet: args.trackedQuerySet,
   });
   const published = await publishSiteSnapshot({
     rootDir: args.sharedDir,
@@ -287,6 +287,7 @@ async function syncSite(args: {
     maximumCtrPercent: number;
     maximumAveragePosition: number;
   };
+  trackedQuerySet: TrackedQuerySet | null;
 }) {
   let baselineWebmaster: WebmasterSiteData | null = null;
   let baselineFailure: SafeSourceFailure | null = null;
@@ -310,19 +311,19 @@ async function syncSite(args: {
       collection.orderBy === "TOTAL_SHOWS" &&
       collection.dateTo !== null,
   );
-  const fallbackWeek = await readLatestSiteSnapshot(
+  const fallbackTwoWeeks = await readLatestSiteSnapshot(
     args.sharedDir,
     args.client.clientSlug,
     args.site.siteSlug,
-    "week",
+    "twoWeeks",
   );
   const periodEnd =
     baselinePeriod?.dateTo ??
-    fallbackWeek?.comparison?.currentPeriod.dateTo ??
+    fallbackTwoWeeks?.comparison?.currentPeriod.dateTo ??
     args.generatedAt.slice(0, 10);
   const periods: SiteSyncResult["periods"] = [];
   const safeErrorCodes = new Set<string>();
-  let weekLatestPath = "";
+  let defaultLatestPath = "";
 
   for (const periodKey of REPORT_PERIOD_KEYS) {
     const currentPeriod = derivePeriodEndingOn(periodEnd, periodKey);
@@ -334,6 +335,7 @@ async function syncSite(args: {
       previousPeriod,
       baselineWebmaster,
       baselineFailure,
+      trackedQuerySet: args.trackedQuerySet,
     });
 
     for (const code of result.safeErrorCodes) safeErrorCodes.add(code);
@@ -342,8 +344,8 @@ async function syncSite(args: {
       freshness: result.snapshot.freshness,
       reportPath: result.published.reportPath,
     });
-    if (periodKey === "week") {
-      weekLatestPath = result.published.latestPath;
+    if (periodKey === "twoWeeks") {
+      defaultLatestPath = result.published.latestPath;
     }
   }
 
@@ -355,7 +357,7 @@ async function syncSite(args: {
     siteSlug: args.site.siteSlug,
     status: failed ? "failed" : partial ? "partial" : "success",
     freshness: failed ? "unavailable" : partial ? "partial" : "fresh",
-    latestPath: weekLatestPath,
+    latestPath: defaultLatestPath,
     safeErrorCodes: [...safeErrorCodes],
     periods,
   } satisfies SiteSyncResult;
@@ -382,12 +384,17 @@ export async function syncClientSites(args: {
     throw new Error(`Unknown cluster profile: ${client.clusterProfile}`);
   }
 
-
   const collectors = args.collectors ?? createLiveSiteCollectors(args.env);
   const now = args.now ?? (() => new Date().toISOString());
   const results: SiteSyncResult[] = [];
 
   for (const site of client.sites.filter((item) => item.enabled)) {
+    const trackedQuerySet =
+      registry.trackedQuerySets.find(
+        (querySet) =>
+          querySet.clientSlug === client.clientSlug &&
+          querySet.siteSlug === site.siteSlug,
+      ) ?? null;
     results.push(
       await syncSite({
         client,
@@ -397,6 +404,7 @@ export async function syncClientSites(args: {
         generatedAt: now(),
         clusterProfile,
         thresholds: registry.thresholds.queryOpportunity,
+        trackedQuerySet,
       }),
     );
   }

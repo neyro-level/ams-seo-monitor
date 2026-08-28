@@ -202,6 +202,14 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
       date_from: historyDateFrom,
       date_to: historyDateTo,
     };
+    const sqiHistoryQuery = {
+      date_from: new Date(
+        Date.parse(`${historyDateTo}T00:00:00.000Z`) - 365 * 24 * 60 * 60 * 1000,
+      )
+        .toISOString()
+        .slice(0, 10),
+      date_to: historyDateTo,
+    };
     const endpointErrors: WebmasterEndpointError[] = [];
     const baseEndpoint = `/user/${access.userId}/hosts/${access.hostId}`;
 
@@ -217,6 +225,13 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
           `${baseEndpoint}/indexing/history`,
           endpointErrors,
           historyQuery,
+        )
+      : null;
+    const sqiHistoryPayload = includeTechnicalDetails
+      ? await collectOptional(
+          `${baseEndpoint}/sqi-history`,
+          endpointErrors,
+          sqiHistoryQuery,
         )
       : null;
     const pagesInSearchPayload = await collectOptional(
@@ -310,6 +325,7 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
       allQueryHistory: normalizeIndicatorHistory(allQueryHistoryPayload),
       indexingHistory: normalizeIndicatorHistory(indexingPayload),
       pagesInSearchHistory: normalizePlainHistory(pagesInSearchPayload),
+      sqiHistory: normalizePlainHistory(sqiHistoryPayload),
       searchEventsHistory: normalizeIndicatorHistory(searchEventsPayload),
       brokenInternalLinksHistory: normalizeIndicatorHistory(brokenInternalLinksPayload),
       externalLinksHistory: normalizeIndicatorHistory(externalLinksPayload),

@@ -52,14 +52,14 @@ describe("REDACTED_CLIENT_DATA multi-site sync", () => {
     expect(metricaPeriods).toHaveLength(24);
     expect(metricaPeriods.slice(0, 2)).toEqual([
       {
-        date1: "2026-08-17",
+        date1: "2026-08-10",
         date2: "2026-08-23",
         landingLimit: 10,
         includeDetails: true,
       },
       {
-        date1: "2026-08-10",
-        date2: "2026-08-16",
+        date1: "2026-07-27",
+        date2: "2026-08-09",
         landingLimit: 0,
         includeDetails: false,
       },
@@ -69,7 +69,7 @@ describe("REDACTED_CLIENT_DATA multi-site sync", () => {
     );
 
     for (const siteSlug of ["REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA"]) {
-      const snapshot = await readLatestSiteSnapshot(sharedDir, "REDACTED_CLIENT_DATA", siteSlug, "week");
+      const snapshot = await readLatestSiteSnapshot(sharedDir, "REDACTED_CLIENT_DATA", siteSlug, "twoWeeks");
       expect(snapshot?.freshness).toBe("fresh");
       expect(snapshot?.webmaster).not.toBeNull();
       expect(snapshot?.metrica).not.toBeNull();
@@ -80,7 +80,7 @@ describe("REDACTED_CLIENT_DATA multi-site sync", () => {
             "client-reports",
             "REDACTED_CLIENT_DATA",
             siteSlug,
-            "week",
+            "twoWeeks",
             "latest.json",
           ),
           "utf8",
@@ -94,13 +94,13 @@ describe("REDACTED_CLIENT_DATA multi-site sync", () => {
             "snapshots",
             "REDACTED_CLIENT_DATA",
             siteSlug,
-            "week",
+            "twoWeeks",
             "latest-sources.json",
           ),
           "utf8",
         ),
       ) as { periodKey: string };
-      expect(sourceBundle.periodKey).toBe("week");
+      expect(sourceBundle.periodKey).toBe("twoWeeks");
     }
   });
 
@@ -141,7 +141,7 @@ describe("REDACTED_CLIENT_DATA multi-site sync", () => {
       sharedDir,
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
-      "week",
+      "twoWeeks",
     );
     expect(REDACTED_CLIENT_DATA?.freshness).toBe("partial");
     expect(REDACTED_CLIENT_DATA?.sources.metrica.status).toBe("quota_limited");

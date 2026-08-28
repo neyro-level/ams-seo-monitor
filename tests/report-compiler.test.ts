@@ -55,10 +55,24 @@ describe("SiteReportSnapshot compiler", () => {
       metricaData: currentMetrica,
       previousWebmasterData: previousWebmaster,
       previousMetricaData: previousMetrica,
-      periodKey: "week",
-      currentPeriod: { dateFrom: "2026-08-17", dateTo: "2026-08-23" },
-      previousPeriod: { dateFrom: "2026-08-10", dateTo: "2026-08-16" },
+      periodKey: "twoWeeks",
+      currentPeriod: { dateFrom: "2026-08-10", dateTo: "2026-08-23" },
+      previousPeriod: { dateFrom: "2026-07-27", dateTo: "2026-08-09" },
       queryThresholds: thresholds,
+      trackedQuerySet: {
+        schemaVersion: 1,
+        clientSlug: "REDACTED_CLIENT_DATA",
+        siteSlug: "REDACTED_CLIENT_DATA",
+        source: "owner-provided",
+        baselineLabel: "02.06",
+        expectedCount: 1,
+        queries: [
+          {
+            query: "квартиры REDACTED_CLIENT_DATA",
+            position: { current: 1, baseline: 3, delta: 2 },
+          },
+        ],
+      },
     });
 
     expect(snapshot.freshness).toBe("fresh");
@@ -81,8 +95,53 @@ describe("SiteReportSnapshot compiler", () => {
     expect(snapshot.comparison?.metrics.organicVisits.deltaPercent).toBe(25);
     expect(snapshot.comparison?.metrics.targetVisits.current).toBe(5);
     expect(snapshot.webmaster?.queries[0]?.cluster).not.toBe("Не классифицирован");
+    expect(snapshot.webmaster?.trackedCore).toMatchObject({
+      expectedCount: 1,
+      observedCount: 1,
+      coveragePercent: 100,
+      top10Count: 1,
+    });
+    expect(snapshot.webmaster?.trackedCore?.queries[0]).toMatchObject({
+      query: "квартиры REDACTED_CLIENT_DATA",
+      shows: 100,
+      previousShows: 100,
+      ownerPosition: 1,
+      ownerBaselinePosition: 3,
+      ownerPositionDelta: 2,
+    });
+    expect(snapshot.webmaster?.health).toMatchObject({
+      status: "stable",
+      sqi: 20,
+      previousSqi: 18,
+      sqiDelta: 2,
+    });
   });
 
+
+  it("promotes critical crawl health into the management risk", () => {
+    const site = getREDACTED_CLIENT_DATASite();
+    const webmasterData = createWebmasterSourceFixture(site);
+    webmasterData.indexingHistory.push({
+      indicator: "HTTP_5XX",
+      points: [{ date: "2026-08-27T00:00:00+03:00", value: 2 }],
+    });
+
+    const snapshot = compileSiteReportSnapshot({
+      clientSlug: "REDACTED_CLIENT_DATA",
+      site,
+      generatedAt: "2026-08-27T10:10:00.000Z",
+      clusterProfile,
+      webmasterData,
+      metricaData: createMetricaSourceFixture(site),
+      queryThresholds: thresholds,
+    });
+
+    expect(snapshot.webmaster?.health?.status).toBe("critical");
+    expect(snapshot.combined.alerts[0]).toMatchObject({
+      id: "webmaster-health-critical",
+      tone: "error",
+    });
+  });
   it("uses last-known-good source section and marks a failed refresh partial", () => {
     const site = getREDACTED_CLIENT_DATASite();
     const previous = compileSiteReportSnapshot({

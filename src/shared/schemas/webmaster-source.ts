@@ -106,6 +106,7 @@ export const webmasterSiteDataSchema = z.object({
   queryCollections: z.array(webmasterQueryCollectionSchema),
   allQueryHistory: z.array(webmasterIndicatorHistorySchema),
   indexingHistory: z.array(webmasterIndicatorHistorySchema),
+  sqiHistory: z.array(webmasterHistoryPointSchema).default([]),
   pagesInSearchHistory: z.array(webmasterHistoryPointSchema),
   searchEventsHistory: z.array(webmasterIndicatorHistorySchema),
   brokenInternalLinksHistory: z.array(webmasterIndicatorHistorySchema),

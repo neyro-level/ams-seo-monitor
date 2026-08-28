@@ -71,7 +71,7 @@ shared/
 Period-aware layout:
 
 ```text
-snapshots/{client}/{site}/{week|month|quarter|halfYear}/
+snapshots/{client}/{site}/{twoWeeks|month|quarter|halfYear}/
 ├── latest.json
 ├── latest-sources.json
 ├── snapshot-<timestamp>.json
@@ -113,7 +113,7 @@ client-reports/{client}/{site}/{period}/latest.json
 
 ## Period invariant
 
-- `week` = 7, `month` = 28, `quarter` = 90, `halfYear` = 180 days.
+- `twoWeeks` = 14, `month` = 28, `quarter` = 90, `halfYear` = 180 days.
 - Every current period ends on the same latest factual Webmaster date.
 - Previous period is immediately preceding and equal in length.
 - Webmaster and Metrica use the same explicit `dateFrom/dateTo`.
