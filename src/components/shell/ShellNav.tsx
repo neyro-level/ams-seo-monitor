@@ -26,12 +26,11 @@ export function ShellNav({ sections, onNavigate }: ShellNavProps) {
                   <Link
                     href={item.href}
                     onClick={onNavigate}
-                    style={item.active ? { color: "var(--crm-sidebar)" } : undefined}
                     className={[
-                      "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
+                      "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
                       item.active
-                        ? "bg-white shadow-sm"
-                        : "text-slate-200 hover:bg-white/9 hover:text-white",
+                        ? "font-semibold text-sky-300"
+                        : "text-slate-200 hover:bg-white/6 hover:text-white",
                     ].join(" ")}
                   >
                     <Icon className="h-5 w-5 shrink-0" strokeWidth={1.8} aria-hidden />
@@ -44,14 +43,13 @@ export function ShellNav({ sections, onNavigate }: ShellNavProps) {
                           <Link
                             href={child.href}
                             onClick={onNavigate}
-                            style={child.active ? { color: "var(--crm-sidebar)" } : undefined}
                             className={[
-                              "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors",
+                              "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
                               child.active
-                                ? "bg-white shadow-sm"
+                                ? "font-semibold text-sky-300"
                                 : child.muted
-                                  ? "text-slate-400 hover:bg-white/7 hover:text-slate-200"
-                                  : "text-slate-300 hover:bg-white/7 hover:text-white",
+                                  ? "text-slate-400 hover:bg-white/6 hover:text-slate-200"
+                                  : "text-slate-300 hover:bg-white/6 hover:text-white",
                             ].join(" ")}
                           >
                             <Globe2 className="h-4 w-4 shrink-0" strokeWidth={1.8} aria-hidden />
