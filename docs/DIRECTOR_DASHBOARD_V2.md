@@ -168,6 +168,32 @@ Goal reaches are actions, not unique leads. Device details and full goal list re
 - Every delta compares immediately preceding equal-length period.
 - Source periods remain visible and may differ from display preset boundaries only with explicit label.
 
+## Semantic core model
+
+Tracked query count is project-specific, not fixed:
+
+```text
+1..100 owner-approved queries per site
+```
+
+For REDACTED_CLIENT_DATA the supplied core contains 75 queries. Other sites may contain 35, 50 or another approved count.
+
+Two layers must remain separate:
+
+1. `Tracked core` — where the project wants to rank; stable owner-provided set used for Topvisor monitoring.
+2. `Observed Webmaster pool` — where the site actually appeared; dynamic source evidence.
+
+Dashboard shows:
+
+- tracked core coverage in Webmaster;
+- tracked core position distribution;
+- tracked queries absent from observed pool;
+- observed queries outside tracked core;
+- Webmaster current/previous metrics for the tracked core;
+- later Topvisor exact positions, history and SERP competitors.
+
+UI renders the first 20 rows and expands to the entire approved core count. It never silently truncates every project to 50.
+
 ## View-model boundary
 
 `SiteReportView.tsx` becomes composition only.

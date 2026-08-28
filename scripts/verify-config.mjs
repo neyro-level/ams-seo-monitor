@@ -60,6 +60,49 @@ const goalProfileSchema = z.object({
   })),
 });
 
+const trackedQuerySetSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    clientSlug: z.string().regex(slugPattern),
+    siteSlug: z.string().regex(slugPattern),
+    source: z.literal("owner-provided"),
+    baselineLabel: z.string().min(1),
+    expectedCount: z.number().int().min(1).max(100),
+    queries: z.array(
+      z.object({
+        query: z.string().trim().min(2),
+        position: z.object({
+          current: z.number().int().min(1).max(250).nullable(),
+          baseline: z.number().int().min(1).max(250).nullable(),
+          delta: z.number().int().nullable(),
+        }),
+      }),
+    ).min(1).max(100),
+  })
+  .superRefine((value, ctx) => {
+    const normalizedQueries = new Set();
+
+    for (const [index, query] of value.queries.entries()) {
+      const normalized = query.query.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim();
+      if (normalizedQueries.has(normalized)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate tracked query: ${query.query}`,
+          path: ["queries", index, "query"],
+        });
+      }
+      normalizedQueries.add(normalized);
+    }
+
+    if (value.queries.length !== value.expectedCount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Tracked core must contain exactly ${value.expectedCount} queries`,
+        path: ["queries"],
+      });
+    }
+  });
+
 const thresholdsSchema = z.object({
   schemaVersion: z.literal(1),
   queryOpportunity: z.object({
@@ -103,6 +146,8 @@ try {
   const clients = (await readJsonDirectory("config/clients")).map((item) => clientSchema.parse(item));
   const clusters = (await readJsonDirectory("config/clusters")).map((item) => clusterSchema.parse(item));
   const goalProfiles = (await readJsonDirectory("config/goals")).map((item) => goalProfileSchema.parse(item));
+  const trackedQuerySets = (await readJsonDirectory("config/tracked-queries"))
+    .map((item) => trackedQuerySetSchema.parse(item));
   const thresholds = thresholdsSchema.parse(
     JSON.parse(await readFile(path.join(rootDir, "config/thresholds.json"), "utf8")),
   );
@@ -112,6 +157,7 @@ try {
   const routeSet = new Set(["/", "/demo/", "/analyst/"]);
   const clientSet = new Set();
   const siteUrlSet = new Set();
+  const siteKeys = new Set();
 
   for (const client of clients) {
     assert(!clientSet.has(client.clientSlug), `Duplicate client slug: ${client.clientSlug}`);
@@ -127,6 +173,7 @@ try {
     for (const site of client.sites) {
       assert(!siteSet.has(site.siteSlug), `Duplicate site slug: ${client.clientSlug}/${site.siteSlug}`);
       siteSet.add(site.siteSlug);
+      siteKeys.add(`${client.clientSlug}/${site.siteSlug}`);
 
       const parsedSiteUrl = new URL(site.siteUrl);
       const normalizedSitePath =
@@ -160,7 +207,16 @@ try {
     }
   }
 
-  console.log(`Config verified: ${clients.length} projects, ${routeSet.size} routes, schemaVersion ${thresholds.schemaVersion}.`);
+  for (const querySet of trackedQuerySets) {
+    assert(
+      siteKeys.has(`${querySet.clientSlug}/${querySet.siteSlug}`),
+      `Tracked query set references unknown site: ${querySet.clientSlug}/${querySet.siteSlug}`,
+    );
+  }
+
+  console.log(
+    `Config verified: ${clients.length} projects, ${routeSet.size} routes, ${trackedQuerySets.length} tracked query sets, schemaVersion ${thresholds.schemaVersion}.`,
+  );
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
