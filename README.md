@@ -51,7 +51,7 @@ Product hierarchy:
 
 Внутреннее поле `clientSlug` и route `/c/*` временно сохраняются как совместимый data contract; в пользовательском интерфейсе верхний уровень называется `Проект`.
 
-Предварительный production URL:
+Production URL:
 
 ```text
 https://seo-monitor.ams24.ru
