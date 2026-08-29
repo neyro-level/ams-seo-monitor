@@ -18,7 +18,7 @@ systemd timer
 
 Next.js использует `output: "export"` и не работает как постоянный web server. Nginx отдаёт immutable static release и отдельно защищённые report JSON. Collector запускается по `systemd` timer, читает Yandex APIs, публикует snapshots и завершается.
 
-Предварительный production URL:
+Production URL:
 
 ```text
 https://seo-monitor.ams24.ru

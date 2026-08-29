@@ -14,7 +14,7 @@ AMS SEO Monitor идёт в 3 macro waves:
 https://seo-monitor.ams24.ru
 ```
 
-Domain уже создан владельцем. DNS/Nginx/SSL/deploy не выполняются до отдельной production-команды.
+Production active; exact deployed SHA и operational proof читаются из release manifest/server shared state.
 
 ## Current verified state
 
@@ -112,13 +112,13 @@ Aggregate `goalReaches` stays available only as actions; director conversion use
 - internal source bundles remain outside browser paths;
 - raw API responses and secrets are not published;
 - runtime report path follows `/c/{clientSlug}/data/{siteSlug}/{periodKey}/latest.json`;
-- Nginx alias/security activation remains Wave 3.
+Nginx alias/security activation completed in Wave 3.
 
 ## Director dashboard V2
 
-Branch: `work/director-dashboard-v2`.
+Release: Director Dashboard V2 merged into SourceCraft `main` through PR `!3`.
 
-The approved contract is `docs/DIRECTOR_DASHBOARD_V2.md`:
+The active contract is `docs/DIRECTOR_DASHBOARD_V2.md`:
 
 ```text
 Все проекты
