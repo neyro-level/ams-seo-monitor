@@ -51,6 +51,14 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
       select: { id: true },
     });
 
+    await prisma!.reportSnapshot.deleteMany({
+      where: {
+        siteId: site.id,
+        periodKey: "WEEK",
+        generatedAt: new Date("2026-08-30T00:00:00+03:00"),
+      },
+    });
+
     const syncRun = await repository.createSyncRun({
       trigger: "manual",
       startedAt: "2026-08-30T00:00:00+03:00",

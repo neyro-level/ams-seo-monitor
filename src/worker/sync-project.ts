@@ -130,6 +130,251 @@ function getSourceStatusForPeriod(
   };
 }
 
+function normalizeTrackedQuery(value: string) {
+  return value.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim();
+}
+
+function toDateOnly(value: string) {
+  return value.slice(0, 10);
+}
+
+function buildWebmasterDailyRows(data: WebmasterSiteData | null) {
+  if (!data) {
+    return [];
+  }
+
+  const pointsByIndicator = {
+    TOTAL_SHOWS: data.allQueryHistory.find((history) => history.indicator === "TOTAL_SHOWS")?.points ?? [],
+    TOTAL_CLICKS: data.allQueryHistory.find((history) => history.indicator === "TOTAL_CLICKS")?.points ?? [],
+    AVG_SHOW_POSITION:
+      data.allQueryHistory.find((history) => history.indicator === "AVG_SHOW_POSITION")?.points ?? [],
+  };
+  const allDates = new Set<string>();
+  for (const point of pointsByIndicator.TOTAL_SHOWS) allDates.add(toDateOnly(point.date));
+  for (const point of pointsByIndicator.TOTAL_CLICKS) allDates.add(toDateOnly(point.date));
+  for (const point of pointsByIndicator.AVG_SHOW_POSITION) allDates.add(toDateOnly(point.date));
+  const clicksByDate = new Map(pointsByIndicator.TOTAL_CLICKS.map((point) => [toDateOnly(point.date), point.value]));
+  const positionByDate = new Map(
+    pointsByIndicator.AVG_SHOW_POSITION.map((point) => [toDateOnly(point.date), point.value]),
+  );
+
+  return [...allDates]
+    .sort()
+    .map((date) => {
+      const showsPoint = pointsByIndicator.TOTAL_SHOWS.find((point) => toDateOnly(point.date) === date);
+      const shows = showsPoint?.value ?? 0;
+      const clicks = clicksByDate.get(date) ?? 0;
+      return {
+        date,
+        shows,
+        clicks,
+        ctr: shows > 0 ? Number(((clicks / shows) * 100).toFixed(2)) : null,
+        averagePosition: positionByDate.get(date) ?? null,
+      };
+    });
+}
+
+function buildWebmasterQueryRows(
+  data: WebmasterSiteData | null,
+  periodKey: ReportPeriodKey,
+  fallbackDate: string,
+) {
+  if (!data) {
+    return [];
+  }
+
+  return data.queryCollections.flatMap((collection) =>
+    collection.queries.map((query) => ({
+      date: collection.dateTo ?? fallbackDate,
+      queryId: query.queryId,
+      query: query.queryText,
+      normalizedQuery: normalizeTrackedQuery(query.queryText),
+      orderBy: collection.orderBy,
+      device: query.device,
+      shows: query.shows,
+      clicks: query.clicks,
+      ctr: query.ctrPercent,
+      averagePosition: query.avgShowPosition,
+      averageClickPosition: query.avgClickPosition,
+      periodKey,
+    })),
+  );
+}
+
+function buildMetrikaDailyRows(data: MetricaSiteAudit | null) {
+  if (!data) {
+    return [];
+  }
+
+  return data.yandexOrganic.byTime.map((point) => ({
+    date: point.date,
+    visits: point.visits,
+    users: null,
+    pageviews: null,
+    bounceRate: null,
+    pageDepth: null,
+    averageVisitDurationSeconds: null,
+    goalReaches: point.goalReaches,
+    uniqueTargetVisits: point.targetVisits,
+    uniqueTargetUsers: null,
+    allVisits: null,
+    conversionRate: point.conversionRate,
+  }));
+}
+
+function buildLandingPageRows(
+  data: MetricaSiteAudit | null,
+  periodKey: ReportPeriodKey,
+  fallbackDate: string,
+) {
+  if (!data) {
+    return [];
+  }
+
+  const date = data.yandexOrganic.meta.date2 ?? fallbackDate;
+  return data.yandexOrganic.landingPages.map((row) => ({
+    date,
+    periodKey,
+    path: row.path,
+    visits: row.visits,
+    users: row.users,
+    pageviews: row.pageviews,
+    bounceRate: row.bounceRate,
+    pageDepth: row.pageDepth,
+    averageVisitDurationSeconds: row.averageVisitDurationSeconds,
+    goalReaches: row.goalReaches,
+    targetVisits: row.targetVisits,
+    conversionRate: row.conversionRate,
+  }));
+}
+
+function buildMetrikaDeviceRows(
+  data: MetricaSiteAudit | null,
+  periodKey: ReportPeriodKey,
+  fallbackDate: string,
+) {
+  if (!data) {
+    return [];
+  }
+
+  const date = data.yandexOrganic.meta.date2 ?? fallbackDate;
+  return data.yandexOrganic.devices.map((row) => ({
+    date,
+    periodKey,
+    device: row.device,
+    visits: row.visits,
+    users: row.users,
+    goalReaches: row.goalReaches,
+    conversionRate: row.conversionRate,
+  }));
+}
+
+function buildMetrikaGoalRows(
+  data: MetricaSiteAudit | null,
+  periodKey: ReportPeriodKey,
+  fallbackDate: string,
+) {
+  if (!data) {
+    return [];
+  }
+
+  const date = data.goalsSummary.meta.date2 ?? data.yandexOrganic.meta.date2 ?? fallbackDate;
+  return data.goalsSummary.items.map((row) => ({
+    date,
+    periodKey,
+    externalGoalId: row.goalId,
+    name: row.name,
+    category: row.category.toUpperCase().replace(/-/g, "_") as
+      | "LEAD_SUBMIT"
+      | "PHONE_CLICK"
+      | "MESSENGER_CLICK"
+      | "FORM_START"
+      | "FILE_DOWNLOAD"
+      | "OTHER",
+    direction: row.direction.toUpperCase() as "PRIMARY" | "SECONDARY",
+    reaches: row.reaches,
+    visits: row.visits,
+    users: row.users,
+    conversionRate: row.conversionRate,
+  }));
+}
+
+function buildTechnicalSnapshotRows(
+  webmasterData: WebmasterSiteData | null,
+  metricaData: MetricaSiteAudit | null,
+) {
+  const rows: Array<{
+    capturedAt: string;
+    kind:
+      | "WEBMASTER_DIAGNOSTICS"
+      | "WEBMASTER_SITEMAPS"
+      | "WEBMASTER_INDEXING_HISTORY"
+      | "WEBMASTER_SEARCH_EVENTS_HISTORY"
+      | "WEBMASTER_BROKEN_INTERNAL_LINKS_HISTORY"
+      | "WEBMASTER_EXTERNAL_LINKS_HISTORY"
+      | "WEBMASTER_PAGES_IN_SEARCH_HISTORY"
+      | "WEBMASTER_SQI_HISTORY"
+      | "METRICA_ALL_TRAFFIC_META"
+      | "METRICA_YANDEX_ORGANIC_META"
+      | "METRICA_GOALS_SUMMARY_META";
+    payload: unknown;
+  }> = [];
+
+  if (webmasterData) {
+    rows.push(
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_DIAGNOSTICS", payload: webmasterData.diagnostics },
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_SITEMAPS", payload: webmasterData.sitemaps },
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_INDEXING_HISTORY", payload: webmasterData.indexingHistory },
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_SEARCH_EVENTS_HISTORY", payload: webmasterData.searchEventsHistory },
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_BROKEN_INTERNAL_LINKS_HISTORY", payload: webmasterData.brokenInternalLinksHistory },
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_EXTERNAL_LINKS_HISTORY", payload: webmasterData.externalLinksHistory },
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_PAGES_IN_SEARCH_HISTORY", payload: webmasterData.pagesInSearchHistory },
+      { capturedAt: webmasterData.fetchedAt, kind: "WEBMASTER_SQI_HISTORY", payload: webmasterData.sqiHistory },
+    );
+  }
+
+  if (metricaData) {
+    rows.push(
+      { capturedAt: metricaData.fetchedAt, kind: "METRICA_ALL_TRAFFIC_META", payload: metricaData.allTraffic.meta },
+      { capturedAt: metricaData.fetchedAt, kind: "METRICA_YANDEX_ORGANIC_META", payload: metricaData.yandexOrganic.meta },
+      { capturedAt: metricaData.fetchedAt, kind: "METRICA_GOALS_SUMMARY_META", payload: metricaData.goalsSummary.meta },
+    );
+  }
+
+  return rows;
+}
+
+function buildRankingCaptureRows(
+  rankingData: TopvisorSiteData | null,
+  trackedQueryRows: Array<{ trackedQueryId: string; normalizedQuery: string }>,
+) {
+  if (!rankingData) {
+    return [];
+  }
+
+  const trackedQueryIdByNormalizedQuery = new Map(
+    trackedQueryRows.map((row) => [row.normalizedQuery, row.trackedQueryId]),
+  );
+
+  return rankingData.snapshots.flatMap((snapshot) =>
+    snapshot.queries.flatMap((query) => {
+      const trackedQueryId = trackedQueryIdByNormalizedQuery.get(normalizeTrackedQuery(query.query));
+      if (!trackedQueryId) {
+        return [];
+      }
+
+      return [
+        {
+          trackedQueryId,
+          capturedAt: `${snapshot.capturedAt}T00:00:00.000Z`,
+          position: query.position,
+          source: "TOPVISOR" as const,
+        },
+      ];
+    }),
+  );
+}
+
 export async function syncProjectToDatabase(
   args: SyncProjectToDatabaseArgs,
 ): Promise<SyncProjectToDatabaseResult> {
@@ -231,6 +476,7 @@ export async function syncProjectToDatabase(
     const siteSafeErrorCodes = new Set<string>();
     let latestSnapshotForStatus: SiteReportSnapshot | null = null;
     let latestMetricaData: MetricaSiteAudit | null = null;
+    let preferredTechnicalMetricaData: MetricaSiteAudit | null = null;
 
     for (const periodKey of REPORT_PERIOD_KEYS) {
       const currentPeriod: DatePeriod = derivePeriodEndingOn(periodEnd, periodKey);
@@ -330,6 +576,66 @@ export async function syncProjectToDatabase(
         snapshot,
       });
 
+      if (sourceRuns.webmaster) {
+        await syncService.storeWebmasterDailyMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.webmaster.sourceRunId,
+          rows: buildWebmasterDailyRows(webmasterData),
+        });
+        await syncService.storeWebmasterDailyMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.webmaster.sourceRunId,
+          rows: buildWebmasterDailyRows(previousWebmasterData),
+        });
+        await syncService.storeWebmasterQueryMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.webmaster.sourceRunId,
+          periodKey,
+          rows: buildWebmasterQueryRows(webmasterData, periodKey, currentPeriod.dateTo),
+        });
+        await syncService.storeWebmasterQueryMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.webmaster.sourceRunId,
+          periodKey,
+          rows: buildWebmasterQueryRows(previousWebmasterData, periodKey, previousPeriod.dateTo),
+        });
+      }
+
+      if (sourceRuns.metrica) {
+        await syncService.storeMetrikaDailyMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.metrica.sourceRunId,
+          rows: buildMetrikaDailyRows(metricaData),
+        });
+        await syncService.storeMetrikaDailyMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.metrica.sourceRunId,
+          rows: buildMetrikaDailyRows(previousMetricaData),
+        });
+        await syncService.storeLandingPageMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.metrica.sourceRunId,
+          periodKey,
+          rows: buildLandingPageRows(metricaData, periodKey, currentPeriod.dateTo),
+        });
+        await syncService.storeMetrikaDeviceMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.metrica.sourceRunId,
+          periodKey,
+          rows: buildMetrikaDeviceRows(metricaData, periodKey, currentPeriod.dateTo),
+        });
+        await syncService.storeMetrikaGoalMetrics({
+          siteId: siteRecord.siteId,
+          sourceRunId: sourceRuns.metrica.sourceRunId,
+          periodKey,
+          rows: buildMetrikaGoalRows(metricaData, periodKey, currentPeriod.dateTo),
+        });
+      }
+
+      if (periodKey === "month" && metricaData) {
+        preferredTechnicalMetricaData = metricaData;
+      }
+
       latestSnapshotForStatus = snapshot;
       periodResults.push({ periodKey, freshness: snapshot.freshness });
 
@@ -343,6 +649,34 @@ export async function syncProjectToDatabase(
           projectSafeErrors.add(safeErrorCode);
         }
       }
+    }
+
+    if (sourceRuns.webmaster && baselineWebmaster) {
+      await syncService.storeTechnicalSnapshots({
+        siteId: siteRecord.siteId,
+        sourceRunId: sourceRuns.webmaster.sourceRunId,
+        rows: buildTechnicalSnapshotRows(baselineWebmaster, null).filter((row) =>
+          row.kind.startsWith("WEBMASTER_"),
+        ),
+      });
+    }
+
+    if (sourceRuns.metrica && preferredTechnicalMetricaData) {
+      await syncService.storeTechnicalSnapshots({
+        siteId: siteRecord.siteId,
+        sourceRunId: sourceRuns.metrica.sourceRunId,
+        rows: buildTechnicalSnapshotRows(null, preferredTechnicalMetricaData).filter((row) =>
+          row.kind.startsWith("METRICA_"),
+        ),
+      });
+    }
+
+    if (sourceRuns.topvisor && rankingData) {
+      const trackedQuerySet = await syncService.listTrackedQueriesForSite(siteRecord.siteId);
+      await syncService.storeRankingCaptures({
+        sourceRunId: sourceRuns.topvisor.sourceRunId,
+        rows: buildRankingCaptureRows(rankingData, trackedQuerySet.rows),
+      });
     }
 
     if (sourceRuns.webmaster && latestSnapshotForStatus) {

@@ -30,6 +30,14 @@ monitoringTestDescription("MonitoringService", () => {
       }),
     );
     prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+    await prisma.providerConnection.updateMany({
+      where: {
+        provider: "TOPVISOR",
+      },
+      data: {
+        enabled: false,
+      },
+    });
   });
 
   afterAll(async () => {

@@ -444,27 +444,28 @@ model WebmasterDailyMetric {
 }
 
 model WebmasterQueryDailyMetric {
-  id               String                @id @default(cuid())
-  siteId           String
-  date             DateTime
-  queryId          String
-  query            String
-  normalizedQuery  String
-  orderBy          WebmasterQueryOrderBy
-  device           WebmasterDevice
-  shows            Int
-  clicks           Int
-  ctr              Decimal?              @db.Decimal(8, 4)
-  averagePosition  Decimal?              @db.Decimal(8, 4)
-  averageClickPosition Decimal?          @db.Decimal(8, 4)
-  sourceRunId      String
-  createdAt        DateTime              @default(now())
-  site             Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sourceRun        SourceRun             @relation(fields: [sourceRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id                   String                @id @default(cuid())
+  siteId               String
+  periodKey            ReportPeriodKey
+  date                 DateTime
+  queryId              String
+  query                String
+  normalizedQuery      String
+  orderBy              WebmasterQueryOrderBy
+  device               WebmasterDevice
+  shows                Int
+  clicks               Int
+  ctr                  Decimal?              @db.Decimal(8, 4)
+  averagePosition      Decimal?              @db.Decimal(8, 4)
+  averageClickPosition Decimal?              @db.Decimal(8, 4)
+  sourceRunId          String
+  createdAt            DateTime              @default(now())
+  site                 Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sourceRun            SourceRun             @relation(fields: [sourceRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([siteId, date, normalizedQuery, device, orderBy])
-  @@index([siteId, date])
-  @@index([siteId, normalizedQuery, date])
+  @@unique([siteId, periodKey, date, normalizedQuery, device, orderBy])
+  @@index([siteId, periodKey, date])
+  @@index([siteId, periodKey, normalizedQuery, date])
   @@index([sourceRunId])
 }
 
@@ -473,15 +474,15 @@ model MetrikaDailyMetric {
   siteId                      String
   date                        DateTime
   visits                      Int
-  users                       Int
-  pageviews                   Int
-  bounceRate                  Decimal   @db.Decimal(8, 4)
-  pageDepth                   Decimal   @db.Decimal(8, 4)
-  averageVisitDurationSeconds Int
+  users                       Int?
+  pageviews                   Int?
+  bounceRate                  Decimal?  @db.Decimal(8, 4)
+  pageDepth                   Decimal?  @db.Decimal(8, 4)
+  averageVisitDurationSeconds Int?
   goalReaches                 Int
   uniqueTargetVisits          Int
-  uniqueTargetUsers           Int
-  allVisits                   Int
+  uniqueTargetUsers           Int?
+  allVisits                   Int?
   conversionRate              Decimal?  @db.Decimal(8, 4)
   sourceRunId                 String
   createdAt                   DateTime  @default(now())
@@ -494,51 +495,54 @@ model MetrikaDailyMetric {
 }
 
 model LandingPageDailyMetric {
-  id                          String    @id @default(cuid())
+  id                          String        @id @default(cuid())
   siteId                      String
+  periodKey                   ReportPeriodKey
   date                        DateTime
   path                        String
   visits                      Int
   users                       Int
   pageviews                   Int
-  bounceRate                  Decimal   @db.Decimal(8, 4)
-  pageDepth                   Decimal   @db.Decimal(8, 4)
+  bounceRate                  Decimal       @db.Decimal(8, 4)
+  pageDepth                   Decimal       @db.Decimal(8, 4)
   averageVisitDurationSeconds Int
   goalReaches                 Int
   targetVisits                Int
-  conversionRate              Decimal?  @db.Decimal(8, 4)
+  conversionRate              Decimal?      @db.Decimal(8, 4)
   sourceRunId                 String
-  createdAt                   DateTime  @default(now())
-  site                        Site      @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sourceRun                   SourceRun @relation(fields: [sourceRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt                   DateTime      @default(now())
+  site                        Site          @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sourceRun                   SourceRun     @relation(fields: [sourceRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([siteId, date, path])
-  @@index([siteId, date])
+  @@unique([siteId, periodKey, date, path])
+  @@index([siteId, periodKey, date])
   @@index([sourceRunId])
 }
 
 model MetrikaDeviceDailyMetric {
-  id             String    @id @default(cuid())
+  id             String        @id @default(cuid())
   siteId         String
+  periodKey      ReportPeriodKey
   date           DateTime
   device         String
   visits         Int
   users          Int
   goalReaches    Int
-  conversionRate Decimal?  @db.Decimal(8, 4)
+  conversionRate Decimal?      @db.Decimal(8, 4)
   sourceRunId    String
-  createdAt      DateTime  @default(now())
-  site           Site      @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sourceRun      SourceRun @relation(fields: [sourceRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt      DateTime      @default(now())
+  site           Site          @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sourceRun      SourceRun     @relation(fields: [sourceRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([siteId, date, device])
-  @@index([siteId, date])
+  @@unique([siteId, periodKey, date, device])
+  @@index([siteId, periodKey, date])
   @@index([sourceRunId])
 }
 
 model MetrikaGoalDailyMetric {
   id             String        @id @default(cuid())
   siteId         String
+  periodKey      ReportPeriodKey
   date           DateTime
   externalGoalId String
   name           String
@@ -553,8 +557,8 @@ model MetrikaGoalDailyMetric {
   site           Site          @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sourceRun      SourceRun     @relation(fields: [sourceRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([siteId, date, externalGoalId])
-  @@index([siteId, date])
+  @@unique([siteId, periodKey, date, externalGoalId])
+  @@index([siteId, periodKey, date])
   @@index([sourceRunId])
 }
 
