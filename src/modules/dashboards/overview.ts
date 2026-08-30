@@ -1,4 +1,3 @@
-import "server-only";
 
 import { ProjectService, type ProjectSummary } from "../../application/services/project-service";
 import { PrismaProjectRepository } from "../../infrastructure/database/repositories/prisma-project-repository";

@@ -1,4 +1,3 @@
-import "server-only";
 
 import { siteReportSnapshotSchema, type SiteReportSnapshot } from "../../shared/schemas/report";
 
