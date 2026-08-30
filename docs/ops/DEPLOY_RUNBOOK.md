@@ -1,124 +1,63 @@
 # DEPLOY RUNBOOK
 
-## Статус
-
-Production active. Current exact SHA is read from `current/release-manifest.json` and `shared/deployed-sha.txt`; every subsequent release still requires SourceCraft gate and atomic deploy.
-
-## Production target
-
-- AMS Main Server;
-- immutable release directory;
-- shared snapshots outside release;
-- Nginx serves static `out/`;
-- collector runs separately through `systemd` oneshot + timers.
-
-Production URL:
+## Target runtime
 
 ```text
-https://seo-monitor.ams24.ru
+Nginx
+→ Next standalone web service
+→ PostgreSQL
+
+systemd timer
+→ worker oneshot
+→ PostgreSQL
 ```
 
-## Release layout
+## Reviewed assets
 
-```text
-/opt/ams-platform/ams-seo-monitor/
-├── releases/<main-sha>/
-│   ├── out/
-│   ├── dist-collector/
-│   ├── config/
-│   ├── ops/
-│   ├── node_modules/  # readonly hardlink reuse only when lock SHA matches
-│   └── release-manifest.json
-├── shared/
-│   ├── client-reports/
-│   ├── snapshots/
-│   ├── sync-state/
-│   ├── locks/
-│   ├── deployed-sha.txt
-│   ├── previous-release.txt
-│   └── runtime/current -> node-v24-linux-x64
-└── current -> releases/<main-sha>
-```
+- `ops/nginx/ams-seo-monitor.conf`
+- `ops/systemd/seo-monitor-web.service`
+- `ops/systemd/seo-monitor-worker.service`
+- `ops/systemd/seo-monitor-worker.timer`
+- `ops/systemd/seo-monitor-db-backup.service`
+- `ops/systemd/seo-monitor-db-backup.timer`
 
-Checked-in production units:
+## Local proof already done in branch
 
-- `ops/nginx/ams-seo-monitor.conf`;
-- `ops/systemd/ams-seo-monitor.service`;
-- `ops/systemd/ams-seo-monitor.timer`.
+- `pnpm build`
+- `pnpm build:collector`
+- `/api/health/live`
+- `/api/health/ready`
+- auth route and route gating
+- systemd unit syntax verification
+- Nginx config syntax verification in isolated temp wrapper
 
-Daily timer rebuilds all four report presets; a second weekly API run is intentionally absent because it would duplicate the same collection.
+## Deploy shape
 
-## Deploy sequence
+Immutable release must contain:
 
-1. merge reviewed PR through exact-head HEAVY gate;
-2. clean local `main` equals `origin/main`;
-3. run `pnpm release:build`;
-4. builder verifies main/clean worktree and creates `.release-artifacts/ams-seo-monitor-<sha>.tar.gz`;
-5. run `pnpm release:deploy`;
-6. deploy verifies artifact and manifest SHA;
-7. dependency lock must match previous readonly `node_modules`, otherwise deploy stops;
-8. extract immutable release and atomically switch `current`;
-9. install checked-in systemd units;
-10. `nginx -t`, reload and collector oneshot;
-11. enable/verify timer;
-12. authenticated HTML/data isolation smoke;
-13. record exact SHA, artifact checksum and previous release.
+- `.next/standalone`
+- `.next/static`
+- `public/`
+- `dist-collector/`
+- `config/`
+- `ops/`
+- `package.json`
+- `pnpm-lock.yaml`
+- `pnpm-workspace.yaml`
+- `release-manifest.json`
 
-## Required production inputs
+## Post-deploy smoke
 
-- DNS `seo-monitor.ams24.ru` points to AMS Main Server;
-- explicit owner production command;
-- exact reviewed SourceCraft `main` SHA;
-- project secrets materialized in `/etc/ams-platform/ams-seo-monitor.env`;
-- Basic Auth files in `/etc/ams-platform/ams-seo-monitor-auth/`;
-- Certbot-issued certificate after the HTTP virtual host passes `nginx -t`.
+- `seo-monitor-web.service` active;
+- `seo-monitor-worker.timer` active;
+- `seo-monitor-db-backup.timer` active;
+- `/api/health/live` = 200;
+- `/api/health/ready` = 200;
+- analyst unauthenticated access redirects to `/login/`;
+- analyst sign-in works;
+- client foreign project access denied;
+- worker manual start succeeds.
 
-Secrets, auth files and shared snapshots are never stored inside an immutable release.
+## Blocker
 
-## Nginx rule
-
-Checked-in `ops/nginx/ams-seo-monitor.conf` is the canonical TLS config with existing Certbot certificate paths. Deploy backs up the live config, installs the reviewed file, runs `nginx -t` and restores the backup on failure.
-
-Private HTML/data responses require:
-
-```text
-Cache-Control: private, no-store, max-age=0
-Pragma: no-cache
-X-Robots-Tag: noindex, nofollow, noarchive
-```
-
-Hashed static assets may remain public immutable.
-
-## Isolation smoke
-
-Expected:
-
-```text
-no auth:
-/                           → 401
-/analyst/                   → 401
-/c/REDACTED_CLIENT_DATA/                 → 401
-/c/REDACTED_CLIENT_DATA/data/...json     → 401
-
-REDACTED_CLIENT_DATA credentials:
-/c/REDACTED_CLIENT_DATA/**               → 200
-/analyst/**                 → 401/403
-/c/REDACTED_CLIENT_DATA/**             → 401/403
-
-Analyst credentials:
-/analyst/**                 → 200
-/c/REDACTED_CLIENT_DATA/**               → 200
-```
-
-## Rollback
-
-`scripts/deploy-production.mjs` records previous release. If Nginx validation or collector smoke fails before completion, it restores the previous `current` symlink. Manual rollback:
-
-```bash
-ln -s <previous-release-path> /opt/ams-platform/ams-seo-monitor/current.rollback
-mv -Tf /opt/ams-platform/ams-seo-monitor/current.rollback /opt/ams-platform/ams-seo-monitor/current
-nginx -t
-systemctl reload nginx
-```
-
-Rollback never deletes `shared/`.
+Offsite DB backup remains incomplete until S3-compatible credentials and bucket are provided.

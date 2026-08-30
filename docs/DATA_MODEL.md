@@ -1,126 +1,63 @@
 # DATA MODEL
 
-## Core sources
+## Runtime source of truth
 
-### Registry config
+PostgreSQL — единственный runtime source of truth.
 
-Checked-in nonsecret files в `config/` описывают:
+Git хранит только:
 
-- клиента;
-- сайты клиента;
-- cluster profile;
-- goal profile;
-- thresholds.
+- seed inputs;
+- tracked query baseline imports;
+- fixtures;
+- nonsecret helper config.
 
-В registry запрещены OAuth tokens, passwords, database URLs, htpasswd hashes и raw API responses.
+## Core entities
 
-### SiteReportSnapshot
+- `User`, `Session`, `Account`, `Verification`
+- `Organization`, `Member`, `Invitation`
+- `Project`, `Site`, `ProviderConnection`
+- `ThresholdProfile`, `QueryClusterProfile`, `QueryClusterGroup`
+- `GoalDefinition`, `GoalDefinitionSite`
+- `TrackedQuerySet`, `TrackedQuery`
+- `SyncRun`, `SourceRun`
+- `WebmasterDailyMetric`, `WebmasterQueryDailyMetric`
+- `MetrikaDailyMetric`, `LandingPageDailyMetric`, `MetrikaDeviceDailyMetric`, `MetrikaGoalDailyMetric`
+- `RankingCapture`
+- `TechnicalSnapshot`
+- `ReportSnapshot`
 
-Главный report document для UI и storage:
+## Browser contract
 
-- `schemaVersion`
-- `clientSlug`
-- `siteSlug`
-- `siteUrl`
-- `generatedAt`
-- `freshness`
-- `sources.webmaster`
-- `sources.metrica`
-- `sources.topvisor`
-- `ranking`
-- `webmaster`
-- `metrica`
-- `combined`
-- `periodKey`
-- `comparison.currentPeriod / previousPeriod`
-- `comparison.metrics`
+`SiteReportSnapshot` остаётся browser-safe DTO. UI не знает таблицы под ним.
 
-## Source states
+## Historical persistence rules
 
-Допустимые source statuses:
+- Webmaster all-query history пишет daily metrics;
+- Webmaster query collections пишутся как period-scoped metric rows;
+- Metrika byTime пишет daily organic metrics;
+- Metrika landing/device/goal aggregates пишутся как period-scoped rows;
+- Topvisor exact snapshots пишутся как `RankingCapture`;
+- сложные technical structures пишутся как validated `TechnicalSnapshot` JSONB;
+- compiled `ReportSnapshot` — materialized report output, не raw source.
 
-- `success`
-- `partial`
-- `failed`
-- `not_configured`
-- `access_denied`
-- `quota_limited`
-- `stale`
+## Auth rules
 
-## SyncRun
+- `SEO_ANALYST` — system role;
+- `CLIENT_VIEWER` — tenant-bound through membership;
+- public signup off;
+- disabled user не проходит authorization.
 
-Sync run хранит состояние запуска collector:
+## SEO semantics preserved
 
-- `runId`
-- `mode`
-- `status`
-- `startedAt`
-- `finishedAt`
-- `clients`
-- `safeErrorCodes`
+- `partial` не становится `success`;
+- `stale` не становится `current`;
+- `null` не становится `0`;
+- Top-3 входит в Top-10;
+- lower position = better;
+- denominator ranking share = полное утверждённое ядро;
+- conversion = unique target visits / organic visits;
+- direct query → lead attribution запрещена.
 
-## Storage layout
+## Backup note
 
-```text
-shared/
-├── snapshots/
-├── client-reports/
-├── sync-state/
-├── locks/
-└── backup-staging/
-```
-
-Period-aware layout:
-
-```text
-snapshots/{client}/{site}/{week|month|quarter|halfYear}/
-├── latest.json
-├── latest-sources.json
-├── snapshot-<timestamp>.json
-└── sources-<timestamp>.json
-
-client-reports/{client}/{site}/{period}/latest.json
-```
-
-## Storage invariants
-
-- temp-write и publish только в том же filesystem;
-- schema validation до publish;
-- snapshot `latest.json` updates atomically;
-- browser-safe `client-reports/{client}/{site}/{period}/latest.json` publishes atomically;
-- invalid snapshot never replaces latest valid data;
-- partial source preserves last-known-good section;
-- raw responses and secret-bearing error bodies are never persisted.
-
-Topvisor source bundle stores only normalized dates and positions. API credentials, raw payloads and paid checker operations are never persisted.
-
-## Current status
-
-- Registry and per-site goal profiles are checked in and validated.
-- Three REDACTED_CLIENT_DATA sites have exact Webmaster/Metrica ownership.
-- Webmaster all-query totals and popular-query pools are stored separately.
-- Metrica stores both cumulative goal actions and unique target visits.
-- Topvisor read-only source and owner-provided ranking fallback are stored separately from Webmaster metrics.
-- Every preset stores current and immediately preceding equal periods.
-- Detailed current/previous source bundles remain internal.
-- Period snapshots compile into browser-safe `SiteReportSnapshot`.
-- Client UI fetches and validates period-aware protected JSON.
-- Query clusters use deterministic checked-in `brandTerms` and group `terms`; unmatched queries become `Другое`.
-- Live sync is proven for 3 sites × 4 presets.
-
-## Conversion invariant
-
-- `goalReaches` may contain several actions from one visit.
-- Unique target visits use an OR union of allowlisted `goal<ID>IsReached` conditions.
-- One visit is counted once even when several goals are reached.
-- Director conversion = unique target visits / Yandex organic visits.
-- Per-goal action counts remain secondary detail.
-
-## Period invariant
-
-- `week` = 7, `month` = 28, `quarter` = 90, `halfYear` = 180 days.
-- `month` is the UI default.
-- Every Webmaster/Metrica current period ends on the same latest factual Webmaster date.
-- Their previous period is immediately preceding and equal in length.
-- Ranking deltas compare the first and last exact capture inside the selected period; owner fallback uses its explicit baseline label.
-- Partial/stale/suppressed values never become zero silently.
+Local backup и restore smoke уже настроены. Offsite backup остаётся внешним blocker до появления S3 credentials/bucket.

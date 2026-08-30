@@ -3,104 +3,102 @@
 ## Язык и формат
 
 - Отвечать по-русски.
-- Сначала итог, потом изменения, проверки, риски и следующий шаг.
-- Не выдумывать live credentials, host IDs, counter IDs и production URLs.
+- Сначала итог, затем изменения, проверки, риски и следующий шаг.
+- Не выдумывать credentials, host IDs, counter IDs, exact deployed SHA и live production claims.
 
-## Что это за проект
+## Проект
 
-AMS SEO Monitor — отдельный приватный AMS-продукт для SEO-отчётности по нескольким проектам и сайтам. Он не является модулем Бастиона и не должен использовать его runtime-код или его базу данных.
+AMS SEO Monitor — отдельный приватный AMS-продукт для SEO-отчётности по нескольким проектам и сайтам. Это не модуль Бастиона и не public marketing site.
 
-## Source of truth
-
-Для любой содержательной задачи читать по порядку:
+## Что читать первым
 
 1. `README.md`
 2. `AGENTS.md`
-3. `docs/PROJECT_PASSPORT.md`
-4. `docs/PRODUCT.md`
-5. `docs/ARCHITECTURE.md`
-6. `docs/DATA_MODEL.md`
-7. `docs/DESIGN_SYSTEM.md`
-8. `docs/SITE_REPORT_IA.md`
-9. `docs/DIRECTOR_DASHBOARD_V2.md` — для dashboard scope
-10. профильный `docs/modules/MODULE_*.md`
-11. `SECURITY.md`
-12. `docs/MASTER_PLAN.md`
+3. профильный документ текущего scope.
 
-Если задача только по UI shell, не нужно автоматически читать будущие server/runbook документы. Если задача расширяется в security, deploy или live onboarding — сначала дочитать профильный canon и переклассифицировать риск.
+Core canon:
 
-## Инварианты MVP
+- `docs/PRODUCT.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DATA_MODEL.md`
+- `SECURITY.md`
+- `docs/MASTER_PLAN.md`
 
-- Next.js работает в `output: "export"`.
-- `next start` не используется как production runtime.
-- Нет PostgreSQL, Prisma, SQLite, Better Auth, cookies и sessions.
-- Browser не делает запросы к Yandex API.
-- Collector работает отдельно от web UI и пишет versioned JSON snapshots.
-- Snapshot schema — единый data contract.
-- Клиентская изоляция в production обеспечивается Nginx Basic Auth, не фронтендом.
-- Секреты, OAuth tokens, htpasswd и чувствительные error bodies не попадают в Git, build output, browser payload и logs.
-- Product hierarchy: `Все проекты → Проект → Сайты → Отчёты`; внутренние `clientSlug` и `/c/*` сохраняются как совместимый data contract.
+Detail canon:
 
-## Архитектурные границы
+- `docs/TECH_STACK.md`
+- `docs/DATABASE.md`
+- `docs/AUTH.md`
+- `docs/WORKER.md`
+- `docs/DEPLOYMENT.md`
+- `docs/modules/*`
+- `docs/ops/*`
 
-- `src/app` — static routes и layouts.
-- `src/modules/*` — registry, selectors, dashboards и report DTO.
-- `src/components/*` — reusable UI shell blocks.
-- `src/shared/schemas/*` — Zod contracts для registry и snapshots.
-- `collector/*` — storage/orchestration/source adapters compiled в `dist-collector`.
-- `config/*` — только nonsecret checked-in config.
+## Product invariants
 
-Не вводить параллельный формат данных рядом со snapshot contract.
+- hierarchy `Все проекты → Проект → Сайты → Единый отчёт`;
+- роли `SEO_ANALYST` и `CLIENT_VIEWER`;
+- browser-safe DTO = `SiteReportSnapshot`;
+- `month` default, periods `week/month/quarter/halfYear`;
+- `partial` ≠ `success`;
+- `stale` ≠ `current`;
+- `null` ≠ `0`;
+- Webmaster average position не заменяет exact ranking;
+- direct query → lead attribution запрещена.
 
-## Active scope
+## Architecture invariants
 
-Реализовано:
+- Next.js работает как server application with standalone output;
+- PostgreSQL — runtime source of truth;
+- Better Auth — application auth boundary;
+- Nginx — TLS/reverse proxy/hardening, не Basic Auth layer;
+- worker синхронизирует providers отдельно от web requests;
+- UI → Service → Repository Contract → Prisma Repository → PostgreSQL;
+- Prisma не импортируется в UI;
+- provider APIs не вызываются из browser;
+- filesystem не используется как runtime database.
 
-- Wave 1 static foundation and canonical REDACTED_CLIENT_DATA design;
-- complete read-only Webmaster/Metrica adapters;
-- exact source config for REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA and REDACTED_CLIENT_DATA;
-- aligned-period multi-site sync;
-- unified compiler and atomic snapshot/client-report publish;
-- protected live report loader;
-- partial/LKG tests and live local proof.
+## Git and release
 
-Текущий блок:
+- canonical primary = SourceCraft `origin/main`;
+- один поток = одна branch = один PR;
+- production deploy только после review/merge command;
+- server mutation без production deploy допустима только для isolated verification или DB foundation в рамках явной backend задачи;
+- exact production rollout, Nginx activation и release switch не выполнять без отдельного owner command.
 
-- Director Dashboard V2 и production release tooling merged в `main`;
-- production `seo-monitor.ams24.ru` active;
-- Nginx Basic Auth isolation, protected data aliases and daily timer verified;
-- Topvisor live mapping remains disabled; owner fallback labelled;
-- next product work: SZ REDACTED_CLIENT_DATA onboarding, analyst detail views or explicit Topvisor activation.
+## Checks
 
-Без отдельной owner-команды не делать:
-
-- production deploy;
-- Nginx/systemd activation;
-- htpasswd generation;
-- merge в `main`.
-
-## Проверки
-
-Для текущего data/compiler scope обязательны:
+Для code/runtime scope обязательны:
 
 ```bash
-pnpm verify:config
-pnpm verify:snapshots
+pnpm build:collector
 pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
 ```
 
-Для UI-изменений дополнительно нужен browser proof на 375 / 768 / 1280 / 1440.
+Для DB/integration scope дополнительно:
+
+```bash
+pnpm db:restore-smoke
+```
+
+Для auth/runtime smoke использовать реальный surface:
+
+- `/api/health/live`
+- `/api/health/ready`
+- login flow
+- analyst/client route access
+- worker sync smoke
 
 ## Done
 
-Текущий data pipeline считается готовым к release-gate работе, когда:
+Изменение считается готовым, когда:
 
-- all enabled sites publish valid snapshots;
-- source periods align;
-- partial failures preserve LKG;
-- client routes load only their own protected reports;
-- build/routes/design checks pass;
-- production deploy remains an explicit separate command.
+- новая архитектура реально работает, не только описана в docs;
+- affected docs синхронизированы;
+- direct Prisma import в UI отсутствует;
+- relevant tests и smoke checks пройдены;
+- legacy path удалён, если он больше не нужен;
+- production deploy остаётся отдельным явным действием.

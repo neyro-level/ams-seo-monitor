@@ -1,46 +1,14 @@
 # AMS SEO Monitor
 
-Централизованный приватный SEO-отчёт АМС для нескольких клиентов и сайтов.
+Приватный SEO-кабинет АМС для нескольких проектов и сайтов.
 
-## Что это
+## Что делает система
 
-AMS SEO Monitor — отдельный самостоятельный продукт АМС. Он собирает read-only данные из Яндекс.Вебмастера и Яндекс.Метрики, сохраняет versioned JSON snapshots и отдаёт клиентам статические приватные отчёты.
+AMS SEO Monitor собирает read-only данные из Яндекс.Вебмастера, Яндекс.Метрики и опционально Topvisor, сохраняет нормализованную историю в PostgreSQL и показывает директорский отчёт через Next.js App Router.
 
-MVP принципиально:
+Browser получает только готовый `SiteReportSnapshot`. Provider APIs и бизнес-расчёты не живут во frontend.
 
-- без PostgreSQL, Prisma и SQLite;
-- без постоянного Next.js runtime;
-- без `next start` в production;
-- без application auth;
-- с Nginx Basic Auth по защищённым путям;
-- с compiled Node collector по timer.
-
-## Стек MVP
-
-- Next.js 16 App Router, `output: "export"`
-- React 19
-- TypeScript strict
-- Tailwind CSS v4
-- Recharts
-- Zod
-- Node.js 24 collector
-- versioned JSON snapshots
-- Nginx Basic Auth
-- systemd oneshot + timers
-
-## Текущее состояние
-
-- Wave 1 foundation зафиксирована в SourceCraft `main`.
-- W4 Webmaster и W5 Metrica завершены для Луганска, Алчевска и Мариуполя.
-- `pnpm collector:sync:REDACTED_CLIENT_DATA` собирает оба источника и атомарно публикует 12 отчётов: 3 сайта × 4 периода.
-- Отчёты содержат равное previous-period сравнение, total Webmaster history, unique target visits и детерминированные кластеры спроса.
-- Client routes загружают period-aware protected runtime JSON; `/demo/` остаётся отдельным fixture.
-- Read-only раздел `Проекты` и operator wizard добавляют config-driven проекты без БД; следующий onboarding выполняется через Git + release workflow.
-- Director Dashboard V2, tracked ranking и production release tooling merged в SourceCraft `main`.
-- Topvisor adapter реализован read-only, но live mapping выключен; используется labelled owner baseline.
-- Production активен на `https://seo-monitor.ams24.ru`: TLS, Basic Auth isolation, protected report JSON, collector oneshot и daily timer проверены.
-
-Product hierarchy:
+## Product hierarchy
 
 ```text
 Все проекты
@@ -49,89 +17,113 @@ Product hierarchy:
     → Единый отчёт
 ```
 
-Внутреннее поле `clientSlug` и route `/c/*` временно сохраняются как совместимый data contract; в пользовательском интерфейсе верхний уровень называется `Проект`.
+Внутренние `clientSlug` и маршруты `/c/*` сохраняются как действующий URL/data contract.
 
-Production URL:
-
-```text
-https://seo-monitor.ams24.ru
-```
-
-## Структура
+## Current architecture
 
 ```text
-src/            Next.js static UI
-collector/      compiled Node collector and storage engine
-config/         nonsecret client/site/goal/cluster config
-docs/           core canon
-scripts/        local verification scripts
-tests/          foundation tests
+Browser
+→ Nginx
+→ Next.js server runtime
+→ Application services
+→ Repository contracts
+→ Prisma repositories
+→ PostgreSQL
+
+systemd timer
+→ Worker
+→ Provider adapters
+→ normalization
+→ PostgreSQL
+→ ReportSnapshot / SiteReportSnapshot
 ```
 
-## Команды
+## What is preserved from V1
+
+- `SiteReportSnapshot` как browser-safe DTO;
+- роли `SEO_ANALYST` и `CLIENT_VIEWER`;
+- периоды `week`, `month`, `quarter`, `halfYear`;
+- `month` по умолчанию;
+- `partial`, `stale`, `null` и честные source states;
+- separation между ranking, Webmaster и Metrica semantics.
+
+## Current status in this branch
+
+Реализовано:
+
+- Next.js 16.3.3 standalone runtime;
+- PostgreSQL 18 foundation на AMS Main Server;
+- Prisma 7.10 schema, migrations и seed;
+- Better Auth 1.7.2 foundation;
+- application services и Prisma repositories;
+- database-backed worker sync;
+- database-backed dashboard routes;
+- auth-protected analyst/client access;
+- health endpoints `/api/health/live` и `/api/health/ready`;
+- reverse-proxy/systemd release scaffolding.
+
+Открытый внешний blocker:
+
+- offsite S3-compatible backup для PostgreSQL ещё не настроен в доступном Doppler scope.
+
+## Stack
+
+Фактические версии закреплены в `package.json` и `docs/TECH_STACK.md`:
+
+- Next.js 16.3.3;
+- React 19.2.8;
+- TypeScript 6.0.3;
+- Prisma 7.10.0;
+- PostgreSQL 18.x;
+- Better Auth 1.7.2;
+- Zod 4.5.4;
+- pnpm 11.5.1.
+
+## Main commands
 
 ```bash
-pnpm install
-pnpm verify:config
+pnpm prisma:generate
 pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
-pnpm project:add
-pnpm collector:webmaster:preflight
-pnpm collector:webmaster:audit
-pnpm collector:metrica:preflight
-pnpm collector:metrica:audit
-pnpm collector:sync:REDACTED_CLIENT_DATA
+pnpm build:collector
+pnpm worker:sync:REDACTED_CLIENT_DATA
+pnpm db:seed
+pnpm db:restore-smoke
 ```
 
-## Локальный live-кабинет
-
-Один раз обновить локальные browser-safe reports:
+Auth admin scripts:
 
 ```bash
-doppler run --project ams-seo-monitor --config prd -- pnpm collector:sync:REDACTED_CLIENT_DATA
+pnpm user:create -- --email ... --name ... --password ... --system-role SEO_ANALYST
+pnpm user:add-to-organization -- --email ... --organization REDACTED_CLIENT_DATA
 ```
 
-Запустить Next dev и loopback-only report server одной командой:
+## Canon
 
-```bash
-pnpm dev:live
-```
+Стартовать с:
 
-Открыть:
+- `AGENTS.md`
+- `docs/PRODUCT.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DATA_MODEL.md`
+- `SECURITY.md`
+- `docs/MASTER_PLAN.md`
 
-```text
-http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
-http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
-http://127.0.0.1:3000/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/
-```
+Детальнее по слоям:
 
-Report server слушает только `127.0.0.1:3001`, читает `.local/shared/client-reports` и не меняет production/static-export contract.
+- `docs/TECH_STACK.md`
+- `docs/DATABASE.md`
+- `docs/AUTH.md`
+- `docs/WORKER.md`
+- `docs/DEPLOYMENT.md`
 
-`pnpm build` должен создавать `out/`. `collector:webmaster:*` используют только environment secrets и печатают только safe JSON.
+## Important constraints
 
-## Source of truth
-
-Сначала читать:
-
-1. `AGENTS.md`
-2. `docs/PROJECT_PASSPORT.md`
-3. `docs/PRODUCT.md`
-4. `docs/ARCHITECTURE.md`
-5. `docs/DATA_MODEL.md`
-6. `docs/DESIGN_SYSTEM.md`
-7. `docs/SITE_REPORT_IA.md`
-8. `docs/DIRECTOR_DASHBOARD_V2.md`
-9. `docs/modules/MODULE_PROJECT_REGISTRY.md`
-10. `docs/modules/MODULE_DATA_PIPELINE.md`
-11. `docs/modules/MODULE_RANKING_ANALYTICS.md`
-12. `SECURITY.md`
-13. `docs/MASTER_PLAN.md`
-
-## Ограничения
-
-- Секреты не хранятся в Git.
-- Browser не ходит в Yandex API напрямую.
-- Static routes строятся из checked-in nonsecret registry.
-- Snapshot schema — единственный data contract для report DTO.
+- public signup выключён;
+- provider mutations запрещены;
+- browser не вызывает provider APIs;
+- Prisma и SQL не импортируются в UI;
+- production deploy и merge в `main` не выполняются автоматически;
+- filesystem больше не является runtime source of truth.

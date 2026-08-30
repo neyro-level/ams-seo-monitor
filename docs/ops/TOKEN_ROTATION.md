@@ -1,32 +1,22 @@
 # TOKEN ROTATION
 
-## Статус
+## Current scope
 
-OAuth tokens используются в production sync через root-owned materialized env; Doppler остаётся source of truth.
+Rotation policy covers:
 
-## Secret classes
-
-- `YANDEX_WEBMASTER_OAUTH_TOKEN`
-- `YANDEX_METRICA_OAUTH_TOKEN`
-- optional `TOPVISOR_USER_ID` / `TOPVISOR_API_KEY`
-- runtime env materialization file
-- client Basic Auth credentials
+- provider OAuth tokens;
+- Better Auth secret;
+- PostgreSQL app/migrator passwords;
+- backup credentials.
 
 ## Rules
 
-- Doppler is source of truth;
-- runtime copy is materialized separately on server;
-- collector does not call Doppler during daily/weekly run;
-- tokens are never printed to chat, logs, Git or browser payload;
-- 401/403 must stop blind retry and trigger operator action.
+- secrets live in Doppler and server env, not Git;
+- rotations must not print secret values to chat or logs;
+- DB role rotation must be followed by connectivity verification;
+- Better Auth secret rotation must preserve session strategy intentionally;
+- provider token rotation must preserve read-only scopes.
 
-## Rotation sequence
+## Current note
 
-1. obtain fresh token/key with required read-only scope;
-2. update `ams-seo-monitor/prd` in Doppler;
-3. run provider preflight without printing values;
-4. materialize server env with root ownership and mode `0600`;
-5. run one manual site/client sync;
-6. validate published report freshness and systemd result;
-7. retire obsolete token/key;
-8. record safe rotation proof without values.
+Basic Auth credentials are no longer part of the target application architecture.
