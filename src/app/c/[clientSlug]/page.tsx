@@ -1,12 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AppShell } from "../../../components/shell/AppShell";
 import { KpiCard } from "../../../components/dashboard/KpiCard";
 import { PageHeader } from "../../../components/dashboard/PageHeader";
 import { SectionCard } from "../../../components/dashboard/SectionCard";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner";
+import { getCurrentAuthenticatedUser } from "../../../infrastructure/auth/session";
 import { buildClientOverview } from "../../../modules/dashboards/overview";
 
 type ClientOverviewPageProps = {
@@ -16,8 +17,13 @@ type ClientOverviewPageProps = {
 };
 
 export default async function ClientOverviewPage({ params }: ClientOverviewPageProps) {
+  const user = await getCurrentAuthenticatedUser();
+  if (!user) {
+    redirect("/login/");
+  }
+
   const { clientSlug } = await params;
-  const overview = await buildClientOverview(clientSlug);
+  const overview = await buildClientOverview(user, clientSlug);
 
   if (!overview) {
     notFound();
@@ -30,7 +36,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
   const projectReady = connectedSites > 0 && readySites === connectedSites;
 
   return (
-    <AppShell currentPath={`/c/${overview.client.clientSlug}/`}>
+    <AppShell currentPath={`/c/${overview.client.clientSlug}/`} user={user}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Проект"

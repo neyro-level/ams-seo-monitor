@@ -23,19 +23,14 @@ export type NavigationSection = {
   items: NavigationItem[];
 };
 
-const previewAnalystUser: AuthenticatedUser = {
-  userId: "preview-analyst",
-  email: "preview-analyst@seo-monitor.local",
-  name: "Preview Analyst",
-  systemRole: "SEO_ANALYST",
-  activeOrganizationId: null,
-};
-
 const projectRepository = new PrismaProjectRepository();
 const projectService = new ProjectService(projectRepository);
 
-export async function buildNavigation(currentPath: string): Promise<NavigationSection[]> {
-  const projectSummaries = await projectService.listProjectsForUser(previewAnalystUser);
+export async function buildNavigation(
+  currentPath: string,
+  user: AuthenticatedUser,
+): Promise<NavigationSection[]> {
+  const projectSummaries = await projectService.listProjectsForUser(user);
   const clientPathMatch = currentPath.match(/^\/c\/([^/]+)\//);
   const currentClientSlug = clientPathMatch?.[1] ?? null;
   const visibleProjects = currentClientSlug
@@ -62,14 +57,17 @@ export async function buildNavigation(currentPath: string): Promise<NavigationSe
     });
   }
 
+  const rootHref = user.systemRole === "SEO_ANALYST" ? "/analyst/" : "/";
+  const rootLabel = user.systemRole === "SEO_ANALYST" ? "Все проекты" : "Мои проекты";
+
   return [
     {
       title: "",
       items: [
         {
-          href: "/analyst/",
-          label: "Все проекты",
-          active: currentPath === "/analyst/",
+          href: rootHref,
+          label: rootLabel,
+          active: currentPath === rootHref,
         },
       ],
     },

@@ -1,29 +1,38 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "../components/shell/AppShell";
 import { KpiCard } from "../components/dashboard/KpiCard";
 import { PageHeader } from "../components/dashboard/PageHeader";
 import { SectionCard } from "../components/dashboard/SectionCard";
+import { getCurrentAuthenticatedUser } from "../infrastructure/auth/session";
 import { buildAnalystOverview } from "../modules/dashboards/overview";
 
 export default async function HomePage() {
-  const overview = await buildAnalystOverview();
+  const user = await getCurrentAuthenticatedUser();
+  if (!user) {
+    redirect("/login/");
+  }
+
+  const overview = await buildAnalystOverview(user);
 
   return (
-    <AppShell currentPath="/">
+    <AppShell currentPath="/" user={user}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="АМС"
           title="AMS SEO Monitor"
           description="Приватный SEO-кабинет: проекты, сайты, Яндекс.Вебмастер, Метрика и управленческие отчёты."
           actions={
-            <Link
-              href="/analyst/"
-              className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
-            >
-              Все проекты
-            </Link>
+            user.systemRole === "SEO_ANALYST" ? (
+              <Link
+                href="/analyst/"
+                className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
+              >
+                Все проекты
+              </Link>
+            ) : null
           }
         />
 

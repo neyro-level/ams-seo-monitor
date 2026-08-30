@@ -9,13 +9,29 @@ const navigationTestEnabled = Boolean(
 );
 const navigationTestDescription = navigationTestEnabled ? describe : describe.skip;
 
+const analystUser = {
+  userId: "analyst-1",
+  email: "analyst@test.local",
+  name: "Analyst",
+  systemRole: "SEO_ANALYST" as const,
+  activeOrganizationId: null,
+};
+
+const clientViewerUser = {
+  userId: "viewer-1",
+  email: "viewer@test.local",
+  name: "Viewer",
+  systemRole: "CLIENT_VIEWER" as const,
+  activeOrganizationId: null,
+};
+
 navigationTestDescription("database-backed navigation isolation", () => {
   it("renders only the current client subtree on a client route", async () => {
-    const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");
+    const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/", clientViewerUser);
     const items = sections.flatMap((section) => section.items);
 
     expect(sections).toHaveLength(2);
-    expect(items.map((item) => item.label)).toEqual(["Все проекты", "Проект REDACTED_CLIENT_DATA"]);
+    expect(items.map((item) => item.label)).toEqual(["Мои проекты", "Проект REDACTED_CLIENT_DATA"]);
     expect(items[1]?.children?.map((item) => item.label)).toEqual([
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
@@ -26,7 +42,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
   });
 
   it("renders all projects directly on the analyst root", async () => {
-    const sections = await buildNavigation("/analyst/");
+    const sections = await buildNavigation("/analyst/", analystUser);
     const serialized = JSON.stringify(sections);
     const mainItems = sections[0]?.items ?? [];
     const projectItems = sections[1]?.items ?? [];

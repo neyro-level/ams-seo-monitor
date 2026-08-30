@@ -28,18 +28,10 @@ export interface ClientOverview {
   }>;
 }
 
-const previewAnalystUser: AuthenticatedUser = {
-  userId: "preview-analyst",
-  email: "preview-analyst@seo-monitor.local",
-  name: "Preview Analyst",
-  systemRole: "SEO_ANALYST",
-  activeOrganizationId: null,
-};
-
 const projectService = new ProjectService(new PrismaProjectRepository());
 
-export async function buildAnalystOverview(): Promise<AnalystOverview> {
-  const projectCards = await projectService.listProjectsForUser(previewAnalystUser);
+export async function buildAnalystOverview(user: AuthenticatedUser): Promise<AnalystOverview> {
+  const projectCards = await projectService.listProjectsForUser(user);
   const totalSites = projectCards.reduce((count, project) => count + project.totalSites, 0);
   const connectedSites = projectCards.reduce((count, project) => count + project.connectedSites, 0);
   const plannedSites = totalSites - connectedSites;
@@ -55,8 +47,11 @@ export async function buildAnalystOverview(): Promise<AnalystOverview> {
   };
 }
 
-export async function buildClientOverview(clientSlug: string): Promise<ClientOverview | null> {
-  const project = await projectService.getProjectAccessForUser(previewAnalystUser, clientSlug);
+export async function buildClientOverview(
+  user: AuthenticatedUser,
+  clientSlug: string,
+): Promise<ClientOverview | null> {
+  const project = await projectService.getProjectAccessForUser(user, clientSlug);
   if (!project) {
     return null;
   }

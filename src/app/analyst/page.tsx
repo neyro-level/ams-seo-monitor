@@ -1,17 +1,27 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "../../components/shell/AppShell";
 import { KpiCard } from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { SectionCard } from "../../components/dashboard/SectionCard";
+import { getCurrentAuthenticatedUser } from "../../infrastructure/auth/session";
 import { buildAnalystOverview } from "../../modules/dashboards/overview";
 
 export default async function AllProjectsPage() {
-  const overview = await buildAnalystOverview();
+  const user = await getCurrentAuthenticatedUser();
+  if (!user) {
+    redirect("/login/");
+  }
+  if (user.systemRole !== "SEO_ANALYST") {
+    redirect("/");
+  }
+
+  const overview = await buildAnalystOverview(user);
 
   return (
-    <AppShell currentPath="/analyst/">
+    <AppShell currentPath="/analyst/" user={user}>
       <div className="space-y-6">
         <PageHeader
           title="Все проекты"

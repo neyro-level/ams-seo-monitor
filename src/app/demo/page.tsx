@@ -1,8 +1,10 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import { AppShell } from "../../components/shell/AppShell";
 import { SiteReportView } from "../../modules/dashboards/SiteReportView";
 import { getDemoSnapshot } from "../../modules/report-data/demo-data";
+import { getCurrentAuthenticatedUser } from "../../infrastructure/auth/session";
 import { siteRegistrySchema } from "../../shared/schemas/registry";
 
 const demoSite = siteRegistrySchema.parse({
@@ -22,9 +24,14 @@ const demoSite = siteRegistrySchema.parse({
   },
 });
 
-export default function DemoPage() {
+export default async function DemoPage() {
+  const user = await getCurrentAuthenticatedUser();
+  if (!user) {
+    redirect("/login/");
+  }
+
   return (
-    <AppShell currentPath="/demo/">
+    <AppShell currentPath="/demo/" user={user}>
       <SiteReportView
         clientName="Demo"
         site={demoSite}

@@ -1,16 +1,18 @@
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { buildNavigation } from "../../modules/access/navigation";
+import type { AuthenticatedUser } from "../../infrastructure/auth/types";
 import { MobileDrawer } from "./MobileDrawer";
 import { ShellNav } from "./ShellNav";
 
 type AppShellProps = {
   currentPath: string;
+  user: AuthenticatedUser;
   children: ReactNode;
 };
 
-export async function AppShell({ currentPath, children }: AppShellProps) {
-  const sections = await buildNavigation(currentPath);
+export async function AppShell({ currentPath, user, children }: AppShellProps) {
+  const sections = await buildNavigation(currentPath, user);
 
   return (
     <div className="admin-root min-h-screen bg-[var(--crm-page)] text-[var(--crm-text)]">
@@ -37,7 +39,7 @@ export async function AppShell({ currentPath, children }: AppShellProps) {
                 <ShieldCheck className="size-4" strokeWidth={1.8} aria-hidden />
               </span>
               <p className="min-w-0 flex-1 truncate text-sm font-medium text-white">
-                Защищённый кабинет
+                {user.name}
               </p>
             </div>
           </div>
