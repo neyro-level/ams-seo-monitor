@@ -1,3 +1,5 @@
+import "server-only";
+
 import { getClientBySlug, getClients } from "../client-registry/registry";
 
 export function buildAnalystOverview() {

@@ -32,12 +32,12 @@ export default function HomePage() {
           <KpiCard label="Плановые" value={String(overview.plannedSites)} tone="soft" />
         </section>
 
-        <SectionCard title="Текущий контур" note="Read-only MVP">
+        <SectionCard title="Текущий контур" note="Backend rebuild in progress">
           <ul className="grid gap-3 text-sm text-[var(--crm-text-secondary)] md:grid-cols-2">
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Проекты и сайты задаются проверяемой конфигурацией.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Webmaster и Metrica собираются read-only collector.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Snapshots публикуются атомарно по четырём периодам.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Production остаётся static export без БД и standalone backend.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Продуктовые роли и маршруты сохраняются при перестройке backend foundation.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Webmaster, Metrica и Topvisor остаются read-only provider adapters.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Следующая архитектура переводит runtime в Next server + PostgreSQL + Worker.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">SiteReportSnapshot и SEO semantics остаются browser-safe контрактом отчёта.</li>
           </ul>
         </SectionCard>
       </div>

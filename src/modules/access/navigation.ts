@@ -1,3 +1,5 @@
+import "server-only";
+
 import { getClients } from "../client-registry/registry";
 
 export type NavigationChild = {
