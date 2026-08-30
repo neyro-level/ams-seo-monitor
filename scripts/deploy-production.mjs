@@ -64,6 +64,11 @@ NGINX_BACKUP="$ROOT/shared/previous-nginx.conf"
 RUNTIME_ENV_FILE=/etc/ams-platform/ams-seo-monitor.env
 MIGRATOR_ENV_FILE=/etc/ams-platform/ams-seo-monitor-migrator.env
 
+if [ -n "$PREVIOUS" ] && [ "$PREVIOUS" = "$RELEASE" ]; then
+  echo "Target release is already current; refusing in-place rebuild" >&2
+  exit 1
+fi
+
 rollback_previous() {
   systemctl stop seo-monitor-worker.service seo-monitor-web.service >/dev/null 2>&1 || true
   systemctl disable --now seo-monitor-worker.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
@@ -89,6 +94,7 @@ rollback_previous() {
       nginx -t
       systemctl reload nginx
       systemctl restart seo-monitor-web.service || true
+      systemctl enable --now seo-monitor-worker.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
     elif [ -f "$PREVIOUS/ops/systemd/ams-seo-monitor.service" ]; then
       install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.service" /etc/systemd/system/ams-seo-monitor.service
       install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.timer" /etc/systemd/system/ams-seo-monitor.timer
@@ -101,13 +107,20 @@ rollback_previous() {
   fi
 }
 
+post_switch_rollback() {
+  trap - ERR
+  rollback_previous
+}
+
 cd /tmp
 sha256sum -c "$ARTIFACT_NAME.sha256"
 
-if [ ! -d "$RELEASE" ]; then
-  mkdir -p "$RELEASE"
-  tar -xzf "$ARTIFACT" -C "$RELEASE"
+if [ -e "$RELEASE" ]; then
+  echo "Release directory already exists: $RELEASE" >&2
+  exit 1
 fi
+mkdir -p "$RELEASE"
+tar -xzf "$ARTIFACT" -C "$RELEASE"
 
 MANIFEST_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commitSha"])' "$RELEASE/release-manifest.json")"
 if [ "$MANIFEST_SHA" != "$SHA" ]; then
@@ -122,30 +135,45 @@ if [ "$EXPECTED_LOCK" != "$ACTUAL_LOCK" ]; then
   exit 1
 fi
 
+if [ ! -f "$RUNTIME_ENV_FILE" ]; then
+  echo "Missing runtime env file: $RUNTIME_ENV_FILE" >&2
+  exit 1
+fi
+if [ ! -f "$MIGRATOR_ENV_FILE" ]; then
+  echo "Missing migrator env file: $MIGRATOR_ENV_FILE" >&2
+  exit 1
+fi
+
 sha256sum "$ARTIFACT" | cut -d ' ' -f1 > "$RELEASE/artifact.sha256"
 chown root:www-data "$RELEASE"
 find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type d -exec chmod 0755 {} +
 find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type f -exec chmod 0644 {} +
 chmod 0755 "$RELEASE/ops/postgres/backup.sh" "$RELEASE/ops/postgres/restore-smoke.sh"
 
-if [ -d "$RELEASE/node_modules" ]; then
-  rm -rf "$RELEASE/node_modules"
-fi
-if [ -n "$PREVIOUS" ] && [ -d "$PREVIOUS/node_modules" ]; then
-  PREVIOUS_LOCK="$(sha256sum "$PREVIOUS/pnpm-lock.yaml" | cut -d ' ' -f1)"
-  if [ "$PREVIOUS_LOCK" = "$ACTUAL_LOCK" ]; then
-    cp -al "$PREVIOUS/node_modules" "$RELEASE/node_modules"
-  fi
-fi
-if [ ! -d "$RELEASE/node_modules" ]; then
-  corepack enable
-  corepack prepare pnpm@11.5.1 --activate
-  (cd "$RELEASE" && pnpm install --frozen-lockfile)
-fi
+rm -rf "$RELEASE/node_modules"
+corepack enable
+corepack prepare pnpm@11.5.1 --activate
+(cd "$RELEASE" && pnpm install --frozen-lockfile)
 chmod 0755 "$RELEASE/node_modules/.bin/prisma" || true
+(
+  cd "$RELEASE"
+  pnpm build
+  pnpm build:collector
+)
+
+(
+  set -a
+  . "$MIGRATOR_ENV_FILE"
+  set +a
+  DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
+  DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/seed-database.ts"
+)
 
 install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
+/usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+/usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
+
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
@@ -154,40 +182,18 @@ install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
 
-if [ ! -f "$MIGRATOR_ENV_FILE" ]; then
-  echo "Missing migrator env file: $MIGRATOR_ENV_FILE" >&2
-  exit 1
-fi
-set -a
-. "$MIGRATOR_ENV_FILE"
-set +a
-DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
-DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/seed-database.ts"
-
-/usr/local/bin/seo-monitor-db-backup.sh >/dev/null
-/usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
-
+trap post_switch_rollback ERR
 rm -f "$ROOT/current.next"
 ln -s "$RELEASE" "$ROOT/current.next"
 mv -Tf "$ROOT/current.next" "$ROOT/current"
 
 systemctl daemon-reload
-if ! nginx -t; then
-  rollback_previous
-  exit 1
-fi
+nginx -t
 systemctl reload nginx
-
-if ! systemctl restart seo-monitor-web.service; then
-  rollback_previous
-  exit 1
-fi
-
-if ! systemctl start seo-monitor-worker.service; then
-  rollback_previous
-  exit 1
-fi
-
+systemctl restart seo-monitor-web.service
+systemctl start seo-monitor-worker.service
+systemctl stop ams-seo-monitor.service >/dev/null 2>&1 || true
+systemctl disable --now ams-seo-monitor.timer >/dev/null 2>&1 || true
 systemctl enable --now seo-monitor-worker.timer
 systemctl enable --now seo-monitor-db-backup.timer
 systemctl is-active seo-monitor-web.service
@@ -195,14 +201,13 @@ systemctl is-active seo-monitor-worker.timer
 systemctl is-active seo-monitor-db-backup.timer
 curl -fsS http://127.0.0.1:3000/api/health/live >/dev/null
 curl -fsS http://127.0.0.1:3000/api/health/ready >/dev/null
-
 test -s "$ROOT/current/.next/standalone/server.js"
 test -s "$ROOT/current/dist-collector/src/worker/main.js"
 test -s "$ROOT/current/prisma/schema.prisma"
-
 rm -f "$ARTIFACT" "$CHECKSUM"
 printf '%s\n' "$PREVIOUS" > "$ROOT/shared/previous-release.txt"
 printf '%s\n' "$SHA" > "$ROOT/shared/deployed-sha.txt"
+trap - ERR
 `;
 
 const deployResult = spawnSync(

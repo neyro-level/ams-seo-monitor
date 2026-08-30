@@ -38,20 +38,13 @@ const artifactPath = path.join(artifactsDir, artifactName);
 await rm(stagingDir, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
 
-for (const directory of ["dist-collector", "config", "ops", "public", "prisma", "scripts"]) {
+for (const directory of ["collector", "config", "ops", "prisma", "public", "scripts", "src"]) {
   await cp(path.join(rootDir, directory), path.join(stagingDir, directory), {
     recursive: true,
   });
 }
 
-await cp(path.join(rootDir, ".next", "standalone"), path.join(stagingDir, ".next", "standalone"), {
-  recursive: true,
-});
-await cp(path.join(rootDir, ".next", "static"), path.join(stagingDir, ".next", "static"), {
-  recursive: true,
-});
-
-for (const file of ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "prisma.config.ts"]) {
+for (const file of ["next-env.d.ts", "next.config.ts", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "postcss.config.mjs", "prisma.config.ts", "tsconfig.collector.json", "tsconfig.json"]) {
   await cp(path.join(rootDir, file), path.join(stagingDir, file));
 }
 
@@ -81,7 +74,7 @@ const manifest = {
   runtime: "next-standalone-node-v24-linux-x64",
   artifactFormat: "tar.gz",
   dependencyLockSha256,
-  dependencyStrategy: "install-linux-dependencies-on-target-before-migrate-and-run",
+  dependencyStrategy: "install-linux-dependencies-and-build-on-target-before-migrate-and-run",
 };
 
 await writeFile(

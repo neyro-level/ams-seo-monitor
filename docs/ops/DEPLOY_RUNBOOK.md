@@ -33,18 +33,33 @@ systemd timer
 
 ## Deploy shape
 
-Immutable release must contain:
+Immutable release artifact stores reviewed source and checked-in runtime assets:
 
-- `.next/standalone`
-- `.next/static`
+- `src/`
+- `collector/`
 - `public/`
-- `dist-collector/`
 - `config/`
 - `ops/`
+- `prisma/`
+- `scripts/`
+- `next-env.d.ts`
+- `next.config.ts`
+- `postcss.config.mjs`
+- `tsconfig.json`
+- `tsconfig.collector.json`
 - `package.json`
 - `pnpm-lock.yaml`
 - `pnpm-workspace.yaml`
+- `prisma.config.ts`
 - `release-manifest.json`
+
+Windows builder does not package `.next/standalone` or `dist-collector/` directly. Linux target installs fresh dependencies from the reviewed lockfile, runs `pnpm build` and `pnpm build:collector` inside the immutable release, then applies migrations, seed and service switch.
+
+Retry rules:
+
+- active SHA is never rebuilt in place;
+- any pre-existing `releases/<sha>` directory is treated as stale and rejected;
+- any failure after the `current` switch must go through rollback before the deploy exits.
 
 ## Post-deploy smoke
 
