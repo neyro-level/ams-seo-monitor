@@ -6,13 +6,20 @@
     "rootDir": ".",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2023",
-    "lib": ["ES2023"],
+    "target": "ES2024",
+    "lib": ["ES2024", "DOM"],
+    "types": ["node"],
     "jsx": "react-jsx",
     "incremental": false,
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["collector/**/*.ts", "src/shared/schemas/**/*.ts"],
+  "include": [
+    "collector/**/*.ts",
+    "src/application/**/*.ts",
+    "src/infrastructure/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/worker/**/*.ts"
+  ],
   "exclude": ["node_modules", "tests", ".next", "dist-collector"]
 }

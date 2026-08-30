@@ -1,206 +1,38 @@
 # MASTER PLAN
 
-## Product route
+## Current branch state
 
-AMS SEO Monitor идёт в 3 macro waves:
+Completed in `work/background-migration`:
 
-1. Foundation
-2. Data, analytics and dashboards
-3. Access, release and operations
+- Next standalone server runtime;
+- PostgreSQL 18 local-only foundation on AMS Main Server;
+- Prisma schema, migrations and seed;
+- Better Auth foundation and login route;
+- analyst/client authorization model;
+- application services and Prisma repositories;
+- DB-backed worker sync;
+- DB-backed report loading;
+- health endpoints;
+- reverse-proxy/systemd runtime assets;
+- legacy filesystem sync path removed from active code path.
 
-## Production target
+## Blocker
 
-```text
-https://seo-monitor.ams24.ru
-```
+Not complete yet:
 
-Production active; exact deployed SHA и operational proof читаются из release manifest/server shared state.
+- offsite backup for PostgreSQL. Local backup and restore smoke are done, but S3-compatible bucket/credentials are absent in the available Doppler scope.
 
-## Current verified state
+## Open finalization work
 
-### Wave 1 — complete
+1. final docs sync and canon cleanup;
+2. PR creation for the branch;
+3. later: merge gate into `main` by explicit owner command;
+4. later: production deploy by explicit owner command.
 
-- separate SourceCraft repository;
-- core docs;
-- Next static export;
-- frozen shell;
-- client/site registry and routes;
-- snapshot schema/storage/locks/LKG;
-- responsive browser proof.
+## What must remain true
 
-### W4 Webmaster — complete for three REDACTED_CLIENT_DATA cities
-
-- OAuth preflight and exact verified hosts;
-- summary, diagnostics and sitemaps;
-- popular query pools by shows/clicks and devices;
-- indexing HTTP history;
-- pages-in-search history;
-- search appearance/removal events;
-- broken internal links history;
-- external links history;
-- endpoint-level partial collection;
-- safe errors/retry;
-- live proof: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA.
-
-### W5 Metrica — complete for three REDACTED_CLIENT_DATA cities
-
-- separate Metrica OAuth app/token;
-- exact counters and goals discovery;
-- per-site conversion allowlists;
-- all traffic and aligned Yandex organic periods;
-- bytime, landing pages and devices;
-- allowlisted per-goal stats;
-- sampling/privacy metadata;
-- safe 401/403/404/420/5xx behavior;
-- live proof: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA.
-
-## Current verified product state
-
-Works end-to-end locally:
-
-- one command synchronizes all three enabled REDACTED_CLIENT_DATA sites;
-- four fixed period presets align to the latest factual Webmaster date;
-- every preset includes the immediately preceding equal-length comparison;
-- Webmaster totals come from all-query history, not popular-query sums;
-- Metrica counts unique target visits through the allowlisted goal union;
-- normalized current/previous DTOs compile into period-aware snapshots;
-- detailed normalized source bundles remain internal for analyst tooling;
-- snapshots and browser-safe client reports publish atomically;
-- endpoint/source failure produces `partial` and preserves last-known-good data;
-- client routes load protected runtime JSON instead of fixtures;
-- client navigation contains only its own subtree;
-- static export contract and server-only secrets are preserved.
-
-Live local proof:
-
-```text
-REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA   → fresh
-REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
-REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA  → fresh
-```
-
-## W6 analytics status
-
-Implemented:
-
-- fixed presets: week 7, month 28 (default), quarter 90, half-year 180 days;
-- immediately preceding equal-period comparison;
-- total Webmaster shows/clicks/position history;
-- popular query pool merge by `queryId + device`;
-- unique target organic visits without double counting;
-- conversion and organic-share calculation;
-- KPI percent/percentage-point deltas;
-- position improvement direction;
-- minimum-baseline trend alerts;
-- initial deterministic opportunities;
-- deterministic query clusters from checked-in brand/topic terms;
-- period-aware report compiler/publication;
-- compact director dashboard.
-
-Still useful as the next analytics refinement:
-
-- richer opportunity scoring;
-- separate analyst UI for the preserved full source bundles.
-
-Aggregate `goalReaches` stays available only as actions; director conversion uses unique target visits.
-
-## Runtime pipeline acceptance
-
-- `pnpm collector:sync:REDACTED_CLIENT_DATA` publishes 12 current reports: 3 sites × 4 presets;
-- every report contains current and previous equal periods;
-- partial source refresh preserves period-specific LKG;
-- internal source bundles remain outside browser paths;
-- raw API responses and secrets are not published;
-- runtime report path follows `/c/{clientSlug}/data/{siteSlug}/{periodKey}/latest.json`;
-Nginx alias/security activation completed in Wave 3.
-
-## Director dashboard V2
-
-Release: Director Dashboard V2 merged into SourceCraft `main` through PR `!3`.
-
-The active contract is `docs/DIRECTOR_DASHBOARD_V2.md`:
-
-```text
-Все проекты
-→ Проект
-  → Сайт
-    → Единый отчёт
-```
-
-Implemented:
-
-- one unified report without tabs;
-- visible `Неделя / Месяц / 3 месяца / Полгода` selector with month default;
-- tracked query ranking dashboard before site health;
-- Top-3/Top-10 KPI and share chart with owner-provided fallback;
-- tracked-query table and filters;
-- Webmaster health, demand KPI and real shows/clicks chart;
-- Metrica traffic, target visits and landing pages;
-- client route navigation contains only its own project subtree;
-- `/demo/` remains separate from client data;
-- live client routes fetch protected runtime snapshots and show safe loading/error states;
-- mobile width constraints and softened active sidebar states.
-
-Page contract: `docs/SITE_REPORT_IA.md`.
-
-## Projects registry foundation
-
-Implemented without changing static/no-DB architecture:
-
-- product hierarchy `Все проекты → Проект → Сайты → Отчёты`;
-- read-only `/analyst/` replaces the removed common overview;
-- automatic build-time discovery of `config/clients/*.json`;
-- project readiness cards and source/site counts;
-- `pnpm project:add` interactive operator wizard;
-- dry-run and non-interactive flags;
-- no overwrite, no secrets, no commit/push/deploy;
-- rollback of generated files when registry validation fails.
-
-Internal `clientSlug`, `CLIENT_VIEWER` and `/c/*` remain compatible until a future standalone/database migration.
-
-## Multi-site behavior
-
-- `/c/{clientSlug}/` shows one compact card per site;
-- REDACTED_CLIENT_DATA contains REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA and REDACTED_CLIENT_DATA as enabled sites;
-- each site keeps its own periods and comparison;
-- different cities/markets are not summed into fake rank;
-- one-site clients still use the same architecture;
-- disabled future sites stay available as `Не подключён`.
-
-## Wave 3 — production active
-
-Implemented:
-
-- Nginx TLS and Basic Auth isolation matrix;
-- protected browser-safe report aliases;
-- immutable exact-main release artifact;
-- AMS Main Server atomic release switch;
-- hardened collector oneshot;
-- enabled daily timer;
-- live three-site sync;
-- private/no-store/noindex headers;
-- rollback pointer and release proof.
-
-Remaining operations:
-
-- external availability alerts;
-- token rotation drill;
-- SZ REDACTED_CLIENT_DATA production onboarding.
-
-## Current release state
-
-SourceCraft dashboard PR and deploy hotfix PR merged into `main`. Production deploy and authenticated smoke completed.
-
-Risk for future releases remains **HEAVY** when analytics/compiler/provider/runtime/infra changes are present.
-
-Release route:
-
-```text
-reviewed branch
-→ exact-head HEAVY gate
-→ SourceCraft main
-→ immutable artifact
-→ atomic AMS Main Server deploy
-→ auth/data/header/timer smoke
-→ rollback proof
-```
+- `SiteReportSnapshot` stays the browser contract;
+- SEO semantics stay unchanged;
+- PostgreSQL remains localhost-only;
+- Better Auth remains the application auth layer;
+- UI does not import Prisma.

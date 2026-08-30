@@ -1,3 +1,5 @@
+import "server-only";
+
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import {
@@ -132,15 +134,6 @@ export function getSiteBySlugs(clientSlug: string, siteSlug: string) {
   return client.sites.find((site) => site.siteSlug === siteSlug) ?? null;
 }
 
-export function getClientStaticParams() {
-  return parsedBundle.clients.map((client) => ({ clientSlug: client.clientSlug }));
-}
-
-export function getSiteStaticParams() {
-  return parsedBundle.clients.flatMap((client) =>
-    client.sites.map((site) => ({ clientSlug: client.clientSlug, siteSlug: site.siteSlug })),
-  );
-}
 
 export function getApprovedRoutes() {
   const routes = ["/", "/demo/", "/analyst/"];

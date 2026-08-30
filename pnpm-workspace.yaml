@@ -1,6 +1,12 @@
 allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
   sharp: true
   unrs-resolver: true
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+minimumReleaseAgeExclude:
+  - zod@4.5.4
+  - tsx@4.23.13

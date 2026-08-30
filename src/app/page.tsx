@@ -1,27 +1,38 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "../components/shell/AppShell";
 import { KpiCard } from "../components/dashboard/KpiCard";
 import { PageHeader } from "../components/dashboard/PageHeader";
 import { SectionCard } from "../components/dashboard/SectionCard";
+import { getCurrentAuthenticatedUser } from "../infrastructure/auth/session";
 import { buildAnalystOverview } from "../modules/dashboards/overview";
 
-export default function HomePage() {
-  const overview = buildAnalystOverview();
+export default async function HomePage() {
+  const user = await getCurrentAuthenticatedUser();
+  if (!user) {
+    redirect("/login/");
+  }
+
+  const overview = await buildAnalystOverview(user);
 
   return (
-    <AppShell currentPath="/">
+    <AppShell currentPath="/" user={user}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="АМС"
           title="AMS SEO Monitor"
           description="Приватный SEO-кабинет: проекты, сайты, Яндекс.Вебмастер, Метрика и управленческие отчёты."
           actions={
-            <Link
-              href="/analyst/"
-              className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
-            >
-              Все проекты
-            </Link>
+            user.systemRole === "SEO_ANALYST" ? (
+              <Link
+                href="/analyst/"
+                className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
+              >
+                Все проекты
+              </Link>
+            ) : null
           }
         />
 
@@ -32,12 +43,12 @@ export default function HomePage() {
           <KpiCard label="Плановые" value={String(overview.plannedSites)} tone="soft" />
         </section>
 
-        <SectionCard title="Текущий контур" note="Read-only MVP">
+        <SectionCard title="Текущий контур" note="Backend rebuild in progress">
           <ul className="grid gap-3 text-sm text-[var(--crm-text-secondary)] md:grid-cols-2">
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Проекты и сайты задаются проверяемой конфигурацией.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Webmaster и Metrica собираются read-only collector.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Snapshots публикуются атомарно по четырём периодам.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Production остаётся static export без БД и standalone backend.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Продуктовые роли и маршруты сохраняются при перестройке backend foundation.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Webmaster, Metrica и Topvisor остаются read-only provider adapters.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Следующая архитектура переводит runtime в Next server + PostgreSQL + Worker.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">SiteReportSnapshot и SEO semantics остаются browser-safe контрактом отчёта.</li>
           </ul>
         </SectionCard>
       </div>

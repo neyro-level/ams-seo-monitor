@@ -1,122 +1,95 @@
 # ARCHITECTURE
 
-## High-level target
+## Runtime
 
 ```text
+Browser
+→ Nginx reverse proxy
+→ Next.js App Router
+→ Application services
+→ Repository contracts
+→ Prisma repositories
+→ PostgreSQL
+
 systemd timer
-→ compiled Node collector
-→ Webmaster/Metrica source adapters
-→ normalized source DTO
-→ equal-period analytics + report compiler
-→ validated SiteReportSnapshot
-→ atomic publish into shared/
-→ protected Nginx data aliases
-→ static Next.js dashboard
+→ Worker
+→ provider adapters
+→ normalization
+→ PostgreSQL
+→ ReportSnapshot / SiteReportSnapshot
 ```
 
-## Runtime model
+Next.js больше не static export runtime. Production target — standalone Node application behind Nginx.
 
-Next.js использует `output: "export"` и не работает как постоянный web server. Nginx отдаёт immutable static release и отдельно защищённые report JSON. Collector запускается по `systemd` timer, читает Yandex APIs, публикует snapshots и завершается.
+## Layers
 
-Production URL:
+### Presentation
 
-```text
-https://seo-monitor.ams24.ru
-```
+- `src/app`
+- `src/components`
+- client/server React components
 
-Production activation остаётся отдельной Wave 3/release задачей.
+Presentation не импортирует Prisma и не знает provider APIs.
 
-## Implemented now
+### Application
 
-- static routes from checked-in registry;
-- build-time project registry discovers every `config/clients/*.json` and matching goal profile;
-- `pnpm project:add` creates new nonsecret project/site config without a backend or DB;
-- three enabled REDACTED_CLIENT_DATA cities: REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA, REDACTED_CLIENT_DATA;
-- frozen full-width dashboard shell;
-- complete read-only Webmaster/Metrica source adapters;
-- total Webmaster history and popular-query detail pools;
-- unique target organic visits across allowlisted goals;
-- 7/28/90/180-day current and previous aligned periods;
-- period-aware normalized source bundles and report compiler;
-- atomic internal snapshot and browser report publication;
-- endpoint/source partial handling and period-specific LKG;
-- protected runtime report loader with Zod validation;
-- live local proof for all sites and presets.
+- `src/application/services`
+- `src/application/ports`
 
-Runtime chain:
+Здесь находятся use cases, repository contracts и orchestration.
 
-```text
-source DTO
-→ report compiler
-→ SiteReportSnapshot
-→ atomic snapshots/source-bundles/client-reports publish
-→ /c/{client}/data/{site}/{period}/latest.json
-→ browser validation
-→ unified director report
-```
+### Infrastructure
 
-## Data dependency direction
+- `src/infrastructure/database`
+- `src/infrastructure/auth`
+- `collector/sources/*`
 
-```text
-registry/threshold/goal config
-→ source adapters
-→ normalized source DTO
-→ equal-period selectors and deterministic calculations
-→ SiteReportSnapshot
-→ report view model
-→ dashboard components
-```
+Infrastructure знает Prisma, Better Auth и provider transport.
 
-Второй параллельный report format запрещён.
+### Worker
 
-## Remaining runtime work
+- `src/worker`
 
-1. Add external availability/freshness alerting.
-2. Build analyst-only views from preserved internal source bundles.
-3. Optionally enable live Topvisor mapping after credentials/owner decision.
-4. Onboard SZ REDACTED_CLIENT_DATA after exact sources/auth inputs.
+Worker выполняет sync runs, source runs, historical persistence и report snapshot compilation.
 
-Production static release, protected aliases, collector oneshot and daily timer are active.
+## Core invariants
 
-## Frontend IA
+- UI → Service → Repository Contract → Prisma Repository → PostgreSQL;
+- `SiteReportSnapshot` остаётся browser contract;
+- Better Auth — application auth layer;
+- `CLIENT_VIEWER` isolation проверяется server-side, не navigation filter;
+- filesystem не используется как runtime source of truth;
+- old file-based sync path удалён.
 
-- `/analyst/` — read-only `Все проекты` and readiness;
-- `/c/{clientSlug}/` — project overview and site selection without fake aggregate ranking;
-- `/c/{clientSlug}/{siteSlug}/` — one unified director report.
+## Data ownership
 
-Contracts: `docs/SITE_REPORT_IA.md`, `docs/DIRECTOR_DASHBOARD_V2.md`.
+- PostgreSQL хранит organizations, projects, sites, provider connections, tracked queries, sync runs, historical metrics, ranking captures, technical snapshots и report snapshots.
+- `config/*` остаётся seed/input material, не production runtime registry.
+- `collector/orchestration/report-compiler.ts` остаётся shared pure compiler.
 
-## Code zones
+## Runtime surfaces
 
-```text
-src/app/                                  static routes
-src/modules/access/                       navigation metadata
-src/modules/client-registry/              registry and static params
-src/modules/report-data/                  browser report loading
-src/modules/dashboards/                   report view models
-src/components/                           frozen UI primitives
-src/shared/schemas/                       registry/source/snapshot schemas
+- web app routes under `/`, `/analyst/`, `/c/*`, `/login/`;
+- auth route `/api/auth/[...all]`;
+- health routes `/api/health/live`, `/api/health/ready`;
+- worker entry `src/worker/main.ts`.
 
-collector/sources/yandex-webmaster/        Webmaster adapter
-collector/sources/yandex-metrica/          Metrica adapter
-collector/sources/topvisor/                optional ranking source
-collector/analytics/                       periods/query analytics
-collector/orchestration/                   config, sync and report compiler
-collector/storage/                         atomic publish/locks/LKG
-scripts/project-add.mjs                    interactive operator wizard
-scripts/project-config.mjs                 safe config builder/write boundary
-```
+## Production assets
 
-Module contracts:
+- `ops/nginx/ams-seo-monitor.conf`
+- `ops/systemd/seo-monitor-web.service`
+- `ops/systemd/seo-monitor-worker.service`
+- `ops/systemd/seo-monitor-worker.timer`
+- `ops/systemd/seo-monitor-db-backup.service`
+- `ops/systemd/seo-monitor-db-backup.timer`
 
-- `docs/modules/MODULE_PROJECT_REGISTRY.md`;
-- `docs/modules/MODULE_DATA_PIPELINE.md`;
-- `docs/modules/MODULE_RANKING_ANALYTICS.md`;
-- `docs/DIRECTOR_DASHBOARD_V2.md`.
+## Removed legacy path
 
-## Security boundary
+Удалены из active architecture:
 
-- Browser never receives OAuth/client secrets.
-- Collector uses GET-only Yandex endpoints.
-- Nginx must protect HTML and matching data aliases.
-- Client isolation is a path/server invariant, not a frontend filter.
+- file snapshot publish pipeline;
+- fs locks and LKG filesystem storage;
+- `/data/latest.json` browser fetch path;
+- static route generation dependency;
+- Basic Auth as application authorization;
+- old collector service/timer pair.

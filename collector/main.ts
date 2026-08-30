@@ -1,7 +1,13 @@
-import { syncClientSites } from "./orchestration/client-sync";
-import { createMetricaClient, readMetricaEnvironment } from "./sources/yandex-metrica/client";
+import { syncProjectToDatabase } from "../src/worker/sync-project";
+import {
+  createMetricaClient,
+  readMetricaEnvironment,
+} from "./sources/yandex-metrica/client";
 import { MetricaSafeError } from "./sources/yandex-metrica/http";
-import { createWebmasterClient, readWebmasterEnvironment } from "./sources/yandex-webmaster/client";
+import {
+  createWebmasterClient,
+  readWebmasterEnvironment,
+} from "./sources/yandex-webmaster/client";
 import { WebmasterSafeError } from "./sources/yandex-webmaster/http";
 
 async function main() {
@@ -10,34 +16,33 @@ async function main() {
   if (command === "webmaster-preflight" || command === "webmaster-audit") {
     const config = readWebmasterEnvironment(process.env);
     const client = createWebmasterClient(config);
-    const result = command === "webmaster-preflight" ? await client.preflight() : await client.collectSiteData();
-    process.stdout.write(`${JSON.stringify(result, null, 2)}
-`);
+    const result =
+      command === "webmaster-preflight"
+        ? await client.preflight()
+        : await client.collectSiteData();
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
 
   if (command === "metrica-preflight" || command === "metrica-audit") {
     const config = readMetricaEnvironment(process.env);
     const client = createMetricaClient(config);
-    const result = command === "metrica-preflight" ? await client.preflight() : await client.collectSiteData();
-    process.stdout.write(`${JSON.stringify(result, null, 2)}
-`);
+    const result =
+      command === "metrica-preflight"
+        ? await client.preflight()
+        : await client.collectSiteData();
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
 
   if (command === "client-sync") {
-    const clientSlug = process.argv[3];
-    const sharedDir = process.env.AMS_SEO_MONITOR_SHARED_DIR?.trim();
-    if (!clientSlug) {
-      throw new Error("client-sync requires a client slug");
-    }
-    if (!sharedDir) {
-      throw new Error("Required environment variable is missing: AMS_SEO_MONITOR_SHARED_DIR");
+    const projectSlug = process.argv[3];
+    if (!projectSlug) {
+      throw new Error("client-sync requires a project slug");
     }
 
-    const result = await syncClientSites({
-      clientSlug,
-      sharedDir,
+    const result = await syncProjectToDatabase({
+      projectSlug,
       env: process.env,
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -55,14 +60,12 @@ main().catch((error) => {
         endpoint: error.endpoint,
         status: error.status,
         message: error.message,
-      })}
-`,
+      })}\n`,
     );
     process.exitCode = 1;
     return;
   }
 
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}
-`);
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
 });

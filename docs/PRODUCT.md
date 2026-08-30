@@ -1,24 +1,27 @@
 # PRODUCT
 
-## Проблема
+## Назначение
 
-АМС ведёт несколько клиентов и несколько сайтов. Нужен единый приватный сервис, который собирает подтверждённые SEO-данные, хранит историю и показывает клиенту понятный отчёт без доступа к техническим кабинетам Яндекса и без внедрения аналитики внутрь каждого сайта.
+AMS SEO Monitor — приватный кабинет АМС для регулярного контроля поисковой видимости, технического состояния, органического трафика и целевых действий по нескольким проектам и сайтам.
 
-## Ценность
+Система не изменяет сайты и не делает provider mutations. Она показывает готовый управленческий отчёт на основе read-only data.
 
-Для АМС:
+## Пользователи
 
-- единый SEO-monitoring контур;
-- меньше ручных отчётов;
-- повторяемый onboarding;
-- история изменений и ошибок индексации.
+### SEO_ANALYST
 
-Для клиента:
+- видит все проекты и сайты;
+- открывает analyst dashboard;
+- видит readiness и source status;
+- использует внутренние рабочие потоки синхронизации и detail data;
+- не получает provider credentials через UI.
 
-- одна защищённая ссылка;
-- понятные KPI и динамика;
-- честные caveats и точки роста;
-- печать/PDF без ручной сборки.
+### CLIENT_VIEWER
+
+- видит только проекты и сайты своей organization;
+- открывает только свои director reports;
+- не видит соседние tenants;
+- не видит internal technical snapshots и provider credentials.
 
 ## Product hierarchy
 
@@ -26,69 +29,47 @@
 Все проекты
 → Проект
   → Сайты
-    → Отчёты
+    → Единый отчёт
 ```
 
-В пользовательском интерфейсе `REDACTED_CLIENT_DATA` и `Союз застройщиков` — проекты. Внутренние `clientSlug`, `CLIENT_VIEWER` и `/c/*` временно сохраняются как совместимый access/data contract.
+`clientSlug` и `/c/*` сохраняются как рабочий URL/data contract.
 
-Новый проект в MVP создаётся через `pnpm project:add`: wizard пишет только nonsecret config, не перезаписывает существующие файлы и не выполняет commit/push/deploy.
+## Директорский отчёт
 
-## Пользователи
+Один site report без вкладок показывает:
 
-### SEO_ANALYST
+1. ranking утверждённого ядра;
+2. Top-3 / Top-10 и динамику;
+3. tracked queries;
+4. technical health и indexing;
+5. Webmaster demand metrics;
+6. Metrica traffic / target visits / conversion;
+7. landing pages;
+8. alerts и opportunities.
 
-- видит overview всех клиентов;
-- видит sync health и stale/partial статусы;
-- открывает все client/site reports.
+## Product rules
 
-### CLIENT_VIEWER
+- `SiteReportSnapshot` — единственный browser-safe DTO;
+- partial/stale/null показываются честно;
+- source, period и baseline labels видимы;
+- current и previous periods равны по длине;
+- разные сайты не агрегируются в fake rank.
 
-- видит только своего клиента;
-- не видит соседних клиентов;
-- не видит внутренние IDs, OAuth и file paths.
+## Current product state
 
-### COLLECTOR
+В этой ветке продукт уже работает как full-stack foundation:
 
-- читает registry;
-- получает OAuth из server env;
-- читает только утверждённые GET endpoints;
-- пишет snapshots;
-- не обслуживает browser requests.
+- analyst/client access через Better Auth;
+- data и runtime через PostgreSQL;
+- worker sync отдельно от web runtime;
+- report pages читают DB-backed snapshots;
+- filesystem больше не является runtime product DB.
 
-## Первые проекты
+## Non-goals
 
-- `REDACTED_CLIENT_DATA`
-  - `REDACTED_CLIENT_DATA` — подтверждённый URL `https://REDACTED_CLIENT_DATA`
-  - `REDACTED_CLIENT_DATA` — confirmed `https://REDACTED_CLIENT_DATA`
-  - `REDACTED_CLIENT_DATA` — confirmed `https://REDACTED_CLIENT_DATA`
-- `REDACTED_CLIENT_DATA`
-  - `REDACTED_CLIENT_DATA` — planned until confirmed onboarding inputs
-
-
-## Cabinet experience
-
-- директор открывает один единый report сайта без вкладок;
-- первым идёт результат утверждённого поискового ядра: Топ-3/Топ-10 и ranking dynamics;
-- ниже расположены техническое здоровье, Webmaster demand и Metrica traffic/conversions;
-- client с несколькими sites сначала выбирает site на project overview;
-- показатели разных городов не складываются в искусственный общий рейтинг;
-- analyst получает readiness/source detail и будущие internal analyst views;
-- production URL: `https://seo-monitor.ams24.ru`.
-
-## Non-goals MVP
-
-- не CRM;
-- не task tracker;
-- не billing SaaS;
-- не editor сайтов;
-- не raw user-level Metrica Logs API;
-- не автоматический SEO-оптимизатор.
-
-## Product contract MVP
-
-- static private dashboard;
-- read-only Yandex data;
-- history via versioned JSON snapshots;
-- multiple projects and sites;
-- no database in MVP;
-- clean migration path to future DB/auth stack.
+- public signup;
+- public reports;
+- provider write access;
+- CRM/catalog/leads product scope из других AMS-репозиториев;
+- direct search-query to lead attribution;
+- second frontend/backend architecture рядом с основной.

@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DB_NAME="${DB_NAME:-seo_monitor_prod}"
+BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/ams-seo-monitor-postgres}"
+KEEP_DAILY="${KEEP_DAILY:-7}"
+KEEP_WEEKLY="${KEEP_WEEKLY:-8}"
+KEEP_MONTHLY="${KEEP_MONTHLY:-6}"
+S3_BUCKET="${S3_BUCKET:-}"
+S3_ENDPOINT="${S3_ENDPOINT:-}"
+S3_REGION="${S3_REGION:-ru-1}"
+TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+TMP_DIR="${BACKUP_ROOT}/tmp"
+DAILY_DIR="${BACKUP_ROOT}/daily"
+WEEKLY_DIR="${BACKUP_ROOT}/weekly"
+MONTHLY_DIR="${BACKUP_ROOT}/monthly"
+FILENAME="${DB_NAME}-${TIMESTAMP}.dump"
+DAILY_PATH="${DAILY_DIR}/${FILENAME}"
+LATEST_PATH="${BACKUP_ROOT}/latest.dump"
+LATEST_SHA_PATH="${BACKUP_ROOT}/latest.dump.sha256"
+DAY_OF_WEEK="$(date -u +%u)"
+DAY_OF_MONTH="$(date -u +%d)"
+
+mkdir -p "${TMP_DIR}" "${DAILY_DIR}" "${WEEKLY_DIR}" "${MONTHLY_DIR}"
+TMP_PATH="$(mktemp "${TMP_DIR}/.${DB_NAME}.${TIMESTAMP}.XXXXXX.dump")"
+
+cleanup() {
+  rm -f "${TMP_PATH}"
+}
+trap cleanup EXIT
+
+pg_dump --format=custom --file "${TMP_PATH}" "${DB_NAME}"
+mv "${TMP_PATH}" "${DAILY_PATH}"
+sha256sum "${DAILY_PATH}" > "${DAILY_PATH}.sha256"
+ln -sfn "${DAILY_PATH}" "${LATEST_PATH}"
+cp "${DAILY_PATH}.sha256" "${LATEST_SHA_PATH}"
+
+if [ "${DAY_OF_WEEK}" = "7" ]; then
+  cp -p "${DAILY_PATH}" "${WEEKLY_DIR}/${FILENAME}"
+  cp -p "${DAILY_PATH}.sha256" "${WEEKLY_DIR}/${FILENAME}.sha256"
+fi
+
+if [ "${DAY_OF_MONTH}" = "01" ]; then
+  cp -p "${DAILY_PATH}" "${MONTHLY_DIR}/${FILENAME}"
+  cp -p "${DAILY_PATH}.sha256" "${MONTHLY_DIR}/${FILENAME}.sha256"
+fi
+
+prune_group() {
+  local dir="$1"
+  local keep="$2"
+  mapfile -t files < <(find "${dir}" -maxdepth 1 -type f -name '*.dump' -printf '%P\n' | sort -r)
+  local count="${#files[@]}"
+  if [ "${count}" -le "${keep}" ]; then
+    return 0
+  fi
+  local index
+  for ((index=keep; index<count; index+=1)); do
+    rm -f "${dir}/${files[${index}]}" "${dir}/${files[${index}]}.sha256"
+  done
+}
+
+prune_group "${DAILY_DIR}" "${KEEP_DAILY}"
+prune_group "${WEEKLY_DIR}" "${KEEP_WEEKLY}"
+prune_group "${MONTHLY_DIR}" "${KEEP_MONTHLY}"
+
+if [ -n "${S3_BUCKET}" ] && [ -n "${S3_ENDPOINT}" ] && command -v aws >/dev/null 2>&1; then
+  aws s3 cp "${DAILY_PATH}" "s3://${S3_BUCKET}/daily/${FILENAME}" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}"
+  aws s3 cp "${DAILY_PATH}.sha256" "s3://${S3_BUCKET}/daily/${FILENAME}.sha256" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}"
+  echo "backup_status=local+offsite"
+else
+  echo "backup_status=local_only"
+fi
+
+echo "backup_file=${DAILY_PATH}"
+echo "backup_sha256_file=${DAILY_PATH}.sha256"

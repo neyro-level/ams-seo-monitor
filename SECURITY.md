@@ -1,84 +1,64 @@
 # SECURITY
 
-## Роль документа
-
-Этот файл фиксирует security-инварианты AMS SEO Monitor для MVP на static export без application backend auth.
-
 ## Trust boundaries
 
 ### Browser
 
-Browser получает только защищённые статические HTML/CSS/JS и report JSON DTO. Browser не имеет OAuth tokens, client secrets, htpasswd hashes и прямого доступа к Yandex APIs.
+Browser получает только authenticated HTML/JS/CSS и browser-safe report DTO. Browser не получает provider credentials, raw provider payloads и internal technical snapshots.
 
-### Collector
+### Next.js application
 
-Collector — единственный runtime, который читает Yandex APIs. Он запускается как `systemd` oneshot, берёт секреты из server env, нормализует ответы и пишет только safe snapshots.
+- Better Auth отвечает за session auth;
+- route/page access проверяется server-side;
+- analyst/client isolation не опирается на скрытые ссылки;
+- health endpoints не раскрывают secrets.
+
+### PostgreSQL
+
+- localhost-only access;
+- runtime roles separated: app vs migrator;
+- no public DB exposure;
+- backup/restore mandatory.
+
+### Worker
+
+- единственный runtime, который синхронизирует providers;
+- пишет SyncRun, SourceRun, historical metrics, ranking captures, technical snapshots и report snapshots;
+- не обслуживает browser requests.
 
 ### Nginx
 
-Production access boundary — Nginx HTTPS + Basic Auth per protected location. Он защищает не только HTML-страницы, но и соответствующие data paths.
+- TLS;
+- reverse proxy;
+- private/no-store/noindex headers;
+- не является application auth system.
 
-## MVP security rules
+## Roles
 
-- Только read-only Yandex scopes: `webmaster:hostinfo` и `metrika:read`.
-- Topvisor разрешает только read-only position history; checker/import/add/edit/delete запрещены.
-- Никаких write endpoints providers.
-- Никаких URL tokens, secret links и password query params.
-- Никаких cookies/sessions/application auth в MVP.
-- Никаких секретов в `config/` или tracked query sets.
-- Никаких raw API responses и secret-bearing error bodies в snapshots.
-- Internal source bundles не публикуются в browser paths.
-- Никаких secrets в logs.
-- Никаких browser-to-provider API calls.
+### SEO_ANALYST
 
-## Что считается секретом
+Видит все projects/sites/reports.
 
-- OAuth access token;
-- client secret;
-- full authorization header;
-- htpasswd file content;
-- runtime env values;
-- raw error bodies от Yandex API;
-- личные идентификаторы пользователей.
+### CLIENT_VIEWER
 
-## Nonsecret config
+Видит только organization-scoped data.
 
-В Git допустимы только:
+## Security invariants
 
-- client/site slugs;
-- display names;
-- confirmed public site URLs;
-- placeholder URLs для disabled planned sites;
-- cluster profiles;
-- goal-profile names;
-- alert thresholds.
-- tracked query text, owner baseline and nonsecret Topvisor project/region mapping.
+- Better Auth public signup disabled;
+- provider tokens остаются в server environment;
+- Prisma и DB URLs не попадают в browser;
+- direct Prisma/SQL in UI prohibited;
+- provider APIs not callable from browser;
+- foreign project/site/report access denied server-side;
+- local PostgreSQL port not exposed publicly;
+- backup secrets not stored in Git.
 
-## Production model
+## Current state
 
-Секреты хранятся в Doppler как source of truth и материализуются в `/etc/ams-platform/ams-seo-monitor.env`. В Git этот файл не попадает.
-
-Planned auth files:
-
-```text
-/etc/ams-platform/ams-seo-monitor-auth/
-├── analyst.htpasswd
-├── REDACTED_CLIENT_DATA.htpasswd
-└── REDACTED_CLIENT_DATA.htpasswd
-```
-
-Production materialized env, bcrypt htpasswd files, TLS and protected Nginx aliases are active. Values remain outside Git and release artifacts.
-
-## Verification focus
-
-Проверки должны ловить:
-
-- secret absence in Git/build/browser/logs;
-- wrong client auth denial;
-- matching HTML/data path protection;
-- analyst access to allowed subtrees;
-- no directory index/default-host bypass;
-- no raw/internal source bundle in client paths;
-- valid project/source/tracked-query config;
-- snapshot schema drift;
-- exact deployed SHA and rollback readiness.
+- auth route wired;
+- login page exists;
+- analyst/client route gating работает;
+- health routes работают;
+- local backup + restore smoke работают;
+- offsite backup ещё не закрыт из-за отсутствия доступных credentials/bucket.

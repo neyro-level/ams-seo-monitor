@@ -183,9 +183,17 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
     date2?: string;
     landingLimit?: number;
     includeDetails?: boolean;
+    allowedGoals?: MetricaAllowedGoal[];
+    timezone?: string;
   }) {
-    const siteConfig = await findSiteConfigByUrl(`https://${config.targetSiteUrl}`);
-    if (!siteConfig) {
+    const access = await resolveCounterBySite();
+    const includeDetails = options?.includeDetails ?? true;
+    const goals = includeDetails ? normalizeGoals(await listGoals(access.counterId)) : [];
+    const siteConfig = options?.allowedGoals
+      ? null
+      : await findSiteConfigByUrl(`https://${config.targetSiteUrl}`);
+
+    if (!options?.allowedGoals && !siteConfig) {
       throw new MetricaSafeError({
         code: "INVALID_RESPONSE",
         endpoint: "config:clients",
@@ -193,17 +201,16 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
       });
     }
 
-    const access = await resolveCounterBySite();
-    const includeDetails = options?.includeDetails ?? true;
-    const goals = includeDetails ? normalizeGoals(await listGoals(access.counterId)) : [];
-    const allowedGoals = getAllowedGoalsForSite({
-      site: siteConfig.site,
-      goalProfile: siteConfig.goalProfile,
-    });
+    const allowedGoals =
+      options?.allowedGoals ??
+      getAllowedGoalsForSite({
+        site: siteConfig!.site,
+        goalProfile: siteConfig!.goalProfile,
+      });
     const goalReachesMetrics = buildGoalReachMetrics(
       allowedGoals.map((goal) => goal.goalId),
     );
-    const timezone = siteConfig.site.timezone;
+    const timezone = options?.timezone ?? siteConfig!.site.timezone;
     const commonDates = {
       date1: options?.date1 ?? "30daysAgo",
       date2: options?.date2 ?? "today",
