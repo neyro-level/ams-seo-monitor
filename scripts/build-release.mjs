@@ -38,7 +38,7 @@ const artifactPath = path.join(artifactsDir, artifactName);
 await rm(stagingDir, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
 
-for (const directory of ["dist-collector", "config", "ops", "public", "prisma", "node_modules"]) {
+for (const directory of ["dist-collector", "config", "ops", "public", "prisma"]) {
   await cp(path.join(rootDir, directory), path.join(stagingDir, directory), {
     recursive: true,
   });
@@ -81,7 +81,7 @@ const manifest = {
   runtime: "next-standalone-node-v24-linux-x64",
   artifactFormat: "tar.gz",
   dependencyLockSha256,
-  dependencyStrategy: "bundle-root-node-modules-standalone-and-compiled-worker",
+  dependencyStrategy: "install-linux-dependencies-on-target-before-migrate-and-run",
 };
 
 await writeFile(

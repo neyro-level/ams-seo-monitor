@@ -61,9 +61,13 @@ CHECKSUM="/tmp/$ARTIFACT_NAME.sha256"
 PREVIOUS="$(readlink -f "$ROOT/current" || true)"
 NGINX_LIVE=/etc/nginx/sites-available/ams-seo-monitor.conf
 NGINX_BACKUP="$ROOT/shared/previous-nginx.conf"
-ENV_FILE=/etc/ams-platform/ams-seo-monitor.env
+RUNTIME_ENV_FILE=/etc/ams-platform/ams-seo-monitor.env
+MIGRATOR_ENV_FILE=/etc/ams-platform/ams-seo-monitor-migrator.env
 
 rollback_previous() {
+  systemctl stop seo-monitor-worker.service seo-monitor-web.service >/dev/null 2>&1 || true
+  systemctl disable --now seo-monitor-worker.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
+
   if [ -n "$PREVIOUS" ]; then
     rm -f "$ROOT/current.rollback"
     ln -s "$PREVIOUS" "$ROOT/current.rollback"
@@ -92,6 +96,7 @@ rollback_previous() {
       nginx -t
       systemctl reload nginx
       systemctl restart ams-seo-monitor.service || true
+      systemctl enable --now ams-seo-monitor.timer >/dev/null 2>&1 || true
     fi
   fi
 }
@@ -119,9 +124,25 @@ fi
 
 sha256sum "$ARTIFACT" | cut -d ' ' -f1 > "$RELEASE/artifact.sha256"
 chown root:www-data "$RELEASE"
-find "$RELEASE" -type d -exec chmod 0755 {} +
-find "$RELEASE" -type f -exec chmod 0644 {} +
+find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type d -exec chmod 0755 {} +
+find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type f -exec chmod 0644 {} +
 chmod 0755 "$RELEASE/ops/postgres/backup.sh" "$RELEASE/ops/postgres/restore-smoke.sh"
+
+if [ -d "$RELEASE/node_modules" ]; then
+  rm -rf "$RELEASE/node_modules"
+fi
+if [ -n "$PREVIOUS" ] && [ -d "$PREVIOUS/node_modules" ]; then
+  PREVIOUS_LOCK="$(sha256sum "$PREVIOUS/pnpm-lock.yaml" | cut -d ' ' -f1)"
+  if [ "$PREVIOUS_LOCK" = "$ACTUAL_LOCK" ]; then
+    cp -al "$PREVIOUS/node_modules" "$RELEASE/node_modules"
+  fi
+fi
+if [ ! -d "$RELEASE/node_modules" ]; then
+  corepack enable
+  corepack prepare pnpm@11.5.1 --activate
+  (cd "$RELEASE" && pnpm install --frozen-lockfile)
+fi
+chmod 0755 "$RELEASE/node_modules/.bin/prisma" || true
 
 install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
@@ -133,10 +154,17 @@ install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
 
+if [ ! -f "$MIGRATOR_ENV_FILE" ]; then
+  echo "Missing migrator env file: $MIGRATOR_ENV_FILE" >&2
+  exit 1
+fi
 set -a
-. "$ENV_FILE"
+. "$MIGRATOR_ENV_FILE"
 set +a
-DATABASE_URL="\${DIRECT_URL:-\${DATABASE_URL:-}}" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
+DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
+
+/usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+/usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
 
 rm -f "$ROOT/current.next"
 ln -s "$RELEASE" "$ROOT/current.next"
@@ -166,11 +194,6 @@ systemctl is-active seo-monitor-worker.timer
 systemctl is-active seo-monitor-db-backup.timer
 curl -fsS http://127.0.0.1:3000/api/health/live >/dev/null
 curl -fsS http://127.0.0.1:3000/api/health/ready >/dev/null
-
-if ! /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null; then
-  rollback_previous
-  exit 1
-fi
 
 test -s "$ROOT/current/.next/standalone/server.js"
 test -s "$ROOT/current/dist-collector/src/worker/main.js"
