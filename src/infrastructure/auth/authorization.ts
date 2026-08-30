@@ -1,11 +1,15 @@
 import "server-only";
 
+import { ProjectService } from "../../application/services/project-service";
+import { PrismaProjectRepository } from "../database/repositories/prisma-project-repository";
 import { getPrismaClient } from "../database/prisma/client";
 import type {
   AuthenticatedUser,
   AuthorizedProjectAccess,
   AuthorizedSiteAccess,
 } from "./types";
+
+const projectService = new ProjectService(new PrismaProjectRepository());
 
 export async function getAuthenticatedUserById(userId: string): Promise<AuthenticatedUser | null> {
   const user = await getPrismaClient().user.findUnique({
@@ -36,47 +40,15 @@ export async function getAuthorizedProjectAccess(
   user: AuthenticatedUser,
   projectSlug: string,
 ): Promise<AuthorizedProjectAccess | null> {
-  const project = await getPrismaClient().project.findUnique({
-    where: { slug: projectSlug },
-    select: {
-      id: true,
-      slug: true,
-      organizationId: true,
-    },
-  });
-
+  const project = await projectService.getProjectAccessForUser(user, projectSlug);
   if (!project) {
-    return null;
-  }
-
-  if (user.systemRole === "SEO_ANALYST") {
-    return {
-      organizationId: project.organizationId,
-      projectId: project.id,
-      projectSlug: project.slug,
-    };
-  }
-
-  const membership = await getPrismaClient().member.findUnique({
-    where: {
-      organizationId_userId: {
-        organizationId: project.organizationId,
-        userId: user.userId,
-      },
-    },
-    select: {
-      organizationId: true,
-    },
-  });
-
-  if (!membership) {
     return null;
   }
 
   return {
     organizationId: project.organizationId,
-    projectId: project.id,
-    projectSlug: project.slug,
+    projectId: project.projectId,
+    projectSlug: project.projectSlug,
   };
 }
 
@@ -85,53 +57,16 @@ export async function getAuthorizedSiteAccess(
   projectSlug: string,
   siteSlug: string,
 ): Promise<AuthorizedSiteAccess | null> {
-  const site = await getPrismaClient().site.findFirst({
-    where: {
-      slug: siteSlug,
-      project: {
-        slug: projectSlug,
-      },
-    },
-    select: {
-      id: true,
-      slug: true,
-      projectId: true,
-      project: {
-        select: {
-          slug: true,
-          organizationId: true,
-        },
-      },
-    },
-  });
-
+  const site = await projectService.getSiteAccessForUser(user, projectSlug, siteSlug);
   if (!site) {
     return null;
   }
 
-  if (user.systemRole !== "SEO_ANALYST") {
-    const membership = await getPrismaClient().member.findUnique({
-      where: {
-        organizationId_userId: {
-          organizationId: site.project.organizationId,
-          userId: user.userId,
-        },
-      },
-      select: {
-        organizationId: true,
-      },
-    });
-
-    if (!membership) {
-      return null;
-    }
-  }
-
   return {
-    organizationId: site.project.organizationId,
+    organizationId: site.organizationId,
     projectId: site.projectId,
-    siteId: site.id,
-    projectSlug: site.project.slug,
-    siteSlug: site.slug,
+    siteId: site.siteId,
+    projectSlug: site.projectSlug,
+    siteSlug: site.siteSlug,
   };
 }
