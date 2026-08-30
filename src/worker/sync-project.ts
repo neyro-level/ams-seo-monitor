@@ -7,13 +7,14 @@ import {
 import {
   createLiveSiteCollectors,
   type SiteSourceCollectors,
-} from "../../collector/orchestration/client-sync";
+} from "../../collector/orchestration/live-collectors";
 import {
   compileSiteReportSnapshot,
   type SafeSourceFailure,
 } from "../../collector/orchestration/report-compiler";
 import type { MetricaSiteAudit } from "../shared/schemas/metrica-source";
 import type { TopvisorSiteData } from "../shared/schemas/rank-source";
+import type { GoalProfile } from "../shared/schemas/registry";
 import type { ReportPeriodKey, SiteReportSnapshot } from "../shared/schemas/report";
 import type { WebmasterSiteData } from "../shared/schemas/webmaster-source";
 import { MonitoringService } from "../application/services/monitoring-service";
@@ -48,6 +49,20 @@ export interface SyncProjectToDatabaseResult {
   status: "success" | "partial" | "failed";
   sites: SyncProjectSiteResult[];
 }
+
+const GOAL_CATEGORY_BY_METRICA_CATEGORY = {
+  lead_submit: "LEAD_SUBMIT",
+  phone_click: "PHONE_CLICK",
+  messenger_click: "MESSENGER_CLICK",
+  form_start: "FORM_START",
+  file_download: "FILE_DOWNLOAD",
+  other: "OTHER",
+} as const;
+
+const GOAL_DIRECTION_BY_METRICA_DIRECTION = {
+  primary: "PRIMARY",
+  secondary: "SECONDARY",
+} as const;
 
 function toSafeFailure(error: unknown): SafeSourceFailure {
   if (error && typeof error === "object" && "code" in error) {
@@ -119,15 +134,17 @@ function getSourceStatusForPeriod(
     return snapshot.sources.metrica;
   }
 
-  return snapshot.sources.topvisor ?? {
-    status: "not_configured",
-    fetchedAt: snapshot.generatedAt,
-    periodStart: null,
-    periodEnd: null,
-    timezone: "+00:00",
-    note: null,
-    safeErrorCode: null,
-  };
+  return (
+    snapshot.sources.topvisor ?? {
+      status: "not_configured",
+      fetchedAt: snapshot.generatedAt,
+      periodStart: null,
+      periodEnd: null,
+      timezone: "+00:00",
+      note: null,
+      safeErrorCode: null,
+    }
+  );
 }
 
 function normalizeTrackedQuery(value: string) {
@@ -143,26 +160,21 @@ function buildWebmasterDailyRows(data: WebmasterSiteData | null) {
     return [];
   }
 
-  const pointsByIndicator = {
-    TOTAL_SHOWS: data.allQueryHistory.find((history) => history.indicator === "TOTAL_SHOWS")?.points ?? [],
-    TOTAL_CLICKS: data.allQueryHistory.find((history) => history.indicator === "TOTAL_CLICKS")?.points ?? [],
-    AVG_SHOW_POSITION:
-      data.allQueryHistory.find((history) => history.indicator === "AVG_SHOW_POSITION")?.points ?? [],
-  };
+  const showHistory = data.allQueryHistory.find((history) => history.indicator === "TOTAL_SHOWS")?.points ?? [];
+  const clickHistory = data.allQueryHistory.find((history) => history.indicator === "TOTAL_CLICKS")?.points ?? [];
+  const positionHistory =
+    data.allQueryHistory.find((history) => history.indicator === "AVG_SHOW_POSITION")?.points ?? [];
   const allDates = new Set<string>();
-  for (const point of pointsByIndicator.TOTAL_SHOWS) allDates.add(toDateOnly(point.date));
-  for (const point of pointsByIndicator.TOTAL_CLICKS) allDates.add(toDateOnly(point.date));
-  for (const point of pointsByIndicator.AVG_SHOW_POSITION) allDates.add(toDateOnly(point.date));
-  const clicksByDate = new Map(pointsByIndicator.TOTAL_CLICKS.map((point) => [toDateOnly(point.date), point.value]));
-  const positionByDate = new Map(
-    pointsByIndicator.AVG_SHOW_POSITION.map((point) => [toDateOnly(point.date), point.value]),
-  );
+  for (const point of showHistory) allDates.add(toDateOnly(point.date));
+  for (const point of clickHistory) allDates.add(toDateOnly(point.date));
+  for (const point of positionHistory) allDates.add(toDateOnly(point.date));
+  const clicksByDate = new Map(clickHistory.map((point) => [toDateOnly(point.date), point.value]));
+  const positionByDate = new Map(positionHistory.map((point) => [toDateOnly(point.date), point.value]));
 
   return [...allDates]
     .sort()
     .map((date) => {
-      const showsPoint = pointsByIndicator.TOTAL_SHOWS.find((point) => toDateOnly(point.date) === date);
-      const shows = showsPoint?.value ?? 0;
+      const shows = showHistory.find((point) => toDateOnly(point.date) === date)?.value ?? 0;
       const clicks = clicksByDate.get(date) ?? 0;
       return {
         date,
@@ -176,7 +188,6 @@ function buildWebmasterDailyRows(data: WebmasterSiteData | null) {
 
 function buildWebmasterQueryRows(
   data: WebmasterSiteData | null,
-  periodKey: ReportPeriodKey,
   fallbackDate: string,
 ) {
   if (!data) {
@@ -196,7 +207,6 @@ function buildWebmasterQueryRows(
       ctr: query.ctrPercent,
       averagePosition: query.avgShowPosition,
       averageClickPosition: query.avgClickPosition,
-      periodKey,
     })),
   );
 }
@@ -222,9 +232,19 @@ function buildMetrikaDailyRows(data: MetricaSiteAudit | null) {
   }));
 }
 
+function buildAllowedGoalsForSite(siteSlug: string, goalProfile: GoalProfile) {
+  return goalProfile.goals
+    .filter((goal) => goal.siteSlugs.length === 0 || goal.siteSlugs.includes(siteSlug))
+    .map((goal) => ({
+      goalId: goal.goalId,
+      label: goal.label,
+      category: goal.category,
+      direction: goal.direction,
+    }));
+}
+
 function buildLandingPageRows(
   data: MetricaSiteAudit | null,
-  periodKey: ReportPeriodKey,
   fallbackDate: string,
 ) {
   if (!data) {
@@ -234,7 +254,6 @@ function buildLandingPageRows(
   const date = data.yandexOrganic.meta.date2 ?? fallbackDate;
   return data.yandexOrganic.landingPages.map((row) => ({
     date,
-    periodKey,
     path: row.path,
     visits: row.visits,
     users: row.users,
@@ -250,7 +269,6 @@ function buildLandingPageRows(
 
 function buildMetrikaDeviceRows(
   data: MetricaSiteAudit | null,
-  periodKey: ReportPeriodKey,
   fallbackDate: string,
 ) {
   if (!data) {
@@ -260,7 +278,6 @@ function buildMetrikaDeviceRows(
   const date = data.yandexOrganic.meta.date2 ?? fallbackDate;
   return data.yandexOrganic.devices.map((row) => ({
     date,
-    periodKey,
     device: row.device,
     visits: row.visits,
     users: row.users,
@@ -271,7 +288,6 @@ function buildMetrikaDeviceRows(
 
 function buildMetrikaGoalRows(
   data: MetricaSiteAudit | null,
-  periodKey: ReportPeriodKey,
   fallbackDate: string,
 ) {
   if (!data) {
@@ -281,22 +297,27 @@ function buildMetrikaGoalRows(
   const date = data.goalsSummary.meta.date2 ?? data.yandexOrganic.meta.date2 ?? fallbackDate;
   return data.goalsSummary.items.map((row) => ({
     date,
-    periodKey,
     externalGoalId: row.goalId,
     name: row.name,
-    category: row.category.toUpperCase().replace(/-/g, "_") as
-      | "LEAD_SUBMIT"
-      | "PHONE_CLICK"
-      | "MESSENGER_CLICK"
-      | "FORM_START"
-      | "FILE_DOWNLOAD"
-      | "OTHER",
-    direction: row.direction.toUpperCase() as "PRIMARY" | "SECONDARY",
+    category: goalCategoryToPrisma(row.category),
+    direction: goalDirectionToPrisma(row.direction),
     reaches: row.reaches,
     visits: row.visits,
     users: row.users,
     conversionRate: row.conversionRate,
   }));
+}
+
+function goalCategoryToPrisma(value: string) {
+  return GOAL_CATEGORY_BY_METRICA_CATEGORY[
+    value as keyof typeof GOAL_CATEGORY_BY_METRICA_CATEGORY
+  ];
+}
+
+function goalDirectionToPrisma(value: string) {
+  return GOAL_DIRECTION_BY_METRICA_DIRECTION[
+    value as keyof typeof GOAL_DIRECTION_BY_METRICA_DIRECTION
+  ];
 }
 
 function buildTechnicalSnapshotRows(
@@ -358,7 +379,9 @@ function buildRankingCaptureRows(
 
   return rankingData.snapshots.flatMap((snapshot) =>
     snapshot.queries.flatMap((query) => {
-      const trackedQueryId = trackedQueryIdByNormalizedQuery.get(normalizeTrackedQuery(query.query));
+      const trackedQueryId = trackedQueryIdByNormalizedQuery.get(
+        normalizeTrackedQuery(query.query),
+      );
       if (!trackedQueryId) {
         return [];
       }
@@ -399,9 +422,14 @@ export async function syncProjectToDatabase(
   const projectSafeErrors = new Set<string>();
 
   for (const site of projectContext.client.sites.filter((item) => item.enabled)) {
-    const siteRecord = await projectRepository.findSiteBySlugs(projectContext.client.clientSlug, site.siteSlug);
+    const siteRecord = await projectRepository.findSiteBySlugs(
+      projectContext.client.clientSlug,
+      site.siteSlug,
+    );
     if (!siteRecord) {
-      throw new Error(`Seeded site is missing in PostgreSQL: ${projectContext.client.clientSlug}/${site.siteSlug}`);
+      throw new Error(
+        `Seeded site is missing in PostgreSQL: ${projectContext.client.clientSlug}/${site.siteSlug}`,
+      );
     }
 
     const sourceRuns = {
@@ -447,15 +475,15 @@ export async function syncProjectToDatabase(
       }
     }
 
-    let rankingData: TopvisorSiteData | null = null;
-    let topvisorFailure: SafeSourceFailure | null = null;
-
     const baselinePeriod = findBaselinePeriod(baselineWebmaster);
     const fallbackMonth = await reportRepository.findLatestReportSnapshot(siteRecord.siteId, "month");
     const periodEnd =
       baselinePeriod?.dateTo ??
       fallbackMonth?.payload.comparison?.currentPeriod.dateTo ??
       generatedAt.slice(0, 10);
+
+    let rankingData: TopvisorSiteData | null = null;
+    let topvisorFailure: SafeSourceFailure | null = null;
 
     if (site.topvisor.enabled) {
       try {
@@ -472,6 +500,7 @@ export async function syncProjectToDatabase(
       }
     }
 
+    const allowedGoals = buildAllowedGoalsForSite(site.siteSlug, projectContext.goalProfile);
     const periodResults: SyncProjectPeriodResult[] = [];
     const siteSafeErrorCodes = new Set<string>();
     let latestSnapshotForStatus: SiteReportSnapshot | null = null;
@@ -481,7 +510,10 @@ export async function syncProjectToDatabase(
     for (const periodKey of REPORT_PERIOD_KEYS) {
       const currentPeriod: DatePeriod = derivePeriodEndingOn(periodEnd, periodKey);
       const previousPeriod: DatePeriod = derivePreviousPeriod(currentPeriod);
-      const previousSnapshot = await reportRepository.findLatestReportSnapshot(siteRecord.siteId, periodKey);
+      const previousSnapshot = await reportRepository.findLatestReportSnapshot(
+        siteRecord.siteId,
+        periodKey,
+      );
       let webmasterData: WebmasterSiteData | null = null;
       let metricaData: MetricaSiteAudit | null = null;
       let previousWebmasterData: WebmasterSiteData | null = null;
@@ -534,12 +566,16 @@ export async function syncProjectToDatabase(
             date2: currentPeriod.dateTo,
             landingLimit: 10,
             includeDetails: true,
+            allowedGoals,
+            timezone: site.timezone,
           });
           previousMetricaData = await collectors.metrica(site, {
             date1: previousPeriod.dateFrom,
             date2: previousPeriod.dateTo,
             landingLimit: 0,
             includeDetails: false,
+            allowedGoals,
+            timezone: site.timezone,
           });
           latestMetricaData = metricaData;
         } catch (error) {
@@ -591,13 +627,13 @@ export async function syncProjectToDatabase(
           siteId: siteRecord.siteId,
           sourceRunId: sourceRuns.webmaster.sourceRunId,
           periodKey,
-          rows: buildWebmasterQueryRows(webmasterData, periodKey, currentPeriod.dateTo),
+          rows: buildWebmasterQueryRows(webmasterData, currentPeriod.dateTo),
         });
         await syncService.storeWebmasterQueryMetrics({
           siteId: siteRecord.siteId,
           sourceRunId: sourceRuns.webmaster.sourceRunId,
           periodKey,
-          rows: buildWebmasterQueryRows(previousWebmasterData, periodKey, previousPeriod.dateTo),
+          rows: buildWebmasterQueryRows(previousWebmasterData, previousPeriod.dateTo),
         });
       }
 
@@ -616,19 +652,19 @@ export async function syncProjectToDatabase(
           siteId: siteRecord.siteId,
           sourceRunId: sourceRuns.metrica.sourceRunId,
           periodKey,
-          rows: buildLandingPageRows(metricaData, periodKey, currentPeriod.dateTo),
+          rows: buildLandingPageRows(metricaData, currentPeriod.dateTo),
         });
         await syncService.storeMetrikaDeviceMetrics({
           siteId: siteRecord.siteId,
           sourceRunId: sourceRuns.metrica.sourceRunId,
           periodKey,
-          rows: buildMetrikaDeviceRows(metricaData, periodKey, currentPeriod.dateTo),
+          rows: buildMetrikaDeviceRows(metricaData, currentPeriod.dateTo),
         });
         await syncService.storeMetrikaGoalMetrics({
           siteId: siteRecord.siteId,
           sourceRunId: sourceRuns.metrica.sourceRunId,
           periodKey,
-          rows: buildMetrikaGoalRows(metricaData, periodKey, currentPeriod.dateTo),
+          rows: buildMetrikaGoalRows(metricaData, currentPeriod.dateTo),
         });
       }
 
