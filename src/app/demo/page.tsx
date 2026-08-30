@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { AppShell } from "../../components/shell/AppShell";
 import { SiteReportView } from "../../modules/dashboards/SiteReportView";
 import { getDemoSnapshot } from "../../modules/report-data/demo-data";

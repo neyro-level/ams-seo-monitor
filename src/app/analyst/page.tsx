@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { AppShell } from "../../components/shell/AppShell";
 import { KpiCard } from "../../components/dashboard/KpiCard";
@@ -5,8 +7,8 @@ import { PageHeader } from "../../components/dashboard/PageHeader";
 import { SectionCard } from "../../components/dashboard/SectionCard";
 import { buildAnalystOverview } from "../../modules/dashboards/overview";
 
-export default function AllProjectsPage() {
-  const overview = buildAnalystOverview();
+export default async function AllProjectsPage() {
+  const overview = await buildAnalystOverview();
 
   return (
     <AppShell currentPath="/analyst/">
@@ -23,89 +25,100 @@ export default function AllProjectsPage() {
           <KpiCard label="Источники" value={String(overview.enabledSources)} tone="soft" />
         </section>
 
-        <SectionCard title="Реестр проектов" note="Config-driven">
+        <SectionCard title="Реестр проектов" note="Database-backed">
           <div className="grid gap-4 xl:grid-cols-2">
             {overview.projectCards.map((project) => {
               const projectReady =
-                project.enabled &&
+                project.status !== "DISABLED" &&
                 project.totalSites > 0 &&
                 project.readySites === project.totalSites;
-              const stateLabel = !project.enabled
-                ? "Отключён"
-                : projectReady
-                  ? "Готов"
-                  : project.connectedSites > 0
-                    ? "Настройка"
-                    : "План";
-              const stateClasses = !project.enabled
-                ? "border-slate-200 bg-slate-50 text-slate-600"
-                : projectReady
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-950"
-                  : project.connectedSites > 0
-                    ? "border-amber-200 bg-amber-50 text-amber-950"
-                    : "border-sky-200 bg-sky-50 text-sky-950";
+              const stateLabel =
+                project.status === "DISABLED"
+                  ? "Отключён"
+                  : projectReady
+                    ? "Готов"
+                    : project.connectedSites > 0
+                      ? "Настройка"
+                      : "План";
+              const stateClasses =
+                project.status === "DISABLED"
+                  ? "border-slate-200 bg-slate-50 text-slate-600"
+                  : projectReady
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                    : project.connectedSites > 0
+                      ? "border-amber-200 bg-amber-50 text-amber-950"
+                      : "border-sky-200 bg-sky-50 text-sky-950";
 
               return (
                 <article
                   key={project.projectSlug}
                   className="rounded-2xl border border-[var(--crm-border)] bg-white p-5"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--crm-text-muted)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[var(--crm-text-muted)]">
                         {project.projectSlug}
                       </p>
-                      <h2 className="mt-2 text-lg font-semibold text-[var(--crm-text)]">
+                      <h2 className="mt-2 text-xl font-semibold text-[var(--crm-text)]">
                         {project.name}
                       </h2>
                     </div>
                     <span
-                      className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${stateClasses}`}
+                      className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${stateClasses}`}
                     >
                       {stateLabel}
                     </span>
                   </div>
 
-                  <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-xl bg-[var(--crm-surface-muted)] p-3">
-                      <dt className="text-[11px] text-[var(--crm-text-muted)]">Сайты</dt>
-                      <dd className="mt-1 text-lg font-semibold tabular-nums text-[var(--crm-text)]">
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">
+                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--crm-text-muted)]">
+                        Сайты
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">
                         {project.totalSites}
-                      </dd>
+                      </p>
                     </div>
-                    <div className="rounded-xl bg-[var(--crm-surface-muted)] p-3">
-                      <dt className="text-[11px] text-[var(--crm-text-muted)]">Подключено</dt>
-                      <dd className="mt-1 text-lg font-semibold tabular-nums text-[var(--crm-text)]">
+                    <div className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">
+                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--crm-text-muted)]">
+                        Подключено
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">
                         {project.connectedSites}
-                      </dd>
+                      </p>
                     </div>
-                    <div className="rounded-xl bg-[var(--crm-surface-muted)] p-3">
-                      <dt className="text-[11px] text-[var(--crm-text-muted)]">Готово</dt>
-                      <dd className="mt-1 text-lg font-semibold tabular-nums text-[var(--crm-text)]">
+                    <div className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">
+                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--crm-text-muted)]">
+                        Готово
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">
                         {project.readySites}
-                      </dd>
+                      </p>
                     </div>
-                    <div className="rounded-xl bg-[var(--crm-surface-muted)] p-3">
-                      <dt className="text-[11px] text-[var(--crm-text-muted)]">Источники</dt>
-                      <dd className="mt-1 text-lg font-semibold tabular-nums text-[var(--crm-text)]">
+                    <div className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">
+                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--crm-text-muted)]">
+                        Источники
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">
                         {project.enabledSources}
-                      </dd>
+                      </p>
                     </div>
-                  </dl>
-
-                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--crm-border)] pt-4">
-                    <p className="text-xs text-[var(--crm-text-muted)]">
-                      {project.plannedSites > 0
-                        ? `Плановых сайтов: ${project.plannedSites}`
-                        : "Все сайты заведены"}
-                    </p>
-                    <Link
-                      href={`/c/${project.projectSlug}/`}
-                      className="inline-flex min-h-11 items-center rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
-                    >
-                      Открыть проект
-                    </Link>
                   </div>
+
+                  <p className="mt-4 text-sm text-[var(--crm-text-secondary)]">
+                    {projectReady
+                      ? "Все сайты заведены"
+                      : project.connectedSites > 0
+                        ? `Плановых сайтов: ${project.totalSites - project.connectedSites}`
+                        : "Источники ещё не подключены"}
+                  </p>
+
+                  <Link
+                    href={`/c/${project.projectSlug}/`}
+                    className="mt-5 inline-flex rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    Открыть проект
+                  </Link>
                 </article>
               );
             })}
@@ -115,10 +128,10 @@ export default function AllProjectsPage() {
         <SectionCard title="Добавление проекта" note="Operator-only">
           <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <h2 className="text-base font-semibold text-[var(--crm-text)]">
+              <h2 className="text-lg font-semibold text-[var(--crm-text)]">
                 Пока без production-админки
               </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--crm-text-secondary)]">
+              <p className="mt-2 text-sm text-[var(--crm-text-secondary)]">
                 Wizard создаёт project/site config и пустой goal profile, проверяет collisions и общий registry. Секреты, deploy и SourceCraft он не изменяет.
               </p>
             </div>

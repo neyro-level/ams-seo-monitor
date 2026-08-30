@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ReportPeriodKey } from "../../shared/schemas/report";
 
 type ReportPeriodSelectorProps = {
   active: ReportPeriodKey;
-  onChange: (period: ReportPeriodKey) => void;
+  onChange?: (period: ReportPeriodKey) => void;
+  basePath?: string;
 };
 
 const periods: Array<{ key: ReportPeriodKey; label: string }> = [
@@ -14,7 +16,9 @@ const periods: Array<{ key: ReportPeriodKey; label: string }> = [
   { key: "halfYear", label: "Полгода" },
 ];
 
-export function ReportPeriodSelector({ active, onChange }: ReportPeriodSelectorProps) {
+export function ReportPeriodSelector({ active, onChange, basePath }: ReportPeriodSelectorProps) {
+  const router = useRouter();
+
   return (
     <div
       className="inline-flex max-w-full overflow-x-auto rounded-xl border border-[var(--crm-border)] bg-white p-1 shadow-sm"
@@ -33,7 +37,23 @@ export function ReportPeriodSelector({ active, onChange }: ReportPeriodSelectorP
                 : "text-[var(--crm-text-secondary)] hover:bg-slate-100",
             ].join(" ")}
             aria-pressed={selected}
-            onClick={() => onChange(period.key)}
+            onClick={() => {
+              if (onChange) {
+                onChange(period.key);
+                return;
+              }
+
+              if (!basePath) {
+                return;
+              }
+
+              const url = new URL(window.location.href);
+              url.pathname = basePath;
+              url.searchParams.set("period", period.key);
+              router.replace(`${url.pathname}?${url.searchParams.toString()}`, {
+                scroll: false,
+              });
+            }}
           >
             {period.label}
           </button>

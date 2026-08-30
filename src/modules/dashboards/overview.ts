@@ -1,68 +1,78 @@
 import "server-only";
 
-import { getClientBySlug, getClients } from "../client-registry/registry";
+import { ProjectService, type ProjectSummary } from "../../application/services/project-service";
+import { PrismaProjectRepository } from "../../infrastructure/database/repositories/prisma-project-repository";
+import type { AuthenticatedUser } from "../../infrastructure/auth/types";
 
-export function buildAnalystOverview() {
-  const clients = getClients();
-  const totalSites = clients.reduce((count, client) => count + client.sites.length, 0);
-  const connectedSites = clients.reduce(
-    (count, client) => count + client.sites.filter((site) => site.enabled).length,
-    0,
-  );
+export interface AnalystOverview {
+  totalProjects: number;
+  totalSites: number;
+  connectedSites: number;
+  plannedSites: number;
+  enabledSources: number;
+  projectCards: ProjectSummary[];
+}
+
+export interface ClientOverview {
+  client: {
+    clientSlug: string;
+    name: string;
+    enabled: boolean;
+  };
+  sites: Array<{
+    siteSlug: string;
+    name: string;
+    siteUrl: string;
+    enabled: boolean;
+    enabledSourceCount: number;
+  }>;
+}
+
+const previewAnalystUser: AuthenticatedUser = {
+  userId: "preview-analyst",
+  email: "preview-analyst@seo-monitor.local",
+  name: "Preview Analyst",
+  systemRole: "SEO_ANALYST",
+  activeOrganizationId: null,
+};
+
+const projectService = new ProjectService(new PrismaProjectRepository());
+
+export async function buildAnalystOverview(): Promise<AnalystOverview> {
+  const projectCards = await projectService.listProjectsForUser(previewAnalystUser);
+  const totalSites = projectCards.reduce((count, project) => count + project.totalSites, 0);
+  const connectedSites = projectCards.reduce((count, project) => count + project.connectedSites, 0);
   const plannedSites = totalSites - connectedSites;
-  const enabledSources = clients.reduce(
-    (count, client) =>
-      count +
-      client.sites.reduce(
-        (siteCount, site) =>
-          siteCount + Number(site.webmaster.enabled) + Number(site.metrica.enabled),
-        0,
-      ),
-    0,
-  );
+  const enabledSources = projectCards.reduce((count, project) => count + project.enabledSources, 0);
 
   return {
-    totalProjects: clients.length,
+    totalProjects: projectCards.length,
     totalSites,
     connectedSites,
     plannedSites,
     enabledSources,
-    projectCards: clients.map((project) => {
-      const projectEnabledSources = project.sites.reduce(
-        (count, site) => count + Number(site.webmaster.enabled) + Number(site.metrica.enabled),
-        0,
-      );
-      const readySites = project.sites.filter(
-        (site) => site.enabled && site.webmaster.enabled && site.metrica.enabled,
-      ).length;
-
-      return {
-        projectSlug: project.clientSlug,
-        name: project.name,
-        enabled: project.enabled,
-        totalSites: project.sites.length,
-        connectedSites: project.sites.filter((site) => site.enabled).length,
-        plannedSites: project.sites.filter((site) => !site.enabled).length,
-        enabledSources: projectEnabledSources,
-        readySites,
-      };
-    }),
+    projectCards,
   };
 }
 
-export function buildClientOverview(clientSlug: string) {
-  const client = getClientBySlug(clientSlug);
-  if (!client) {
+export async function buildClientOverview(clientSlug: string): Promise<ClientOverview | null> {
+  const project = await projectService.getProjectAccessForUser(previewAnalystUser, clientSlug);
+  if (!project) {
     return null;
   }
 
-  const sites = client.sites.map((site) => ({
-    ...site,
-    enabledSourceCount: Number(site.webmaster.enabled) + Number(site.metrica.enabled),
-  }));
-
   return {
-    client,
-    sites,
+    client: {
+      clientSlug: project.projectSlug,
+      name: project.name,
+      enabled: project.status !== "DISABLED",
+    },
+    sites: project.sites.map((site) => ({
+      siteSlug: site.siteSlug,
+      name: site.name,
+      siteUrl: site.url,
+      enabled: site.enabled,
+      enabledSourceCount: site.enabledSourceCount,
+    })),
   };
 }

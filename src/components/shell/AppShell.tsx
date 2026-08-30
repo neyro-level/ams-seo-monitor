@@ -9,8 +9,8 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-export function AppShell({ currentPath, children }: AppShellProps) {
-  const sections = buildNavigation(currentPath);
+export async function AppShell({ currentPath, children }: AppShellProps) {
+  const sections = await buildNavigation(currentPath);
 
   return (
     <div className="admin-root min-h-screen bg-[var(--crm-page)] text-[var(--crm-text)]">

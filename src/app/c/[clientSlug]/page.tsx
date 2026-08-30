@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "../../../components/shell/AppShell";
@@ -6,13 +8,6 @@ import { PageHeader } from "../../../components/dashboard/PageHeader";
 import { SectionCard } from "../../../components/dashboard/SectionCard";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner";
 import { buildClientOverview } from "../../../modules/dashboards/overview";
-import { getClientStaticParams } from "../../../modules/client-registry/registry";
-
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return getClientStaticParams();
-}
 
 type ClientOverviewPageProps = {
   params: Promise<{
@@ -22,7 +17,7 @@ type ClientOverviewPageProps = {
 
 export default async function ClientOverviewPage({ params }: ClientOverviewPageProps) {
   const { clientSlug } = await params;
-  const overview = buildClientOverview(clientSlug);
+  const overview = await buildClientOverview(clientSlug);
 
   if (!overview) {
     notFound();
@@ -56,7 +51,11 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard label="Всего сайтов" value={String(overview.sites.length)} tone="primary" />
           <KpiCard label="Подключённые" value={String(connectedSites)} />
-          <KpiCard label="Плановые" value={String(overview.sites.filter((site) => !site.enabled).length)} tone="soft" />
+          <KpiCard
+            label="Плановые"
+            value={String(overview.sites.filter((site) => !site.enabled).length)}
+            tone="soft"
+          />
           <KpiCard
             label="Подключённые источники"
             value={String(overview.sites.reduce((count, site) => count + site.enabledSourceCount, 0))}
@@ -66,7 +65,10 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
         <SectionCard title="Сайты проекта" note="Отдельный отчёт на сайт">
           <div className="grid gap-3 lg:grid-cols-2">
             {overview.sites.map((site) => (
-              <article key={site.siteSlug} className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4">
+              <article
+                key={site.siteSlug}
+                className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] p-4"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold text-[var(--crm-text)]">{site.name}</h2>

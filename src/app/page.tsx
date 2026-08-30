@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { AppShell } from "../components/shell/AppShell";
 import { KpiCard } from "../components/dashboard/KpiCard";
@@ -5,8 +7,8 @@ import { PageHeader } from "../components/dashboard/PageHeader";
 import { SectionCard } from "../components/dashboard/SectionCard";
 import { buildAnalystOverview } from "../modules/dashboards/overview";
 
-export default function HomePage() {
-  const overview = buildAnalystOverview();
+export default async function HomePage() {
+  const overview = await buildAnalystOverview();
 
   return (
     <AppShell currentPath="/">
