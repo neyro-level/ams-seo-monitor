@@ -38,11 +38,17 @@ const artifactPath = path.join(artifactsDir, artifactName);
 await rm(stagingDir, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
 
-for (const directory of ["out", "dist-collector", "config", "ops"]) {
+for (const directory of ["dist-collector", "config", "ops", "public"]) {
   await cp(path.join(rootDir, directory), path.join(stagingDir, directory), {
     recursive: true,
   });
 }
+await cp(path.join(rootDir, ".next", "standalone"), path.join(stagingDir, ".next", "standalone"), {
+  recursive: true,
+});
+await cp(path.join(rootDir, ".next", "static"), path.join(stagingDir, ".next", "static"), {
+  recursive: true,
+});
 
 for (const file of ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]) {
   await cp(path.join(rootDir, file), path.join(stagingDir, file));
@@ -50,8 +56,11 @@ for (const file of ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]) {
 
 for (const relativePath of [
   "ops/nginx/ams-seo-monitor.conf",
-  "ops/systemd/ams-seo-monitor.service",
-  "ops/systemd/ams-seo-monitor.timer",
+  "ops/systemd/seo-monitor-web.service",
+  "ops/systemd/seo-monitor-worker.service",
+  "ops/systemd/seo-monitor-worker.timer",
+  "ops/systemd/seo-monitor-db-backup.service",
+  "ops/systemd/seo-monitor-db-backup.timer",
 ]) {
   const targetPath = path.join(stagingDir, relativePath);
   const content = await readFile(targetPath, "utf8");
@@ -66,10 +75,10 @@ const manifest = {
   source: "SourceCraft main",
   commitSha,
   createdAt: new Date().toISOString(),
-  runtime: "node-v24-linux-x64",
+  runtime: "next-standalone-node-v24-linux-x64",
   artifactFormat: "tar.gz",
   dependencyLockSha256,
-  dependencyStrategy: "reuse-readonly-node-modules-when-lock-matches",
+  dependencyStrategy: "bundle-next-standalone-and-compiled-worker",
 };
 
 await writeFile(

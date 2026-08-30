@@ -84,18 +84,6 @@ if [ "$EXPECTED_LOCK" != "$ACTUAL_LOCK" ]; then
   exit 1
 fi
 
-if [ ! -d "$RELEASE/node_modules" ]; then
-  if [ -z "$PREVIOUS" ] || [ ! -d "$PREVIOUS/node_modules" ]; then
-    echo "No previous matching node_modules available" >&2
-    exit 1
-  fi
-  PREVIOUS_LOCK="$(sha256sum "$PREVIOUS/pnpm-lock.yaml" | cut -d ' ' -f1)"
-  if [ "$PREVIOUS_LOCK" != "$ACTUAL_LOCK" ]; then
-    echo "Previous release dependency lock differs" >&2
-    exit 1
-  fi
-  cp -al "$PREVIOUS/node_modules" "$RELEASE/node_modules"
-fi
 
 sha256sum "$ARTIFACT" | cut -d ' ' -f1 > "$RELEASE/artifact.sha256"
 chown root:www-data "$RELEASE"
@@ -106,8 +94,11 @@ rm -f "$ROOT/current.next"
 ln -s "$RELEASE" "$ROOT/current.next"
 mv -Tf "$ROOT/current.next" "$ROOT/current"
 
-install -m 0644 "$RELEASE/ops/systemd/ams-seo-monitor.service" /etc/systemd/system/ams-seo-monitor.service
-install -m 0644 "$RELEASE/ops/systemd/ams-seo-monitor.timer" /etc/systemd/system/ams-seo-monitor.timer
+install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
+install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service
+install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
+install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.service" /etc/systemd/system/seo-monitor-db-backup.service
+install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/system/seo-monitor-db-backup.timer
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
 systemctl daemon-reload
@@ -124,7 +115,7 @@ if ! nginx -t; then
 fi
 systemctl reload nginx
 
-if ! systemctl start ams-seo-monitor.service; then
+if ! systemctl restart seo-monitor-web.service; then
   if [ -n "$PREVIOUS" ]; then
     rm -f "$ROOT/current.rollback"
     ln -s "$PREVIOUS" "$ROOT/current.rollback"
@@ -136,13 +127,28 @@ if ! systemctl start ams-seo-monitor.service; then
   exit 1
 fi
 
-systemctl enable --now ams-seo-monitor.timer
-systemctl is-active ams-seo-monitor.timer
-systemctl show ams-seo-monitor.service -p Result --value
+if ! systemctl start seo-monitor-worker.service; then
+  if [ -n "$PREVIOUS" ]; then
+    rm -f "$ROOT/current.rollback"
+    ln -s "$PREVIOUS" "$ROOT/current.rollback"
+    mv -Tf "$ROOT/current.rollback" "$ROOT/current"
+  fi
+  cp "$NGINX_BACKUP" "$NGINX_LIVE"
+  nginx -t
+  systemctl reload nginx
+  exit 1
+fi
 
-test -s "$ROOT/shared/client-reports/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/month/latest.json"
-test -s "$ROOT/shared/client-reports/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/month/latest.json"
-test -s "$ROOT/shared/client-reports/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/month/latest.json"
+systemctl enable --now seo-monitor-worker.timer
+systemctl enable --now seo-monitor-db-backup.timer
+systemctl is-active seo-monitor-web.service
+systemctl is-active seo-monitor-worker.timer
+systemctl is-active seo-monitor-db-backup.timer
+curl -fsS http://127.0.0.1:3000/api/health/live >/dev/null
+curl -fsS http://127.0.0.1:3000/api/health/ready >/dev/null
+
+test -s "$ROOT/current/.next/standalone/server.js"
+test -s "$ROOT/current/dist-collector/src/worker/main.js"
 
 rm -f "$ARTIFACT" "$CHECKSUM"
 printf '%s\n' "$PREVIOUS" > "$ROOT/shared/previous-release.txt"
