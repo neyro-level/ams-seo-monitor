@@ -11,10 +11,10 @@ import {
 } from "./helpers/source-dto-fixtures";
 
 const workerTestEnabled = Boolean(
-  process.env.DATABASE_HOST &&
-    process.env.DATABASE_USER &&
-    process.env.DATABASE_PASSWORD &&
-    process.env.DATABASE_NAME,
+  process.env.TEST_DATABASE_HOST &&
+    process.env.TEST_DATABASE_USER &&
+    process.env.TEST_DATABASE_PASSWORD &&
+    process.env.TEST_DATABASE_NAME,
 );
 const workerTestDescription = workerTestEnabled ? describe : describe.skip;
 
@@ -25,12 +25,12 @@ workerTestDescription("syncProjectToDatabase", () => {
   beforeAll(async () => {
     pool = new Pool(
       createPgPoolConfigFromEnvironment({
-        DATABASE_HOST: process.env.DATABASE_HOST,
-        DATABASE_PORT: process.env.DATABASE_PORT,
-        DATABASE_USER: process.env.DATABASE_USER,
-        DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
-        DATABASE_NAME: process.env.DATABASE_NAME,
-        DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
+        DATABASE_HOST: process.env.TEST_DATABASE_HOST,
+        DATABASE_PORT: process.env.TEST_DATABASE_PORT,
+        DATABASE_USER: process.env.TEST_DATABASE_USER,
+        DATABASE_PASSWORD: process.env.TEST_DATABASE_PASSWORD,
+        DATABASE_NAME: process.env.TEST_DATABASE_NAME,
+        DATABASE_SSLMODE: process.env.TEST_DATABASE_SSLMODE,
       }),
     );
     prisma = new PrismaClient({ adapter: new PrismaPg(pool) });

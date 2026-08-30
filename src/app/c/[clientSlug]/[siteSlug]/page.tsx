@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
+import { ProjectService } from "../../../../application/services/project-service";
 import { ReportService } from "../../../../application/services/report-service";
 import { MonitoringService } from "../../../../application/services/monitoring-service";
 import { PrismaMonitoringRepository } from "../../../../infrastructure/database/repositories/prisma-monitoring-repository";
@@ -36,11 +37,23 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
   const { clientSlug, siteSlug } = await params;
   const { period } = await searchParams;
   const periodKey = resolvePeriodKey(period);
-  const monitoringService = new MonitoringService(new PrismaMonitoringRepository());
+  const projectRepository = new PrismaProjectRepository();
+  const projectService = new ProjectService(projectRepository);
   const reportService = new ReportService(
-    new PrismaProjectRepository(),
+    projectRepository,
     new PrismaReportRepository(),
   );
+  const authorizedSite = await projectService.getSiteAccessForUser(
+    user,
+    clientSlug,
+    siteSlug,
+  );
+
+  if (!authorizedSite) {
+    notFound();
+  }
+
+  const monitoringService = new MonitoringService(new PrismaMonitoringRepository());
   const projectContext = await monitoringService.getProjectContext(clientSlug);
   const site = projectContext?.client.sites.find((item) => item.siteSlug === siteSlug) ?? null;
   const snapshot = await reportService.getSiteReportForUser(

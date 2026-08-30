@@ -13,20 +13,19 @@ import {
 import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
 import type { AuthenticatedUser } from "../src/infrastructure/auth/types";
 
-const authTestDatabaseUrl =
-  process.env.AUTH_TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? null;
+const authTestDatabaseUrl = process.env.AUTH_TEST_DATABASE_URL ?? null;
 const authTestDatabaseHost =
-  process.env.AUTH_TEST_DATABASE_HOST ?? process.env.DATABASE_HOST ?? null;
+  process.env.AUTH_TEST_DATABASE_HOST ?? process.env.TEST_DATABASE_HOST ?? null;
 const authTestDatabasePort =
-  process.env.AUTH_TEST_DATABASE_PORT ?? process.env.DATABASE_PORT ?? null;
+  process.env.AUTH_TEST_DATABASE_PORT ?? process.env.TEST_DATABASE_PORT ?? null;
 const authTestDatabaseUser =
-  process.env.AUTH_TEST_DATABASE_USER ?? process.env.DATABASE_USER ?? null;
+  process.env.AUTH_TEST_DATABASE_USER ?? process.env.TEST_DATABASE_USER ?? null;
 const authTestDatabasePassword =
-  process.env.AUTH_TEST_DATABASE_PASSWORD ?? process.env.DATABASE_PASSWORD ?? null;
+  process.env.AUTH_TEST_DATABASE_PASSWORD ?? process.env.TEST_DATABASE_PASSWORD ?? null;
 const authTestDatabaseName =
-  process.env.AUTH_TEST_DATABASE_NAME ?? process.env.DATABASE_NAME ?? null;
+  process.env.AUTH_TEST_DATABASE_NAME ?? process.env.TEST_DATABASE_NAME ?? null;
 const authTestDatabaseSslMode =
-  process.env.AUTH_TEST_DATABASE_SSLMODE ?? process.env.DATABASE_SSLMODE ?? null;
+  process.env.AUTH_TEST_DATABASE_SSLMODE ?? process.env.TEST_DATABASE_SSLMODE ?? null;
 const authTestEnabled =
   authTestDatabaseUrl !== null ||
   Boolean(

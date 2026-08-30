@@ -10,5 +10,6 @@ export default defineConfig({
   test: {
     environment: "node",
     fileParallelism: false,
+    setupFiles: ["./tests/setup-test-env.ts"],
   },
 });

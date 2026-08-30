@@ -34,11 +34,10 @@ await access(artifactPath);
 await access(checksumPath);
 
 const manifestProbe = JSON.parse(
-  execFileSync(
-    "tar",
-    ["-xOzf", artifactPath, "./release-manifest.json"],
-    { cwd: rootDir, encoding: "utf8" },
-  ),
+  execFileSync("tar", ["-xOzf", artifactPath, "./release-manifest.json"], {
+    cwd: rootDir,
+    encoding: "utf8",
+  }),
 );
 if (manifestProbe.commitSha !== commitSha) {
   throw new Error(
@@ -51,7 +50,7 @@ execFileSync("scp", [artifactPath, checksumPath, "ams:/tmp/"], {
   stdio: "inherit",
 });
 
-const remoteScript = `
+const remoteScript = String.raw`
 set -euo pipefail
 SHA="$1"
 ARTIFACT_NAME="$2"
@@ -62,6 +61,40 @@ CHECKSUM="/tmp/$ARTIFACT_NAME.sha256"
 PREVIOUS="$(readlink -f "$ROOT/current" || true)"
 NGINX_LIVE=/etc/nginx/sites-available/ams-seo-monitor.conf
 NGINX_BACKUP="$ROOT/shared/previous-nginx.conf"
+ENV_FILE=/etc/ams-platform/ams-seo-monitor.env
+
+rollback_previous() {
+  if [ -n "$PREVIOUS" ]; then
+    rm -f "$ROOT/current.rollback"
+    ln -s "$PREVIOUS" "$ROOT/current.rollback"
+    mv -Tf "$ROOT/current.rollback" "$ROOT/current"
+
+    if [ -f "$PREVIOUS/ops/nginx/ams-seo-monitor.conf" ]; then
+      install -m 0644 "$PREVIOUS/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
+    elif [ -f "$NGINX_BACKUP" ]; then
+      cp "$NGINX_BACKUP" "$NGINX_LIVE"
+    fi
+
+    if [ -f "$PREVIOUS/ops/systemd/seo-monitor-web.service" ]; then
+      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
+      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service
+      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
+      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-db-backup.service" /etc/systemd/system/seo-monitor-db-backup.service
+      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/system/seo-monitor-db-backup.timer
+      systemctl daemon-reload
+      nginx -t
+      systemctl reload nginx
+      systemctl restart seo-monitor-web.service || true
+    elif [ -f "$PREVIOUS/ops/systemd/ams-seo-monitor.service" ]; then
+      install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.service" /etc/systemd/system/ams-seo-monitor.service
+      install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.timer" /etc/systemd/system/ams-seo-monitor.timer
+      systemctl daemon-reload
+      nginx -t
+      systemctl reload nginx
+      systemctl restart ams-seo-monitor.service || true
+    fi
+  fi
+}
 
 cd /tmp
 sha256sum -c "$ARTIFACT_NAME.sha256"
@@ -84,16 +117,14 @@ if [ "$EXPECTED_LOCK" != "$ACTUAL_LOCK" ]; then
   exit 1
 fi
 
-
 sha256sum "$ARTIFACT" | cut -d ' ' -f1 > "$RELEASE/artifact.sha256"
 chown root:www-data "$RELEASE"
-find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type d -exec chmod 0755 {} +
-find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type f -exec chmod 0644 {} +
+find "$RELEASE" -type d -exec chmod 0755 {} +
+find "$RELEASE" -type f -exec chmod 0644 {} +
+chmod 0755 "$RELEASE/ops/postgres/backup.sh" "$RELEASE/ops/postgres/restore-smoke.sh"
 
-rm -f "$ROOT/current.next"
-ln -s "$RELEASE" "$ROOT/current.next"
-mv -Tf "$ROOT/current.next" "$ROOT/current"
-
+install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
+install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
@@ -101,41 +132,30 @@ install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.service" /etc/system
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/system/seo-monitor-db-backup.timer
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
-systemctl daemon-reload
 
+set -a
+. "$ENV_FILE"
+set +a
+DATABASE_URL="\${DIRECT_URL:-\${DATABASE_URL:-}}" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
+
+rm -f "$ROOT/current.next"
+ln -s "$RELEASE" "$ROOT/current.next"
+mv -Tf "$ROOT/current.next" "$ROOT/current"
+
+systemctl daemon-reload
 if ! nginx -t; then
-  if [ -n "$PREVIOUS" ]; then
-    rm -f "$ROOT/current.rollback"
-    ln -s "$PREVIOUS" "$ROOT/current.rollback"
-    mv -Tf "$ROOT/current.rollback" "$ROOT/current"
-  fi
-  cp "$NGINX_BACKUP" "$NGINX_LIVE"
-  nginx -t
+  rollback_previous
   exit 1
 fi
 systemctl reload nginx
 
 if ! systemctl restart seo-monitor-web.service; then
-  if [ -n "$PREVIOUS" ]; then
-    rm -f "$ROOT/current.rollback"
-    ln -s "$PREVIOUS" "$ROOT/current.rollback"
-    mv -Tf "$ROOT/current.rollback" "$ROOT/current"
-  fi
-  cp "$NGINX_BACKUP" "$NGINX_LIVE"
-  nginx -t
-  systemctl reload nginx
+  rollback_previous
   exit 1
 fi
 
 if ! systemctl start seo-monitor-worker.service; then
-  if [ -n "$PREVIOUS" ]; then
-    rm -f "$ROOT/current.rollback"
-    ln -s "$PREVIOUS" "$ROOT/current.rollback"
-    mv -Tf "$ROOT/current.rollback" "$ROOT/current"
-  fi
-  cp "$NGINX_BACKUP" "$NGINX_LIVE"
-  nginx -t
-  systemctl reload nginx
+  rollback_previous
   exit 1
 fi
 
@@ -147,8 +167,14 @@ systemctl is-active seo-monitor-db-backup.timer
 curl -fsS http://127.0.0.1:3000/api/health/live >/dev/null
 curl -fsS http://127.0.0.1:3000/api/health/ready >/dev/null
 
+if ! /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null; then
+  rollback_previous
+  exit 1
+fi
+
 test -s "$ROOT/current/.next/standalone/server.js"
 test -s "$ROOT/current/dist-collector/src/worker/main.js"
+test -s "$ROOT/current/prisma/schema.prisma"
 
 rm -f "$ARTIFACT" "$CHECKSUM"
 printf '%s\n' "$PREVIOUS" > "$ROOT/shared/previous-release.txt"

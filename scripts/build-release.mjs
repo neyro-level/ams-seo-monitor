@@ -38,11 +38,12 @@ const artifactPath = path.join(artifactsDir, artifactName);
 await rm(stagingDir, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
 
-for (const directory of ["dist-collector", "config", "ops", "public"]) {
+for (const directory of ["dist-collector", "config", "ops", "public", "prisma", "node_modules"]) {
   await cp(path.join(rootDir, directory), path.join(stagingDir, directory), {
     recursive: true,
   });
 }
+
 await cp(path.join(rootDir, ".next", "standalone"), path.join(stagingDir, ".next", "standalone"), {
   recursive: true,
 });
@@ -50,7 +51,7 @@ await cp(path.join(rootDir, ".next", "static"), path.join(stagingDir, ".next", "
   recursive: true,
 });
 
-for (const file of ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]) {
+for (const file of ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "prisma.config.ts"]) {
   await cp(path.join(rootDir, file), path.join(stagingDir, file));
 }
 
@@ -61,6 +62,8 @@ for (const relativePath of [
   "ops/systemd/seo-monitor-worker.timer",
   "ops/systemd/seo-monitor-db-backup.service",
   "ops/systemd/seo-monitor-db-backup.timer",
+  "ops/postgres/backup.sh",
+  "ops/postgres/restore-smoke.sh",
 ]) {
   const targetPath = path.join(stagingDir, relativePath);
   const content = await readFile(targetPath, "utf8");
@@ -78,7 +81,7 @@ const manifest = {
   runtime: "next-standalone-node-v24-linux-x64",
   artifactFormat: "tar.gz",
   dependencyLockSha256,
-  dependencyStrategy: "bundle-next-standalone-and-compiled-worker",
+  dependencyStrategy: "bundle-root-node-modules-standalone-and-compiled-worker",
 };
 
 await writeFile(
