@@ -2,7 +2,7 @@
 
 ## Status
 
-Wave 0 version decision plus Wave 1 foundation refresh.
+Wave 0 version decision, Wave 1 foundation refresh and Wave 3 data-layer bootstrap.
 
 Правило выбора: latest stable production-compatible release. Не использовать beta, rc, canary, nightly и dev только из-за большего номера версии.
 
@@ -14,13 +14,20 @@ Wave 0 version decision plus Wave 1 foundation refresh.
 - React `19.2.8`;
 - React DOM `19.2.8`;
 - TypeScript `6.0.3`;
-- Zod `4.5.4`;
-- Recharts `3.10.1`;
-- Lucide React `1.37.0`;
-- pnpm `11.5.1`;
-- Node engine `>=24.20.0 <25`.
+ - Zod `4.5.4`;
+ - Recharts `3.10.1`;
+ - Lucide React `1.37.0`;
+ - Prisma CLI `7.10.0`;
+ - `@prisma/client` `7.10.0`;
+ - `@prisma/adapter-pg` `7.10.0`;
+ - `pg` `8.23.0`;
+ - `better-auth` `1.7.2`;
+ - `@better-auth/prisma-adapter` `1.7.2`;
+ - `tsx` `4.23.13`;
+ - pnpm `11.5.1`;
+ - Node engine `>=24.20.0 <25`.
 
-Prisma, PostgreSQL application driver и Better Auth пока ещё не подключены в коде; они входят в следующие waves.
+Prisma schema, initial migration files and seed tooling are already added in this branch. Better Auth runtime wiring and application authorization still belong to later waves.
 
 ## Chosen versions for backend rebuild
 

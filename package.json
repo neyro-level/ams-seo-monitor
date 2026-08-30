@@ -19,6 +19,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.collector.json",
     "test": "vitest run",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "db:seed": "tsx scripts/seed-database.ts",
     "verify:config": "node scripts/verify-config.mjs",
     "verify:snapshots": "node scripts/verify-snapshots.mjs",
     "db:restore-smoke": "node scripts/db-restore-smoke.mjs",
@@ -30,8 +34,13 @@
     "collector:sync:REDACTED_CLIENT_DATA": "pnpm build:collector && node dist-collector/collector/main.js client-sync REDACTED_CLIENT_DATA"
   },
   "dependencies": {
+    "@better-auth/prisma-adapter": "1.7.2",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "better-auth": "1.7.2",
     "lucide-react": "1.37.0",
     "next": "16.3.3",
+    "pg": "8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "recharts": "3.10.1",
@@ -41,11 +50,14 @@
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",
+    "@types/pg": "8.23.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.3",
+    "prisma": "7.10.0",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
     "typescript": "6.0.3",
     "vitest": "4.1.11"
   }
