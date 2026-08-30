@@ -55,6 +55,12 @@ Immutable release artifact stores reviewed source and checked-in runtime assets:
 
 Windows builder does not package `.next/standalone` or `dist-collector/` directly. Linux target installs fresh dependencies from the reviewed lockfile, runs `pnpm build` and `pnpm build:collector` inside the immutable release, then applies migrations, seed and service switch.
 
+Environment files:
+
+- runtime env must already exist at `/etc/ams-platform/ams-seo-monitor.env`;
+- migrator env must already exist at `/etc/ams-platform/ams-seo-monitor-migrator.env`;
+- deploy reads migrator values as literal `KEY=VALUE`, not shell code.
+
 Retry rules:
 
 - active SHA is never rebuilt in place;
