@@ -21,6 +21,7 @@
     "test": "vitest run",
     "verify:config": "node scripts/verify-config.mjs",
     "verify:snapshots": "node scripts/verify-snapshots.mjs",
+    "db:restore-smoke": "node scripts/db-restore-smoke.mjs",
     "project:add": "node scripts/project-add.mjs",
     "collector:webmaster:preflight": "pnpm build:collector && node dist-collector/collector/main.js webmaster-preflight",
     "collector:webmaster:audit": "pnpm build:collector && node dist-collector/collector/main.js webmaster-audit",

@@ -2,9 +2,19 @@
 
 ## Status
 
-Wave 0 target database contract for AMS SEO Monitor.
+Wave 2 foundation partially implemented.
 
-Current production still runs file-based snapshots. This document defines the PostgreSQL target that future waves will implement.
+Implemented already:
+
+- PostgreSQL `18.6` installed on AMS Main Server;
+- active cluster `18/main` on `127.0.0.1:5432`;
+- databases `seo_monitor_dev`, `seo_monitor_test`, `seo_monitor_prod`;
+- roles `seo_monitor_app` and `seo_monitor_migrator`;
+- local backup script, timer and restore smoke.
+
+Remaining Wave 2 blocker:
+
+- offsite S3-compatible backup credentials and bucket are not configured yet.
 
 ## Goal
 
@@ -22,16 +32,21 @@ PostgreSQL becomes the primary runtime source of truth for:
 
 Filesystem stops being the primary product database.
 
-## Server baseline from Wave 0
+## Server baseline and current state
 
-Read-only checks on AMS Main Server:
+Wave 0 read-only checks found:
 
 - OS: Ubuntu `22.04.5 LTS`;
-- `psql --version`: PostgreSQL `18.4` client from PGDG;
-- `postgresql.service`: installed but inactive;
-- TCP `5432`: not listening at the time of audit.
+- PostgreSQL `17` default cluster was present, down, and contained only the default `postgres` database;
+- PostgreSQL `18.4` client from PGDG was already installed.
 
-Decision: use PostgreSQL major `18` on this VPS. Bring patch level to the selected stable line during Wave 2.
+Wave 2 execution changed this to:
+
+- PostgreSQL `18.6` package installed from PGDG;
+- cluster `18/main` created and enabled;
+- listener restricted to `127.0.0.1:5432`;
+- TCP `5432` remains closed externally by firewall policy;
+- previous empty `17/main` cluster archived to `/root/postgresql-17-main-pre-migration.tar.gz` before removal.
 
 ## Topology
 
@@ -142,11 +157,9 @@ Minimum:
 
 Baseline policy for MVP:
 
-- daily backups;
-- weekly retained backups;
-- monthly retained backups.
-
-Exact counts are fixed during Wave 2 after storage sizing, but the shape must remain daily/weekly/monthly.
+- keep 7 daily backups;
+- keep 8 weekly backups;
+- keep 6 monthly backups.
 
 ### Safety rules
 
@@ -162,13 +175,15 @@ Required command/script:
 db:restore-smoke
 ```
 
-Expected flow:
+Current Wave 2 implementation:
 
 1. create temporary database;
-2. restore latest backup;
-3. verify key tables exist;
-4. run row-count / sanity checks;
+2. restore latest local dump;
+3. verify database identity and owner;
+4. record schema count sanity;
 5. drop temporary database.
+
+Until Wave 3 creates application tables, restore smoke cannot yet validate business tables.
 
 Never restore over production for testing.
 

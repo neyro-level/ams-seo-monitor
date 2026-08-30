@@ -1,0 +1,22 @@
+[Unit]
+Description=AMS SEO Monitor PostgreSQL backup
+After=postgresql@18-main.service
+Requires=postgresql@18-main.service
+
+[Service]
+Type=oneshot
+User=postgres
+Group=postgres
+Environment=DB_NAME=seo_monitor_prod
+Environment=BACKUP_ROOT=/var/backups/ams-seo-monitor-postgres
+Environment=KEEP_DAILY=7
+Environment=KEEP_WEEKLY=8
+Environment=KEEP_MONTHLY=6
+Environment=S3_REGION=ru-1
+EnvironmentFile=-/etc/ams-platform/ams-seo-monitor-backup.env
+ExecStart=/usr/local/bin/seo-monitor-db-backup.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/backups/ams-seo-monitor-postgres
