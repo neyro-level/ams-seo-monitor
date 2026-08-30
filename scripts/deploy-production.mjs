@@ -112,6 +112,34 @@ post_switch_rollback() {
   rollback_previous
 }
 
+run_with_env_file() {
+  local env_file="$1"
+  shift
+  python3 - "$env_file" "$@" <<'PY'
+import os
+import subprocess
+import sys
+
+env_path = sys.argv[1]
+command = sys.argv[2:]
+env = os.environ.copy()
+with open(env_path, encoding="utf-8") as handle:
+    for raw_line in handle:
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise SystemExit(f"Invalid env line in {env_path}: {raw_line.rstrip()}")
+        key, value = line.split("=", 1)
+        key = key.removeprefix("export ").strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+            value = value[1:-1]
+        env[key] = value
+subprocess.run(command, env=env, check=True)
+PY
+}
+
 cd /tmp
 sha256sum -c "$ARTIFACT_NAME.sha256"
 
@@ -161,13 +189,8 @@ chmod 0755 "$RELEASE/node_modules/.bin/prisma" || true
   pnpm build:collector
 )
 
-(
-  set -a
-  . "$MIGRATOR_ENV_FILE"
-  set +a
-  DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
-  DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/seed-database.ts"
-)
+run_with_env_file "$MIGRATOR_ENV_FILE" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
+run_with_env_file "$MIGRATOR_ENV_FILE" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/seed-database.ts"
 
 install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
