@@ -162,6 +162,7 @@ set -a
 . "$MIGRATOR_ENV_FILE"
 set +a
 DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
+DATABASE_URL="\${DATABASE_URL:-}" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/seed-database.ts"
 
 /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
 /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null

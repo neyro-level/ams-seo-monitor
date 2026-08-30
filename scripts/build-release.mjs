@@ -38,7 +38,7 @@ const artifactPath = path.join(artifactsDir, artifactName);
 await rm(stagingDir, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
 
-for (const directory of ["dist-collector", "config", "ops", "public", "prisma"]) {
+for (const directory of ["dist-collector", "config", "ops", "public", "prisma", "scripts"]) {
   await cp(path.join(rootDir, directory), path.join(stagingDir, directory), {
     recursive: true,
   });
