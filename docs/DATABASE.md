@@ -143,7 +143,7 @@ Backups are mandatory because relational data becomes critical runtime state.
 
 - local retained backup on server;
 - private offsite copy to S3-compatible storage;
-- Timeweb bucket `ams-seo-monitor-backups-20260831` (standard 1 GB, `ru-1`) is provisioned; a dedicated restricted S3 user is still required before credentials can be materialized.
+- Timeweb bucket `ams-seo-monitor-offsite-20260831` (private, standard 1 GB, `ru-1`) активен; отдельный S3 user `seo-monitor-backup-s3` имеет только read/write на этот bucket, credentials materialized в protected server env и Doppler `ams-seo-monitor/prd`.
 
 Backup on the same VPS only is not a real strategy.
 

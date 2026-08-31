@@ -38,7 +38,7 @@ systemd timer
 
 ## Remaining external blocker
 
-- offsite backup credentials/bucket are still missing in available Doppler scope.
+- offsite bucket и restricted S3 credentials активны через protected server env и Doppler `ams-seo-monitor/prd`.
 
 ## Production rule
 

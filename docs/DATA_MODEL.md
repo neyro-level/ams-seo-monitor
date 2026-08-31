@@ -60,4 +60,4 @@ Git хранит только:
 
 ## Backup note
 
-Local backup и restore smoke уже настроены. Offsite backup остаётся внешним blocker до появления S3 credentials/bucket.
+Local backup, mandatory offsite upload с HEAD confirmation и restore row-count smoke настроены и проверены.

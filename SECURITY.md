@@ -61,4 +61,4 @@ Browser получает только authenticated HTML/JS/CSS и browser-safe 
 - analyst/client route gating работает;
 - health routes работают;
 - local backup + restore smoke работают;
-- private offsite bucket создан; activation ожидает отдельный restricted S3 credential, shared administrator credential не переиспользуется.
+- private offsite bucket `ams-seo-monitor-offsite-20260831` активен; отдельный restricted S3 user имеет только `read/write` на этот bucket, shared administrator credential не используется.

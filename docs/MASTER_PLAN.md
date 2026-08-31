@@ -43,7 +43,7 @@
 - Better Auth и organization membership обеспечивают application access boundary;
 - worker oneshot, daily trigger, PostgreSQL advisory full-sync lock и structured journald events;
 - local daily/weekly/monthly backup и restore row-count smoke;
-- private Timeweb offsite bucket создан, activation ждёт отдельный restricted S3 credential;
+- private Timeweb offsite bucket активен: upload + object HEAD confirmation проходят до retention prune;
 - private/no-store/noindex headers;
 - previous release сохраняется для rollback.
 
