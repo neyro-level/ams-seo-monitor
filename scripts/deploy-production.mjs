@@ -194,7 +194,9 @@ run_with_env_file "$MIGRATOR_ENV_FILE" "$RELEASE/node_modules/tsx/dist/cli.mjs" 
 
 install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
-/usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+install -d -o postgres -g postgres -m 0750 /var/backups/ams-seo-monitor-postgres /var/backups/ams-seo-monitor-postgres/tmp /var/backups/ams-seo-monitor-postgres/daily /var/backups/ams-seo-monitor-postgres/weekly /var/backups/ams-seo-monitor-postgres/monthly
+chown -R postgres:postgres /var/backups/ams-seo-monitor-postgres
+runuser -u postgres -- /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
 /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
 
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
