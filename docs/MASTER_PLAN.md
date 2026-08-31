@@ -39,9 +39,11 @@
 
 - immutable exact-main releases;
 - source artifact собирается из reviewed main и достраивается на Linux target до cutover;
-- Nginx TLS и Basic Auth isolation;
-- protected report JSON aliases;
-- collector oneshot и daily timer;
+- Nginx TLS и reverse proxy к Next.js runtime;
+- Better Auth и organization membership обеспечивают application access boundary;
+- worker oneshot, daily trigger, PostgreSQL advisory full-sync lock и structured journald events;
+- local daily/weekly/monthly backup и restore row-count smoke;
+- private Timeweb offsite bucket создан, activation ждёт отдельный restricted S3 credential;
 - private/no-store/noindex headers;
 - previous release сохраняется для rollback.
 

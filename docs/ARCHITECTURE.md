@@ -12,9 +12,13 @@ Browser
 → PostgreSQL
 
 systemd timer
-→ Worker
+→ Worker composition root
 → provider adapters
-→ normalization
+→ normalized DTOs
+→ domain analytics / report compiler
+→ SyncService
+→ repository contracts
+→ Prisma repositories
 → PostgreSQL
 → ReportSnapshot / SiteReportSnapshot
 ```
@@ -38,13 +42,21 @@ Presentation не импортирует Prisma и не знает provider APIs
 
 Здесь находятся use cases, repository contracts и orchestration.
 
+### Domain
+
+- `src/domain/analytics`
+- `src/domain/reports`
+
+Domain содержит pure period/query analytics и report compiler; не знает React, Prisma и provider transport.
+
 ### Infrastructure
 
 - `src/infrastructure/database`
 - `src/infrastructure/auth`
+- `src/infrastructure/logging`
 - `collector/sources/*`
 
-Infrastructure знает Prisma, Better Auth и provider transport.
+Infrastructure знает Prisma, Better Auth, PostgreSQL, structured journald output и provider transport.
 
 ### Worker
 
@@ -65,7 +77,7 @@ Worker выполняет sync runs, source runs, historical persistence и repo
 
 - PostgreSQL хранит organizations, projects, sites, provider connections, tracked queries, sync runs, historical metrics, ranking captures, technical snapshots и report snapshots.
 - `config/*` остаётся seed/input material, не production runtime registry.
-- `collector/orchestration/report-compiler.ts` остаётся shared pure compiler.
+- `src/domain/reports/report-compiler.ts` — shared pure compiler; provider adapters инжектируются worker composition root через application port.
 
 ## Runtime surfaces
 

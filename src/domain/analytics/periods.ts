@@ -1,4 +1,4 @@
-import type { ReportPeriodKey } from "../../src/shared/schemas/report";
+import type { ReportPeriodKey } from "../../shared/schemas/report";
 
 export type DatePeriod = {
   dateFrom: string;

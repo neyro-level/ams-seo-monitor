@@ -41,6 +41,21 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
     }
   });
 
+  it("prevents overlapping full syncs for the same scope", async () => {
+    const firstRepository = new PrismaSyncRepository();
+    const secondRepository = new PrismaSyncRepository();
+    const firstLock = await firstRepository.tryAcquireFullSyncLock("REDACTED_CLIENT_DATA-test");
+    expect(firstLock).not.toBeNull();
+
+    const overlappingLock = await secondRepository.tryAcquireFullSyncLock("REDACTED_CLIENT_DATA-test");
+    expect(overlappingLock).toBeNull();
+
+    await firstLock!.release();
+    const lockAfterRelease = await secondRepository.tryAcquireFullSyncLock("REDACTED_CLIENT_DATA-test");
+    expect(lockAfterRelease).not.toBeNull();
+    await lockAfterRelease!.release();
+  });
+
   it("persists sync runs, source runs and report snapshots", async () => {
     const repository = new PrismaSyncRepository();
     const site = await prisma!.site.findFirstOrThrow({

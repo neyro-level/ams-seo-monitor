@@ -53,13 +53,15 @@ Immutable release artifact stores reviewed source and checked-in runtime assets:
 - `prisma.config.ts`
 - `release-manifest.json`
 
-Windows builder does not package `.next/standalone` or `dist-collector/` directly. Linux target installs fresh dependencies from the reviewed lockfile, runs `pnpm build` and `pnpm build:collector` inside the immutable release, then applies migrations, reapplies `seo_monitor_app` grants/default privileges, runs seed, backup/restore smoke and only then switches runtime.
+Windows builder requires exact Node `24.20.0` and does not package `.next/standalone` or `dist-collector/` directly. Linux target verifies the same exact shared runtime, installs fresh dependencies from the reviewed lockfile, runs `pnpm build` and `pnpm build:collector` inside the immutable release, then applies migrations, reapplies `seo_monitor_app` grants/default privileges, runs seed, backup/restore smoke and only then switches runtime.
 
 Environment files:
 
 - runtime env must already exist at `/etc/ams-platform/ams-seo-monitor.env`;
 - migrator env must already exist at `/etc/ams-platform/ams-seo-monitor-migrator.env`;
-- deploy reads migrator values as literal `KEY=VALUE`, not shell code.
+- optional offsite env lives at `/etc/ams-platform/ams-seo-monitor-backup.env`;
+- deploy reads migrator values as literal `KEY=VALUE`, not shell code;
+- offsite-required mode is enabled only after a dedicated restricted S3 credential is materialized.
 
 Retry rules:
 
@@ -79,6 +81,6 @@ Retry rules:
 - client foreign project access denied;
 - worker manual start succeeds.
 
-## Blocker
+## Offsite readiness
 
-Offsite DB backup remains incomplete until S3-compatible credentials and bucket are provided.
+Private Timeweb bucket `ams-seo-monitor-backups-20260831` is created. Final offsite activation is blocked only on a dedicated restricted S3 user/access key; the account-wide S3 administrator credential is intentionally not reused across projects.

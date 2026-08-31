@@ -9,6 +9,7 @@ KEEP_MONTHLY="${KEEP_MONTHLY:-6}"
 S3_BUCKET="${S3_BUCKET:-}"
 S3_ENDPOINT="${S3_ENDPOINT:-}"
 S3_REGION="${S3_REGION:-ru-1}"
+REQUIRE_OFFSITE="${REQUIRE_OFFSITE:-false}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 TMP_DIR="${BACKUP_ROOT}/tmp"
 DAILY_DIR="${BACKUP_ROOT}/daily"
@@ -32,6 +33,7 @@ trap cleanup EXIT
 pg_dump --format=custom --file "${TMP_PATH}" "${DB_NAME}"
 mv "${TMP_PATH}" "${DAILY_PATH}"
 sha256sum "${DAILY_PATH}" > "${DAILY_PATH}.sha256"
+sha256sum -c "${DAILY_PATH}.sha256" >/dev/null
 ln -sfn "${DAILY_PATH}" "${LATEST_PATH}"
 cp "${DAILY_PATH}.sha256" "${LATEST_SHA_PATH}"
 
@@ -59,17 +61,24 @@ prune_group() {
   done
 }
 
+OFFSITE_STATUS="local_only"
+if [ -n "${S3_BUCKET}" ] && [ -n "${S3_ENDPOINT}" ] && command -v aws >/dev/null 2>&1; then
+  aws s3 cp "${DAILY_PATH}" "s3://${S3_BUCKET}/daily/${FILENAME}" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}"
+  aws s3 cp "${DAILY_PATH}.sha256" "s3://${S3_BUCKET}/daily/${FILENAME}.sha256" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}"
+  aws s3api head-object --bucket "${S3_BUCKET}" --key "daily/${FILENAME}" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}" >/dev/null
+  aws s3api head-object --bucket "${S3_BUCKET}" --key "daily/${FILENAME}.sha256" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}" >/dev/null
+  OFFSITE_STATUS="local+offsite"
+elif [ "${REQUIRE_OFFSITE}" = "true" ]; then
+  echo "offsite_backup_required_but_unavailable=true" >&2
+  exit 1
+fi
+
+# Retention starts only after the new required copy has been verified.
 prune_group "${DAILY_DIR}" "${KEEP_DAILY}"
 prune_group "${WEEKLY_DIR}" "${KEEP_WEEKLY}"
 prune_group "${MONTHLY_DIR}" "${KEEP_MONTHLY}"
 
-if [ -n "${S3_BUCKET}" ] && [ -n "${S3_ENDPOINT}" ] && command -v aws >/dev/null 2>&1; then
-  aws s3 cp "${DAILY_PATH}" "s3://${S3_BUCKET}/daily/${FILENAME}" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}"
-  aws s3 cp "${DAILY_PATH}.sha256" "s3://${S3_BUCKET}/daily/${FILENAME}.sha256" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}"
-  echo "backup_status=local+offsite"
-else
-  echo "backup_status=local_only"
-fi
+echo "backup_status=${OFFSITE_STATUS}"
 
 echo "backup_file=${DAILY_PATH}"
 echo "backup_sha256_file=${DAILY_PATH}.sha256"

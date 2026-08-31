@@ -61,4 +61,4 @@ Browser получает только authenticated HTML/JS/CSS и browser-safe 
 - analyst/client route gating работает;
 - health routes работают;
 - local backup + restore smoke работают;
-- offsite backup ещё не закрыт из-за отсутствия доступных credentials/bucket.
+- private offsite bucket создан; activation ожидает отдельный restricted S3 credential, shared administrator credential не переиспользуется.

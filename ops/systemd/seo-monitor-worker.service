@@ -11,7 +11,7 @@ Group=www-data
 WorkingDirectory=/opt/ams-platform/ams-seo-monitor/current
 Environment=NODE_ENV=production
 EnvironmentFile=/etc/ams-platform/ams-seo-monitor.env
-ExecStart=/opt/ams-platform/ams-seo-monitor/shared/runtime/current/bin/node /opt/ams-platform/ams-seo-monitor/current/dist-collector/src/worker/main.js project-sync REDACTED_CLIENT_DATA
+ExecStart=/opt/ams-platform/ams-seo-monitor/shared/runtime/current/bin/node /opt/ams-platform/ams-seo-monitor/current/dist-collector/src/worker/main.js project-sync REDACTED_CLIENT_DATA daily
 TimeoutStartSec=30min
 UMask=0007
 NoNewPrivileges=true

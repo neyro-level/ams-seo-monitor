@@ -63,6 +63,20 @@ NGINX_LIVE=/etc/nginx/sites-available/ams-seo-monitor.conf
 NGINX_BACKUP="$ROOT/shared/previous-nginx.conf"
 RUNTIME_ENV_FILE=/etc/ams-platform/ams-seo-monitor.env
 MIGRATOR_ENV_FILE=/etc/ams-platform/ams-seo-monitor-migrator.env
+BACKUP_ENV_FILE=/etc/ams-platform/ams-seo-monitor-backup.env
+RUNTIME_BIN="$ROOT/shared/runtime/current/bin"
+EXPECTED_NODE_VERSION=v24.20.0
+
+if [ ! -x "$RUNTIME_BIN/node" ]; then
+  echo "Missing production Node runtime: $RUNTIME_BIN/node" >&2
+  exit 1
+fi
+ACTUAL_NODE_VERSION="$($RUNTIME_BIN/node -v)"
+if [ "$ACTUAL_NODE_VERSION" != "$EXPECTED_NODE_VERSION" ]; then
+  echo "Production Node mismatch: expected $EXPECTED_NODE_VERSION, got $ACTUAL_NODE_VERSION" >&2
+  exit 1
+fi
+export PATH="$RUNTIME_BIN:$PATH"
 
 if [ -n "$PREVIOUS" ] && [ "$PREVIOUS" = "$RELEASE" ]; then
   echo "Target release is already current; refusing in-place rebuild" >&2
@@ -197,7 +211,11 @@ install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
 install -d -o postgres -g postgres -m 0750 /var/backups/ams-seo-monitor-postgres /var/backups/ams-seo-monitor-postgres/tmp /var/backups/ams-seo-monitor-postgres/daily /var/backups/ams-seo-monitor-postgres/weekly /var/backups/ams-seo-monitor-postgres/monthly
 chown -R postgres:postgres /var/backups/ams-seo-monitor-postgres
-runuser -u postgres -- /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+if [ -f "$BACKUP_ENV_FILE" ]; then
+  run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres --preserve-environment -- /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+else
+  runuser -u postgres -- /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+fi
 /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
 
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service

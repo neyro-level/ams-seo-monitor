@@ -1,10 +1,8 @@
+import { SystemRole } from "@prisma/client";
+import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
 import { randomUUID } from "node:crypto";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, SystemRole } from "@prisma/client";
 import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
-import { Pool } from "pg";
-import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
 
 type AuthAdminCommand =
   | "create"
@@ -19,6 +17,9 @@ const options: Record<string, string> = {};
 
 for (let index = 0; index < args.length; index += 1) {
   const current = args[index];
+  if (current === "--") {
+    continue;
+  }
   if (!current.startsWith("--")) {
     throw new Error(`Unexpected argument: ${current}`);
   }
@@ -31,18 +32,16 @@ for (let index = 0; index < args.length; index += 1) {
   index += 1;
 }
 
-const pool = new Pool(
-  createPgPoolConfigFromEnvironment({
-    DATABASE_URL: process.env.DATABASE_URL,
-    DATABASE_HOST: process.env.DATABASE_HOST,
-    DATABASE_PORT: process.env.DATABASE_PORT,
-    DATABASE_USER: process.env.DATABASE_USER,
-    DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
-    DATABASE_NAME: process.env.DATABASE_NAME,
-    DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
-  }),
-);
-const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+const database = createPrismaContext({
+  DATABASE_URL: process.env.DATABASE_URL,
+  DATABASE_HOST: process.env.DATABASE_HOST,
+  DATABASE_PORT: process.env.DATABASE_PORT,
+  DATABASE_USER: process.env.DATABASE_USER,
+  DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
+  DATABASE_NAME: process.env.DATABASE_NAME,
+  DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
+});
+const { prisma } = database;
 
 function requireOption(name: string) {
   const value = options[name];
@@ -138,7 +137,7 @@ async function setSystemRole() {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { systemRole, disabledAt: null },
+    data: { systemRole },
   });
 
   console.log(`updated_system_role=${email}`);
@@ -236,8 +235,7 @@ async function main() {
 
 main()
   .finally(async () => {
-    await prisma.$disconnect();
-    await pool.end();
+    await database.close();
   })
   .catch((error) => {
     console.error(error);

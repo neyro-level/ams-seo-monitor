@@ -1,16 +1,13 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PrismaPg } from "@prisma/adapter-pg";
 import {
-  PrismaClient,
   GoalCategory,
   GoalDirection,
   ProjectStatus,
   Provider,
   RankingSource,
 } from "@prisma/client";
-import { Pool } from "pg";
 import {
   clientRegistrySchema,
   clusterProfileSchema,
@@ -18,25 +15,20 @@ import {
   thresholdsSchema,
   type ClientRegistry,
 } from "../src/shared/schemas/registry";
-import {
-  createPgPoolConfigFromEnvironment,
-} from "../src/infrastructure/database/prisma/pool-config";
+import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
 import { trackedQuerySetSchema } from "../src/shared/schemas/tracked-query";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const pool = new Pool(
-  createPgPoolConfigFromEnvironment({
-    DATABASE_URL: process.env.DATABASE_URL,
-    DATABASE_HOST: process.env.DATABASE_HOST,
-    DATABASE_PORT: process.env.DATABASE_PORT,
-    DATABASE_USER: process.env.DATABASE_USER,
-    DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
-    DATABASE_NAME: process.env.DATABASE_NAME,
-    DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
-  }),
-);
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const database = createPrismaContext({
+  DATABASE_URL: process.env.DATABASE_URL,
+  DATABASE_HOST: process.env.DATABASE_HOST,
+  DATABASE_PORT: process.env.DATABASE_PORT,
+  DATABASE_USER: process.env.DATABASE_USER,
+  DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
+  DATABASE_NAME: process.env.DATABASE_NAME,
+  DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
+});
+const { prisma } = database;
 
 function projectStatusForClient(client: ClientRegistry) {
   if (!client.enabled) return ProjectStatus.DISABLED;
@@ -387,8 +379,7 @@ async function main() {
 
 main()
   .finally(async () => {
-    await prisma.$disconnect();
-    await pool.end();
+    await database.close();
   })
   .catch((error) => {
     console.error(error);

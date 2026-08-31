@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildQueryOpportunities,
   mergeWebmasterQueryCollections,
-} from "../collector/analytics/webmaster-queries";
+} from "../src/domain/analytics/webmaster-queries";
 import type { WebmasterQueryCollection } from "../src/shared/schemas/webmaster-source";
 
 const baseQuery = {

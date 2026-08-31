@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compileSiteReportSnapshot } from "../collector/orchestration/report-compiler";
+import { compileSiteReportSnapshot } from "../src/domain/reports/report-compiler";
 import {
   getClientBySlug,
   getRegistryBundle,

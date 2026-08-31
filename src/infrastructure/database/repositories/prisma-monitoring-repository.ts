@@ -1,4 +1,3 @@
-
 import type {
   MonitoringProjectRecord,
   MonitoringRepository,
@@ -6,6 +5,10 @@ import type {
 import { getPrismaClient } from "../prisma/client";
 
 export class PrismaMonitoringRepository implements MonitoringRepository {
+  async ping(): Promise<void> {
+    await getPrismaClient().$queryRawUnsafe("select 1");
+  }
+
   async findProjectBySlug(projectSlug: string): Promise<MonitoringProjectRecord | null> {
     const project = await getPrismaClient().project.findUnique({
       where: { slug: projectSlug },

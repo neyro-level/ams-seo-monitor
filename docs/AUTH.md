@@ -1,8 +1,8 @@
 # AUTH
 
-## Current branch state
+## Current state
 
-Ветка `work/background-migration` уже перевела application auth на Better Auth.
+Application auth уже переведён на Better Auth.
 
 Реализовано:
 
@@ -58,7 +58,7 @@ pnpm user:remove-from-organization
 - disabled users return `null` from authorization helper;
 - UI routes redirect unauthenticated users to `/login/`.
 
-## Verified in branch
+## Verified state
 
 - sign-in endpoint returns session token;
 - analyst opens `/analyst/` and site reports;

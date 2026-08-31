@@ -1,27 +1,12 @@
 import { NextResponse } from "next/server";
-import { getPrismaClient, hasDatabaseUrl } from "../../../../infrastructure/database/prisma/client";
+import { getMonitoringService } from "../../../../infrastructure/service-container";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!hasDatabaseUrl()) {
-    return NextResponse.json(
-      {
-        status: "unavailable",
-        dependency: "postgresql",
-      },
-      {
-        status: 503,
-        headers: {
-          "Cache-Control": "no-store",
-        },
-      },
-    );
-  }
-
   try {
-    await getPrismaClient().$queryRawUnsafe("select 1");
+    await getMonitoringService().ping();
     return NextResponse.json(
       {
         status: "ready",
