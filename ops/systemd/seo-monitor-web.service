@@ -12,7 +12,7 @@ WorkingDirectory=/opt/ams-platform/ams-seo-monitor/current
 Environment=NODE_ENV=production
 Environment=HOSTNAME=127.0.0.1
 Environment=PORT=3000
-EnvironmentFile=/etc/ams-platform/ams-seo-monitor.env
+EnvironmentFile=/etc/ams-platform/ams-seo-monitor-web.env
 ExecStart=/opt/ams-platform/ams-seo-monitor/shared/runtime/current/bin/node /opt/ams-platform/ams-seo-monitor/current/.next/standalone/server.js
 Restart=always
 RestartSec=5

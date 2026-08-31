@@ -21,6 +21,7 @@ import {
   normalizeSitemaps,
   normalizeSummary,
 } from "./normalize";
+import { requireTrustedApiBaseUrl } from "../trusted-api-url";
 
 export type WebmasterEnvironment = {
   token: string;
@@ -72,9 +73,23 @@ export function readWebmasterEnvironment(env: NodeJS.ProcessEnv = process.env): 
     });
   }
 
+  let trustedBaseUrl: string;
+  try {
+    trustedBaseUrl = requireTrustedApiBaseUrl(baseUrl, {
+      origin: "https://api.webmaster.yandex.net",
+      pathname: "/v4",
+    });
+  } catch {
+    throw new WebmasterSafeError({
+      code: "UNTRUSTED_ORIGIN",
+      endpoint: "env:YANDEX_WEBMASTER_API_BASE_URL",
+      message: "YANDEX_WEBMASTER_API_BASE_URL is not allowlisted",
+    });
+  }
+
   return {
     token,
-    baseUrl: baseUrl.replace(/\/$/, ""),
+    baseUrl: trustedBaseUrl,
     targetSiteUrl: normalizeSiteUrl(targetSiteUrl),
     tokenStatus,
   };

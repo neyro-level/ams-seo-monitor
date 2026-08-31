@@ -3,6 +3,7 @@ import { z } from "zod";
 export const metricaSafeErrorCodeSchema = z.enum([
   "TOKEN_INACTIVE",
   "MISSING_ENV",
+  "UNTRUSTED_ORIGIN",
   "UNAUTHORIZED",
   "FORBIDDEN",
   "NOT_FOUND",

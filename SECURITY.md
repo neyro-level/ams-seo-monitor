@@ -22,14 +22,16 @@ Browser получает только authenticated HTML/JS/CSS и browser-safe 
 
 ### Worker
 
+- отдельный OS user `seo-monitor-worker` и отдельный root-owned env без Better Auth secret;
 - единственный runtime, который синхронизирует providers;
 - пишет SyncRun, SourceRun, historical metrics, ranking captures, technical snapshots и report snapshots;
 - не обслуживает browser requests.
 
 ### Nginx
 
-- TLS;
-- reverse proxy;
+- TLS и HSTS;
+- reverse proxy без framework version disclosure;
+- internal-only `/api/health/ready`;
 - private/no-store/noindex headers;
 - не является application auth system.
 
@@ -50,6 +52,9 @@ Browser получает только authenticated HTML/JS/CSS и browser-safe 
 - Prisma и DB URLs не попадают в browser;
 - direct Prisma/SQL in UI prohibited;
 - provider APIs not callable from browser;
+- provider credential sinks accept only exact HTTPS allowlisted API origins;
+- web process environment never contains provider tokens;
+- auth user passwords are stdin-only, never argv;
 - foreign project/site/report access denied server-side;
 - local PostgreSQL port not exposed publicly;
 - backup secrets not stored in Git.

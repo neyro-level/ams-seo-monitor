@@ -1,5 +1,6 @@
 
 import type {
+  ProjectAccessScope,
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
@@ -60,8 +61,20 @@ function mapProjectRecord(project: {
 }
 
 export class PrismaProjectRepository implements ProjectRepository {
-  async listProjects(): Promise<StoredProjectRecord[]> {
+  async listOrganizationIdsForUser(userId: string): Promise<string[]> {
+    const memberships = await getPrismaClient().member.findMany({
+      where: { userId },
+      select: { organizationId: true },
+    });
+    return memberships.map((membership) => membership.organizationId);
+  }
+
+  async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
     const projects = await getPrismaClient().project.findMany({
+      where:
+        scope.organizationIds === null
+          ? undefined
+          : { organizationId: { in: scope.organizationIds } },
       orderBy: { slug: "asc" },
       select: {
         id: true,
@@ -98,9 +111,17 @@ export class PrismaProjectRepository implements ProjectRepository {
     return projects.map(mapProjectRecord);
   }
 
-  async findProjectBySlug(projectSlug: string): Promise<StoredProjectRecord | null> {
-    const project = await getPrismaClient().project.findUnique({
-      where: { slug: projectSlug },
+  async findProjectBySlug(
+    projectSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredProjectRecord | null> {
+    const project = await getPrismaClient().project.findFirst({
+      where: {
+        slug: projectSlug,
+        ...(scope.organizationIds === null
+          ? {}
+          : { organizationId: { in: scope.organizationIds } }),
+      },
       select: {
         id: true,
         slug: true,
@@ -136,12 +157,19 @@ export class PrismaProjectRepository implements ProjectRepository {
     return project ? mapProjectRecord(project) : null;
   }
 
-  async findSiteBySlugs(projectSlug: string, siteSlug: string): Promise<StoredSiteRecord | null> {
+  async findSiteBySlugs(
+    projectSlug: string,
+    siteSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredSiteRecord | null> {
     const site = await getPrismaClient().site.findFirst({
       where: {
         slug: siteSlug,
         project: {
           slug: projectSlug,
+          ...(scope.organizationIds === null
+            ? {}
+            : { organizationId: { in: scope.organizationIds } }),
         },
       },
       select: {
@@ -169,19 +197,4 @@ export class PrismaProjectRepository implements ProjectRepository {
     return site ? mapSiteRecord(site) : null;
   }
 
-  async hasOrganizationMembership(userId: string, organizationId: string): Promise<boolean> {
-    const membership = await getPrismaClient().member.findUnique({
-      where: {
-        organizationId_userId: {
-          organizationId,
-          userId,
-        },
-      },
-      select: {
-        organizationId: true,
-      },
-    });
-
-    return Boolean(membership);
-  }
 }

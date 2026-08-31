@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { SiteRegistry } from "../../../src/shared/schemas/registry";
+import { requireTrustedApiBaseUrl } from "../trusted-api-url";
 import {
   topvisorSiteDataSchema,
   type RankSnapshot,
@@ -41,9 +42,24 @@ function requireEnvironment(env: NodeJS.ProcessEnv, key: string) {
 export function readTopvisorEnvironment(
   env: NodeJS.ProcessEnv = process.env,
 ): TopvisorEnvironment {
+  const rawBaseUrl =
+    env.TOPVISOR_API_BASE_URL?.trim() || "https://api.topvisor.com/v2/json";
+  let baseUrl: string;
+  try {
+    baseUrl = requireTrustedApiBaseUrl(rawBaseUrl, {
+      origin: "https://api.topvisor.com",
+      pathname: "/v2/json",
+    });
+  } catch {
+    throw new TopvisorSafeError(
+      "UNTRUSTED_ORIGIN",
+      null,
+      "TOPVISOR_API_BASE_URL is not allowlisted",
+    );
+  }
+
   return {
-    baseUrl:
-      env.TOPVISOR_API_BASE_URL?.trim() || "https://api.topvisor.com/v2/json",
+    baseUrl,
     userId: requireEnvironment(env, "TOPVISOR_USER_ID"),
     apiKey: requireEnvironment(env, "TOPVISOR_API_KEY"),
   };

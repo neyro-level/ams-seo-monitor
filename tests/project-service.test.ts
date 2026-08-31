@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ProjectService } from "../src/application/services/project-service";
 import type {
+  ProjectAccessScope,
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
@@ -81,21 +82,32 @@ const projects: StoredProjectRecord[] = [
 ];
 
 class FakeProjectRepository implements ProjectRepository {
-  async listProjects(): Promise<StoredProjectRecord[]> {
-    return projects;
+  async listOrganizationIdsForUser(userId: string): Promise<string[]> {
+    return userId === "viewer-1" ? ["org-REDACTED_CLIENT_DATA"] : [];
   }
 
-  async findProjectBySlug(projectSlug: string): Promise<StoredProjectRecord | null> {
-    return projects.find((project) => project.projectSlug === projectSlug) ?? null;
+  async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
+    return scope.organizationIds === null
+      ? projects
+      : projects.filter((project) => scope.organizationIds!.includes(project.organizationId));
   }
 
-  async findSiteBySlugs(projectSlug: string, siteSlug: string): Promise<StoredSiteRecord | null> {
-    const project = projects.find((item) => item.projectSlug === projectSlug);
+  async findProjectBySlug(
+    projectSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredProjectRecord | null> {
+    return (
+      (await this.listProjects(scope)).find((project) => project.projectSlug === projectSlug) ?? null
+    );
+  }
+
+  async findSiteBySlugs(
+    projectSlug: string,
+    siteSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredSiteRecord | null> {
+    const project = await this.findProjectBySlug(projectSlug, scope);
     return project?.sites.find((site) => site.siteSlug === siteSlug) ?? null;
-  }
-
-  async hasOrganizationMembership(userId: string, organizationId: string): Promise<boolean> {
-    return userId === "viewer-1" && organizationId === "org-REDACTED_CLIENT_DATA";
   }
 }
 

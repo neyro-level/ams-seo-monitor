@@ -96,7 +96,7 @@ pnpm db:restore-smoke
 Auth admin scripts:
 
 ```bash
-pnpm user:create -- --email ... --name ... --password ... --system-role SEO_ANALYST
+doppler secrets get AMS_SEO_MONITOR_ANALYST_PASSWORD --plain | pnpm user:create -- --email ... --name ... --system-role SEO_ANALYST
 pnpm user:add-to-organization -- --email ... --organization REDACTED_CLIENT_DATA
 ```
 

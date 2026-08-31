@@ -20,9 +20,20 @@ export interface StoredProjectRecord {
   sites: StoredSiteRecord[];
 }
 
+export interface ProjectAccessScope {
+  organizationIds: string[] | null;
+}
+
 export interface ProjectRepository {
-  listProjects(): Promise<StoredProjectRecord[]>;
-  findProjectBySlug(projectSlug: string): Promise<StoredProjectRecord | null>;
-  findSiteBySlugs(projectSlug: string, siteSlug: string): Promise<StoredSiteRecord | null>;
-  hasOrganizationMembership(userId: string, organizationId: string): Promise<boolean>;
+  listOrganizationIdsForUser(userId: string): Promise<string[]>;
+  listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]>;
+  findProjectBySlug(
+    projectSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredProjectRecord | null>;
+  findSiteBySlugs(
+    projectSlug: string,
+    siteSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredSiteRecord | null>;
 }

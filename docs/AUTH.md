@@ -13,7 +13,8 @@ Application auth уже переведён на Better Auth.
 - route handler `/api/auth/[...all]`;
 - login page `/login/`;
 - analyst/client route gating;
-- auth admin CLI scripts.
+- auth admin CLI scripts;
+- user creation password is bounded stdin only and never an argv value.
 
 ## Roles
 
@@ -42,7 +43,8 @@ Application auth уже переведён на Better Auth.
 ## Current scripts
 
 ```bash
-pnpm user:create
+# Password is accepted only through bounded stdin; --password argv is rejected.
+doppler secrets get <PASSWORD_SECRET> --plain | pnpm user:create -- --email ... --name ... --system-role CLIENT_VIEWER
 pnpm user:disable
 pnpm user:set-system-role
 pnpm user:add-to-organization

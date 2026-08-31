@@ -78,4 +78,19 @@ describe("webmaster error handling", () => {
       }),
     ).toThrow("YANDEX_WEBMASTER_TOKEN_STATUS is not ACTIVE");
   });
+  it.each([
+    "http://127.0.0.1:8080/v4",
+    "https://api.webmaster.yandex.net.evil.example/v4",
+    "https://token@api.webmaster.yandex.net/v4",
+  ])("rejects an untrusted API origin before requests: %s", (baseUrl) => {
+    expect(() =>
+      readWebmasterEnvironment({
+        YANDEX_WEBMASTER_OAUTH_TOKEN: "token",
+        YANDEX_WEBMASTER_API_BASE_URL: baseUrl,
+        YANDEX_WEBMASTER_SITE_URL: "https://REDACTED_CLIENT_DATA",
+        YANDEX_WEBMASTER_TOKEN_STATUS: "ACTIVE",
+      }),
+    ).toThrow("YANDEX_WEBMASTER_API_BASE_URL is not allowlisted");
+  });
+
 });

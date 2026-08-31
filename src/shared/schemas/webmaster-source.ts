@@ -3,6 +3,7 @@ import { z } from "zod";
 export const webmasterSafeErrorCodeSchema = z.enum([
   "TOKEN_INACTIVE",
   "MISSING_ENV",
+  "UNTRUSTED_ORIGIN",
   "INVALID_RESPONSE",
   "UNAUTHORIZED",
   "FORBIDDEN",

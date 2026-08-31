@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ReportService } from "../src/application/services/report-service";
 import type {
+  ProjectAccessScope,
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
@@ -97,20 +98,36 @@ const sampleReport = siteReportSnapshotSchema.parse({
 });
 
 class FakeProjectRepository implements ProjectRepository {
-  async listProjects(): Promise<StoredProjectRecord[]> {
+  async listOrganizationIdsForUser(userId: string): Promise<string[]> {
+    return userId === "viewer-1" ? ["org-REDACTED_CLIENT_DATA"] : [];
+  }
+
+  async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
+    if (scope.organizationIds !== null && !scope.organizationIds.includes(sampleProject.organizationId)) {
+      return [];
+    }
     return [sampleProject];
   }
 
-  async findProjectBySlug(projectSlug: string): Promise<StoredProjectRecord | null> {
-    return projectSlug === sampleProject.projectSlug ? sampleProject : null;
+  async findProjectBySlug(
+    projectSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredProjectRecord | null> {
+    return projectSlug === sampleProject.projectSlug && (await this.listProjects(scope)).length > 0
+      ? sampleProject
+      : null;
   }
 
-  async findSiteBySlugs(projectSlug: string, siteSlug: string): Promise<StoredSiteRecord | null> {
-    return projectSlug === sampleSite.projectSlug && siteSlug === sampleSite.siteSlug ? sampleSite : null;
-  }
-
-  async hasOrganizationMembership(userId: string, organizationId: string): Promise<boolean> {
-    return userId === "viewer-1" && organizationId === "org-REDACTED_CLIENT_DATA";
+  async findSiteBySlugs(
+    projectSlug: string,
+    siteSlug: string,
+    scope: ProjectAccessScope,
+  ): Promise<StoredSiteRecord | null> {
+    return projectSlug === sampleSite.projectSlug &&
+      siteSlug === sampleSite.siteSlug &&
+      (await this.listProjects(scope)).length > 0
+      ? sampleSite
+      : null;
   }
 }
 
