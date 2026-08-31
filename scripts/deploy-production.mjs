@@ -61,7 +61,8 @@ CHECKSUM="/tmp/$ARTIFACT_NAME.sha256"
 PREVIOUS="$(readlink -f "$ROOT/current" || true)"
 NGINX_LIVE=/etc/nginx/sites-available/ams-seo-monitor.conf
 NGINX_BACKUP="$ROOT/shared/previous-nginx.conf"
-RUNTIME_ENV_FILE=/etc/ams-platform/ams-seo-monitor.env
+WEB_ENV_FILE=/etc/ams-platform/ams-seo-monitor-web.env
+WORKER_ENV_FILE=/etc/ams-platform/ams-seo-monitor-worker.env
 MIGRATOR_ENV_FILE=/etc/ams-platform/ams-seo-monitor-migrator.env
 BACKUP_ENV_FILE=/etc/ams-platform/ams-seo-monitor-backup.env
 RUNTIME_BIN="$ROOT/shared/runtime/current/bin"
@@ -177,12 +178,20 @@ if [ "$EXPECTED_LOCK" != "$ACTUAL_LOCK" ]; then
   exit 1
 fi
 
-if [ ! -f "$RUNTIME_ENV_FILE" ]; then
-  echo "Missing runtime env file: $RUNTIME_ENV_FILE" >&2
+if [ ! -f "$WEB_ENV_FILE" ]; then
+  echo "Missing web env file: $WEB_ENV_FILE" >&2
+  exit 1
+fi
+if [ ! -f "$WORKER_ENV_FILE" ]; then
+  echo "Missing worker env file: $WORKER_ENV_FILE" >&2
   exit 1
 fi
 if [ ! -f "$MIGRATOR_ENV_FILE" ]; then
   echo "Missing migrator env file: $MIGRATOR_ENV_FILE" >&2
+  exit 1
+fi
+if [ ! -f "$BACKUP_ENV_FILE" ]; then
+  echo "Missing mandatory offsite backup env file: $BACKUP_ENV_FILE" >&2
   exit 1
 fi
 
@@ -211,12 +220,12 @@ install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
 install -d -o postgres -g postgres -m 0750 /var/backups/ams-seo-monitor-postgres /var/backups/ams-seo-monitor-postgres/tmp /var/backups/ams-seo-monitor-postgres/daily /var/backups/ams-seo-monitor-postgres/weekly /var/backups/ams-seo-monitor-postgres/monthly
 chown -R postgres:postgres /var/backups/ams-seo-monitor-postgres
-if [ -f "$BACKUP_ENV_FILE" ]; then
-  run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres --preserve-environment -- /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
-else
-  runuser -u postgres -- /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
-fi
+run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres --preserve-environment -- /usr/bin/env REQUIRE_OFFSITE=true /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
 /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
+
+if ! id -u seo-monitor-worker >/dev/null 2>&1; then
+  useradd --system --no-create-home --shell /usr/sbin/nologin --gid www-data seo-monitor-worker
+fi
 
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service

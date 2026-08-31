@@ -51,4 +51,19 @@ describe("metrica errors", () => {
       }),
     ).rejects.toMatchObject<MetricaSafeError>({ code: "FORBIDDEN", status: 403 });
   });
+  it.each([
+    "http://169.254.169.254",
+    "https://api-metrika.yandex.net.evil.example",
+    "https://token@api-metrika.yandex.net",
+  ])("rejects an untrusted API origin before requests: %s", (baseUrl) => {
+    expect(() =>
+      readMetricaEnvironment({
+        YANDEX_METRICA_OAUTH_TOKEN: "token",
+        YANDEX_METRICA_API_BASE_URL: baseUrl,
+        YANDEX_METRICA_SITE_URL: "https://REDACTED_CLIENT_DATA",
+        YANDEX_METRICA_TOKEN_STATUS: "ACTIVE",
+      }),
+    ).toThrow("YANDEX_METRICA_API_BASE_URL is not allowlisted");
+  });
+
 });

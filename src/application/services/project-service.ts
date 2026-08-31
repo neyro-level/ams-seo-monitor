@@ -78,28 +78,19 @@ function toProjectSummary(project: ProjectTree): ProjectSummary {
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
-  private async isProjectVisibleToUser(
-    user: AuthenticatedUser,
-    organizationId: string,
-  ): Promise<boolean> {
+  private async getAccessScope(user: AuthenticatedUser) {
     if (user.systemRole === "SEO_ANALYST") {
-      return true;
+      return { organizationIds: null };
     }
 
-    return this.projectRepository.hasOrganizationMembership(user.userId, organizationId);
+    const organizationIds = await this.projectRepository.listOrganizationIdsForUser(user.userId);
+    return { organizationIds };
   }
 
   async listProjectTreesForUser(user: AuthenticatedUser): Promise<ProjectTree[]> {
-    const projects = await this.projectRepository.listProjects();
-    const visibleProjects: ProjectTree[] = [];
-
-    for (const project of projects) {
-      if (await this.isProjectVisibleToUser(user, project.organizationId)) {
-        visibleProjects.push(toProjectTree(project));
-      }
-    }
-
-    return visibleProjects;
+    const scope = await this.getAccessScope(user);
+    const projects = await this.projectRepository.listProjects(scope);
+    return projects.map(toProjectTree);
   }
 
   async listProjectsForUser(user: AuthenticatedUser): Promise<ProjectSummary[]> {
@@ -119,13 +110,8 @@ export class ProjectService {
     user: AuthenticatedUser,
     projectSlug: string,
   ): Promise<StoredProjectRecord | null> {
-    const project = await this.projectRepository.findProjectBySlug(projectSlug);
-    if (!project) {
-      return null;
-    }
-
-    const visible = await this.isProjectVisibleToUser(user, project.organizationId);
-    return visible ? project : null;
+    const scope = await this.getAccessScope(user);
+    return this.projectRepository.findProjectBySlug(projectSlug, scope);
   }
 
   async getSiteAccessForUser(
@@ -133,16 +119,13 @@ export class ProjectService {
     projectSlug: string,
     siteSlug: string,
   ): Promise<StoredSiteRecord | null> {
-    const site = await this.projectRepository.findSiteBySlugs(projectSlug, siteSlug);
-    if (!site) {
-      return null;
-    }
-
-    const visible = await this.isProjectVisibleToUser(user, site.organizationId);
-    return visible ? site : null;
+    const scope = await this.getAccessScope(user);
+    return this.projectRepository.findSiteBySlugs(projectSlug, siteSlug, scope);
   }
 
   async getSiteBySlugs(projectSlug: string, siteSlug: string): Promise<StoredSiteRecord | null> {
-    return this.projectRepository.findSiteBySlugs(projectSlug, siteSlug);
+    return this.projectRepository.findSiteBySlugs(projectSlug, siteSlug, {
+      organizationIds: null,
+    });
   }
 }

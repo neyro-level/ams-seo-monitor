@@ -1,6 +1,7 @@
 import { SystemRole } from "@prisma/client";
 import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
 import { randomUUID } from "node:crypto";
+import { stdin } from "node:process";
 import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
 
@@ -58,10 +59,36 @@ function parseSystemRole(value: string) {
   throw new Error(`Unsupported system role: ${value}`);
 }
 
+async function readPasswordFromStdin() {
+  if (stdin.isTTY) {
+    throw new Error("Password must be provided through bounded stdin, never argv");
+  }
+
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+  for await (const chunk of stdin) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += buffer.length;
+    if (totalBytes > 1024) {
+      throw new Error("Password input exceeds 1024 bytes");
+    }
+    chunks.push(buffer);
+  }
+
+  const password = Buffer.concat(chunks).toString("utf8").replace(/\r?\n$/, "");
+  if (password.length < 12 || password.length > 256) {
+    throw new Error("Password must contain between 12 and 256 characters");
+  }
+  return password;
+}
+
 async function createUser() {
   const email = requireOption("email").toLowerCase();
   const name = requireOption("name");
-  const password = requireOption("password");
+  if (options.password !== undefined) {
+    throw new Error("--password is forbidden; provide the password through stdin");
+  }
+  const password = await readPasswordFromStdin();
   const systemRole = parseSystemRole(options["system-role"] ?? SystemRole.CLIENT_VIEWER);
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -72,26 +99,27 @@ async function createUser() {
   const userId = randomUUID();
   const passwordHash = await hashPassword(password);
 
-  await prisma.user.create({
-    data: {
-      id: userId,
-      email,
-      name,
-      emailVerified: false,
-      systemRole,
-    },
-  });
-
-  await prisma.account.create({
-    data: {
-      id: randomUUID(),
-      userId,
-      providerId: "credential",
-      issuer: createLocalAccountIssuer("credential"),
-      accountId: userId,
-      password: passwordHash,
-    },
-  });
+  await prisma.$transaction([
+    prisma.user.create({
+      data: {
+        id: userId,
+        email,
+        name,
+        emailVerified: false,
+        systemRole,
+      },
+    }),
+    prisma.account.create({
+      data: {
+        id: randomUUID(),
+        userId,
+        providerId: "credential",
+        issuer: createLocalAccountIssuer("credential"),
+        accountId: userId,
+        password: passwordHash,
+      },
+    }),
+  ]);
 
   console.log(`created_user=${email}`);
 }

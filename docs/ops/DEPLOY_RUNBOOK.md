@@ -57,9 +57,10 @@ Windows builder requires exact Node `24.20.0` and does not package `.next/standa
 
 Environment files:
 
-- runtime env must already exist at `/etc/ams-platform/ams-seo-monitor.env`;
+- web env must exist at `/etc/ams-platform/ams-seo-monitor-web.env` and contains only DB + Better Auth values;
+- worker env must exist at `/etc/ams-platform/ams-seo-monitor-worker.env` and contains only DB + provider values;
 - migrator env must already exist at `/etc/ams-platform/ams-seo-monitor-migrator.env`;
-- optional offsite env lives at `/etc/ams-platform/ams-seo-monitor-backup.env`;
+- mandatory offsite env lives at `/etc/ams-platform/ams-seo-monitor-backup.env` with `REQUIRE_OFFSITE=true`;
 - deploy reads migrator values as literal `KEY=VALUE`, not shell code;
 - offsite-required mode включён через dedicated restricted S3 credential в protected env.
 

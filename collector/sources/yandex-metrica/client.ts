@@ -22,6 +22,7 @@ import {
   METRICA_REPORT_BYTIME_ENDPOINT,
   METRICA_REPORT_TABLE_ENDPOINT,
 } from "./contract";
+import { requireTrustedApiBaseUrl } from "../trusted-api-url";
 
 export type MetricaEnvironment = {
   token: string;
@@ -101,9 +102,23 @@ export function readMetricaEnvironment(env: NodeJS.ProcessEnv = process.env): Me
     });
   }
 
+  let trustedBaseUrl: string;
+  try {
+    trustedBaseUrl = requireTrustedApiBaseUrl(baseUrl, {
+      origin: "https://api-metrika.yandex.net",
+      pathname: "/",
+    });
+  } catch {
+    throw new MetricaSafeError({
+      code: "UNTRUSTED_ORIGIN",
+      endpoint: "env:YANDEX_METRICA_API_BASE_URL",
+      message: "YANDEX_METRICA_API_BASE_URL is not allowlisted",
+    });
+  }
+
   return {
     token,
-    baseUrl: baseUrl.replace(/\/$/, ""),
+    baseUrl: trustedBaseUrl,
     targetSiteUrl: normalizeMetricaSiteUrl(targetSiteUrl),
     tokenStatus,
   };

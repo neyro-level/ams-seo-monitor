@@ -27,6 +27,20 @@ describe("Topvisor read-only source", () => {
     expect(() => readTopvisorEnvironment({})).toThrowError(TopvisorSafeError);
   });
 
+  it.each([
+    "http://127.0.0.1/v2/json",
+    "https://api.topvisor.com.evil.example/v2/json",
+    "https://token@api.topvisor.com/v2/json",
+  ])("rejects an untrusted API origin before requests: %s", (baseUrl) => {
+    expect(() =>
+      readTopvisorEnvironment({
+        TOPVISOR_API_BASE_URL: baseUrl,
+        TOPVISOR_USER_ID: "user-id",
+        TOPVISOR_API_KEY: "api-key",
+      }),
+    ).toThrow("TOPVISOR_API_BASE_URL is not allowlisted");
+  });
+
   it("normalizes exact positions for every capture date", () => {
     const data = normalizeTopvisorHistory({
       payload: {

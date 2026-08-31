@@ -116,7 +116,7 @@ repositoryTestDescription("Prisma repositories", () => {
 
   it("loads project summaries from PostgreSQL", async () => {
     const repository = new PrismaProjectRepository();
-    const projects = await repository.listProjects();
+    const projects = await repository.listProjects({ organizationIds: null });
     const REDACTED_CLIENT_DATA = projects.find((project) => project.projectSlug === "REDACTED_CLIENT_DATA");
 
     expect(projects.length).toBeGreaterThanOrEqual(2);
@@ -124,10 +124,33 @@ repositoryTestDescription("Prisma repositories", () => {
     expect(REDACTED_CLIENT_DATA?.sites[0]?.enabledSourceCount).toBeGreaterThanOrEqual(0);
   });
 
+  it("applies organization scope inside Prisma queries", async () => {
+    const repository = new PrismaProjectRepository();
+    const REDACTED_CLIENT_DATA = await prisma!.organization.findUniqueOrThrow({
+      where: { slug: "REDACTED_CLIENT_DATA" },
+      select: { id: true },
+    });
+    const scopedProjects = await repository.listProjects({
+      organizationIds: [REDACTED_CLIENT_DATA.id],
+    });
+    const foreignProject = await repository.findProjectBySlug("REDACTED_CLIENT_DATA", {
+      organizationIds: [REDACTED_CLIENT_DATA.id],
+    });
+    const foreignSite = await repository.findSiteBySlugs("REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", {
+      organizationIds: [REDACTED_CLIENT_DATA.id],
+    });
+
+    expect(scopedProjects.map((project) => project.projectSlug)).toEqual(["REDACTED_CLIENT_DATA"]);
+    expect(foreignProject).toBeNull();
+    expect(foreignSite).toBeNull();
+  });
+
   it("loads latest report snapshot from PostgreSQL", async () => {
     const projectRepository = new PrismaProjectRepository();
     const reportRepository = new PrismaReportRepository();
-    const site = await projectRepository.findSiteBySlugs("REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA");
+    const site = await projectRepository.findSiteBySlugs("REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", {
+      organizationIds: null,
+    });
 
     expect(site).not.toBeNull();
 
