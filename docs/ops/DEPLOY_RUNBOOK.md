@@ -53,7 +53,7 @@ Immutable release artifact stores reviewed source and checked-in runtime assets:
 - `prisma.config.ts`
 - `release-manifest.json`
 
-Windows builder does not package `.next/standalone` or `dist-collector/` directly. Linux target installs fresh dependencies from the reviewed lockfile, runs `pnpm build` and `pnpm build:collector` inside the immutable release, then applies migrations, seed and service switch.
+Windows builder does not package `.next/standalone` or `dist-collector/` directly. Linux target installs fresh dependencies from the reviewed lockfile, runs `pnpm build` and `pnpm build:collector` inside the immutable release, then applies migrations, reapplies `seo_monitor_app` grants/default privileges, runs seed, backup/restore smoke and only then switches runtime.
 
 Environment files:
 
