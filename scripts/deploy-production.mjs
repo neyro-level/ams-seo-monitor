@@ -190,6 +190,7 @@ chmod 0755 "$RELEASE/node_modules/.bin/prisma" || true
 )
 
 run_with_env_file "$MIGRATOR_ENV_FILE" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
+runuser -u postgres -- psql -d seo_monitor_prod -v ON_ERROR_STOP=1 -c "GRANT USAGE ON SCHEMA public TO seo_monitor_app; GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public TO seo_monitor_app; GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO seo_monitor_app; ALTER DEFAULT PRIVILEGES FOR USER seo_monitor_migrator IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES TO seo_monitor_app; ALTER DEFAULT PRIVILEGES FOR USER seo_monitor_migrator IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO seo_monitor_app;"
 run_with_env_file "$MIGRATOR_ENV_FILE" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/seed-database.ts"
 
 install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
