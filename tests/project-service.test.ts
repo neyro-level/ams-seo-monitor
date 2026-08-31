@@ -5,7 +5,7 @@ import type {
   StoredProjectRecord,
   StoredSiteRecord,
 } from "../src/application/ports/project-repository";
-import type { AuthenticatedUser } from "../src/infrastructure/auth/types";
+import type { AuthenticatedUser } from "../src/application/ports/authenticated-user";
 
 const analystUser: AuthenticatedUser = {
   userId: "analyst-1",

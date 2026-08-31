@@ -6,7 +6,7 @@ Wave 0 version decision, Wave 1 foundation refresh and Wave 3 data-layer bootstr
 
 Правило выбора: latest stable production-compatible release. Не использовать beta, rc, canary, nightly и dev только из-за большего номера версии.
 
-## Current implemented baseline in this branch
+## Current implemented baseline
 
 По `package.json` сейчас:
 
@@ -25,9 +25,9 @@ Wave 0 version decision, Wave 1 foundation refresh and Wave 3 data-layer bootstr
  - `@better-auth/prisma-adapter` `1.7.2`;
  - `tsx` `4.23.13`;
  - pnpm `11.5.1`;
- - Node engine `>=24.20.0 <25`.
+ - Node engine `>=24.20.0 <25`; release build и production runtime зафиксированы на `24.20.0`.
 
-Prisma schema, initial migration files and seed tooling are already added in this branch. Better Auth runtime wiring and application authorization still belong to later waves.
+Prisma schema, migrations, seed tooling, Better Auth runtime wiring и application authorization уже реализованы в текущем main.
 
 ## Chosen versions for backend rebuild
 
@@ -43,7 +43,7 @@ Prisma schema, initial migration files and seed tooling are already added in thi
 - Recharts `3.10.1`;
 - ESLint `9.39.5` with `eslint-config-next` `16.3.3`.
 
-TypeScript `7.0.2` stable was checked but rejected for this branch because current Next ESLint toolchain peers stay on `<6.1.0`; `6.0.3` is the latest stable compatible choice today.
+TypeScript `7.0.2` stable was checked but rejected for this branch because current Next ESLint toolchain peers stay on `<6.1.0`; `6.0.3` remains the latest stable compatible choice.
 
 ### Data layer
 

@@ -124,12 +124,11 @@ Application runtime does not use migrator credentials.
 
 ## Locking policy
 
-Current file lock semantics are per site, not per site-period.
+Current policy:
 
-Target policy:
-
-- one full sync lock per site;
-- implement with PostgreSQL advisory lock or equivalent DB-safe guard;
+- one session-level PostgreSQL advisory lock for the whole full-sync runtime;
+- systemd and direct CLI runs share the same DB-backed guard;
+- lock is released in `finally` and by PostgreSQL if the worker connection dies;
 - no distributed lock service.
 
 ## Backup policy
@@ -142,8 +141,9 @@ Backups are mandatory because relational data becomes critical runtime state.
 
 ### Storage
 
-- local transient backup on server;
-- offsite copy to S3-compatible storage.
+- local retained backup on server;
+- private offsite copy to S3-compatible storage;
+- Timeweb bucket `ams-seo-monitor-backups-20260831` (standard 1 GB, `ru-1`) is provisioned; a dedicated restricted S3 user is still required before credentials can be materialized.
 
 Backup on the same VPS only is not a real strategy.
 
@@ -175,15 +175,14 @@ Required command/script:
 db:restore-smoke
 ```
 
-Current Wave 2 implementation:
+Current implementation:
 
-1. create temporary database;
-2. restore latest local dump;
+1. create a temporary database;
+2. restore the latest custom-format dump;
 3. verify database identity and owner;
-4. record schema count sanity;
-5. drop temporary database.
-
-Until Wave 3 creates application tables, restore smoke cannot yet validate business tables.
+4. verify Prisma migrations and key tables;
+5. require non-zero `Project`, `Site` and `ReportSnapshot` row-count sanity;
+6. drop the temporary database in `trap` cleanup.
 
 Never restore over production for testing.
 

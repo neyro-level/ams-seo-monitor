@@ -199,6 +199,10 @@ function buildClientRegistry(project: MonitoringProjectRecord): ClientRegistry {
 export class MonitoringService {
   constructor(private readonly monitoringRepository: MonitoringRepository) {}
 
+  async ping(): Promise<void> {
+    await this.monitoringRepository.ping();
+  }
+
   async getProjectContext(projectSlug: string): Promise<MonitoringProjectContext | null> {
     const project = await this.monitoringRepository.findProjectBySlug(projectSlug);
     if (!project) {

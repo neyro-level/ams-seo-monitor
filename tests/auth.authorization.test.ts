@@ -11,7 +11,7 @@ import {
   getAuthorizedSiteAccess,
 } from "../src/infrastructure/auth/authorization";
 import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
-import type { AuthenticatedUser } from "../src/infrastructure/auth/types";
+import type { AuthenticatedUser } from "../src/application/ports/authenticated-user";
 
 const authTestDatabaseUrl = process.env.AUTH_TEST_DATABASE_URL ?? null;
 const authTestDatabaseHost =

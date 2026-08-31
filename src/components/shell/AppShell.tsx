@@ -1,7 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { buildNavigation } from "../../modules/access/navigation";
-import type { AuthenticatedUser } from "../../infrastructure/auth/types";
+import type { AuthenticatedUser } from "../../application/ports/authenticated-user";
 import { MobileDrawer } from "./MobileDrawer";
 import { ShellNav } from "./ShellNav";
 

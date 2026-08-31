@@ -4,6 +4,7 @@ import { PrismaClient, Provider } from "@prisma/client";
 import { Pool } from "pg";
 import { syncProjectToDatabase } from "../src/worker/sync-project";
 import { topvisorSiteDataSchema } from "../src/shared/schemas/rank-source";
+import type { MetricaSiteAudit } from "../src/shared/schemas/metrica-source";
 import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
 import {
   createMetricaSourceFixture,
@@ -84,6 +85,7 @@ workerTestDescription("syncProjectToDatabase", () => {
     async () => {
       const result = await syncProjectToDatabase({
         projectSlug: "REDACTED_CLIENT_DATA",
+        trigger: "daily",
         now: () => "2026-08-30T00:00:00+03:00",
         collectors: {
           webmaster: async (site) => createWebmasterSourceFixture(site),
@@ -195,6 +197,61 @@ workerTestDescription("syncProjectToDatabase", () => {
       expect(metrikaGoalMetricCount).toBeGreaterThan(0);
       expect(rankingCaptureCount).toBeGreaterThan(0);
       expect(technicalSnapshotCount).toBeGreaterThan(0);
+      expect(result.syncRunId).toBeTruthy();
+      const storedSyncRun = await prisma!.syncRun.findUniqueOrThrow({
+        where: { id: result.syncRunId },
+        select: { trigger: true, status: true },
+      });
+      const unfinishedSourceRuns = await prisma!.sourceRun.count({
+        where: {
+          syncRunId: result.syncRunId,
+          OR: [{ finishedAt: null }, { durationMs: null }],
+        },
+      });
+      expect(storedSyncRun).toEqual({ trigger: "DAILY", status: "SUCCESS" });
+      expect(unfinishedSourceRuns).toBe(0);
+    },
+    15000,
+  );
+
+  it(
+    "finalizes sync and source runs when report compilation throws",
+    async () => {
+      const startedAt = "2026-08-31T00:00:00+03:00";
+      await expect(
+        syncProjectToDatabase({
+          projectSlug: "REDACTED_CLIENT_DATA",
+          trigger: "manual",
+          now: () => startedAt,
+          collectors: {
+            webmaster: async (site) => createWebmasterSourceFixture(site),
+            metrica: async () => ({ invalid: true }) as unknown as MetricaSiteAudit,
+            topvisor: async () =>
+              topvisorSiteDataSchema.parse({
+                schemaVersion: 1,
+                fetchedAt: startedAt,
+                projectId: REDACTED_CLIENT_DATA,
+                regionIndex: 0,
+                snapshots: [],
+              }),
+          },
+        }),
+      ).rejects.toThrow();
+
+      const failedRun = await prisma!.syncRun.findFirstOrThrow({
+        where: { startedAt: new Date(startedAt) },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, status: true, finishedAt: true },
+      });
+      const unfinishedSources = await prisma!.sourceRun.count({
+        where: {
+          syncRunId: failedRun.id,
+          OR: [{ status: { not: "FAILED" } }, { finishedAt: null }],
+        },
+      });
+      expect(failedRun.status).toBe("FAILED");
+      expect(failedRun.finishedAt).not.toBeNull();
+      expect(unfinishedSources).toBe(0);
     },
     15000,
   );

@@ -6,7 +6,7 @@ import type {
   AuthenticatedUser,
   AuthorizedProjectAccess,
   AuthorizedSiteAccess,
-} from "./types";
+} from "../../application/ports/authenticated-user";
 
 const projectService = new ProjectService(new PrismaProjectRepository());
 

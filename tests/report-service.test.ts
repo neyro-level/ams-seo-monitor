@@ -9,7 +9,7 @@ import type {
   ReportRepository,
   StoredReportSnapshotRecord,
 } from "../src/application/ports/report-repository";
-import type { AuthenticatedUser } from "../src/infrastructure/auth/types";
+import type { AuthenticatedUser } from "../src/application/ports/authenticated-user";
 import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
 
 const analystUser: AuthenticatedUser = {

@@ -1,10 +1,4 @@
-import type {
-  MetricaAllowedGoal,
-  MetricaSiteAudit,
-} from "../../src/shared/schemas/metrica-source";
-import type { TopvisorSiteData } from "../../src/shared/schemas/rank-source";
-import type { SiteRegistry } from "../../src/shared/schemas/registry";
-import type { WebmasterSiteData } from "../../src/shared/schemas/webmaster-source";
+import type { SiteSourceCollectors } from "../../src/application/ports/provider-collectors";
 import {
   createTopvisorClient,
   readTopvisorEnvironment,
@@ -18,45 +12,12 @@ import {
   readWebmasterEnvironment,
 } from "../sources/yandex-webmaster/client";
 
-export interface WebmasterCollectOptions {
-  queryLimit?: number;
-  queryOrders?: Array<"TOTAL_SHOWS" | "TOTAL_CLICKS">;
-  devices?: Array<"ALL" | "DESKTOP" | "MOBILE">;
-  historyDateFrom?: string;
-  historyDateTo?: string;
-  queryDateFrom?: string;
-  queryDateTo?: string;
-  includeTechnicalDetails?: boolean;
-}
-
-export interface MetricaCollectOptions {
-  date1?: string;
-  date2?: string;
-  landingLimit?: number;
-  includeDetails?: boolean;
-  allowedGoals?: MetricaAllowedGoal[];
-  timezone?: string;
-}
-
-export interface TopvisorCollectOptions {
-  dateFrom: string;
-  dateTo: string;
-}
-
-export interface SiteSourceCollectors {
-  webmaster: (
-    site: SiteRegistry,
-    options?: WebmasterCollectOptions,
-  ) => Promise<WebmasterSiteData>;
-  metrica: (
-    site: SiteRegistry,
-    options?: MetricaCollectOptions,
-  ) => Promise<MetricaSiteAudit>;
-  topvisor?: (
-    site: SiteRegistry,
-    options: TopvisorCollectOptions,
-  ) => Promise<TopvisorSiteData>;
-}
+export type {
+  MetricaCollectOptions,
+  SiteSourceCollectors,
+  TopvisorCollectOptions,
+  WebmasterCollectOptions,
+} from "../../src/application/ports/provider-collectors";
 
 export function createLiveSiteCollectors(
   env: NodeJS.ProcessEnv = process.env,

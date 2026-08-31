@@ -71,7 +71,7 @@ const manifest = {
   source: "SourceCraft main",
   commitSha,
   createdAt: new Date().toISOString(),
-  runtime: "next-standalone-node-v24-linux-x64",
+  runtime: "next-standalone-node-v24.20.0-linux-x64",
   artifactFormat: "tar.gz",
   dependencyLockSha256,
   dependencyStrategy: "install-linux-dependencies-and-build-on-target-before-migrate-and-run",

@@ -1,10 +1,10 @@
 # WORKER
 
-## Current branch state
+## Current state
 
 Worker больше не публикует filesystem snapshots как runtime truth.
 
-Сейчас в ветке реализовано:
+Сейчас реализовано:
 
 - worker entry `src/worker/main.ts`;
 - DB-backed `syncProjectToDatabase()`;
@@ -19,12 +19,17 @@ Worker больше не публикует filesystem snapshots как runtime 
 
 ```text
 systemd timer
-→ worker oneshot
+→ worker oneshot (`daily` trigger)
+→ PostgreSQL advisory full-sync lock
 → provider adapters
-→ normalization
+→ normalized DTOs
+→ domain analytics / report compiler
+→ SyncService
+→ repository contracts
 → PostgreSQL historical tables
 → ReportSnapshot / SiteReportSnapshot
-→ exit
+→ structured JSON status logs in journald
+→ release lock and exit
 ```
 
 ## Preserved semantics
@@ -34,7 +39,10 @@ systemd timer
 - Topvisor exact snapshots stored separately;
 - partial failures stay partial;
 - source states and safe error codes stay explicit;
-- provider APIs are not called from browser.
+- provider APIs are not called from browser;
+- a second full sync for the runtime is rejected by PostgreSQL advisory lock;
+- unexpected exceptions finalize open `SourceRun` and `SyncRun` records as failed;
+- scheduled and manual triggers remain distinguishable in PostgreSQL.
 
 ## Commands
 
@@ -44,7 +52,9 @@ pnpm worker:sync:project -- <project-slug>
 pnpm worker:sync:REDACTED_CLIENT_DATA
 ```
 
-## Verified in branch
+## Verified state
 
 - worker integration test writes runs, report snapshots, historical metrics, ranking captures and technical snapshots;
-- compiled worker smoke with invalid provider endpoints returns honest `partial` result and safe error codes instead of crashing.
+- failure integration test proves open runs become `FAILED` on unexpected compiler failure;
+- advisory-lock integration test proves overlapping full sync denial and release;
+- compiled worker smoke proves the plain Node runtime does not import the web-only `server-only` marker.

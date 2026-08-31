@@ -19,10 +19,11 @@ workflows:
       - name: foundation-verify
         cubes:
           - name: install-and-check
-            image: docker.io/library/node:24-bookworm
+            image: docker.io/library/node:24.20.0-bookworm
             script:
               - corepack enable
               - corepack prepare pnpm@11.5.1 --activate
+              - node scripts/verify-release-runtime.mjs
               - pnpm install --frozen-lockfile
               - pnpm verify:config
               - pnpm verify:snapshots
@@ -47,10 +48,11 @@ workflows:
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
         cubes:
           - name: verify
-            image: docker.io/library/node:24-bookworm
+            image: docker.io/library/node:24.20.0-bookworm
             script:
               - corepack enable
               - corepack prepare pnpm@11.5.1 --activate
+              - node scripts/verify-release-runtime.mjs
               - pnpm install --frozen-lockfile
               - node scripts/ci/verify-exact-head.mjs
               - pnpm verify:config

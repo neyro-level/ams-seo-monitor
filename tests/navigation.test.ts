@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
 import { buildNavigation } from "../src/modules/access/navigation";
 
 const navigationTestEnabled = Boolean(
@@ -18,7 +19,7 @@ const analystUser = {
 };
 
 const clientViewerUser = {
-  userId: "viewer-1",
+  userId: "navigation-viewer-1",
   email: "viewer@test.local",
   name: "Viewer",
   systemRole: "CLIENT_VIEWER" as const,
@@ -26,6 +27,55 @@ const clientViewerUser = {
 };
 
 navigationTestDescription("database-backed navigation isolation", () => {
+  let database: ReturnType<typeof createPrismaContext> | null = null;
+
+  beforeAll(async () => {
+    database = createPrismaContext({
+      DATABASE_URL: process.env.DATABASE_URL,
+      DATABASE_HOST: process.env.DATABASE_HOST,
+      DATABASE_PORT: process.env.DATABASE_PORT,
+      DATABASE_USER: process.env.DATABASE_USER,
+      DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
+      DATABASE_NAME: process.env.DATABASE_NAME,
+      DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
+    });
+    const organization = await database.prisma.organization.findUniqueOrThrow({
+      where: { slug: "REDACTED_CLIENT_DATA" },
+      select: { id: true },
+    });
+    await database.prisma.user.upsert({
+      where: { id: clientViewerUser.userId },
+      update: { disabledAt: null, systemRole: "CLIENT_VIEWER" },
+      create: {
+        id: clientViewerUser.userId,
+        email: clientViewerUser.email,
+        name: clientViewerUser.name,
+        emailVerified: false,
+        systemRole: "CLIENT_VIEWER",
+      },
+    });
+    await database.prisma.member.upsert({
+      where: {
+        organizationId_userId: {
+          organizationId: organization.id,
+          userId: clientViewerUser.userId,
+        },
+      },
+      update: { role: "client_viewer" },
+      create: {
+        organizationId: organization.id,
+        userId: clientViewerUser.userId,
+        role: "client_viewer",
+      },
+    });
+  });
+
+  afterAll(async () => {
+    if (!database) return;
+    await database.prisma.member.deleteMany({ where: { userId: clientViewerUser.userId } });
+    await database.prisma.user.deleteMany({ where: { id: clientViewerUser.userId } });
+    await database.close();
+  });
   it("renders only the current client subtree on a client route", async () => {
     const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/", clientViewerUser);
     const items = sections.flatMap((section) => section.items);

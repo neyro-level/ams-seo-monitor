@@ -43,11 +43,11 @@ export default async function HomePage() {
           <KpiCard label="Плановые" value={String(overview.plannedSites)} tone="soft" />
         </section>
 
-        <SectionCard title="Текущий контур" note="Backend rebuild in progress">
+        <SectionCard title="Текущий контур" note="Production runtime active">
           <ul className="grid gap-3 text-sm text-[var(--crm-text-secondary)] md:grid-cols-2">
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Продуктовые роли и маршруты сохраняются при перестройке backend foundation.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Авторизация работает через Better Auth и organization membership.</li>
             <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Webmaster, Metrica и Topvisor остаются read-only provider adapters.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Следующая архитектура переводит runtime в Next server + PostgreSQL + Worker.</li>
+            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Runtime уже работает как Next.js server + PostgreSQL + Worker behind Nginx.</li>
             <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">SiteReportSnapshot и SEO semantics остаются browser-safe контрактом отчёта.</li>
           </ul>
         </SectionCard>

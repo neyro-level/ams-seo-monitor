@@ -214,7 +214,12 @@ export interface StoredTrackedQuerySetRecord {
   rows: StoredTrackedQueryRecord[];
 }
 
+export interface SyncLockHandle {
+  release(): Promise<void>;
+}
+
 export interface SyncRepository {
+  tryAcquireFullSyncLock(scope: string): Promise<SyncLockHandle | null>;
   createSyncRun(input: CreateSyncRunInput): Promise<StoredRunRecord>;
   createSourceRun(input: CreateSourceRunInput): Promise<StoredSourceRunRecord>;
   finishSourceRun(input: FinishSourceRunInput): Promise<void>;

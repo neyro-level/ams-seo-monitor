@@ -29,8 +29,9 @@ import type {
   StoredSourceRunRecord,
   StoredTrackedQuerySetRecord,
   SyncRepository,
+  SyncLockHandle,
 } from "../../../application/ports/sync-repository";
-import { getPrismaClient } from "../prisma/client";
+import { getPrismaClient, getPrismaPool } from "../prisma/client";
 
 const PRISMA_TRIGGER_BY_APP_TRIGGER = {
   daily: SyncTrigger.DAILY,
@@ -125,6 +126,41 @@ function toDateTime(value: string) {
 }
 
 export class PrismaSyncRepository implements SyncRepository {
+  async tryAcquireFullSyncLock(scope: string): Promise<SyncLockHandle | null> {
+    const client = await getPrismaPool().connect();
+    try {
+      const result = await client.query<{ acquired: boolean }>(
+        "select pg_try_advisory_lock(hashtextextended($1, 0)) as acquired",
+        [`ams-seo-monitor:full-sync:${scope}`],
+      );
+      if (!result.rows[0]?.acquired) {
+        client.release();
+        return null;
+      }
+
+      let released = false;
+      return {
+        async release() {
+          if (released) {
+            return;
+          }
+          released = true;
+          try {
+            await client.query(
+              "select pg_advisory_unlock(hashtextextended($1, 0))",
+              [`ams-seo-monitor:full-sync:${scope}`],
+            );
+          } finally {
+            client.release();
+          }
+        },
+      };
+    } catch (error) {
+      client.release();
+      throw error;
+    }
+  }
+
   async createSyncRun(input: CreateSyncRunInput): Promise<StoredRunRecord> {
     const syncRun = await getPrismaClient().syncRun.create({
       data: {

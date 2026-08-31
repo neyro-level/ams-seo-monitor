@@ -1,11 +1,8 @@
-
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
-import {
-  createPgPoolConfigFromEnvironment,
-  type PgConnectionEnvironment,
-} from "./pool-config";
+import type { PrismaPg } from "@prisma/adapter-pg";
+import type { PrismaClient } from "@prisma/client";
+import type { Pool } from "pg";
+import { createPrismaContext } from "./context";
+import type { PgConnectionEnvironment } from "./pool-config";
 
 const databaseEnvironment: PgConnectionEnvironment = {
   DATABASE_URL: process.env.DATABASE_URL,
@@ -27,30 +24,32 @@ export function hasDatabaseUrl() {
   );
 }
 
-function createPrismaClient() {
-  if (!hasDatabaseUrl()) {
-    throw new Error("Database connection is not configured");
-  }
-
-  const pool = new Pool(createPgPoolConfigFromEnvironment(databaseEnvironment));
-  const adapter = new PrismaPg(pool);
-  const prisma = new PrismaClient({ adapter });
-  return { adapter, pool, prisma };
-}
-
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;
   prismaAdapter?: PrismaPg;
   prismaPool?: Pool;
 };
 
-export function getPrismaClient() {
-  if (!globalForPrisma.prisma || !globalForPrisma.prismaAdapter || !globalForPrisma.prismaPool) {
-    const { adapter, pool, prisma } = createPrismaClient();
-    globalForPrisma.prismaAdapter = adapter;
-    globalForPrisma.prismaPool = pool;
-    globalForPrisma.prisma = prisma;
+function initializePrismaContext() {
+  if (!hasDatabaseUrl()) {
+    throw new Error("Database connection is not configured");
   }
 
-  return globalForPrisma.prisma;
+  const context = createPrismaContext(databaseEnvironment);
+  globalForPrisma.prismaAdapter = context.adapter;
+  globalForPrisma.prismaPool = context.pool;
+  globalForPrisma.prisma = context.prisma;
+}
+
+export function getPrismaClient() {
+  if (!globalForPrisma.prisma || !globalForPrisma.prismaAdapter || !globalForPrisma.prismaPool) {
+    initializePrismaContext();
+  }
+
+  return globalForPrisma.prisma!;
+}
+
+export function getPrismaPool() {
+  getPrismaClient();
+  return globalForPrisma.prismaPool!;
 }

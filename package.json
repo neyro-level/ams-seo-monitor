@@ -12,7 +12,7 @@
     "start": "node .next/standalone/server.js",
     "build": "pnpm prisma:generate && pnpm verify:config && next build",
     "build:collector": "pnpm prisma:generate && tsc -p tsconfig.collector.json",
-    "release:build": "pnpm build && pnpm build:collector && node scripts/build-release.mjs",
+    "release:build": "node scripts/verify-release-runtime.mjs && pnpm build && pnpm build:collector && node scripts/build-release.mjs",
     "release:deploy": "node scripts/deploy-production.mjs",
     "lint": "eslint src collector tests scripts eslint.config.mjs next.config.ts postcss.config.mjs",
     "typecheck": "pnpm prisma:generate && tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.collector.json",

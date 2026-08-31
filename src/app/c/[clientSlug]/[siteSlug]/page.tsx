@@ -1,16 +1,15 @@
 export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
-import { ProjectService } from "../../../../application/services/project-service";
-import { ReportService } from "../../../../application/services/report-service";
-import { MonitoringService } from "../../../../application/services/monitoring-service";
-import { PrismaMonitoringRepository } from "../../../../infrastructure/database/repositories/prisma-monitoring-repository";
-import { PrismaProjectRepository } from "../../../../infrastructure/database/repositories/prisma-project-repository";
-import { PrismaReportRepository } from "../../../../infrastructure/database/repositories/prisma-report-repository";
 import { AppShell } from "../../../../components/shell/AppShell";
 import { ReportPeriodSelector } from "../../../../components/dashboard/ReportPeriodSelector";
 import { SiteReportView } from "../../../../modules/dashboards/SiteReportView";
 import { getCurrentAuthenticatedUser } from "../../../../infrastructure/auth/session";
+import {
+  getMonitoringService,
+  getProjectService,
+  getReportService,
+} from "../../../../infrastructure/service-container";
 import { reportPeriodKeySchema, type ReportPeriodKey } from "../../../../shared/schemas/report";
 
 type SiteReportPageProps = {
@@ -37,31 +36,20 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
   const { clientSlug, siteSlug } = await params;
   const { period } = await searchParams;
   const periodKey = resolvePeriodKey(period);
-  const projectRepository = new PrismaProjectRepository();
-  const projectService = new ProjectService(projectRepository);
-  const reportService = new ReportService(
-    projectRepository,
-    new PrismaReportRepository(),
-  );
-  const authorizedSite = await projectService.getSiteAccessForUser(
-    user,
-    clientSlug,
-    siteSlug,
-  );
+  const projectService = getProjectService();
+  const reportService = getReportService();
+  const monitoringService = getMonitoringService();
 
+  const authorizedSite = await projectService.getSiteAccessForUser(user, clientSlug, siteSlug);
   if (!authorizedSite) {
     notFound();
   }
 
-  const monitoringService = new MonitoringService(new PrismaMonitoringRepository());
-  const projectContext = await monitoringService.getProjectContext(clientSlug);
+  const [projectContext, snapshot] = await Promise.all([
+    monitoringService.getProjectContext(clientSlug),
+    reportService.getSiteReportForUser(user, clientSlug, siteSlug, periodKey),
+  ]);
   const site = projectContext?.client.sites.find((item) => item.siteSlug === siteSlug) ?? null;
-  const snapshot = await reportService.getSiteReportForUser(
-    user,
-    clientSlug,
-    siteSlug,
-    periodKey,
-  );
 
   if (!projectContext || !site) {
     notFound();

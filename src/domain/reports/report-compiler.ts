@@ -8,15 +8,15 @@ import {
   type WebmasterReport,
   type RankingMovement,
   type TrackedRankingReport,
-} from "../../src/shared/schemas/report";
+} from "../../shared/schemas/report";
 import type {
   ClusterProfile,
   SiteRegistry,
-} from "../../src/shared/schemas/registry";
-import type { MetricaSiteAudit } from "../../src/shared/schemas/metrica-source";
-import type { WebmasterSiteData } from "../../src/shared/schemas/webmaster-source";
-import type { TopvisorSiteData } from "../../src/shared/schemas/rank-source";
-import type { TrackedQuerySet } from "../../src/shared/schemas/tracked-query";
+} from "../../shared/schemas/registry";
+import type { MetricaSiteAudit } from "../../shared/schemas/metrica-source";
+import type { WebmasterSiteData } from "../../shared/schemas/webmaster-source";
+import type { TopvisorSiteData } from "../../shared/schemas/rank-source";
+import type { TrackedQuerySet } from "../../shared/schemas/tracked-query";
 import {
   buildQueryOpportunities,
   mergeWebmasterQueryCollections,
