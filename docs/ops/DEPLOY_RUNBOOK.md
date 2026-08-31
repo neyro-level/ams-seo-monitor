@@ -61,7 +61,7 @@ Environment files:
 - migrator env must already exist at `/etc/ams-platform/ams-seo-monitor-migrator.env`;
 - optional offsite env lives at `/etc/ams-platform/ams-seo-monitor-backup.env`;
 - deploy reads migrator values as literal `KEY=VALUE`, not shell code;
-- offsite-required mode is enabled only after a dedicated restricted S3 credential is materialized.
+- offsite-required mode включён через dedicated restricted S3 credential в protected env.
 
 Retry rules:
 
@@ -83,4 +83,4 @@ Retry rules:
 
 ## Offsite readiness
 
-Private Timeweb bucket `ams-seo-monitor-backups-20260831` is created. Final offsite activation is blocked only on a dedicated restricted S3 user/access key; the account-wide S3 administrator credential is intentionally not reused across projects.
+Private Timeweb bucket `ams-seo-monitor-offsite-20260831` активен. Dedicated user `seo-monitor-backup-s3` имеет read/write только на этот bucket. Production backup подтверждает dump и checksum через S3 HEAD до retention prune; shared S3 administrator credential не используется.
