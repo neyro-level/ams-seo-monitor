@@ -1,21 +1,21 @@
-# CRM Design System
+# AMS IMPULSE Internal Dashboard Design System
 
-Универсальная дизайн-система личных кабинетов и внутренних CRM-продуктов АМС.
+Дизайн-система приватного кабинета, директорских отчётов и внутренних аналитических экранов AMS IMPULSE.
 
-Статус: **канон интерфейса `/admin/*` проекта REDACTED_CLIENT_DATA** и переносимая основа для новых кабинетов АМС.
+Статус: **канон внутренних маршрутов `/dashboard/*`, `/analyst/*` и `/c/*`**.
 
 ## 1. Роль Документа
 
 Документ задаёт общий визуальный и поведенческий язык рабочего кабинета: оболочку, навигацию, цвета, типографику, размеры, дашборды, таблицы, фильтры, формы, тумблеры, состояния и адаптивность.
 
-Эталон текущего проекта — разделы `Объекты` и `Сотрудники`. Профильные page/module-документы определяют смысл и данные, а этот файл — их представление.
+Эталон текущего проекта — `AppShell`, analyst overview, project overview и единый site report. Профильные page/module-документы определяют смысл и данные, а этот файл — их представление.
 
 При конфликте действует приоритет:
 
 1. security, роли и доменные ограничения;
 2. профильный документ модуля;
-3. этот CRM Design System для `/admin/*`;
-4. `03_DESIGN_SYSTEM.md` для публичного сайта;
+3. этот Internal Dashboard Design System для приватного кабинета;
+4. [`EXTERNAL_SITE_DESIGN_SYSTEM.md`](EXTERNAL_SITE_DESIGN_SYSTEM.md) только для публичных маршрутов;
 5. текущая реализация компонента, только если она не противоречит канону выше.
 
 ## 2. Переносимость: CRM Core И Tenant Theme
@@ -59,7 +59,7 @@
 
 Компоненты используют токены по роли, а не случайные HEX.
 
-| Токен | REDACTED_CLIENT_DATA | Использование |
+| Токен | AMS IMPULSE | Использование |
 |---|---:|---|
 | `crm-page` | `#EEF2F5` | фон рабочей области |
 | `crm-surface` | `#FFFFFF` | панели, таблицы, формы, modal |
@@ -70,12 +70,12 @@
 | `crm-text-secondary` | `#475569` | вторичный текст, `slate-600` |
 | `crm-text-muted` | `#64748B` | подписи, `slate-500` |
 | `crm-text-disabled` | `#94A3B8` | disabled, `slate-400` |
-| `crm-sidebar` | `#06253A` | sidebar и главное тёмное состояние |
-| `crm-primary` | `#06253A` | primary action, активный preset |
-| `crm-primary-hover` | `#0A3854` | hover primary |
-| `crm-link` | `#0A5277` | текстовые ссылки и inline-действия |
-| `crm-interactive` | `#0EA5E9` | включённый switch, focus-сигнал, `sky-500` |
-| `crm-focus` | `#BAE6FD` | focus-ring, `sky-200` |
+| `crm-sidebar` | `#101720` | sidebar и главное тёмное состояние |
+| `crm-primary` | `#101720` | primary action, активный preset |
+| `crm-primary-hover` | `#1B2633` | hover primary |
+| `crm-link` | `#3E5D86` | текстовые ссылки и inline-действия |
+| `crm-interactive` | `#5F7FAE` | включённый switch и controlled accent |
+| `crm-focus` | `#CBD5E1` | холодный focus-ring |
 
 ### Статусы
 
@@ -88,9 +88,9 @@
 
 Статусный цвет сообщает смысл, а не украшает. Рядом всегда остаются текст, число или иконка.
 
-### Акцент Клиента
+### Брендовый Акцент
 
-Для REDACTED_CLIENT_DATAа `crm-brand-accent: #8A1515`. Он используется для метки `Эксклюзив` и редких брендовых акцентов, но не заменяет primary action и системный красный ошибки/удаления.
+`crm-brand-accent: #5F7FAE` связывает кабинет с публичной системой AMS Northline. Акцент используется редко и не заменяет статусные success/warning/error цвета.
 
 ### CSS-Контракт
 
@@ -104,13 +104,13 @@
   --crm-text: #020617;
   --crm-text-secondary: #475569;
   --crm-text-muted: #64748b;
-  --crm-sidebar: #06253a;
-  --crm-primary: #06253a;
-  --crm-primary-hover: #0a3854;
-  --crm-link: #0a5277;
-  --crm-interactive: #0ea5e9;
-  --crm-focus: #bae6fd;
-  --crm-brand-accent: #8a1515;
+  --crm-sidebar: #101720;
+  --crm-primary: #101720;
+  --crm-primary-hover: #1b2633;
+  --crm-link: #3e5d86;
+  --crm-interactive: #5f7fae;
+  --crm-focus: #cbd5e1;
+  --crm-brand-accent: #5f7fae;
 }
 ```
 
@@ -354,25 +354,25 @@ Motion: 150–200ms, modal/drawer до 250ms. Анимируются opacity, tr
 - таблица сохраняет `thead/th/scope`;
 - цвет не является единственным носителем статуса.
 
-## 18. Эталонные Компоненты REDACTED_CLIENT_DATAа
+## 18. Эталонные Компоненты AMS IMPULSE
 
 | Паттерн | Файл |
 |---|---|
-| Оболочка/sidebar | `apps/web/src/modules/admin-lite/AdminChrome.tsx` |
-| Header/back | `apps/web/src/modules/admin-lite/AdminFrame.tsx` |
-| KPI/состав базы | `apps/web/src/app/admin/(cabinet)/obekty/page.tsx` |
-| Presets/KPI команды | `apps/web/src/app/admin/(cabinet)/sotrudniki/page.tsx` |
-| Table/mobile cards | `apps/web/src/modules/admin-lite/AdminEmployeeList.tsx` |
-| Publication switch | `apps/web/src/modules/admin-lite/AdminEmployeePublicToggle.tsx` |
-| Таблица объектов | `apps/web/src/modules/admin-cabinet/properties/PropertyList.tsx` |
-| Типозависимая форма | `apps/web/src/modules/admin-cabinet/properties/PropertyForm.tsx` |
-| Gallery preview | `apps/web/src/modules/admin-cabinet/properties/MediaUploader.tsx` |
+| Оболочка/sidebar | `src/components/shell/AppShell.tsx` |
+| Desktop navigation | `src/components/shell/ShellNav.tsx` |
+| Mobile navigation | `src/components/shell/MobileDrawer.tsx` |
+| KPI | `src/components/dashboard/KpiCard.tsx` |
+| Header | `src/components/dashboard/PageHeader.tsx` |
+| Section panel | `src/components/dashboard/SectionCard.tsx` |
+| Analyst overview | `src/app/analyst/page.tsx` |
+| Project overview | `src/app/c/[clientSlug]/page.tsx` |
+| Site report | `src/app/c/[clientSlug]/[siteSlug]/page.tsx` |
 
-Код показывает рабочий паттерн, но этот документ имеет приоритет при visual drift.
+Код показывает фактический рабочий паттерн, но этот документ имеет приоритет при visual drift.
 
 ## 19. Правила Для AI
 
-Перед правкой admin UI AI обязан:
+Перед правкой внутреннего UI AI обязан:
 
 1. прочитать этот файл и профильный page/module brief;
 2. найти существующий компонент того же типа;
@@ -381,7 +381,7 @@ Motion: 150–200ms, modal/drawer до 250ms. Анимируются opacity, tr
 5. реализовать реальные loading/success/error/empty states;
 6. проверить desktop и mobile;
 7. не вводить новый паттерн, если подходит существующий;
-8. описать намеренное исключение в профильном документе и `WORKLOG.md`.
+8. синхронизировать профильный документ, если меняется повторяемый contract.
 
 AI не должен копировать публичный стиль сайта, делать все KPI цветными, превращать text link в тяжёлую кнопку, менять порядок данных между create/view, показывать внутренние термины без пользы или считать legacy drift новым каноном.
 
@@ -389,8 +389,8 @@ AI не должен копировать публичный стиль сайт
 
 - [ ] H1/H2/H3 соответствуют шкале и выровнены влево.
 - [ ] Page использует `crm-page`, панели — `crm-surface`.
-- [ ] Primary navy, включённый switch sky-blue.
-- [ ] Бордовый REDACTED_CLIENT_DATAа не используется как системная ошибка.
+- [ ] Primary использует общий графитово-синий, controlled accent — steel-blue.
+- [ ] Статусные цвета не подменяются брендовым акцентом.
 - [ ] Панели 16px, controls 12px, segmented не более 15px.
 - [ ] Touch-target не меньше 40px.
 - [ ] Числа используют `tabular-nums`.
@@ -403,14 +403,14 @@ AI не должен копировать публичный стиль сайт
 
 ## 21. Текущий Drift И Следующий Этап
 
-Документ задаёт целевое состояние. Кабинет уже следует ему в `Объектах` и `Сотрудниках`, но не каждый экран полностью выровнен.
+Документ задаёт целевое состояние приватного кабинета AMS IMPULSE. Текущие dashboard routes уже используют общий shell и базовые primitives, но отдельные компоненты могут содержать legacy Tailwind-цвета.
 
 Следующий отдельный UI-pass должен:
 
 - перевести повторяющиеся HEX/Tailwind-цвета на CRM-токены;
 - унифицировать H2, таблицы, primary/secondary/text actions;
-- привести панели к 16px, controls к 12px, segmented к 15px;
-- выровнять плотность таблиц и удалить legacy-пояснения;
-- проверить все admin-маршруты на desktop, laptop, tablet и mobile.
+- сохранить PT Root UI без переноса Manrope из внешнего сайта;
+- выровнять плотность таблиц и удалить технические пояснения;
+- проверить все приватные маршруты на desktop, laptop, tablet и mobile.
 
-До этого pass текущий код не является доказательством, что каждый экран уже соответствует канону.
+До этого pass текущий код не является доказательством, что каждый экран уже полностью соответствует канону.

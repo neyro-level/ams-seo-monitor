@@ -12,10 +12,10 @@ import { buildAnalystOverview } from "../../modules/dashboards/overview";
 export default async function AllProjectsPage() {
   const user = await getCurrentAuthenticatedUser();
   if (!user) {
-    redirect("/login/");
+    redirect("/?login=1");
   }
   if (user.systemRole !== "SEO_ANALYST") {
-    redirect("/");
+    redirect("/dashboard/");
   }
 
   const overview = await buildAnalystOverview(user);

@@ -27,7 +27,7 @@ const demoSite = siteRegistrySchema.parse({
 export default async function DemoPage() {
   const user = await getCurrentAuthenticatedUser();
   if (!user) {
-    redirect("/login/");
+    redirect("/?login=1");
   }
 
   return (

@@ -58,7 +58,7 @@ export function MobileDrawer({ sections }: MobileDrawerProps) {
             <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.055] p-3 text-white">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">АМС</p>
-                <p className="text-sm font-semibold">SEO-мониторинг</p>
+                <p className="text-sm font-semibold">IMPULSE</p>
               </div>
               <button
                 ref={closeButtonRef}

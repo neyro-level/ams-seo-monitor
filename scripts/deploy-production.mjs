@@ -285,7 +285,7 @@ console.log(
       deployedSha: commitSha,
       artifact: artifactName,
       artifactSha256: checksum,
-      productionUrl: "https://seo-monitor.ams24.ru",
+      productionUrl: "https://impulse.ams24.ru",
     },
     null,
     2,

@@ -19,7 +19,7 @@ type ClientOverviewPageProps = {
 export default async function ClientOverviewPage({ params }: ClientOverviewPageProps) {
   const user = await getCurrentAuthenticatedUser();
   if (!user) {
-    redirect("/login/");
+    redirect("/?login=1");
   }
 
   const { clientSlug } = await params;

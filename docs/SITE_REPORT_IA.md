@@ -30,7 +30,7 @@
 
 - analyst sees all projects/sites;
 - client viewer sees only own organization subtree;
-- unauthorized access redirects to `/login/`;
+- unauthorized access redirects to `/?login=1`, which opens the login modal;
 - foreign tenant access is denied server-side.
 
 ## Responsive notes

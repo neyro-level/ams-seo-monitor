@@ -1,3 +1,9 @@
+@import "@fontsource/manrope/400.css";
+@import "@fontsource/manrope/500.css";
+@import "@fontsource/manrope/600.css";
+@import "@fontsource/manrope/700.css";
+@import "@fontsource/manrope/800.css";
+
 @import "tailwindcss";
 
 @font-face {
@@ -18,13 +24,29 @@
   --crm-text-secondary: #475569;
   --crm-text-muted: #64748b;
   --crm-text-disabled: #94a3b8;
-  --crm-sidebar: #06253a;
-  --crm-primary: #06253a;
-  --crm-primary-hover: #0a3854;
-  --crm-link: #0a5277;
-  --crm-interactive: #0ea5e9;
-  --crm-focus: #bae6fd;
-  --crm-brand-accent: #8a1515;
+  --crm-sidebar: #101720;
+  --crm-primary: #101720;
+  --crm-primary-hover: #1b2633;
+  --crm-link: #3e5d86;
+  --crm-interactive: #5f7fae;
+  --crm-focus: #cbd5e1;
+  --crm-brand-accent: #5f7fae;
+
+  --ch-accent: #5f7fae;
+  --ch-accent-hover: #4f709f;
+  --ch-accent-soft: rgb(95 127 174 / 10%);
+  --ch-bg-deepest: #0c1117;
+  --ch-bg-deeper: #101720;
+  --ch-bg-dark: #151e29;
+  --ch-bg-dark-elev: #1b2633;
+  --ch-bg-page: #f3f5f7;
+  --ch-bg-section: #fafbfc;
+  --ch-bg-surface: #ffffff;
+  --ch-text-primary: #111827;
+  --ch-text-secondary: #4b5563;
+  --ch-white: #f8fafc;
+  --ch-soft-white: #cbd5e1;
+  --ch-muted-ondark: rgb(248 250 252 / 62%);
 }
 
 * {
@@ -43,6 +65,201 @@ body {
   font-size: 14px;
   line-height: 22px;
   text-rendering: optimizeLegibility;
+}
+
+.impulse-landing {
+  font-family: "Manrope", "PT Root UI", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+}
+
+.impulse-grid {
+  background-image:
+    linear-gradient(rgb(248 250 252 / 4%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(248 250 252 / 4%) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black 0%, rgb(0 0 0 / 68%) 72%, transparent 100%);
+}
+
+.impulse-atmosphere {
+  background:
+    radial-gradient(circle at 77% 34%, rgb(95 127 174 / 22%), transparent 26%),
+    radial-gradient(circle at 60% 84%, rgb(95 127 174 / 10%), transparent 32%),
+    linear-gradient(110deg, transparent 0 47%, rgb(16 23 32 / 46%) 64%, rgb(12 17 23 / 88%) 100%);
+}
+
+.impulse-visual {
+  box-shadow: 0 32px 80px rgb(0 0 0 / 28%);
+}
+
+.impulse-visual::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 58%, rgb(12 17 23 / 46%) 100%);
+  content: "";
+  pointer-events: none;
+}
+
+@media (max-width: 1023px) {
+  .impulse-atmosphere {
+    background:
+      radial-gradient(circle at 68% 58%, rgb(95 127 174 / 18%), transparent 34%),
+      linear-gradient(180deg, transparent 0 54%, rgb(12 17 23 / 62%) 100%);
+  }
+
+  .impulse-visual {
+    max-width: 680px;
+  }
+}
+
+
+.impulse-login-dialog[open] {
+  animation: impulse-dialog-in 180ms ease-out both;
+}
+
+.impulse-login-dialog[open]::backdrop {
+  animation: impulse-backdrop-in 180ms ease-out both;
+}
+
+@keyframes impulse-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes impulse-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.impulse-login-dialog input:focus-visible {
+  outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+
+  .impulse-login-dialog[open],
+  .impulse-login-dialog[open]::backdrop {
+    animation-duration: 0.01ms;
+  }
+}
+
+.legal-prose {
+  color: var(--ch-text-secondary);
+  font-size: 16px;
+  line-height: 1.72;
+}
+
+.legal-prose section + section {
+  margin-top: 56px;
+  padding-top: 48px;
+  border-top: 1px solid #d9e1e8;
+}
+
+.legal-prose h2 {
+  margin: 0 0 22px;
+  color: var(--ch-text-primary);
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+}
+
+.legal-prose h3 {
+  margin: 28px 0 12px;
+  color: var(--ch-text-primary);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.legal-prose p {
+  margin: 0 0 16px;
+}
+
+.legal-prose ul,
+.legal-prose ol {
+  margin: 0 0 20px;
+  padding-left: 24px;
+}
+
+.legal-prose li + li {
+  margin-top: 8px;
+}
+
+.legal-prose a {
+  color: var(--ch-accent-strong, #3e5d86);
+  text-decoration: underline;
+  text-decoration-color: rgb(62 93 134 / 32%);
+  text-underline-offset: 3px;
+}
+
+.legal-prose strong {
+  color: var(--ch-text-primary);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .legal-prose section + section {
+    margin-top: 40px;
+    padding-top: 36px;
+  }
+}
+
+.legal-source-content article {
+  margin: 0 0 48px;
+  padding: 0 0 48px;
+  border-bottom: 1px solid #d9e1e8;
+}
+
+.legal-source-content article:last-child {
+  margin-bottom: 0;
+}
+
+.legal-source-content article > span {
+  display: inline-block;
+  margin: 0 12px 14px 0;
+  color: var(--ch-accent-strong, #3e5d86);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.legal-source-content table {
+  width: 100%;
+  margin: 24px 0;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.legal-source-content th,
+.legal-source-content td {
+  padding: 12px;
+  border: 1px solid #d9e1e8;
+  text-align: left;
+  vertical-align: top;
+}
+
+@media (max-width: 640px) {
+  .legal-source-content article {
+    margin-bottom: 36px;
+    padding-bottom: 36px;
+  }
+
+  .legal-source-content table {
+    display: block;
+    overflow-x: auto;
+  }
 }
 
 a {

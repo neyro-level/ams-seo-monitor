@@ -45,7 +45,7 @@ export async function buildNavigation(
     })),
   }));
 
-  const rootHref = user.systemRole === "SEO_ANALYST" ? "/analyst/" : "/";
+  const rootHref = user.systemRole === "SEO_ANALYST" ? "/analyst/" : "/dashboard/";
   const rootLabel = user.systemRole === "SEO_ANALYST" ? "Все проекты" : "Мои проекты";
 
   return [

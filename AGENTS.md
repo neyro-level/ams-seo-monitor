@@ -1,4 +1,4 @@
-# AMS SEO Monitor — project router
+# AMS IMPULSE — project router
 
 ## Язык и формат
 
@@ -8,7 +8,7 @@
 
 ## Проект
 
-AMS SEO Monitor — отдельный приватный AMS-продукт для SEO-отчётности по нескольким проектам и сайтам. Это не модуль Бастиона и не public marketing site.
+AMS IMPULSE — отдельный AMS-продукт: публичная страница представляет SEO-продвижение, а приватный кабинет даёт отчётность по нескольким проектам и сайтам. Это не модуль Бастиона.
 
 ## Что читать первым
 
@@ -31,6 +31,8 @@ Detail canon:
 - `docs/AUTH.md`
 - `docs/WORKER.md`
 - `docs/DEPLOYMENT.md`
+- `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`
+- `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`
 - `docs/modules/*`
 - `docs/ops/*`
 
