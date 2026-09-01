@@ -30,7 +30,7 @@ function resolvePeriodKey(period: string | undefined): ReportPeriodKey {
 export default async function SiteReportPage({ params, searchParams }: SiteReportPageProps) {
   const user = await getCurrentAuthenticatedUser();
   if (!user) {
-    redirect("/login/");
+    redirect("/?login=1");
   }
 
   const { clientSlug, siteSlug } = await params;

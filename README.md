@@ -1,10 +1,10 @@
-# AMS SEO Monitor
+# AMS IMPULSE
 
-Приватный SEO-кабинет АМС для нескольких проектов и сайтов.
+Публичная страница SEO-продукта и приватный кабинет АМС для нескольких проектов и сайтов.
 
 ## Что делает система
 
-AMS SEO Monitor собирает read-only данные из Яндекс.Вебмастера, Яндекс.Метрики и опционально Topvisor, сохраняет нормализованную историю в PostgreSQL и показывает директорский отчёт через Next.js App Router.
+AMS IMPULSE объединяет публичное предложение по SEO-продвижению и закрытый кабинет отчётности. Кабинет собирает read-only данные из Яндекс.Вебмастера, Яндекс.Метрики и опционально Topvisor, сохраняет нормализованную историю в PostgreSQL и показывает директорский отчёт через Next.js App Router.
 
 Browser получает только готовый `SiteReportSnapshot`. Provider APIs и бизнес-расчёты не живут во frontend.
 
@@ -59,6 +59,9 @@ systemd timer
 - database-backed worker sync;
 - database-backed dashboard routes;
 - auth-protected analyst/client access;
+- public AMS IMPULSE landing with login and contact modals;
+- AMS Leads API integration with Max delivery;
+- compact footer and public legal routes `/politika/`, `/soglasie/`, `/cookies/`, `/terms/`;
 - health endpoints `/api/health/live` и `/api/health/ready`;
 - reverse-proxy/systemd release scaffolding.
 
@@ -118,6 +121,8 @@ pnpm user:add-to-organization -- --email ... --organization REDACTED_CLIENT_DATA
 - `docs/AUTH.md`
 - `docs/WORKER.md`
 - `docs/DEPLOYMENT.md`
+- `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`
+- `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`
 
 ## Important constraints
 

@@ -11,7 +11,8 @@ Application auth уже переведён на Better Auth.
 - email/password login;
 - public signup disabled;
 - route handler `/api/auth/[...all]`;
-- login page `/login/`;
+- login modal on public product page `/`;
+- protected routes redirect unauthenticated users to `/?login=1`;
 - analyst/client route gating;
 - auth admin CLI scripts;
 - user creation password is bounded stdin only and never an argv value.
@@ -37,7 +38,8 @@ Application auth уже переведён на Better Auth.
 - `src/infrastructure/auth/session.ts`
 - `src/infrastructure/auth/authorization.ts`
 - `src/app/api/auth/[...all]/route.ts`
-- `src/app/login/page.tsx`
+- `src/components/auth/LoginDialog.tsx`
+- `src/app/dashboard/page.tsx`
 - `scripts/auth-admin.ts`
 
 ## Current scripts
@@ -58,7 +60,7 @@ pnpm user:remove-from-organization
 - public signup off;
 - analyst/client isolation не опирается на navigation hiding;
 - disabled users return `null` from authorization helper;
-- UI routes redirect unauthenticated users to `/login/`.
+- UI routes redirect unauthenticated users to `/?login=1`; the query opens the login modal.
 
 ## Verified state
 

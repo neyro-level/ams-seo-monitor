@@ -4,7 +4,7 @@
 
 ### Browser
 
-Browser получает только authenticated HTML/JS/CSS и browser-safe report DTO. Browser не получает provider credentials, raw provider payloads и internal technical snapshots.
+Browser получает публичные страницы, login/contact modals и после авторизации browser-safe report DTO. Browser не получает provider credentials, raw provider payloads, internal technical snapshots, DB URLs или Better Auth secret.
 
 ### Next.js application
 
@@ -12,6 +12,14 @@ Browser получает только authenticated HTML/JS/CSS и browser-safe 
 - route/page access проверяется server-side;
 - analyst/client isolation не опирается на скрытые ссылки;
 - health endpoints не раскрывают secrets.
+
+### AMS Leads API
+
+- публичная contact form отправляет только имя, телефон, source/UTM и технические anti-spam metadata;
+- `NEXT_PUBLIC_LEADS_SITE_KEY` — публичный идентификатор сайта, не credential доступа к данным;
+- Leads API проверяет project, site key, exact origin, honeypot, минимальное время заполнения и rate limit;
+- заявка не сохраняется в PostgreSQL AMS IMPULSE и передаётся в настроенный Max channel через отдельный AMS Leads API;
+- bot token и Max chat ID остаются только в server environment Leads API.
 
 ### PostgreSQL
 
@@ -53,6 +61,8 @@ Browser получает только authenticated HTML/JS/CSS и browser-safe 
 - direct Prisma/SQL in UI prohibited;
 - provider APIs not callable from browser;
 - provider credential sinks accept only exact HTTPS allowlisted API origins;
+- AMS Leads API — отдельный allowlisted lead-intake boundary, не provider API;
+- имя и телефон не пишутся в browser/server logs AMS IMPULSE;
 - web process environment never contains provider tokens;
 - auth user passwords are stdin-only, never argv;
 - foreign project/site/report access denied server-side;
@@ -62,8 +72,9 @@ Browser получает только authenticated HTML/JS/CSS и browser-safe 
 ## Current state
 
 - auth route wired;
-- login page exists;
+- login modal wired on public `/`;
 - analyst/client route gating работает;
 - health routes работают;
 - local backup + restore smoke работают;
 - private offsite bucket `ams-seo-monitor-offsite-20260831` активен; отдельный restricted S3 user имеет только `read/write` на этот bucket, shared administrator credential не используется.
+- AMS IMPULSE registered in AMS Leads API with Max delivery enabled.

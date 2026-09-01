@@ -81,8 +81,12 @@ Worker выполняет sync runs, source runs, historical persistence и repo
 
 ## Runtime surfaces
 
-- web app routes under `/`, `/analyst/`, `/c/*`, `/login/`;
+- public product route `/`;
+- public legal routes `/politika/`, `/soglasie/`, `/cookies/`, `/terms/`;
+- authenticated web app routes under `/dashboard/`, `/analyst/` and `/c/*`;
+- login modal is owned by the public `/` route;
 - auth route `/api/auth/[...all]`;
+- public contact form calls allowlisted AMS Leads API directly and does not write lead PII to PostgreSQL AMS IMPULSE;
 - health routes `/api/health/live`, `/api/health/ready`;
 - worker entry `src/worker/main.ts`.
 

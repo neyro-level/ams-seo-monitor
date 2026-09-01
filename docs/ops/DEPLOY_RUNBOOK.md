@@ -77,7 +77,7 @@ Retry rules:
 - `seo-monitor-db-backup.timer` active;
 - `/api/health/live` = 200;
 - `/api/health/ready` = 200;
-- analyst unauthenticated access redirects to `/login/`;
+- analyst unauthenticated access redirects to `/?login=1` and opens the login modal;
 - analyst sign-in works;
 - client foreign project access denied;
 - worker manual start succeeds.

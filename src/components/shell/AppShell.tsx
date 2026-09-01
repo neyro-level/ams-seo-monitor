@@ -24,7 +24,7 @@ export async function AppShell({ currentPath, user, children }: AppShellProps) {
                 АМС
               </span>
               <span className="truncate text-[12px] font-light tracking-[0.06em] text-slate-200">
-                SEO-мониторинг
+                IMPULSE
               </span>
             </div>
           </div>
@@ -50,7 +50,7 @@ export async function AppShell({ currentPath, user, children }: AppShellProps) {
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200/90 bg-white/95 px-4 backdrop-blur lg:hidden">
           <MobileDrawer sections={sections} />
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
-            SEO-мониторинг
+            AMS IMPULSE
           </p>
         </header>
 
