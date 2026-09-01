@@ -2,19 +2,20 @@
 
 ## Status
 
-Wave 2 foundation partially implemented.
+PostgreSQL foundation и обслуживание активны.
 
-Implemented already:
+Реализовано и проверено:
 
-- PostgreSQL `18.6` installed on AMS Main Server;
-- active cluster `18/main` on `127.0.0.1:5432`;
+- PostgreSQL `18.6` на AMS Main Server;
+- active cluster `18/main` на `127.0.0.1:5432`;
 - databases `seo_monitor_dev`, `seo_monitor_test`, `seo_monitor_prod`;
-- roles `seo_monitor_app` and `seo_monitor_migrator`;
-- local backup script, timer and restore smoke.
-
-Remaining Wave 2 blocker:
-
-- offsite S3-compatible backup credentials and bucket are not configured yet.
+- отдельные роли `seo_monitor_app` и `seo_monitor_migrator`;
+- autovacuum и autoanalyze включены;
+- ежедневный local `pg_dump` custom-format через systemd timer;
+- private offsite S3 copy с обязательным object HEAD confirmation;
+- checksum каждого backup;
+- retention `7 daily / 8 weekly / 6 monthly`;
+- restore smoke во временную БД с проверкой migrations и основных row counts.
 
 ## Goal
 
