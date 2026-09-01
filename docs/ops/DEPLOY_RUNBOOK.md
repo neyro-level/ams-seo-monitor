@@ -57,11 +57,12 @@ Windows builder requires exact Node `24.20.0` and does not package `.next/standa
 
 Environment files:
 
-- web env must exist at `/etc/ams-platform/ams-seo-monitor-web.env` and contains only DB + Better Auth values;
+- web env must exist at `/etc/ams-platform/ams-seo-monitor-web.env`; it contains DB + Better Auth values and the public Leads API build contract (`NEXT_PUBLIC_LEADS_API_URL`, `NEXT_PUBLIC_LEADS_PROJECT_ID`, `NEXT_PUBLIC_LEADS_SITE_KEY`);
 - worker env must exist at `/etc/ams-platform/ams-seo-monitor-worker.env` and contains only DB + provider values;
 - migrator env must already exist at `/etc/ams-platform/ams-seo-monitor-migrator.env`;
 - mandatory offsite env lives at `/etc/ams-platform/ams-seo-monitor-backup.env` with `REQUIRE_OFFSITE=true`;
 - deploy reads migrator values as literal `KEY=VALUE`, not shell code;
+- deploy validates the public Leads API keys and injects the web env while building Next.js inside the immutable release;
 - offsite-required mode включён через dedicated restricted S3 credential в protected env.
 
 Retry rules:
