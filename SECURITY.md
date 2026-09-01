@@ -40,7 +40,7 @@ Browser получает публичные страницы, login/contact moda
 - TLS и HSTS;
 - reverse proxy без framework version disclosure;
 - internal-only `/api/health/ready`;
-- private/no-store/noindex headers;
+- public pages are indexable; private application routes keep noindex/noarchive metadata and remain server-authorized;
 - не является application auth system.
 
 ## Roles
@@ -56,6 +56,8 @@ Browser получает публичные страницы, login/contact moda
 ## Security invariants
 
 - Better Auth public signup disabled;
+- username sign-in uses the official Better Auth username plugin; usernames are immutable and unique;
+- account creation remains operator-only through bounded-stdin admin CLI;
 - provider tokens остаются в server environment;
 - Prisma и DB URLs не попадают в browser;
 - direct Prisma/SQL in UI prohibited;
@@ -64,7 +66,7 @@ Browser получает публичные страницы, login/contact moda
 - AMS Leads API — отдельный allowlisted lead-intake boundary, не provider API;
 - имя и телефон не пишутся в browser/server logs AMS IMPULSE;
 - web process environment never contains provider tokens;
-- auth user passwords are stdin-only, never argv;
+- new operator-provisioned auth passwords are exactly 8 digits and remain stdin-only, never argv or Git;
 - foreign project/site/report access denied server-side;
 - local PostgreSQL port not exposed publicly;
 - backup secrets not stored in Git.

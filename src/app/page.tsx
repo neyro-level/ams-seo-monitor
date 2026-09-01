@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { LoginDialog } from "../components/auth/LoginDialog";
 import { LeadRequestDialog } from "../components/marketing/LeadRequestDialog";
 import { SiteFooter } from "../components/marketing/SiteFooter";
@@ -13,22 +12,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const loginRequested = params.login === "1";
   return (
     <main className="impulse-landing min-h-screen overflow-hidden bg-[var(--ch-bg-deepest)] text-[var(--ch-white)]">
-      <section className="relative isolate min-h-screen overflow-hidden">
-        <Image
-          src="/images/ams-impulse-hero.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="-z-30 object-cover object-[68%_center] sm:object-[62%_center] lg:object-center"
-        />
-        <div
-          className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(12,17,23,0.98)_0%,rgba(12,17,23,0.92)_34%,rgba(12,17,23,0.56)_62%,rgba(12,17,23,0.18)_100%)]"
-          aria-hidden
-        />
-        <div className="impulse-grid absolute inset-0 -z-10 opacity-55" aria-hidden />
+      <section className="relative isolate min-h-screen">
+        <div className="impulse-grid absolute inset-0 -z-20" aria-hidden />
+        <div className="impulse-atmosphere absolute inset-0 -z-10" aria-hidden />
 
-        <header className="relative z-20 mx-auto flex w-full max-w-[1360px] items-center justify-between px-5 py-5 sm:px-6 lg:py-7">
+        <header className="mx-auto flex w-full max-w-[1360px] items-center justify-between px-5 py-5 sm:px-6 lg:py-7">
           <Link
             href="/"
             className="inline-flex min-h-11 items-center gap-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ch-accent)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--ch-bg-deepest)]"
@@ -43,7 +31,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <LoginDialog initialOpen={loginRequested} />
         </header>
 
-        <div className="mx-auto flex min-h-[calc(100vh-96px)] w-full max-w-[1360px] items-center px-5 pb-14 pt-12 sm:px-6 sm:pb-18 sm:pt-16 lg:pb-20 lg:pt-10">
+        <div className="mx-auto grid w-full max-w-[1360px] gap-12 px-5 pb-12 pt-14 sm:px-6 sm:pt-20 lg:min-h-[calc(100vh-96px)] lg:grid-cols-[minmax(0,7fr)_minmax(360px,5fr)] lg:items-center lg:gap-16 lg:pb-20 lg:pt-10">
           <div className="relative z-10 max-w-3xl">
             <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--ch-accent)]">
               Продвижение сайтов в Яндексе
@@ -54,13 +42,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </h1>
 
             <p className="mt-7 max-w-2xl text-[clamp(17px,1.45vw,21px)] leading-[1.62] text-[var(--ch-soft-white)]">
-              Поведенческие факторы, которые двигают позиции сайта в Яндексе. Ощутимый результат уже в первые 5 дней.
+              Быстрое и безопасное продвижение сайтов в топ-1 выдачи Яндекс с помощью уникальных технологий.
             </p>
 
             <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <LeadRequestDialog />
-              <p className="max-w-64 text-xs leading-5 text-[var(--ch-muted-ondark)]">
-                Разберём текущие позиции и определим реалистичный сценарий продвижения.
+              <p className="max-w-[285px] text-xs leading-5 text-[var(--ch-muted-ondark)]">
+                Регистрируйся в личном кабинете и получай бесплатный тест-драйв на 5 дней.
               </p>
             </div>
 
@@ -68,6 +56,46 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               <span>Поведенческие факторы</span>
               <span>Яндекс</span>
               <span>Контроль динамики</span>
+            </div>
+          </div>
+
+          <div className="relative min-h-[420px] lg:min-h-[620px]" aria-hidden>
+            <div className="impulse-visual absolute inset-0 overflow-hidden border border-white/10 bg-[#101720]/55">
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(95,127,174,0.09),transparent_38%,rgba(95,127,174,0.06))]" />
+              <svg className="absolute inset-0 h-full w-full" viewBox="0 0 560 680" fill="none">
+                <path d="M-20 586C115 498 178 529 268 403C351 288 406 184 596 106" stroke="rgba(95,127,174,0.62)" strokeWidth="2" />
+                <path d="M-15 620C138 535 201 552 302 427C389 319 428 215 602 148" stroke="rgba(248,250,252,0.13)" strokeWidth="1" />
+                <path d="M30 552L138 478L219 503L316 353L419 302L532 162" stroke="rgba(248,250,252,0.22)" strokeWidth="1" />
+                <circle cx="138" cy="478" r="5" fill="#5F7FAE" />
+                <circle cx="219" cy="503" r="4" fill="#CBD5E1" />
+                <circle cx="316" cy="353" r="6" fill="#5F7FAE" />
+                <circle cx="419" cy="302" r="4" fill="#CBD5E1" />
+                <circle cx="532" cy="162" r="7" fill="#5F7FAE" />
+              </svg>
+
+              <div className="absolute left-6 top-6 border border-white/10 bg-[#0c1117]/75 px-4 py-3 backdrop-blur-sm sm:left-8 sm:top-8">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Сигнал роста</p>
+                <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-white">+ импульс</p>
+              </div>
+
+              <div className="absolute bottom-7 right-6 w-[min(280px,calc(100%_-_48px))] border border-white/10 bg-[#151e29]/88 p-5 backdrop-blur-md sm:bottom-9 sm:right-8">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/45">Динамика</p>
+                    <p className="mt-2 text-lg font-bold text-white">Позиции в Яндексе</p>
+                  </div>
+                  <span className="size-2 bg-[var(--ch-accent)] shadow-[0_0_0_6px_rgba(95,127,174,0.12)]" />
+                </div>
+                <div className="mt-5 grid grid-cols-5 items-end gap-2">
+                  {[26, 36, 48, 68, 92].map((height, index) => (
+                    <span
+                      key={height}
+                      className="block bg-[var(--ch-accent)]/75"
+                      style={{ height, opacity: 0.45 + index * 0.12 }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

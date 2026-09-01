@@ -3,8 +3,9 @@ import { LegalDocument } from "../../components/marketing/LegalDocument";
 import { CookiesContent } from "../../components/marketing/legal/LegalContents";
 
 export const metadata: Metadata = {
-  title: "Правила использования Cookie — AMS IMPULSE",
+  title: "Правила использования Cookie",
   description: "Правила использования файлов cookie и аналогичных технологий на сайте AMS IMPULSE.",
+  alternates: { canonical: "/cookies/" },
 };
 
 export default function CookiesPage() {

@@ -3,8 +3,9 @@ import { LegalDocument } from "../../components/marketing/LegalDocument";
 import { TermsContent } from "../../components/marketing/legal/LegalContents";
 
 export const metadata: Metadata = {
-  title: "Общие условия сотрудничества — AMS IMPULSE",
+  title: "Общие условия сотрудничества",
   description: "Общие условия сотрудничества между АМС и заказчиком.",
+  alternates: { canonical: "/terms/" },
 };
 
 export default function TermsPage() {

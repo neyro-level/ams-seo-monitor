@@ -8,6 +8,7 @@
 
 - standalone web runtime;
 - reverse-proxy Nginx config;
+- canonical public domain `impulse.ams24.ru`;
 - `seo-monitor-web.service`;
 - `seo-monitor-worker.service`;
 - `seo-monitor-worker.timer`;
@@ -34,11 +35,23 @@ systemd timer
 - local standalone runtime starts;
 - `/api/health/live` and `/api/health/ready` return 200 with DB access;
 - staged `systemd-analyze verify` passes for new unit files;
-- staged `nginx -t` passes for reviewed config.
+- live Nginx config for `impulse.ams24.ru` passes `nginx -t`;
 
-## Remaining external blocker
+## Domain state
 
-- offsite bucket и restricted S3 credentials активны через protected server env и Doppler `ams-seo-monitor/prd`.
+- DNS `impulse.ams24.ru` points to AMS Main Server;
+- Let's Encrypt certificate is active through 2026-11-30 with automatic renewal;
+- HTTP redirects to HTTPS;
+- old `seo-monitor.ams24.ru` redirects to `https://impulse.ams24.ru`;
+- current canonical production runtime is available on the new domain;
+- Better Auth and PostgreSQL readiness return 200 after secret rotation.
+
+## Remaining application steps
+
+- apply the reviewed username migration;
+- merge the branch into canonical `main`;
+- deploy the exact reviewed main SHA with the AMS IMPULSE public landing;
+- offsite bucket and restricted S3 credentials remain active through protected server env and Doppler `ams-seo-monitor/prd`.
 
 ## Production rule
 

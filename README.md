@@ -99,8 +99,8 @@ pnpm db:restore-smoke
 Auth admin scripts:
 
 ```bash
-doppler secrets get AMS_SEO_MONITOR_ANALYST_PASSWORD --plain | pnpm user:create -- --email ... --name ... --system-role SEO_ANALYST
-pnpm user:add-to-organization -- --email ... --organization REDACTED_CLIENT_DATA
+doppler secrets get AMS_SEO_MONITOR_ANALYST_PASSWORD --plain | pnpm user:create -- --username ... --name ... --system-role SEO_ANALYST
+pnpm user:add-to-organization -- --username ... --organization REDACTED_CLIENT_DATA
 ```
 
 ## Canon

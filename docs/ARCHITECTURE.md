@@ -83,6 +83,8 @@ Worker выполняет sync runs, source runs, historical persistence и repo
 
 - public product route `/`;
 - public legal routes `/politika/`, `/soglasie/`, `/cookies/`, `/terms/`;
+- public SEO surfaces `/robots.txt`, `/sitemap.xml`, canonical/Open Graph metadata and branded 404;
+- private/demo/API routes are excluded from indexing;
 - authenticated web app routes under `/dashboard/`, `/analyst/` and `/c/*`;
 - login modal is owned by the public `/` route;
 - auth route `/api/auth/[...all]`;

@@ -52,6 +52,26 @@ function requireOption(name: string) {
   return value;
 }
 
+function normalizeUsername(value: string) {
+  const username = value.trim().toLowerCase();
+  if (!/^[a-z0-9_]{3,30}$/.test(username)) {
+    throw new Error("Username must contain 3-30 lowercase Latin letters, digits, or underscores");
+  }
+  return username;
+}
+
+function requireUsername() {
+  return normalizeUsername(requireOption("username"));
+}
+
+async function findUserByUsername(username: string) {
+  const user = await prisma.user.findUnique({ where: { username } });
+  if (!user) {
+    throw new Error(`User not found: ${username}`);
+  }
+  return user;
+}
+
 function parseSystemRole(value: string) {
   if (value === SystemRole.SEO_ANALYST || value === SystemRole.CLIENT_VIEWER) {
     return value;
@@ -76,24 +96,29 @@ async function readPasswordFromStdin() {
   }
 
   const password = Buffer.concat(chunks).toString("utf8").replace(/\r?\n$/, "");
-  if (password.length < 12 || password.length > 256) {
-    throw new Error("Password must contain between 12 and 256 characters");
+  if (!/^\d{8}$/.test(password)) {
+    throw new Error("Password must contain exactly 8 digits");
   }
   return password;
 }
 
 async function createUser() {
-  const email = requireOption("email").toLowerCase();
+  const username = requireUsername();
+  const email = (options.email ?? `${username}@users.impulse.invalid`).toLowerCase();
   const name = requireOption("name");
   if (options.password !== undefined) {
     throw new Error("--password is forbidden; provide the password through stdin");
   }
   const password = await readPasswordFromStdin();
   const systemRole = parseSystemRole(options["system-role"] ?? SystemRole.CLIENT_VIEWER);
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ username }, { email }],
+    },
+  });
 
   if (existingUser) {
-    throw new Error(`User already exists: ${email}`);
+    throw new Error(`User already exists: ${username}`);
   }
 
   const userId = randomUUID();
@@ -103,6 +128,7 @@ async function createUser() {
     prisma.user.create({
       data: {
         id: userId,
+        username,
         email,
         name,
         emailVerified: false,
@@ -121,17 +147,12 @@ async function createUser() {
     }),
   ]);
 
-  console.log(`created_user=${email}`);
+  console.log(`created_user=${username}`);
 }
 
 async function disableUser() {
-  const email = requireOption("email").toLowerCase();
-  const user = await prisma.user.findUnique({ where: { email } });
-
-  if (!user) {
-    throw new Error(`User not found: ${email}`);
-  }
-
+  const username = requireUsername();
+  const user = await findUserByUsername(username);
   const lockedPassword = await hashPassword(randomUUID());
 
   await prisma.$transaction([
@@ -151,36 +172,28 @@ async function disableUser() {
     }),
   ]);
 
-  console.log(`disabled_user=${email}`);
+  console.log(`disabled_user=${username}`);
 }
 
 async function setSystemRole() {
-  const email = requireOption("email").toLowerCase();
+  const username = requireUsername();
   const systemRole = parseSystemRole(requireOption("system-role"));
-  const user = await prisma.user.findUnique({ where: { email } });
-
-  if (!user) {
-    throw new Error(`User not found: ${email}`);
-  }
+  const user = await findUserByUsername(username);
 
   await prisma.user.update({
     where: { id: user.id },
     data: { systemRole },
   });
 
-  console.log(`updated_system_role=${email}`);
+  console.log(`updated_system_role=${username}`);
 }
 
 async function addToOrganization() {
-  const email = requireOption("email").toLowerCase();
+  const username = requireUsername();
   const organizationSlug = requireOption("organization");
   const role = options["role"] ?? "client_viewer";
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await findUserByUsername(username);
   const organization = await prisma.organization.findUnique({ where: { slug: organizationSlug } });
-
-  if (!user) {
-    throw new Error(`User not found: ${email}`);
-  }
 
   if (!organization) {
     throw new Error(`Organization not found: ${organizationSlug}`);
@@ -201,18 +214,14 @@ async function addToOrganization() {
     },
   });
 
-  console.log(`organization_member=${organizationSlug}:${email}`);
+  console.log(`organization_member=${organizationSlug}:${username}`);
 }
 
 async function removeFromOrganization() {
-  const email = requireOption("email").toLowerCase();
+  const username = requireUsername();
   const organizationSlug = requireOption("organization");
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await findUserByUsername(username);
   const organization = await prisma.organization.findUnique({ where: { slug: organizationSlug } });
-
-  if (!user) {
-    throw new Error(`User not found: ${email}`);
-  }
 
   if (!organization) {
     throw new Error(`Organization not found: ${organizationSlug}`);
@@ -236,7 +245,7 @@ async function removeFromOrganization() {
     }),
   ]);
 
-  console.log(`organization_member_removed=${organizationSlug}:${email}`);
+  console.log(`organization_member_removed=${organizationSlug}:${username}`);
 }
 
 async function main() {

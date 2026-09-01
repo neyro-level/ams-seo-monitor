@@ -45,6 +45,8 @@ Git хранит только:
 - `SEO_ANALYST` — system role;
 - `CLIENT_VIEWER` — tenant-bound through membership;
 - public signup off;
+- `User.username` — unique nullable Better Auth login identifier; all newly provisioned users receive one;
+- existing users are backfilled by the reviewed migration from the normalized email local-part;
 - disabled user не проходит authorization.
 
 ## SEO semantics preserved

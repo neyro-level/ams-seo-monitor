@@ -8,7 +8,7 @@
 
 ### Product
 
-- Production активен на `https://seo-monitor.ams24.ru`.
+- Domain infrastructure is active at `https://impulse.ams24.ru`; the current canonical production runtime remains live until the reviewed AMS IMPULSE release.
 - Product hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`.
 - `/analyst/` показывает project readiness.
 - `/c/{clientSlug}/` показывает сайты проекта.
@@ -44,7 +44,7 @@
 - worker oneshot, daily trigger, PostgreSQL advisory full-sync lock и structured journald events;
 - local daily/weekly/monthly backup и restore row-count smoke;
 - private Timeweb offsite bucket активен: upload + object HEAD confirmation проходят до retention prune;
-- private/no-store/noindex headers;
+- public landing is indexable; private dashboard routes remain noindex/noarchive and server-authorized;
 - previous release сохраняется для rollback.
 
 Exact deployed SHA и operational proof читаются только из production release manifest/shared state, не из этого документа.

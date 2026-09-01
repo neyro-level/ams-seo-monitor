@@ -3,8 +3,9 @@ import { LegalDocument } from "../../components/marketing/LegalDocument";
 import { ConsentContent } from "../../components/marketing/legal/LegalContents";
 
 export const metadata: Metadata = {
-  title: "Согласие на обработку данных — AMS IMPULSE",
+  title: "Согласие на обработку данных",
   description: "Согласие пользователя на обработку персональных данных.",
+  alternates: { canonical: "/soglasie/" },
 };
 
 export default function ConsentPage() {

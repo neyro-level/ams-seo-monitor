@@ -3,8 +3,9 @@ import { LegalDocument } from "../../components/marketing/LegalDocument";
 import { PrivacyContent } from "../../components/marketing/legal/LegalContents";
 
 export const metadata: Metadata = {
-  title: "Политика конфиденциальности — AMS IMPULSE",
+  title: "Политика конфиденциальности",
   description: "Политика обработки персональных данных AMS IMPULSE.",
+  alternates: { canonical: "/politika/" },
 };
 
 export default function PrivacyPage() {

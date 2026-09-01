@@ -5,7 +5,7 @@ export const legalOperator = {
   address: "г. Краснодар, улица им. Игнатова, дом 4/3, корп. 2",
   email: "integrator-p@yandex.ru",
   phone: "+7 (918) 320-99-96",
-  site: "https://seo-monitor.ams24.ru",
+  site: "https://impulse.ams24.ru",
 } as const;
 
 export const publicContacts = {
