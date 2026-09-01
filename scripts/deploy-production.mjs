@@ -208,7 +208,8 @@ corepack prepare pnpm@11.5.1 --activate
 chmod 0755 "$RELEASE/node_modules/.bin/prisma" || true
 (
   cd "$RELEASE"
-  pnpm build
+  run_with_env_file "$WEB_ENV_FILE" python3 -c 'import os; keys=("NEXT_PUBLIC_LEADS_API_URL","NEXT_PUBLIC_LEADS_PROJECT_ID","NEXT_PUBLIC_LEADS_SITE_KEY"); missing=[key for key in keys if not os.environ.get(key)]; assert not missing, "Missing web build env: " + ",".join(missing)'
+  run_with_env_file "$WEB_ENV_FILE" pnpm build
   pnpm build:collector
 )
 
