@@ -2,122 +2,116 @@
 
 ## Назначение
 
-Этот файл хранит только текущий verified state, ближайшие задачи и ограничения. История реализации остаётся в Git/SourceCraft; завершённые пошаговые планы здесь не дублируются.
+Только текущий state, открытые ограничения и ближайшие product steps. История завершённых waves и migration-планы находятся в Git и `docs/archive/`.
 
-## Текущий verified state
+## Текущий repository state
 
 ### Product
 
-- Domain infrastructure is active at `https://impulse.ams24.ru`; the current canonical production runtime remains live until the reviewed AMS IMPULSE release.
-- Product hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`.
-- `/analyst/` показывает project readiness.
-- `/c/{clientSlug}/` показывает сайты проекта.
-- `/c/{clientSlug}/{siteSlug}/` показывает единый director report.
-- `/demo/` остаётся изолированным fixture.
-- Runtime работает как Next.js server + PostgreSQL + Better Auth.
+- AMS IMPULSE объединяет public landing и private SEO cabinet.
+- Hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`.
+- Public routes: `/`, legal pages, robots и sitemap.
+- Private routes: `/dashboard/`, `/analyst/`, `/c/*`, `/demo/`.
+- Contact form использует отдельный AMS Leads API и не пишет lead PII в PostgreSQL AMS IMPULSE.
+
+### Runtime
+
+- Next.js `output: "standalone"` behind Nginx.
+- PostgreSQL/Prisma — runtime source of truth.
+- Better Auth username/password; public signup disabled.
+- `SEO_ANALYST` и organization-scoped `CLIENT_VIEWER` проверяются server-side.
+- Worker oneshot отделён от web runtime и защищён PostgreSQL advisory lock.
+- Release artifact строится из reviewed source/lockfile на Linux target.
+- `pnpm build` собирает standalone `public/` и `.next/static/`, поэтому direct standalone assets не теряются.
 
 ### Data pipeline
 
-- Webmaster и Metrica read-only adapters работают для Луганска, Алчевска и Мариуполя.
-- Один REDACTED_CLIENT_DATA sync публикует 3 сайта × 4 periods.
-- Periods: 7, 28, 90 и 180 дней; month — default.
-- Current/previous periods равны и выровнены по последней фактической дате Webmaster.
-- Snapshot и browser-safe report проходят validation и atomic publish.
-- Partial source failure сохраняет period-specific LKG.
-- Internal source bundles не публикуются в browser paths.
+- Yandex Webmaster и Metrika adapters read-only.
+- Topvisor — optional read-only history; paid checks/import/mutations запрещены.
+- Worker сохраняет SyncRun/SourceRun, historical metrics, technical snapshots, ranking captures и четыре ReportSnapshot на site.
+- `SiteReportSnapshot` остаётся единственным browser-safe report contract.
+- Current/previous periods равны по длине: 7, 28, 90 и 180 дней.
+- Technical endpoint failures остаются `partial`; ошибка одного периода не переносится в другой.
+- Source/sync `finishedAt` фиксирует фактическое время завершения, а snapshot `generatedAt` — единый момент сборки.
+- Только цели с `includeInSeoConversion=true` входят в unique SEO conversion; остальные могут оставаться detail goals.
 
-### Analytics and UI
+### Operations
 
-- tracked ranking расположен первым в отчёте;
-- Top-3/Top-10 считаются от полного утверждённого ядра;
-- Webmaster totals отделены от popular-query detail;
-- Metrica unique target visits не смешиваются с cumulative goal actions;
-- source, period, freshness и owner baseline labels видимы;
-- responsive shell проверялся на 375, 768, 1280 и 1440 px.
+- Repository содержит Nginx, web/worker/backup systemd units, migration/seed, immutable deploy, backup и restore-smoke tooling.
+- Production contract требует private offsite backup с HEAD confirmation до retention prune.
+- Code release rollback переключает immutable `current`; PostgreSQL rollback/restore является отдельной операцией.
 
-### Production operations
+## Проверено 2026-09-02
 
-- immutable exact-main releases;
-- source artifact собирается из reviewed main и достраивается на Linux target до cutover;
-- Nginx TLS и reverse proxy к Next.js runtime;
-- Better Auth и organization membership обеспечивают application access boundary;
-- worker oneshot, daily trigger, PostgreSQL advisory full-sync lock и structured journald events;
-- local daily/weekly/monthly backup и restore row-count smoke;
-- private Timeweb offsite bucket активен: upload + object HEAD confirmation проходят до retention prune;
-- public landing is indexable; private dashboard routes remain noindex/noarchive and server-authorized;
-- previous release сохраняется для rollback.
+Local repository proof:
 
-Exact deployed SHA и operational proof читаются только из production release manifest/shared state, не из этого документа.
+- locked dependencies установлены;
+- `pnpm build:collector` — pass;
+- `pnpm typecheck` — pass;
+- `pnpm lint` — pass;
+- `pnpm test` — 63 passed, 19 skipped без `TEST_DATABASE_*`;
+- `pnpm build` — pass, включая standalone asset assembly;
+- source-state, technical baseline и Metrika conversion regressions — pass.
 
-## Active backlog
+External public proof:
 
-### 1. SZ REDACTED_CLIENT_DATA onboarding
+- `https://impulse.ams24.ru/` отдаёт AMS IMPULSE landing;
+- `https://seo-monitor.ams24.ru/` перенаправляет на canonical domain;
+- `/api/health/live` возвращает 200;
+- внешний `/api/health/ready` получает 403, как требует Nginx boundary.
 
-Цель: подключить первый сайт проекта без изменения текущей Next.js + PostgreSQL + Better Auth архитектуры.
+Не перепроверено в этом проходе из-за отсутствия isolated `TEST_DATABASE_*` и production credentials:
 
-Требуются подтверждённые:
+- DB-backed integration suites;
+- authenticated analyst/client matrix на live;
+- live worker sync;
+- production backup object и restore smoke;
+- exact deployed SHA.
 
-- production site URL;
-- Webmaster host access;
-- Metrica counter and goals;
-- timezone;
-- client access delivery method.
+Эти пункты не считаются сломанными; их live-state требует отдельного безопасного operational proof.
 
-Acceptance:
+## Ближайший обязательный gate
 
-- config valid;
-- source preflight успешен;
-- четыре periods публикуются;
-- client isolation matrix проходит;
-- release остаётся отдельной owner-командой.
+Перед merge/release текущих исправлений:
 
-### 2. Analyst detail views
+1. выполнить полный project profile повторно;
+2. при доступной isolated test DB выполнить 19 DB/auth/worker integration tests;
+3. проверить standalone public/static asset smoke;
+4. провести HEAVY review, потому что затронуты worker semantics и release assembly;
+5. deploy выполнять только отдельной owner-командой из reviewed canonical `main`.
 
-Цель: дать аналитику доступ к сохранённым normalized source bundles без расширения client payload.
+## Product backlog
 
-Acceptance:
+### SZ REDACTED_CLIENT_DATA onboarding
 
-- отдельная analyst-only route/access boundary;
-- internal bundle schema validation;
-- no raw responses, credentials или user-level data;
-- client routes не получают detail DTO.
+Нужны подтверждённые site URL, Webmaster host access, Metrika counter/goals, timezone и client membership delivery. Acceptance: seed/config valid, provider preflight pass, four periods compiled, tenant isolation pass.
 
-### 3. Explicit Topvisor activation
+### Analyst detail views
 
-Выполняется только после credentials и явного owner decision.
+Дать аналитику доступ к normalized historical/technical data через отдельный analyst-only DTO. Raw responses, credentials и client leakage запрещены.
 
-Acceptance:
+### Explicit Topvisor activation
 
-- только read-only history endpoints;
-- disabled mapping остаётся default до решения;
-- exact capture заменяет fallback без потери source/baseline labels;
-- checker/import/mutations отсутствуют.
+Только после credentials и owner decision. Разрешены read-only history endpoints; checker/import/mutations запрещены.
 
-### 4. External availability monitoring
+### Availability monitoring
 
-Цель: обнаруживать недоступность private service и stale reports без публикации credentials.
+Authenticated external probe для public availability, private login path и report freshness без response body/secret leakage.
 
-Acceptance:
+### Dashboard design-system normalization
 
-- безопасный authenticated probe;
-- freshness threshold;
-- alert без response body и secret leakage;
-- документированный recovery path.
+Перевести оставшиеся hard-coded chart/status/Tailwind colors на зарегистрированные CRM tokens и выполнить visual proof приватных routes на 375/768/1280/1440. Это presentation-only scope; report order, semantics и auth boundary не менять.
 
-### 5. Token rotation drill
+### Local development bootstrap
 
-Проверить операционный сценарий `docs/ops/TOKEN_ROTATION.md` без раскрытия token values и без изменения application contract.
+Добавить безопасные `dev:status`, `dev:start`, `dev:bootstrap-admin`, `dev:stop` с isolated `_dev`/`_test` PostgreSQL. Не использовать production DB и не добавлять auth bypass.
 
 ## Не делать без отдельного решения
 
-- database или application auth migration;
-- public report links;
-- provider mutations или paid rank checks;
-- destructive snapshot retention;
-- production deploy;
-- Nginx/systemd activation;
-- merge в `main`.
-
-## Следующий рекомендуемый этап
-
-SZ REDACTED_CLIENT_DATA onboarding: он проверяет повторяемость продукта на втором проекте и не требует новой архитектуры. Если production inputs ещё не подтверждены, следующий безопасный product scope — analyst detail views.
+- production migration, deploy или rollback;
+- destructive DB cleanup/restore;
+- public reports или public signup;
+- provider mutations/paid rank checks;
+- dependency major upgrade;
+- direct push/merge в `main`;
+- возврат filesystem/static-export/Basic-Auth architecture.

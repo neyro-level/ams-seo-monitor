@@ -29,6 +29,10 @@ async function main() {
 
   process.stdout.write(`${JSON.stringify(result)}
 `);
+
+  if (result.status === "failed") {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

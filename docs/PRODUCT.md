@@ -2,29 +2,44 @@
 
 ## Назначение
 
-AMS IMPULSE — продукт АМС для SEO-продвижения и регулярного контроля поисковой видимости, технического состояния, органического трафика и целевых действий по нескольким проектам и сайтам.
+AMS IMPULSE объединяет две связанные поверхности:
 
-Публичный маршрут `/` представляет предложение продукта. Приватный кабинет не изменяет сайты и не делает provider mutations: он показывает готовый управленческий отчёт на основе read-only data.
-Публичная главная и правовые страницы индексируются. Приватные, demo и API routes исключаются через page metadata и `robots.txt`.
+1. публичный сайт услуги SEO-продвижения;
+2. приватный кабинет регулярной SEO-отчётности по нескольким проектам и сайтам.
 
-## Пользователи
+Кабинет заменяет ручную сборку управленческого отчёта повторяемым read-only контуром. Система не изменяет клиентские сайты и не выполняет mutations во внешних SEO-сервисах.
+
+## Пользователи и роли
+
+### Посетитель публичного сайта
+
+- читает предложение AMS IMPULSE и правовые документы;
+- открывает форму входа;
+- может отправить заявку через отдельный AMS Leads API;
+- не получает доступ к данным кабинета.
 
 ### SEO_ANALYST
 
-- видит все проекты и сайты;
-- открывает analyst dashboard;
-- видит readiness и source status;
-- использует внутренние рабочие потоки синхронизации и detail data;
-- не получает provider credentials через UI.
+- видит все проекты, сайты, готовность конфигурации источников и доступные отчёты;
+- открывает `/analyst/` и клиентские отчёты;
+- запускает operator-only sync/admin workflows вне browser UI;
+- не получает provider credentials через frontend.
 
 ### CLIENT_VIEWER
 
-- видит только проекты и сайты своей organization;
-- открывает только свои director reports;
-- не видит соседние tenants;
-- не видит internal technical snapshots и provider credentials.
+- видит только проекты своей organization membership;
+- выбирает сайт и читает единый директорский отчёт;
+- не видит соседние tenants, raw provider payloads, internal technical snapshots и credentials;
+- не изменяет конфигурацию и данные.
 
-## Product hierarchy
+### Worker/operator
+
+- worker читает включённые projects/sites из PostgreSQL;
+- использует provider credentials только в server environment;
+- собирает read-only evidence, сохраняет историю и компилирует отчёты;
+- не обслуживает browser requests.
+
+## Продуктовая иерархия
 
 ```text
 Все проекты
@@ -33,44 +48,85 @@ AMS IMPULSE — продукт АМС для SEO-продвижения и ре�
     → Единый отчёт
 ```
 
-`clientSlug` и `/c/*` сохраняются как рабочий URL/data contract.
+`clientSlug` и `/c/*` сохраняются как действующий URL/data contract.
+
+## Основные сценарии
+
+### Публичный посетитель
+
+1. Открывает `/`.
+2. Изучает предложение.
+3. Открывает login или lead dialog.
+4. Заявка уходит в AMS Leads API; AMS IMPULSE не сохраняет имя и телефон в своей PostgreSQL.
+
+### Аналитик
+
+1. Входит через Better Auth.
+2. Открывает `/analyst/`.
+3. Проверяет проекты, сайты и готовность конфигурации источников.
+4. Открывает report route и выбирает период.
+5. Видит source, freshness, baseline и partial labels.
+
+### Клиент
+
+1. Входит через Better Auth.
+2. Попадает в `/dashboard/` и только в разрешённый organization subtree.
+3. Выбирает проект и сайт.
+4. Переключает `week`, `month`, `quarter`, `halfYear`.
+5. Читает единый отчёт без доступа к внутренним данным.
+
+### Onboarding проекта
+
+1. Оператор подтверждает URL, timezone и provider access.
+2. Создаёт/обновляет checked-in nonsecret seed config.
+3. Проверяет diff и config contracts.
+4. Reviewed seed обновляет PostgreSQL без хранения secrets в Git.
+5. Membership и production credentials настраиваются отдельными operator steps.
 
 ## Директорский отчёт
 
-Один site report без вкладок показывает:
+Один report route показывает:
 
 1. ranking утверждённого ядра;
-2. Top-3 / Top-10 и динамику;
-3. tracked queries;
-4. technical health и indexing;
-5. Webmaster demand metrics;
-6. Metrica traffic / target visits / conversion;
-7. landing pages;
-8. alerts и opportunities.
+2. Top-3, Top-10 и динамику tracked queries;
+3. техническое состояние и индексацию;
+4. показы, клики, CTR и среднюю позицию показов Webmaster;
+5. органические визиты, уникальные целевые визиты и конверсию;
+6. посадочные страницы, устройства и цели;
+7. alerts и opportunities.
 
-## Product rules
+Разные сайты не объединяются в искусственный общий ranking KPI.
 
-- `SiteReportSnapshot` — единственный browser-safe DTO;
-- partial/stale/null показываются честно;
-- source, period и baseline labels видимы;
-- current и previous periods равны по длине;
-- разные сайты не агрегируются в fake rank.
+## Продуктовые инварианты
 
-## Current product state
+- `SiteReportSnapshot` — единственный browser-safe report DTO;
+- current/previous periods равны по длине;
+- `month` — default;
+- source, period, freshness и baseline видимы;
+- `partial`, `stale` и `null` не маскируются;
+- Webmaster average position не считается exact rank;
+- Top-3 входит в Top-10;
+- ranking denominator — полное утверждённое ядро;
+- direct query-to-lead attribution запрещена.
 
-В этой ветке продукт уже работает как full-stack foundation:
+## Реализованный scope
 
-- analyst/client access через Better Auth;
-- data и runtime через PostgreSQL;
-- worker sync отдельно от web runtime;
-- report pages читают DB-backed snapshots;
-- filesystem больше не является runtime product DB.
+- публичный landing и legal routes;
+- Better Auth username/password без public signup;
+- server-side analyst/client authorization;
+- PostgreSQL/Prisma runtime;
+- DB-backed worker и report routes;
+- Webmaster и Metrica read-only adapters;
+- optional Topvisor read-only history;
+- four-period director report;
+- immutable standalone release, backup и recovery tooling.
 
 ## Non-goals
 
-- public signup;
-- public reports;
-- provider write access;
-- CRM/catalog/leads product scope из других AMS-репозиториев;
-- direct search-query to lead attribution;
-- second frontend/backend architecture рядом с основной.
+- CRM, billing или task tracker;
+- public client reports;
+- self-service signup и browser admin;
+- provider write access, keyword import или paid rank checks;
+- raw user-level Metrica Logs API;
+- автоматическое изменение клиентских сайтов;
+- второй параллельный backend/storage/auth contract.

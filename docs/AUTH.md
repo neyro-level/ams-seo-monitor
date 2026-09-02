@@ -1,72 +1,92 @@
 # AUTH
 
-## Current state
+## Модель
 
-Application auth уже переведён на Better Auth.
+Better Auth `1.7.2` с Prisma adapter, username plugin и organization plugin — единственный application auth boundary.
 
-Реализовано:
-
-- Better Auth 1.7.2;
-- Prisma adapter;
-- username/password login through the official Better Auth username plugin;
-- public signup disabled; accounts are provisioned only through the admin CLI;
-- route handler `/api/auth/[...all]`;
-- login modal on public product page `/`;
-- protected routes redirect unauthenticated users to `/?login=1`;
-- analyst/client route gating;
-- auth admin CLI scripts;
-- user creation password is exactly 8 digits, accepted through bounded stdin only and never through argv;
+- public signup выключен;
+- accounts создаёт только operator CLI;
+- private routes проверяют session server-side;
+- tenant access определяется memberships в PostgreSQL;
+- Nginx не заменяет auth.
 
 ## Roles
 
 ### SEO_ANALYST
 
-- видит все projects/sites/reports;
-- открывает `/analyst/`;
-- проходит server-side authorization без tenant restriction.
+- global read access к projects/sites/reports;
+- доступ к `/analyst/`;
+- не получает provider credentials через UI.
 
 ### CLIENT_VIEWER
 
-- видит только organization-scoped projects/sites/reports;
+- доступ только к project subtree своей organization membership;
 - не открывает `/analyst/`;
-- при попытке прямого доступа к чужому project/site получает denial через app routing.
+- foreign project/site/report получает denial/not-found.
+
+## Sign-in
+
+- login identifier: immutable lowercase `username`;
+- username ограничен `a-z`, digits и `_`, длина 3–30;
+- Better Auth email field остаётся внутренним compatibility field;
+- password policy для operator provisioning: ровно 8 цифр;
+- password читается bounded stdin и запрещён в argv;
+- login modal расположен на public `/`; `?login=1` открывает его после redirect.
+
+## Authorization flow
+
+```text
+request headers
+→ Better Auth session
+→ getCurrentAuthenticatedUser
+→ fresh User read
+→ disabledAt check
+→ SEO_ANALYST global scope или Member organization IDs
+→ scoped repository query
+→ DTO
+```
+
+Удаление membership или установка `disabledAt` влияет на следующий server-side read; navigation hiding не участвует в решении.
 
 ## Entry points
 
-- `src/infrastructure/auth/auth.ts`
-- `src/infrastructure/auth/auth-client.ts`
-- `src/infrastructure/auth/session.ts`
-- `src/infrastructure/auth/authorization.ts`
-- `src/app/api/auth/[...all]/route.ts`
-- `src/components/auth/LoginDialog.tsx`
-- `src/app/dashboard/page.tsx`
-- `scripts/auth-admin.ts`
+- `src/infrastructure/auth/auth.ts` — Better Auth configuration;
+- `src/infrastructure/auth/session.ts` — request session;
+- `src/infrastructure/auth/authorization.ts` — active user/project/site access;
+- `src/app/api/auth/[...all]/route.ts` — auth HTTP handler;
+- `src/components/auth/LoginDialog.tsx` — client login UI;
+- `scripts/auth-admin.ts` — operator provisioning and access changes.
 
-## Current scripts
+## Admin commands
 
 ```bash
-# Password must contain exactly 8 digits and is accepted only through bounded stdin; --password argv is rejected.
-doppler secrets get <PASSWORD_SECRET> --plain | pnpm user:create -- --username ... --name ... --system-role CLIENT_VIEWER
-pnpm user:disable -- --username ...
-pnpm user:set-system-role -- --username ...
-pnpm user:add-to-organization -- --username ... --organization ...
-pnpm user:remove-from-organization -- --username ... --organization ...
+# Password is provided through stdin; --password is rejected.
+<secret-provider> | pnpm user:create -- --username <name> --name <display-name> --system-role CLIENT_VIEWER
+pnpm user:disable -- --username <name>
+pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
+pnpm user:add-to-organization -- --username <name> --organization <slug>
+pnpm user:remove-from-organization -- --username <name> --organization <slug>
 ```
 
-## Invariants
+Команды требуют server-side DB env. Они не запускаются из browser, не делают deploy и не печатают password.
 
-- Better Auth secret и DB credentials не попадают в browser;
-- session auth проверяется server-side;
-- public signup off;
-- username is normalized to lowercase, immutable and limited to `a-z`, digits and `_`;
-- email remains an internal Better Auth field; CLI creates a non-deliverable alias when `--email` is omitted;
-- analyst/client isolation не опирается на navigation hiding;
-- disabled users return `null` from authorization helper;
-- UI routes redirect unauthenticated users to `/?login=1`; the query opens the login modal.
+## Failure behavior
 
-## Verified state
+- auth без обязательной DB/secret/base URL configuration возвращает safe 503 route response;
+- unauthenticated page redirect: `/?login=1`;
+- non-analyst `/analyst/` redirect: `/dashboard/`;
+- disabled user считается unauthenticated;
+- foreign tenant route не раскрывает чужие данные.
 
-- username sign-in code and migration are prepared; runtime smoke requires explicit migration apply;
-- analyst opens `/analyst/` and site reports;
-- client viewer is redirected away from `/analyst/` and sees only own project subtree;
-- auth integration tests cover analyst/client/disabled-user matrix.
+## Проверки
+
+- analyst/client/disabled-user matrix;
+- cross-tenant project/site/report denial;
+- public signup disabled;
+- username normalization/uniqueness/immutability;
+- password not accepted through argv;
+- membership add/remove behavior;
+- auth unavailable safe response;
+- no auth secrets/Prisma records in browser payload.
+
+Live login smoke требует отдельные test credentials и не подменяется unit tests.

@@ -227,6 +227,24 @@ describe("SiteReportSnapshot compiler", () => {
     });
     expect(snapshot.ranking?.history).toHaveLength(2);
   });
+  it("marks a source partial when current data arrived with a request failure", () => {
+    const site = getREDACTED_CLIENT_DATASite();
+    const snapshot = compileSiteReportSnapshot({
+      clientSlug: "REDACTED_CLIENT_DATA",
+      site,
+      generatedAt: "2026-08-28T10:10:00.000Z",
+      clusterProfile,
+      webmasterData: createWebmasterSourceFixture(site),
+      webmasterFailure: { code: "WEBMASTER_PARTIAL_REQUEST", status: 503 },
+      metricaData: createMetricaSourceFixture(site),
+      queryThresholds: thresholds,
+    });
+
+    expect(snapshot.freshness).toBe("partial");
+    expect(snapshot.sources.webmaster.status).toBe("partial");
+    expect(snapshot.sources.webmaster.safeErrorCode).toBe("WEBMASTER_PARTIAL_REQUEST");
+  });
+
   it("uses last-known-good source section and marks a failed refresh partial", () => {
     const site = getREDACTED_CLIENT_DATASite();
     const previous = compileSiteReportSnapshot({

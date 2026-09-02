@@ -31,7 +31,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
 
   const connectedSites = overview.sites.filter((site) => site.enabled).length;
   const readySites = overview.sites.filter(
-    (site) => site.enabled && site.enabledSourceCount === 2,
+    (site) => site.enabled && site.enabledSourceCount >= 2,
   ).length;
   const projectReady = connectedSites > 0 && readySites === connectedSites;
 

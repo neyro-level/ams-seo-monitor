@@ -4,75 +4,116 @@
 
 - Отвечать по-русски.
 - Сначала итог, затем изменения, проверки, риски и следующий шаг.
-- Не выдумывать credentials, host IDs, counter IDs, exact deployed SHA и live production claims.
+- Не выдумывать credentials, provider IDs, deployed SHA, migration state или live production state.
 
 ## Проект
 
-AMS IMPULSE — отдельный AMS-продукт: публичная страница представляет SEO-продвижение, а приватный кабинет даёт отчётность по нескольким проектам и сайтам. Это не модуль Бастиона.
+AMS IMPULSE — отдельный продукт АМС: публичный лендинг SEO-продвижения и приватный кабинет отчётности по нескольким проектам и сайтам. Это не модуль Бастиона; нельзя использовать runtime-код, БД или application auth других проектов.
 
-## Что читать первым
+## Минимальный порядок чтения
 
-1. `README.md`
-2. `AGENTS.md`
-3. профильный документ текущего scope.
+Для любой задачи:
 
-Core canon:
+1. `README.md`;
+2. `AGENTS.md`;
+3. один профильный документ текущего scope.
 
-- `docs/PRODUCT.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DATA_MODEL.md`
-- `SECURITY.md`
-- `docs/MASTER_PLAN.md`
+Активное ядро:
 
-Detail canon:
+- продукт и роли — `docs/PRODUCT.md`;
+- архитектура и ownership — `docs/ARCHITECTURE.md`;
+- schema, lifecycle и data invariants — `docs/DATA_MODEL.md`;
+- auth, secrets, PII и trust boundaries — `SECURITY.md`;
+- verified state и backlog — `docs/MASTER_PLAN.md`.
 
-- `docs/TECH_STACK.md`
-- `docs/DATABASE.md`
-- `docs/AUTH.md`
-- `docs/WORKER.md`
-- `docs/DEPLOYMENT.md`
-- `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`
-- `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`
-- `docs/modules/*`
-- `docs/ops/*`
+Профильные документы:
+
+- stack — `docs/TECH_STACK.md`;
+- PostgreSQL и backup — `docs/DATABASE.md`;
+- Better Auth и access — `docs/AUTH.md`;
+- worker/data collection — `docs/WORKER.md`;
+- release/runtime — `docs/DEPLOYMENT.md` и `docs/ops/*`;
+- report UI — `docs/SITE_REPORT_IA.md` и `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
+- public UI — `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
+- бизнес-модули — `docs/modules/*`.
+
+`docs/archive/*` — история решений, не активный canon.
 
 ## Product invariants
 
-- hierarchy `Все проекты → Проект → Сайты → Единый отчёт`;
-- роли `SEO_ANALYST` и `CLIENT_VIEWER`;
-- browser-safe DTO = `SiteReportSnapshot`;
-- `month` default, periods `week/month/quarter/halfYear`;
-- `partial` ≠ `success`;
-- `stale` ≠ `current`;
-- `null` ≠ `0`;
+- hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`;
+- роли: `SEO_ANALYST`, `CLIENT_VIEWER`;
+- browser-safe report contract: `SiteReportSnapshot`;
+- periods: `week`, `month`, `quarter`, `halfYear`; default — `month`;
+- `partial` ≠ `success`, `stale` ≠ `current`, `null` ≠ `0`;
 - Webmaster average position не заменяет exact ranking;
-- direct query → lead attribution запрещена.
+- Top-3 является подмножеством Top-10;
+- direct query-to-lead attribution запрещена;
+- provider mutations и paid rank checks запрещены.
 
 ## Architecture invariants
 
-- Next.js работает как server application with standalone output;
-- PostgreSQL — runtime source of truth;
-- Better Auth — application auth boundary;
-- Nginx — TLS/reverse proxy/hardening, не Basic Auth layer;
+- Next.js работает как standalone server application, не static export;
+- PostgreSQL — единственный runtime source of truth;
+- `config/*` — checked-in nonsecret seed/input, не runtime registry;
+- Better Auth — application authentication boundary;
+- authorization проверяется server-side на каждом private read;
+- Nginx отвечает за TLS, reverse proxy и hardening, но не заменяет application auth;
 - worker синхронизирует providers отдельно от web requests;
-- UI → Service → Repository Contract → Prisma Repository → PostgreSQL;
-- Prisma не импортируется в UI;
-- provider APIs не вызываются из browser;
-- filesystem не используется как runtime database.
+- направление: `UI → Service → Repository Contract → Prisma Repository → PostgreSQL`;
+- Prisma и SQL не импортируются в UI;
+- browser не вызывает Yandex/Topvisor API;
+- web process не получает provider tokens;
+- filesystem не используется как runtime database;
+- `src/domain/reports/report-compiler.ts` владеет report semantics; второй compiler запрещён.
 
-## Git and release
+## Архитектурные зоны
 
-- canonical primary = SourceCraft `origin/main`;
-- один поток = одна branch = один PR;
-- production deploy только после review/merge command;
-- server mutation без production deploy допустима только для isolated verification или DB foundation в рамках явной backend задачи;
-- exact production rollout, Nginx activation и release switch не выполнять без отдельного owner command.
+- `src/app` — routes, layouts, metadata, health/auth handlers;
+- `src/components` — presentation и client interaction;
+- `src/application` — services и ports;
+- `src/domain` — pure analytics и report compiler;
+- `src/infrastructure` — Prisma, Better Auth, logging и composition roots;
+- `src/worker` — DB-backed sync orchestration;
+- `collector/sources` — read-only provider adapters;
+- `src/shared/schemas` — Zod contracts;
+- `prisma` — schema и immutable migrations;
+- `config` — reviewed nonsecret seed inputs;
+- `ops` — reviewed production assets;
+- `scripts` — verification, admin, backup/release boundaries.
 
-## Checks
+## Data и migrations
 
-Для code/runtime scope обязательны:
+- `prisma/schema.prisma` — source of truth для структуры БД.
+- Уже применённые migrations не редактировать; schema change требует новой migration.
+- Production применяет только `prisma migrate deploy`; `db push` запрещён.
+- Destructive data operations, production migrations и restore требуют отдельного owner decision.
+- Test/dev DB не должна указывать на production.
+
+## Security
+
+- Public signup выключен.
+- Provider credentials, DB URLs, Better Auth secret, backup credentials и delivery tokens не попадают в Git, docs, browser или logs.
+- Public Leads API site key не считается секретом; bot/delivery credentials остаются во внешнем Leads API.
+- User passwords принимаются admin CLI через bounded stdin, не argv.
+- Private routes и DTO проверяются по session + role/membership, не по navigation visibility.
+- Sensitive access/runtime changes требуют HEAVY review.
+
+## Git и release
+
+- canonical primary: SourceCraft `origin/main`;
+- один независимый поток = одна branch = один PR;
+- не работать напрямую в `main` и не накладывать stale branch поверх актуального runtime;
+- commit/push, PR, merge и production — только по отдельной команде владельца;
+- deploy — только из reviewed canonical `main` по `docs/ops/DEPLOY_RUNBOOK.md`;
+- без deploy-команды не менять live Nginx/systemd, не применять production migrations и не materialize secrets.
+
+## Проверки
+
+Code/runtime scope:
 
 ```bash
+pnpm verify:config
 pnpm build:collector
 pnpm typecheck
 pnpm lint
@@ -80,27 +121,19 @@ pnpm test
 pnpm build
 ```
 
-Для DB/integration scope дополнительно:
+DB/auth/worker scope дополнительно требует доступной isolated test DB и соответствующих integration suites. Backup scope — `pnpm db:restore-smoke` на временной БД. UI scope — browser proof на `375 / 768 / 1280 / 1440`.
 
-```bash
-pnpm db:restore-smoke
-```
+## Обновление документации
 
-Для auth/runtime smoke использовать реальный surface:
-
-- `/api/health/live`
-- `/api/health/ready`
-- login flow
-- analyst/client route access
-- worker sync smoke
+- роль/product boundary → `docs/PRODUCT.md`;
+- module ownership/runtime flow → `docs/ARCHITECTURE.md` и профильный module doc;
+- schema/lifecycle/invariants → `docs/DATA_MODEL.md`;
+- auth/secrets/PII/trust boundary → `SECURITY.md` и `docs/AUTH.md`;
+- stack/dependency policy → `docs/TECH_STACK.md`;
+- DB/backup → `docs/DATABASE.md`;
+- release/recovery/onboarding → профильный `docs/ops/*`;
+- завершённый этап → очистить `docs/MASTER_PLAN.md`, не хранить выполненный план как active backlog.
 
 ## Done
 
-Изменение считается готовым, когда:
-
-- новая архитектура реально работает, не только описана в docs;
-- affected docs синхронизированы;
-- direct Prisma import в UI отсутствует;
-- relevant tests и smoke checks пройдены;
-- legacy path удалён, если он больше не нужен;
-- production deploy остаётся отдельным явным действием.
+Изменение готово, когда поведение завершено end-to-end, affected callsites и docs синхронизированы, релевантные проверки пройдены, legacy path удалён или архивирован, а production остаётся отдельным явным действием.

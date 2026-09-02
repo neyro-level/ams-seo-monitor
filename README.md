@@ -1,14 +1,16 @@
 # AMS IMPULSE
 
-Публичная страница SEO-продукта и приватный кабинет АМС для нескольких проектов и сайтов.
+AMS IMPULSE — публичная страница SEO-продукта АМС и приватный кабинет SEO-отчётности по нескольким проектам и сайтам.
 
 ## Что делает система
 
-AMS IMPULSE объединяет публичное предложение по SEO-продвижению и закрытый кабинет отчётности. Кабинет собирает read-only данные из Яндекс.Вебмастера, Яндекс.Метрики и опционально Topvisor, сохраняет нормализованную историю в PostgreSQL и показывает директорский отчёт через Next.js App Router.
+- публично представляет предложение по SEO-продвижению и принимает заявки через отдельный AMS Leads API;
+- по расписанию получает read-only данные Яндекс.Вебмастера, Яндекс.Метрики и опционально Topvisor;
+- сохраняет нормализованную историю и отчёты в PostgreSQL;
+- показывает аналитику и клиенту единый директорский отчёт по сайту;
+- не изменяет клиентские сайты и не выполняет provider mutations.
 
-Browser получает только готовый `SiteReportSnapshot`. Provider APIs и бизнес-расчёты не живут во frontend.
-
-## Product hierarchy
+Продуктовая иерархия:
 
 ```text
 Все проекты
@@ -17,118 +19,133 @@ Browser получает только готовый `SiteReportSnapshot`. Provi
     → Единый отчёт
 ```
 
-Внутренние `clientSlug` и маршруты `/c/*` сохраняются как действующий URL/data contract.
+Внутренние `clientSlug` и маршруты `/c/*` остаются действующим URL/data contract.
 
-## Current architecture
+## Архитектура
 
 ```text
 Browser
 → Nginx
-→ Next.js server runtime
-→ Application services
-→ Repository contracts
+→ Next.js standalone
+→ application services
+→ repository contracts
 → Prisma repositories
 → PostgreSQL
 
 systemd timer
-→ Worker
-→ Provider adapters
-→ normalization
+→ worker oneshot
+→ provider adapters
+→ normalization и domain analytics
 → PostgreSQL
 → ReportSnapshot / SiteReportSnapshot
 ```
 
-## What is preserved from V1
+Главные инварианты:
 
-- `SiteReportSnapshot` как browser-safe DTO;
-- роли `SEO_ANALYST` и `CLIENT_VIEWER`;
-- периоды `week`, `month`, `quarter`, `halfYear`;
-- `month` по умолчанию;
-- `partial`, `stale`, `null` и честные source states;
-- separation между ranking, Webmaster и Metrica semantics.
+- `SiteReportSnapshot` — единственный browser-safe DTO отчёта;
+- Better Auth и server-side authorization защищают приватные маршруты;
+- browser не обращается к provider APIs и не получает provider credentials;
+- UI не импортирует Prisma и не рассчитывает provider semantics;
+- PostgreSQL — runtime source of truth; `config/*` используется как проверяемый seed/input;
+- worker отделён от web runtime;
+- `partial`, `stale` и `null` не маскируются как `success`, `current` или `0`.
 
-## Current status in this branch
+## Реализованные поверхности
 
-Реализовано:
+Публичные:
 
-- Next.js 16.3.3 standalone runtime;
-- PostgreSQL 18 foundation на AMS Main Server;
-- Prisma 7.10 schema, migrations и seed;
-- Better Auth 1.7.2 foundation;
-- application services и Prisma repositories;
-- database-backed worker sync;
-- database-backed dashboard routes;
-- auth-protected analyst/client access;
-- public AMS IMPULSE landing with login and contact modals;
-- AMS Leads API integration with Max delivery;
-- compact footer and public legal routes `/politika/`, `/soglasie/`, `/cookies/`, `/terms/`;
-- health endpoints `/api/health/live` и `/api/health/ready`;
-- reverse-proxy/systemd release scaffolding.
+- `/` — лендинг AMS IMPULSE;
+- `/politika/`, `/soglasie/`, `/cookies/`, `/terms/` — правовые страницы;
+- `/robots.txt`, `/sitemap.xml`;
+- `/api/health/live` — безопасная liveness-проверка.
 
-Открытый внешний blocker:
+Приватные:
 
-- offsite S3-compatible backup для PostgreSQL ещё не настроен в доступном Doppler scope.
+- `/dashboard/` — входная точка кабинета;
+- `/analyst/` — все доступные аналитику проекты;
+- `/c/{clientSlug}/` — сайты проекта;
+- `/c/{clientSlug}/{siteSlug}/?period=week|month|quarter|halfYear` — отчёт сайта;
+- `/demo/` — авторизованный fixture-отчёт;
+- `/api/health/ready` — внутренняя readiness-проверка PostgreSQL.
 
-## Stack
+## Стек
 
-Фактические версии закреплены в `package.json` и `docs/TECH_STACK.md`:
+Фактические версии закреплены в `package.json` и `pnpm-lock.yaml`:
 
-- Next.js 16.3.3;
-- React 19.2.8;
-- TypeScript 6.0.3;
-- Prisma 7.10.0;
-- PostgreSQL 18.x;
-- Better Auth 1.7.2;
-- Zod 4.5.4;
-- pnpm 11.5.1.
+- Node.js engine `>=24.20.0 <25` (release `24.20.0`), pnpm `11.5.1`;
+- Next.js `16.3.3`, React `19.2.8`;
+- TypeScript `6.0.3`, Zod `4.5.4`;
+- Prisma `7.10.0`, PostgreSQL `18.x`;
+- Better Auth `1.7.2`;
+- Tailwind CSS `4.3.3`, Recharts `3.10.1`.
 
-## Main commands
+## Локальная подготовка
 
 ```bash
+pnpm install --frozen-lockfile
 pnpm prisma:generate
+```
+
+Web runtime требует безопасную development/test PostgreSQL и Better Auth env. Не подключайте локальную разработку к production DB. Проект пока не содержит автоматизированного `dev:start`/`dev:status`; локальный DB/auth bootstrap выполняется только по профильному runbook или отдельной задаче.
+
+```bash
+pnpm dev
+```
+
+## Проверки
+
+```bash
+pnpm verify:config
+pnpm build:collector
 pnpm typecheck
 pnpm lint
 pnpm test
 pnpm build
-pnpm build:collector
-pnpm worker:sync:REDACTED_CLIENT_DATA
-pnpm db:seed
+```
+
+DB-backed integration tests дополнительно требуют `TEST_DATABASE_*`. Без этих переменных Vitest честно пропускает соответствующие suites. Restore smoke выполняется только на безопасной временной БД:
+
+```bash
 pnpm db:restore-smoke
 ```
 
-Auth admin scripts:
+Provider preflight и worker sync требуют разрешённого scope и server-side secrets:
 
 ```bash
-doppler secrets get AMS_SEO_MONITOR_ANALYST_PASSWORD --plain | pnpm user:create -- --username ... --name ... --system-role SEO_ANALYST
-pnpm user:add-to-organization -- --username ... --organization REDACTED_CLIENT_DATA
+pnpm collector:webmaster:preflight
+pnpm collector:metrica:preflight
+pnpm worker:sync:REDACTED_CLIENT_DATA
 ```
 
-## Canon
+## Release
 
-Стартовать с:
+Release собирается только из clean reviewed canonical `main`. Linux target устанавливает зависимости из lockfile, строит standalone web и worker, применяет reviewed Prisma migrations, выполняет seed, обязательный backup/restore smoke и только затем переключает immutable release.
 
-- `AGENTS.md`
-- `docs/PRODUCT.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DATA_MODEL.md`
-- `SECURITY.md`
-- `docs/MASTER_PLAN.md`
+Merge и production deploy выполняются только отдельной командой владельца. Подробности: [`docs/ops/DEPLOY_RUNBOOK.md`](docs/ops/DEPLOY_RUNBOOK.md).
 
-Детальнее по слоям:
+## Документация
 
-- `docs/TECH_STACK.md`
-- `docs/DATABASE.md`
-- `docs/AUTH.md`
-- `docs/WORKER.md`
-- `docs/DEPLOYMENT.md`
-- `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`
-- `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`
+Начальная точка — [`AGENTS.md`](AGENTS.md).
 
-## Important constraints
+Активное ядро:
 
-- public signup выключён;
-- provider mutations запрещены;
-- browser не вызывает provider APIs;
-- Prisma и SQL не импортируются в UI;
-- production deploy и merge в `main` не выполняются автоматически;
-- filesystem больше не является runtime source of truth.
+- [`docs/PRODUCT.md`](docs/PRODUCT.md);
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
+- [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md);
+- [`SECURITY.md`](SECURITY.md);
+- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md).
+
+Профильные документы:
+
+- [`docs/TECH_STACK.md`](docs/TECH_STACK.md);
+- [`docs/DATABASE.md`](docs/DATABASE.md);
+- [`docs/AUTH.md`](docs/AUTH.md);
+- [`docs/WORKER.md`](docs/WORKER.md);
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md);
+- [`docs/SITE_REPORT_IA.md`](docs/SITE_REPORT_IA.md);
+- [`docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`](docs/EXTERNAL_SITE_DESIGN_SYSTEM.md);
+- [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);
+- [`docs/modules/`](docs/modules/);
+- [`docs/ops/`](docs/ops/).
+
+Устаревшие migration-планы находятся в `docs/archive/` и не являются source of truth.

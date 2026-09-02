@@ -643,7 +643,7 @@ function sourceStatus(
   failure?: SafeSourceFailure | null,
 ) {
   if (!enabled) return "not_configured" as const;
-  if (hasData && partial) return "partial" as const;
+  if (hasData && (partial || failure)) return "partial" as const;
   if (hasData) return "success" as const;
   if (failure?.status === 401 || failure?.status === 403) return "access_denied" as const;
   if (failure?.status === 420 || failure?.status === 429) return "quota_limited" as const;

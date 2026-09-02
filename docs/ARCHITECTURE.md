@@ -1,113 +1,179 @@
 # ARCHITECTURE
 
-## Runtime
+## Runtime model
 
 ```text
-Browser
-→ Nginx reverse proxy
-→ Next.js App Router
-→ Application services
-→ Repository contracts
-→ Prisma repositories
+Public/private browser request
+→ Nginx: TLS, static assets, reverse proxy, hardening
+→ Next.js App Router standalone server
+→ session + authorization
+→ application service
+→ repository port
+→ Prisma repository
 → PostgreSQL
 
-systemd timer
-→ Worker composition root
-→ provider adapters
-→ normalized DTOs
-→ domain analytics / report compiler
+systemd timer or operator command
+→ compiled worker oneshot
+→ PostgreSQL advisory full-sync lock
+→ read-only provider adapters
+→ normalized provider DTOs
+→ domain analytics and report compiler
 → SyncService
-→ repository contracts
 → Prisma repositories
-→ PostgreSQL
-→ ReportSnapshot / SiteReportSnapshot
+→ PostgreSQL history + ReportSnapshot
 ```
 
-Next.js больше не static export runtime. Production target — standalone Node application behind Nginx.
+Next.js не является static export. PostgreSQL — runtime source of truth. Filesystem используется для immutable releases, build artifacts, backups и test fixtures, но не как product database.
 
-## Layers
+## Слои и ownership
 
-### Presentation
+### Presentation — `src/app`, `src/components`, `src/modules`
 
-- `src/app`
-- `src/components`
-- client/server React components
+Владеет routes, metadata, layouts, rendering и browser interaction.
 
-Presentation не импортирует Prisma и не знает provider APIs.
+- public: `/`, legal pages, robots, sitemap;
+- private: `/dashboard/`, `/analyst/`, `/c/*`, `/demo/`;
+- API: Better Auth и health routes;
+- получает browser-safe DTO;
+- не импортирует Prisma, SQL и provider clients;
+- не вычисляет ranking/conversion/provider semantics.
 
-### Application
+### Application — `src/application`
 
-- `src/application/services`
-- `src/application/ports`
+Владеет use cases и ports:
 
-Здесь находятся use cases, repository contracts и orchestration.
+- `ProjectService` — tenant-scoped projects/sites;
+- `SiteService` — project overview;
+- `ReportService` — authorized report reads;
+- `MonitoringService` — runtime registry/readiness context;
+- `AnalystService` — analyst dashboard;
+- `SyncService` — provider collection lifecycle и persistence orchestration.
 
-### Domain
+Application types не зависят от Prisma generated types.
 
-- `src/domain/analytics`
-- `src/domain/reports`
+### Domain — `src/domain`
 
-Domain содержит pure period/query analytics и report compiler; не знает React, Prisma и provider transport.
+- `analytics/periods.ts` — четыре period presets и previous-period math;
+- `analytics/webmaster-queries.ts` — deterministic query analytics;
+- `reports/report-compiler.ts` — единственный compiler `SiteReportSnapshot`.
 
-### Infrastructure
+Domain не знает React, Better Auth, Prisma, PostgreSQL и HTTP transport.
 
-- `src/infrastructure/database`
-- `src/infrastructure/auth`
-- `src/infrastructure/logging`
-- `collector/sources/*`
+### Infrastructure — `src/infrastructure`
 
-Infrastructure знает Prisma, Better Auth, PostgreSQL, structured journald output и provider transport.
+- `database/prisma` — singleton Prisma/pg context;
+- `database/repositories` — реализации application ports;
+- `auth` — Better Auth, session и server-side authorization;
+- `logging` — safe structured sync events;
+- `service-container.ts` — web composition root;
+- `worker-service-container.ts` — worker composition root.
 
-### Worker
+### Provider adapters — `collector/sources`
 
-- `src/worker`
+Read-only clients and normalizers:
 
-Worker выполняет sync runs, source runs, historical persistence и report snapshot compilation.
+- Yandex Webmaster;
+- Yandex Metrica;
+- optional Topvisor history.
 
-## Core invariants
+Secrets доступны только worker environment. Raw responses и sensitive error bodies не становятся browser payload.
 
-- UI → Service → Repository Contract → Prisma Repository → PostgreSQL;
-- `SiteReportSnapshot` остаётся browser contract;
-- Better Auth — application auth layer;
-- `CLIENT_VIEWER` isolation проверяется server-side, не navigation filter;
-- filesystem не используется как runtime source of truth;
-- old file-based sync path удалён.
+### Worker — `src/worker`
+
+Compiled entry: `dist-collector/src/worker/main.js`.
+
+Worker:
+
+- запускается oneshot;
+- блокирует overlapping full sync PostgreSQL advisory lock;
+- создаёт `SyncRun`/`SourceRun`;
+- собирает enabled sites;
+- сохраняет history/technical/ranking records;
+- компилирует и сохраняет четыре `ReportSnapshot` на сайт;
+- завершает runs фактическими timestamps и safe statuses;
+- не обслуживает HTTP.
+
+## Направление зависимостей
+
+```text
+Presentation
+→ Application services
+→ Application ports + Domain
+← Infrastructure implementations
+
+Worker composition root
+→ Application SyncService
+→ Domain + provider ports
+← Prisma repositories + provider adapters
+```
+
+Запрещены:
+
+- Prisma/SQL в React и `src/app`;
+- provider calls из browser;
+- второй report compiler;
+- business calculations в JSX;
+- authorization только через navigation hiding;
+- filesystem runtime registry/snapshots как параллельный source of truth.
 
 ## Data ownership
 
-- PostgreSQL хранит organizations, projects, sites, provider connections, tracked queries, sync runs, historical metrics, ranking captures, technical snapshots и report snapshots.
-- `config/*` остаётся seed/input material, не production runtime registry.
-- `src/domain/reports/report-compiler.ts` — shared pure compiler; provider adapters инжектируются worker composition root через application port.
+PostgreSQL хранит:
 
-## Runtime surfaces
+- users, sessions, organizations и memberships;
+- projects, sites и provider mappings;
+- thresholds, clusters, goals и tracked queries;
+- sync/source runs;
+- Webmaster/Metrica history;
+- ranking captures и technical snapshots;
+- materialized `ReportSnapshot` payloads.
 
-- public product route `/`;
-- public legal routes `/politika/`, `/soglasie/`, `/cookies/`, `/terms/`;
-- public SEO surfaces `/robots.txt`, `/sitemap.xml`, canonical/Open Graph metadata and branded 404;
-- private/demo/API routes are excluded from indexing;
-- authenticated web app routes under `/dashboard/`, `/analyst/` and `/c/*`;
-- login modal is owned by the public `/` route;
-- auth route `/api/auth/[...all]`;
-- public contact form calls allowlisted AMS Leads API directly and does not write lead PII to PostgreSQL AMS IMPULSE;
-- health routes `/api/health/live`, `/api/health/ready`;
-- worker entry `src/worker/main.ts`.
+`config/*` хранит reviewed nonsecret seed/input. `prisma/schema.prisma` и immutable migrations владеют DB shape. `src/shared/schemas` владеет runtime validation DTO.
 
-## Production assets
+## Authorization flow
 
-- `ops/nginx/ams-seo-monitor.conf`
-- `ops/systemd/seo-monitor-web.service`
-- `ops/systemd/seo-monitor-worker.service`
-- `ops/systemd/seo-monitor-worker.timer`
-- `ops/systemd/seo-monitor-db-backup.service`
-- `ops/systemd/seo-monitor-db-backup.timer`
+```text
+request headers
+→ Better Auth session
+→ active, non-disabled user
+→ SEO_ANALYST global scope or CLIENT_VIEWER organization memberships
+→ scoped project/site query
+→ explicit DTO
+```
 
-## Removed legacy path
+Private routes повторяют server-side access check до чтения report data. Nginx не заменяет этот boundary.
 
-Удалены из active architecture:
+## Public lead flow
 
-- file snapshot publish pipeline;
-- fs locks and LKG filesystem storage;
-- `/data/latest.json` browser fetch path;
-- static route generation dependency;
-- Basic Auth as application authorization;
-- old collector service/timer pair.
+```text
+LeadRequestDialog
+→ allowlisted AMS Leads API
+→ anti-spam/origin/rate checks во внешнем сервисе
+→ configured delivery channel
+```
+
+AMS IMPULSE не пишет имя и телефон заявки в свою PostgreSQL. Публичный site key не даёт доступ к данным; delivery credentials остаются только во внешнем service environment.
+
+## Production runtime
+
+- `ops/nginx/ams-seo-monitor.conf` — TLS, public assets, reverse proxy, internal readiness;
+- `ops/systemd/seo-monitor-web.service` — standalone Next;
+- `ops/systemd/seo-monitor-worker.{service,timer}` — provider sync;
+- `ops/systemd/seo-monitor-db-backup.{service,timer}` — PostgreSQL backup;
+- `scripts/build-release.mjs` — immutable source artifact;
+- `scripts/deploy-production.mjs` — target build, migration, seed, backup/restore smoke, cutover/rollback.
+
+`pnpm build` после Next build копирует `public/` и `.next/static/` внутрь standalone tree; это обеспечивает корректную прямую работу standalone runtime.
+
+## Удалённый legacy
+
+Не являются active architecture:
+
+- `output: "export"`;
+- browser fetch `/data/latest.json`;
+- filesystem `latest.json`, fs locks и period LKG store;
+- Basic Auth как application authorization;
+- build-time registry как production runtime store;
+- старый collector-only systemd runtime.
+
+Исторические migration-документы находятся в `docs/archive/`.

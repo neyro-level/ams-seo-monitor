@@ -91,6 +91,38 @@ function toSafeFailure(error: unknown): SafeSourceFailure {
   };
 }
 
+const WEBMASTER_TECHNICAL_ENDPOINT_SUFFIXES = [
+  "/diagnostics",
+  "/sitemaps",
+  "/indexing/history",
+  "/sqi-history",
+  "/search-urls/events/history",
+  "/links/internal/broken/history",
+  "/links/external/history",
+] as const;
+
+export function mergeWebmasterTechnicalData(
+  periodData: WebmasterSiteData,
+  baselineData: WebmasterSiteData,
+): WebmasterSiteData {
+  const technicalErrors = baselineData.endpointErrors.filter((error) =>
+    WEBMASTER_TECHNICAL_ENDPOINT_SUFFIXES.some((suffix) => error.endpoint.endsWith(suffix)),
+  );
+
+  return {
+    ...periodData,
+    diagnostics: baselineData.diagnostics,
+    sitemaps: baselineData.sitemaps,
+    indexingHistory: baselineData.indexingHistory,
+    sqiHistory: baselineData.sqiHistory,
+    searchEventsHistory: baselineData.searchEventsHistory,
+    brokenInternalLinksHistory: baselineData.brokenInternalLinksHistory,
+    externalLinksHistory: baselineData.externalLinksHistory,
+    partial: periodData.partial || technicalErrors.length > 0,
+    endpointErrors: [...periodData.endpointErrors, ...technicalErrors],
+  };
+}
+
 function rowsReceivedForWebmaster(data: WebmasterSiteData | null) {
   if (!data) {
     return null;
@@ -158,6 +190,46 @@ function getSourceStatusForPeriod(
       safeErrorCode: null,
     }
   );
+}
+
+export interface PeriodSourceState {
+  status: FinishSourceRunInput["status"];
+  safeErrorCode: string | null;
+  note: string | null;
+}
+
+export type SourceRunSummary = Pick<
+  FinishSourceRunInput,
+  "status" | "safeErrorCode" | "notes"
+>;
+
+export function summarizeSourceRun(states: PeriodSourceState[]): SourceRunSummary {
+  const firstError = states.find((state) => state.safeErrorCode)?.safeErrorCode ?? null;
+  const firstNote = states.find((state) => state.note)?.note ?? null;
+
+  if (states.length === 0) {
+    return { status: "failed", safeErrorCode: firstError, notes: firstNote };
+  }
+  if (states.every((state) => state.status === "success")) {
+    return { status: "success", safeErrorCode: null, notes: null };
+  }
+  if (
+    states.some(
+      (state) =>
+        state.status === "success" ||
+        state.status === "partial" ||
+        state.status === "stale",
+    )
+  ) {
+    return { status: "partial", safeErrorCode: firstError, notes: firstNote };
+  }
+
+  const firstStatus = states[0]!.status;
+  return {
+    status: states.every((state) => state.status === firstStatus) ? firstStatus : "failed",
+    safeErrorCode: firstError,
+    notes: firstNote,
+  };
 }
 
 function normalizeTrackedQuery(value: string) {
@@ -253,6 +325,7 @@ function buildAllowedGoalsForSite(siteSlug: string, goalProfile: GoalProfile) {
       label: goal.label,
       category: goal.category,
       direction: goal.direction,
+      includeInSeoConversion: goal.includeInSeoConversion,
     }));
 }
 
@@ -651,7 +724,7 @@ export class SyncService {
         };
 
         let baselineWebmaster: WebmasterSiteData | null = null;
-        let webmasterFailure: SafeSourceFailure | null = null;
+        let baselineWebmasterFailure: SafeSourceFailure | null = null;
 
         if (site.webmaster.enabled) {
           try {
@@ -662,7 +735,7 @@ export class SyncService {
               includeTechnicalDetails: true,
             });
           } catch (error) {
-            webmasterFailure = toSafeFailure(error);
+            baselineWebmasterFailure = toSafeFailure(error);
           }
         }
 
@@ -697,7 +770,14 @@ export class SyncService {
         const allowedGoals = buildAllowedGoalsForSite(site.siteSlug, projectContext.goalProfile);
         const periodResults: SyncProjectPeriodResult[] = [];
         const siteSafeErrorCodes = new Set<string>();
-        let latestSnapshotForStatus: SiteReportSnapshot | null = null;
+        const sourceStates: Record<
+          "webmaster" | "metrica" | "topvisor",
+          PeriodSourceState[]
+        > = {
+          webmaster: [],
+          metrica: [],
+          topvisor: [],
+        };
         let latestMetricaData: MetricaSiteAudit | null = null;
         let preferredTechnicalMetricaData: MetricaSiteAudit | null = null;
 
@@ -713,6 +793,7 @@ export class SyncService {
           let previousWebmasterData: WebmasterSiteData | null = null;
           let previousMetricaData: MetricaSiteAudit | null = null;
           let metricaFailure: SafeSourceFailure | null = null;
+          let webmasterFailure = baselineWebmasterFailure;
 
           if (site.webmaster.enabled) {
             try {
@@ -727,16 +808,7 @@ export class SyncService {
                 includeTechnicalDetails: false,
               });
               if (baselineWebmaster) {
-                webmasterData = {
-                  ...webmasterData,
-                  diagnostics: baselineWebmaster.diagnostics,
-                  sitemaps: baselineWebmaster.sitemaps,
-                  indexingHistory: baselineWebmaster.indexingHistory,
-                  sqiHistory: baselineWebmaster.sqiHistory,
-                  searchEventsHistory: baselineWebmaster.searchEventsHistory,
-                  brokenInternalLinksHistory: baselineWebmaster.brokenInternalLinksHistory,
-                  externalLinksHistory: baselineWebmaster.externalLinksHistory,
-                };
+                webmasterData = mergeWebmasterTechnicalData(webmasterData, baselineWebmaster);
               }
               previousWebmasterData = await collectors.webmaster(site, {
                 queryLimit: 500,
@@ -866,7 +938,9 @@ export class SyncService {
             preferredTechnicalMetricaData = metricaData;
           }
 
-          latestSnapshotForStatus = snapshot;
+          sourceStates.webmaster.push(getSourceStatusForPeriod(snapshot, "YANDEX_WEBMASTER"));
+          sourceStates.metrica.push(getSourceStatusForPeriod(snapshot, "YANDEX_METRIKA"));
+          sourceStates.topvisor.push(getSourceStatusForPeriod(snapshot, "TOPVISOR"));
           periodResults.push({ periodKey, freshness: snapshot.freshness });
 
           for (const safeErrorCode of [
@@ -909,36 +983,30 @@ export class SyncService {
           });
         }
 
-        if (sourceRuns.webmaster && latestSnapshotForStatus) {
-          const webmasterState = getSourceStatusForPeriod(latestSnapshotForStatus, "YANDEX_WEBMASTER");
+        if (sourceRuns.webmaster) {
+          const webmasterState = summarizeSourceRun(sourceStates.webmaster);
           await closeSourceRun(sourceRuns.webmaster, {
-            status: webmasterState.status,
-            finishedAt: generatedAt,
+            ...webmasterState,
+            finishedAt: now(),
             rowsReceived: rowsReceivedForWebmaster(baselineWebmaster),
-            safeErrorCode: webmasterState.safeErrorCode,
-            notes: webmasterState.note,
           });
         }
 
-        if (sourceRuns.metrica && latestSnapshotForStatus) {
-          const metricaState = getSourceStatusForPeriod(latestSnapshotForStatus, "YANDEX_METRIKA");
+        if (sourceRuns.metrica) {
+          const metricaState = summarizeSourceRun(sourceStates.metrica);
           await closeSourceRun(sourceRuns.metrica, {
-            status: metricaState.status,
-            finishedAt: generatedAt,
+            ...metricaState,
+            finishedAt: now(),
             rowsReceived: rowsReceivedForMetrica(latestMetricaData),
-            safeErrorCode: metricaState.safeErrorCode,
-            notes: metricaState.note,
           });
         }
 
-        if (sourceRuns.topvisor && latestSnapshotForStatus) {
-          const topvisorState = getSourceStatusForPeriod(latestSnapshotForStatus, "TOPVISOR");
+        if (sourceRuns.topvisor) {
+          const topvisorState = summarizeSourceRun(sourceStates.topvisor);
           await closeSourceRun(sourceRuns.topvisor, {
-            status: topvisorState.status,
-            finishedAt: generatedAt,
+            ...topvisorState,
+            finishedAt: now(),
             rowsReceived: rowsReceivedForTopvisor(rankingData),
-            safeErrorCode: topvisorState.safeErrorCode,
-            notes: topvisorState.note,
           });
         }
 
@@ -962,7 +1030,7 @@ export class SyncService {
       await this.finishSyncRun({
         syncRunId: syncRun.syncRunId,
         status: finalStatus,
-        finishedAt: generatedAt,
+        finishedAt: now(),
         sitesProcessed: siteResults.length,
         safeError: [...projectSafeErrors][0] ?? null,
       });

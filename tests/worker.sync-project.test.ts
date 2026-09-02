@@ -83,10 +83,15 @@ workerTestDescription("syncProjectToDatabase", () => {
   it(
     "persists one project sync into PostgreSQL report snapshots and history",
     async () => {
+      let clockCalls = 0;
+      const now = () =>
+        clockCalls++ === 0
+          ? "2026-08-30T00:00:00+03:00"
+          : "2026-08-30T00:01:00+03:00";
       const result = await syncProjectToDatabase({
         projectSlug: "REDACTED_CLIENT_DATA",
         trigger: "daily",
-        now: () => "2026-08-30T00:00:00+03:00",
+        now,
         collectors: {
           webmaster: async (site) => createWebmasterSourceFixture(site),
           metrica: async (site) => {
@@ -200,7 +205,7 @@ workerTestDescription("syncProjectToDatabase", () => {
       expect(result.syncRunId).toBeTruthy();
       const storedSyncRun = await prisma!.syncRun.findUniqueOrThrow({
         where: { id: result.syncRunId },
-        select: { trigger: true, status: true },
+        select: { trigger: true, status: true, startedAt: true, finishedAt: true },
       });
       const unfinishedSourceRuns = await prisma!.sourceRun.count({
         where: {
@@ -208,7 +213,12 @@ workerTestDescription("syncProjectToDatabase", () => {
           OR: [{ finishedAt: null }, { durationMs: null }],
         },
       });
-      expect(storedSyncRun).toEqual({ trigger: "DAILY", status: "SUCCESS" });
+      expect(storedSyncRun).toMatchObject({
+        trigger: "DAILY",
+        status: "SUCCESS",
+        startedAt: new Date("2026-08-30T00:00:00+03:00"),
+        finishedAt: new Date("2026-08-30T00:01:00+03:00"),
+      });
       expect(unfinishedSourceRuns).toBe(0);
     },
     15000,

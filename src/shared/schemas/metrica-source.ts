@@ -45,6 +45,7 @@ export const metricaAllowedGoalSchema = z.object({
     "other",
   ]),
   direction: z.enum(["primary", "secondary"]),
+  includeInSeoConversion: z.boolean(),
 });
 
 export const metricaSampleMetaSchema = z.object({

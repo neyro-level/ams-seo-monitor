@@ -1,4 +1,8 @@
-import { findSiteConfigByUrl, getAllowedGoalsForSite } from "../../orchestration/metrica-site-config";
+import {
+  findSiteConfigByUrl,
+  getAllowedGoalsForSite,
+  getSeoConversionGoalIds,
+} from "../../orchestration/metrica-site-config";
 import { type MetricaAllowedGoal, type MetricaCounterAccess } from "../../../src/shared/schemas/metrica-source";
 import { MetricaSafeError, type FetchLike, getMetricaJson } from "./http";
 import {
@@ -222,6 +226,7 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
         site: siteConfig!.site,
         goalProfile: siteConfig!.goalProfile,
       });
+    const seoConversionGoalIds = getSeoConversionGoalIds(allowedGoals);
     const goalReachesMetrics = buildGoalReachMetrics(
       allowedGoals.map((goal) => goal.goalId),
     );
@@ -264,9 +269,7 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
     });
 
     const organicFilter = buildYandexOrganicFilter();
-    const uniqueTargetFilter = buildUniqueTargetFilter(
-      allowedGoals.map((goal) => goal.goalId),
-    );
+    const uniqueTargetFilter = buildUniqueTargetFilter(seoConversionGoalIds);
     const uniqueTargetPayload = uniqueTargetFilter
       ? await getTableReport({
           ids: access.counterId,
