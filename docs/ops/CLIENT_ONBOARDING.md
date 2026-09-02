@@ -1,74 +1,73 @@
 # CLIENT ONBOARDING
 
-## Статус
+## Цель
 
-REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA production onboarding, auth isolation and daily sync are active. SZ REDACTED_CLIENT_DATA remains pending.
+Подключить новый Project/Site к PostgreSQL runtime, provider sync и tenant access без нового report format, frontend или auth system.
 
-## Initial order
+## Обязательные подтверждённые данные
 
-1. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA — Webmaster/Metrica confirmed;
-2. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA — Webmaster/Metrica confirmed;
-3. REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA — Webmaster/Metrica confirmed;
-4. SZ REDACTED_CLIENT_DATA — after confirmed production inputs.
-
-## Required facts per site
-
-- exact site URL;
-- exact Webmaster verified host;
-- accessible Metrica counter;
+- project и organization names/slugs;
+- exact HTTPS site URL;
 - timezone;
-- goal allowlist;
-- client auth delivery method.
+- verified Webmaster host access;
+- Metrika counter access;
+- goal list и `includeInSeoConversion` policy;
+- optional Topvisor project/region mapping;
+- tracked query set/baseline;
+- CLIENT_VIEWER username и organization membership delivery method.
 
-## Rules
+Не переносить credentials/provider IDs между проектами по аналогии.
 
-- верхний продуктовый уровень называется `Проект`;
-- do not infer one project credentials from another;
-- disabled planned sites stay visible as `Не подключён`;
-- onboarding must not expose OAuth, counter IDs or file paths in browser payload;
-- wizard никогда не принимает token/client secret/password;
-- project creation не выполняет commit, push, build или deploy автоматически.
-
-## Foundation already prepared
-
-- registry-driven client and site routes;
-- exact source config for three REDACTED_CLIENT_DATA cities;
-- per-site goal allowlists;
-- fixture snapshot DTO isolated to `/demo/`;
-- separate private SourceCraft repo.
-
-## Operator workflow
-
-Interactive:
+## Seed preparation
 
 ```bash
 pnpm project:add
 ```
 
-Preview without writes:
+Wizard создаёт checked-in nonsecret seed files и не:
+
+- принимает token/password/client secret;
+- пишет PostgreSQL;
+- создаёт auth user/membership;
+- запускает provider mutation;
+- делает commit/push/deploy.
+
+Dry run:
 
 ```bash
-pnpm project:add \
-  --project-name \"Новый проект\" \
-  --project-slug new-project \
-  --site-name \"Основной сайт\" \
-  --site-slug main \
-  --site-url https://example.ru \
-  --dry-run --yes
+pnpm project:add -- --project-name "Новый проект" --project-slug new-project --site-name "Основной сайт" --site-slug main --site-url https://example.ru --dry-run --yes
 ```
 
-Wizard creates:
+После создания дополнить goals, cluster/tracked query и provider mapping только подтверждёнными значениями.
 
-```text
-config/clients/{projectSlug}.json
-config/goals/{projectSlug}.json
-```
+## Review и DB onboarding
 
-Then:
+1. `pnpm verify:config`;
+2. проверить diff на secrets/placeholders/route collisions;
+3. provider preflight read-only;
+4. review seed behavior;
+5. применить migrations/seed только в безопасном environment;
+6. проверить Project/Site/ProviderConnection/Goal/TrackedQuery records;
+7. создать user через bounded-stdin admin CLI;
+8. добавить membership;
+9. проверить analyst/client isolation;
+10. выполнить worker sync и четыре periods;
+11. release/deploy — отдельная owner-команда.
 
-1. inspect Git diff;
-2. confirm Webmaster/Metrica access through discovery;
-3. update goal allowlist;
-4. run `pnpm verify:config`, tests and build;
-5. commit/push only by owner command;
-6. production onboarding stays a separate release operation.
+## Acceptance
+
+- config schema valid;
+- seed idempotent;
+- enabled site не использует placeholder;
+- web/worker provider configuration совпадает;
+- только goals с `includeInSeoConversion=true` входят в unique SEO conversion;
+- four valid ReportSnapshots на site;
+- source/freshness labels честны;
+- client видит только свою organization;
+- analyst видит project;
+- secrets/raw provider data отсутствуют в Git/browser/logs;
+- backup/recovery contract не ослаблен.
+
+## Current product queue
+
+REDACTED_CLIENT_DATA sites и SZ REDACTED_CLIENT_DATA status фиксируются в `docs/MASTER_PLAN.md`. Этот runbook не утверждает live access без preflight/production proof.

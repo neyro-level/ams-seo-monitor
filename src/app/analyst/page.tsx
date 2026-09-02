@@ -25,7 +25,7 @@ export default async function AllProjectsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Все проекты"
-          description="Проекты АМС, их сайты, подключённые источники и готовность отчётов."
+          description="Проекты АМС, их сайты и готовность конфигурации источников."
         />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -46,7 +46,7 @@ export default async function AllProjectsPage() {
                 project.status === "DISABLED"
                   ? "Отключён"
                   : projectReady
-                    ? "Готов"
+                    ? "Настроен"
                     : project.connectedSites > 0
                       ? "Настройка"
                       : "План";

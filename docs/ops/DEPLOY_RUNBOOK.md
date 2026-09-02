@@ -1,88 +1,112 @@
 # DEPLOY RUNBOOK
 
-## Target runtime
+## Scope
 
-```text
-Nginx
-→ Next standalone web service
-→ PostgreSQL
+Manual production deploy of reviewed canonical `main`. Merge, artifact build and deploy are separate gates. Этот runbook не разрешает выполнять deploy без owner-команды.
 
-systemd timer
-→ worker oneshot
-→ PostgreSQL
+## Preconditions
+
+- current branch = clean local `main` fast-forwarded to `origin/main`;
+- exact commit SHA reviewed and Merge Gate green;
+- Node runtime satisfies `scripts/verify-release-runtime.mjs`;
+- lockfile matches `package.json`;
+- required web/worker/migrator/backup env files exist on target;
+- no secret value is printed;
+- rollback target and current symlink readable.
+
+## Build artifact
+
+```bash
+pnpm release:build
 ```
 
-## Reviewed assets
+Artifact contains reviewed source, config seed, Prisma schema/migrations, public assets, scripts and ops files plus `release-manifest.json`. It does not package local node_modules, Windows standalone output, DB data or secrets.
 
-- `ops/nginx/ams-seo-monitor.conf`
-- `ops/systemd/seo-monitor-web.service`
-- `ops/systemd/seo-monitor-worker.service`
-- `ops/systemd/seo-monitor-worker.timer`
-- `ops/systemd/seo-monitor-db-backup.service`
-- `ops/systemd/seo-monitor-db-backup.timer`
+Manifest binds:
 
-## Local proof already done in branch
+- exact commit SHA;
+- dependency lock checksum;
+- target runtime/architecture;
+- creation timestamp.
 
-- `pnpm build`
-- `pnpm build:collector`
-- `/api/health/live`
-- `/api/health/ready`
-- auth route and route gating
-- systemd unit syntax verification
-- Nginx config syntax verification in isolated temp wrapper
+## Target preparation
 
-## Deploy shape
+Deploy script:
 
-Immutable release artifact stores reviewed source and checked-in runtime assets:
+1. uploads artifact/checksum;
+2. verifies SHA/checksum/manifest;
+3. rejects an existing target release directory and in-place rebuild;
+4. verifies all protected env files;
+5. installs exact pnpm and frozen dependencies;
+6. validates public Leads API build variables;
+7. runs `pnpm build` and `pnpm build:collector` on Linux;
+8. confirms standalone public/static asset assembly;
+9. applies `prisma migrate deploy` with migrator role;
+10. restores runtime grants/default privileges;
+11. runs reviewed seed;
+12. installs backup scripts;
+13. requires offsite backup upload + HEAD confirmation;
+14. runs isolated restore smoke.
 
-- `src/`
-- `collector/`
-- `public/`
-- `config/`
-- `ops/`
-- `prisma/`
-- `scripts/`
-- `next-env.d.ts`
-- `next.config.ts`
-- `postcss.config.mjs`
-- `tsconfig.json`
-- `tsconfig.collector.json`
-- `package.json`
-- `pnpm-lock.yaml`
-- `pnpm-workspace.yaml`
-- `prisma.config.ts`
-- `release-manifest.json`
+Any failure before symlink switch leaves current runtime untouched.
 
-Windows builder requires exact Node `24.20.0` and does not package `.next/standalone` or `dist-collector/` directly. Linux target verifies the same exact shared runtime, installs fresh dependencies from the reviewed lockfile, runs `pnpm build` and `pnpm build:collector` inside the immutable release, then applies migrations, reapplies `seo_monitor_app` grants/default privileges, runs seed, backup/restore smoke and only then switches runtime.
+## Cutover
 
-Environment files:
+After successful preparation:
 
-- web env must exist at `/etc/ams-platform/ams-seo-monitor-web.env`; it contains DB + Better Auth values and the public Leads API build contract (`NEXT_PUBLIC_LEADS_API_URL`, `NEXT_PUBLIC_LEADS_PROJECT_ID`, `NEXT_PUBLIC_LEADS_SITE_KEY`);
-- worker env must exist at `/etc/ams-platform/ams-seo-monitor-worker.env` and contains only DB + provider values;
-- migrator env must already exist at `/etc/ams-platform/ams-seo-monitor-migrator.env`;
-- mandatory offsite env lives at `/etc/ams-platform/ams-seo-monitor-backup.env` with `REQUIRE_OFFSITE=true`;
-- deploy reads migrator values as literal `KEY=VALUE`, not shell code;
-- deploy validates the public Leads API keys and injects the web env while building Next.js inside the immutable release;
-- offsite-required mode включён через dedicated restricted S3 credential в protected env.
-
-Retry rules:
-
-- active SHA is never rebuilt in place;
-- any pre-existing `releases/<sha>` directory is treated as stale and rejected;
-- any failure after the `current` switch must go through rollback before the deploy exits.
+1. install reviewed Nginx/systemd assets;
+2. arm post-switch rollback trap;
+3. atomically switch `current` symlink;
+4. `systemctl daemon-reload`;
+5. validate and reload Nginx;
+6. restart web;
+7. run worker once;
+8. enable worker and backup timers;
+9. verify services/timers;
+10. check loopback liveness/readiness;
+11. verify standalone server, worker and Prisma schema files;
+12. record previous release and deployed SHA;
+13. remove uploaded temp artifact/checksum.
 
 ## Post-deploy smoke
 
-- `seo-monitor-web.service` active;
-- `seo-monitor-worker.timer` active;
-- `seo-monitor-db-backup.timer` active;
+Required:
+
+- public `/` = 200 and canonical metadata;
+- `/ams-favicon.svg` and representative `/_next/static/*` = 200;
 - `/api/health/live` = 200;
-- `/api/health/ready` = 200;
-- analyst unauthenticated access redirects to `/?login=1` and opens the login modal;
-- analyst sign-in works;
-- client foreign project access denied;
-- worker manual start succeeds.
+- loopback `/api/health/ready` = 200;
+- external `/api/health/ready` = 403;
+- unauthenticated `/analyst/` redirects to `/?login=1`;
+- analyst sign-in and report read work;
+- client cannot read foreign project/site/report;
+- worker run finishes and DB timestamps/status are credible;
+- worker/backup timers active;
+- latest backup has confirmed offsite object.
 
-## Offsite readiness
+Do not paste response bodies containing user/report data into public logs.
 
-Private Timeweb bucket `ams-seo-monitor-offsite-20260831` активен. Dedicated user `seo-monitor-backup-s3` имеет read/write только на этот bucket. Production backup подтверждает dump и checksum через S3 HEAD до retention prune; shared S3 administrator credential не используется.
+## Automatic code rollback
+
+Any post-switch command error triggers:
+
+- restore previous `current` symlink;
+- restore previous compatible Nginx/systemd assets;
+- reload/restart previous services;
+- re-enable previous timer topology where applicable.
+
+Rollback does not reverse PostgreSQL migrations/data. A migration must be backward-compatible with the previous release or carry an explicit data recovery decision.
+
+## Production proof
+
+Record outside source docs:
+
+- deployed SHA;
+- artifact checksum;
+- service/timer states;
+- health/auth/isolation smoke results;
+- migration state;
+- backup/restore result;
+- rollback target.
+
+Canonical source docs never guess current deployed SHA.

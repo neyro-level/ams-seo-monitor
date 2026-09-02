@@ -1,33 +1,81 @@
 # RECOVERY
 
-## Статус
+## Scope
 
-Local data recovery and production release rollback are active and verified.
+Два независимых контура:
 
-## Recovery principles
+1. code/runtime rollback — immutable release symlink + Nginx/systemd assets;
+2. data recovery — PostgreSQL backup/restore.
 
-- `latest.json` must remain valid after failed publish;
-- last-known-good source data must survive partial source failure;
-- immutable releases enable static rollback;
-- `shared/` snapshots are not deleted during release rollback.
+Code rollback не откатывает schema/data. DB restore не является обычным способом отката релиза.
 
-## Current proof
+## Runtime rollback
 
-Verified:
+Автоматический post-switch rollback выполняет `scripts/deploy-production.mjs` при ошибке после cutover:
 
-- atomic publish keeps previous latest on simulated failure;
-- stale lock recovery works;
-- endpoint/source partial failure preserves period-specific last-known-good;
-- current/previous internal bundles remain separate from browser-safe reports;
-- three sites × four presets publish valid reports.
+- возвращает previous `current` symlink;
+- восстанавливает previous Nginx/systemd topology;
+- проверяет Nginx;
+- перезапускает предыдущий web/worker runtime;
+- не удаляет failed immutable release автоматически;
+- не меняет PostgreSQL data.
 
-## Production recovery contract
+Перед ручным rollback нужны exact current/previous SHA, service state и совместимость previous code с уже применённой schema.
 
-- releases are immutable;
-- `current` symlink switches atomically;
-- previous release remains until authenticated smoke passes;
-- rollback never deletes `shared/`;
-- `nginx -t` precedes reload;
-- timer/service failures are visible through systemd status/logs;
-- stale locks have bounded cleanup;
-- token/access incidents use `TOKEN_ROTATION.md`.
+## Database recovery
+
+Production backup contract:
+
+- custom-format `pg_dump`;
+- checksum;
+- private offsite copy;
+- remote HEAD confirmation до retention;
+- 7 daily / 8 weekly / 6 monthly;
+- credentials outside Git/logs.
+
+Restore procedure:
+
+1. выбрать проверенный dump/checksum;
+2. восстановить сначала во временную database;
+3. проверить owner, migrations и key row counts;
+4. проверить application compatibility;
+5. только после отдельного owner decision планировать production restore;
+6. сохранить incident evidence и rollback option.
+
+`ops/postgres/restore-smoke.sh` никогда не должен восстанавливать поверх production.
+
+## Failure classes
+
+### Web release failure
+
+Rollback code/assets; PostgreSQL не трогать.
+
+### Migration failure до cutover
+
+Deploy останавливается до symlink switch. Нельзя редактировать применённую migration; исправление — новая reviewed migration/compatibility plan.
+
+### Worker partial provider failure
+
+Не выполнять DB restore. Сохранить honest SourceRun/ReportSnapshot status, устранить provider access/quota issue и повторить sync.
+
+### Worker unexpected failure
+
+Проверить failed SyncRun/SourceRuns, safe logs и advisory lock release. Повторять только после root-cause correction.
+
+### Data corruption/loss
+
+Остановить writes, сохранить текущее состояние, проверить offsite dump во временной DB и эскалировать owner decision. Не запускать destructive cleanup.
+
+### Secret compromise
+
+Следовать `TOKEN_ROTATION.md`; не публиковать secret/error bodies.
+
+## Required proof
+
+- exact code SHA and rollback SHA;
+- DB migration state;
+- health/auth/tenant smoke;
+- worker status and timestamps;
+- backup checksum/offsite confirmation;
+- temporary restore row-count checks;
+- incident timeline without secrets/PII.

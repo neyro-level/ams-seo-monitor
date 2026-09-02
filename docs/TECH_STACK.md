@@ -1,170 +1,45 @@
 # TECH STACK
 
-## Status
+## Source of truth
 
-Wave 0 version decision, Wave 1 foundation refresh and Wave 3 data-layer bootstrap.
+`package.json` и `pnpm-lock.yaml` определяют фактические package versions. Floating versions запрещены.
 
-Правило выбора: latest stable production-compatible release. Не использовать beta, rc, canary, nightly и dev только из-за большего номера версии.
+## Runtime
 
-## Current implemented baseline
+| Слой | Версия / выбор | Назначение |
+|---|---|---|
+| Node.js | `>=24.20.0 <25` | web, worker, scripts |
+| pnpm | `11.5.1` | reproducible install |
+| Next.js | `16.3.3` | App Router standalone server |
+| React / React DOM | `19.2.8` | UI |
+| TypeScript | `6.0.3` | strict application/worker types |
+| Zod | `4.5.4` | DTO/config validation |
+| Prisma | `7.10.0` | schema, migrations, repositories |
+| PostgreSQL | `18.x` | runtime source of truth |
+| Better Auth | `1.7.2` | session/auth/organization plugin |
+| pg / Prisma pg adapter | `8.23.0` / `7.10.0` | PostgreSQL transport |
+| Tailwind CSS | `4.3.3` | styles |
+| Recharts | `3.10.1` | report charts |
+| Lucide React | `1.37.0` | icons |
+| Vitest | `4.1.11` | unit/integration tests |
 
-По `package.json` сейчас:
+## Build contract
 
-- Next.js `16.3.3`;
-- React `19.2.8`;
-- React DOM `19.2.8`;
-- TypeScript `6.0.3`;
- - Zod `4.5.4`;
- - Recharts `3.10.1`;
- - Lucide React `1.37.0`;
- - Prisma CLI `7.10.0`;
- - `@prisma/client` `7.10.0`;
- - `@prisma/adapter-pg` `7.10.0`;
- - `pg` `8.23.0`;
- - `better-auth` `1.7.2`;
- - `@better-auth/prisma-adapter` `1.7.2`;
- - `tsx` `4.23.13`;
- - pnpm `11.5.1`;
- - Node engine `>=24.20.0 <25`; release build и production runtime зафиксированы на `24.20.0`.
+- `next.config.ts`: `output: "standalone"`, `poweredByHeader: false`;
+- `pnpm build`: Prisma generate → config verification → Next build → standalone asset assembly;
+- `scripts/prepare-standalone.mjs` copies `public/` and `.next/static/` into `.next/standalone`;
+- `pnpm build:collector`: Prisma generate + `tsconfig.collector.json`;
+- Linux release installs dependencies strictly from lockfile before build.
 
-Prisma schema, migrations, seed tooling, Better Auth runtime wiring и application authorization уже реализованы в текущем main.
+## Version policy
 
-## Chosen versions for backend rebuild
+- exact package pins;
+- no beta/rc/canary/nightly in production baseline;
+- Next/React/TypeScript/Prisma/Better Auth major changes are separate architecture work;
+- package and lockfile always change together;
+- compatibility is proven by typecheck, lint, tests, build and affected runtime smoke;
+- production Node version must satisfy `scripts/verify-release-runtime.mjs`.
 
-### Application runtime
+## Deliberate exclusions
 
-- Node.js `24.20.0` LTS target;
-- pnpm `11.5.1`;
-- Next.js `16.3.3`;
-- React `19.2.8`;
-- React DOM `19.2.8`;
-- TypeScript `6.0.3`;
-- Zod `4.5.4`;
-- Recharts `3.10.1`;
-- ESLint `9.39.5` with `eslint-config-next` `16.3.3`.
-
-TypeScript `7.0.2` stable was checked but rejected for this branch because current Next ESLint toolchain peers stay on `<6.1.0`; `6.0.3` remains the latest stable compatible choice.
-
-### Data layer
-
-- PostgreSQL `18.x` stable target line;
-- Prisma CLI `7.10.0`;
-- `@prisma/client` `7.10.0`.
-
-### Auth
-
-- `better-auth` `1.7.2`;
-- `@better-auth/prisma-adapter` — matching stable release line to the selected Better Auth version.
-
-## Why Prisma 7, not Prisma 8 RC
-
-Repository rebuild starts from a clean backend foundation, but the version policy still forbids RC in the core stack.
-
-Wave 0 checks show:
-
-- `npm view prisma dist-tags --json` → `latest` points to `8.0.0-rc.12`;
-- `npm view @prisma/client dist-tags --json` → `latest` points to `7.10.0`;
-- Better Auth stable Prisma adapter docs explicitly state: *"This guide uses Prisma 7 and PostgreSQL."*
-
-Decision:
-
-- use Prisma `7.10.0` now;
-- reconsider Prisma 8 only after final stable release and stable Better Auth documentation alignment.
-
-## Why Better Auth 1.7.2
-
-Wave 0 registry check shows:
-
-- `npm view better-auth dist-tags --json` → `latest` is `1.7.2`;
-- `beta` and `rc` tags exist separately.
-
-Decision:
-
-- use stable `1.7.2`, not beta/rc.
-
-## Why PostgreSQL 18.x
-
-Target product needs:
-
-- relational tenant model;
-- historical time-series;
-- transactional sync runs;
-- advisory locks;
-- backup/restore;
-- JSONB only for complex technical payloads.
-
-Wave 0 server check shows:
-
-- server OS = Ubuntu `22.04.5 LTS`;
-- `psql --version` = PostgreSQL `18.4` client from PGDG;
-- PostgreSQL service exists but is inactive.
-
-Decision:
-
-- keep PostgreSQL major `18`;
-- during Wave 2 bring server to the selected stable patch line instead of introducing PostgreSQL 19 beta.
-
-## Version resolution evidence
-
-Wave 0 checks executed:
-
-```bash
-npm view next version
-npm view next dist-tags --json
-npm view prisma version
-npm view prisma dist-tags --json
-npm view @prisma/client version
-npm view @prisma/client dist-tags --json
-npm view better-auth version
-npm view better-auth dist-tags --json
-npm view typescript version
-npm view zod version
-npm view react version
-```
-
-Additional compatibility evidence:
-
-- Better Auth Prisma adapter docs: `https://better-auth.com/docs/adapters/prisma`
-- Guide explicitly uses Prisma 7 + PostgreSQL.
-
-## Locked-version policy
-
-- No floating dependency versions.
-- Every runtime package is pinned exactly in `package.json` and lockfile.
-- Major upgrades for Next, Prisma, Better Auth and PostgreSQL are deliberate architecture events, not incidental refreshes.
-
-## Target package set for implementation
-
-Core app:
-
-- `next`
-- `react`
-- `react-dom`
-- `zod`
-- `better-auth`
-- `@better-auth/prisma-adapter`
-- `@prisma/client`
-
-Dev/runtime tooling:
-
-- `prisma`
-- TypeScript
-- ESLint / Next ESLint integration
-- Vitest
-
-Possible additions, only if justified during implementation:
-
-- PostgreSQL driver adapter required by selected Prisma 7 setup;
-- Playwright for E2E if current suite lacks coverage for auth/report flows.
-
-## Non-goals for stack selection
-
-Not adding for this MVP:
-
-- Redis / Valkey;
-- BullMQ / RabbitMQ / Kafka;
-- ClickHouse;
-- TimescaleDB;
-- second ORM;
-- Supabase / PocketBase / Payload / Directus;
-- Docker-only local architecture if native Windows + VPS flow remains simpler.
+Текущему продукту не нужны второй ORM/backend/auth, Redis, queue broker, ClickHouse, TimescaleDB или Kubernetes. Новая dependency добавляется только для доказанного contract gap.

@@ -1,234 +1,88 @@
 # DATABASE
 
-## Status
+## Назначение
 
-PostgreSQL foundation и обслуживание активны.
+PostgreSQL — единственный runtime source of truth AMS IMPULSE. Prisma schema определяет tables, relations, indexes и enums; application работает через repository ports.
 
-Реализовано и проверено:
+## Топология
 
-- PostgreSQL `18.6` на AMS Main Server;
-- active cluster `18/main` на `127.0.0.1:5432`;
-- databases `seo_monitor_dev`, `seo_monitor_test`, `seo_monitor_prod`;
-- отдельные роли `seo_monitor_app` и `seo_monitor_migrator`;
-- autovacuum и autoanalyze включены;
-- ежедневный local `pg_dump` custom-format через systemd timer;
-- private offsite S3 copy с обязательным object HEAD confirmation;
-- checksum каждого backup;
-- retention `7 daily / 8 weekly / 6 monthly`;
-- restore smoke во временную БД с проверкой migrations и основных row counts.
+Production contract:
 
-## Goal
+- PostgreSQL `18.x` на том же private server contour;
+- listener только `127.0.0.1`/Unix socket;
+- public `5432` запрещён;
+- remote operator access — только SSH tunnel;
+- app, test и migration databases/credentials разделены.
 
-PostgreSQL becomes the primary runtime source of truth for:
-
-- organizations;
-- users and memberships;
-- projects and sites;
-- provider connections;
-- tracked queries and clusters;
-- sync runs and source runs;
-- historical metrics;
-- technical snapshots;
-- compiled report snapshots.
-
-Filesystem stops being the primary product database.
-
-## Server baseline and current state
-
-Wave 0 read-only checks found:
-
-- OS: Ubuntu `22.04.5 LTS`;
-- PostgreSQL `17` default cluster was present, down, and contained only the default `postgres` database;
-- PostgreSQL `18.4` client from PGDG was already installed.
-
-Wave 2 execution changed this to:
-
-- PostgreSQL `18.6` package installed from PGDG;
-- cluster `18/main` created and enabled;
-- listener restricted to `127.0.0.1:5432`;
-- TCP `5432` remains closed externally by firewall policy;
-- previous empty `17/main` cluster archived to `/root/postgresql-17-main-pre-migration.tar.gz` before removal.
-
-## Topology
-
-Database runs locally on the VPS.
-
-Allowed exposure:
-
-- `127.0.0.1`;
-- Unix socket.
-
-Not allowed:
-
-- public PostgreSQL listener in the Internet;
-- pgAdmin exposed publicly;
-- broad firewall opening for `5432`.
-
-Remote manual access, when needed:
-
-- SSH tunnel only.
-
-## Databases
-
-Minimum set:
-
-- `seo_monitor_dev`;
-- `seo_monitor_test`;
-- `seo_monitor_prod`.
-
-Rules:
-
-- test never points to prod;
-- dev never points to prod;
-- restore smoke uses a temporary restore database, not prod;
-- environment variables clearly separate app, test and migration URLs.
+Фактический host/port/database name берётся из protected environment, не из browser или checked-in config.
 
 ## Roles
 
-Minimum PostgreSQL roles:
+### Runtime app role
 
-### `seo_monitor_app`
+Используется Next.js и worker. Имеет только connect/read/write runtime tables/sequences, без superuser и schema migration privileges.
 
-Used by:
+### Migrator role
 
-- Next server runtime;
-- worker runtime.
-
-Permissions:
-
-- connect to app databases;
-- read/write application tables;
-- no superuser;
-- no broad database-administration privileges.
-
-### `seo_monitor_migrator`
-
-Used by:
-
-- Prisma migrations;
-- schema rollout.
-
-Permissions:
-
-- schema change privileges for the target app database;
-- still no superuser unless unavoidable and explicitly documented.
-
-Application runtime does not use migrator credentials.
+Используется `prisma migrate deploy` и schema rollout. Web/worker не получают эти credentials.
 
 ## Schema policy
 
-- Prisma schema is the source of truth for application tables.
-- PostgreSQL is the source of truth for runtime data.
-- Do not treat PostgreSQL as a JSON dump for all product state.
-- Use relational tables for frequent metrics and joins.
-- Use JSONB only for complex technical provider payloads that are naturally nested.
+- source of truth: `prisma/schema.prisma`;
+- applied migration не редактируется;
+- schema change требует новой migration;
+- production: только `pnpm prisma:deploy`;
+- `prisma db push` в production запрещён;
+- destructive migration требует backup, compatibility plan и owner approval;
+- relational columns используются для identity, access и queryable metrics; JSONB — только для validated complex snapshots/DTO.
 
-## Locking policy
+Подробная модель: `docs/DATA_MODEL.md`.
 
-Current policy:
+## Connection lifecycle
 
-- one session-level PostgreSQL advisory lock for the whole full-sync runtime;
-- systemd and direct CLI runs share the same DB-backed guard;
-- lock is released in `finally` and by PostgreSQL if the worker connection dies;
-- no distributed lock service.
+- `src/infrastructure/database/prisma/client.ts` создаёт один shared Prisma/pg context на process;
+- worker advisory lock удерживает выделенное pg connection до завершения full sync;
+- `/api/health/ready` выполняет реальный DB ping;
+- отсутствие DB configuration приводит к явному unavailable/503, а не fallback на filesystem.
 
-## Backup policy
+## Backup contract
 
-Backups are mandatory because relational data becomes critical runtime state.
+Каждый production backup:
 
-### Format
+1. создаёт `pg_dump` custom-format;
+2. вычисляет checksum;
+3. загружает dump/checksum в private offsite S3-compatible storage;
+4. подтверждает remote object через HEAD;
+5. только после успешного подтверждения применяет retention;
+6. пишет safe operational status без credentials.
 
-- `pg_dump` custom format.
+Retention baseline:
 
-### Storage
+- 7 daily;
+- 8 weekly;
+- 6 monthly.
 
-- local retained backup on server;
-- private offsite copy to S3-compatible storage;
-- Timeweb bucket `ams-seo-monitor-offsite-20260831` (private, standard 1 GB, `ru-1`) активен; отдельный S3 user `seo-monitor-backup-s3` имеет только read/write на этот bucket, credentials materialized в protected server env и Doppler `ams-seo-monitor/prd`.
+Backup на том же VPS без offsite copy не считается достаточным.
 
-Backup on the same VPS only is not a real strategy.
+## Restore smoke
 
-### Schedule
+`pnpm db:restore-smoke`/`ops/postgres/restore-smoke.sh`:
 
-Minimum:
+- создаёт временную restore database;
+- восстанавливает последний custom-format dump;
+- проверяет database identity, Prisma migrations и key row counts;
+- требует ненулевые Project, Site и ReportSnapshot counts;
+- удаляет временную БД в cleanup;
+- никогда не восстанавливает поверх production.
 
-- daily backups.
+## Data safety
 
-### Retention policy
+- release rollback не откатывает DB schema/data;
+- physical delete project/site/history — отдельная destructive operation;
+- test/dev DB names должны явно относиться к безопасному environment;
+- production seed выполняется reviewed script после migrations и не должен уничтожать historical records;
+- backup/restore credentials хранятся в Doppler/protected server env.
 
-Baseline policy for MVP:
+## Операционный статус
 
-- keep 7 daily backups;
-- keep 8 weekly backups;
-- keep 6 monthly backups.
-
-### Safety rules
-
-- do not delete the previous valid backup before the new one is verified;
-- backup credentials stay in server environment, not Git;
-- backup logs contain artifact names, timestamps and status, not secrets.
-
-## Restore policy
-
-Required command/script:
-
-```text
-db:restore-smoke
-```
-
-Current implementation:
-
-1. create a temporary database;
-2. restore the latest custom-format dump;
-3. verify database identity and owner;
-4. verify Prisma migrations and key tables;
-5. require non-zero `Project`, `Site` and `ReportSnapshot` row-count sanity;
-6. drop the temporary database in `trap` cleanup.
-
-Never restore over production for testing.
-
-## Secrets and URLs
-
-Server environment must provide at least:
-
-- `DATABASE_URL` for runtime;
-- migrator DB URL for schema rollout;
-- offsite backup credentials;
-- Better Auth secret and URL;
-- provider tokens.
-
-These values are not stored in Git, Prisma schema, seeds or browser code.
-
-## Health dependency
-
-`/api/health/ready` must include a database readiness check. It must prove that the app can actually reach PostgreSQL, not only boot the process.
-
-## Wave 2 acceptance target
-
-Wave 2 is complete when:
-
-- PostgreSQL 18 is installed and active;
-- local-only binding or Unix socket is enforced;
-- `seo_monitor_dev`, `seo_monitor_test`, `seo_monitor_prod` exist;
-- `seo_monitor_app` and `seo_monitor_migrator` are separated;
-- Prisma can connect successfully;
-- backup script exists and works;
-- offsite copy exists;
-- restore smoke passes against a temporary DB.
-
-## Future ownership map
-
-PostgreSQL will own:
-
-- tenant and auth model;
-- provider configuration;
-- sync run history;
-- all published report snapshots;
-- historical metrics and ranking captures.
-
-Filesystem will remain only for:
-
-- release artifacts;
-- temporary backup files;
-- logs/runtime files if required by the host;
-- test fixtures in the repository.
+Repository содержит schema, migrations, seed, backup и restore tooling. Live database version, backup object, restore result и deployed migration state подтверждаются только server-side operational proof; не выводятся из документа по предположению.

@@ -1,48 +1,85 @@
 # WORKER
 
-## Current state
+## Назначение
 
-Worker больше не публикует filesystem snapshots как runtime truth.
+Worker — отдельный compiled Node oneshot process для provider sync, нормализации, исторического persistence и report compilation. Он не обслуживает browser requests.
 
-Сейчас реализовано:
+Entry points:
 
-- worker entry `src/worker/main.ts`;
-- DB-backed `syncProjectToDatabase()`;
-- `SyncRun` и `SourceRun` persistence;
-- `ReportSnapshot` persistence;
-- historical metric persistence for Webmaster/Metrica;
-- `RankingCapture` persistence;
-- `TechnicalSnapshot` persistence;
-- compiled worker path `dist-collector/src/worker/main.js`.
+- source: `src/worker/main.ts`;
+- orchestration: `src/worker/sync-project.ts`, `src/application/services/sync-service.ts`;
+- composition: `src/infrastructure/worker-service-container.ts`;
+- compiled: `dist-collector/src/worker/main.js`.
 
 ## Runtime flow
 
 ```text
-systemd timer
-→ worker oneshot (`daily` trigger)
-→ PostgreSQL advisory full-sync lock
-→ provider adapters
-→ normalized DTOs
-→ domain analytics / report compiler
-→ SyncService
-→ repository contracts
-→ PostgreSQL historical tables
-→ ReportSnapshot / SiteReportSnapshot
-→ structured JSON status logs in journald
+systemd timer / operator command
+→ acquire PostgreSQL advisory full-sync lock
+→ load project/site/provider config from PostgreSQL
+→ create SyncRun + SourceRuns
+→ call read-only provider adapters
+→ normalize DTOs
+→ calculate equal periods and comparisons
+→ compile SiteReportSnapshot
+→ persist history + technical/ranking data + ReportSnapshot
+→ close SourceRuns and SyncRun
+→ structured safe log
 → release lock and exit
 ```
 
-## Preserved semantics
+## Provider policy
 
-- periods `week/month/quarter/halfYear`;
-- previous period equal length;
-- Topvisor exact snapshots stored separately;
-- partial failures stay partial;
-- source states and safe error codes stay explicit;
-- provider APIs are not called from browser;
-- a second full sync for the runtime is rejected by PostgreSQL advisory lock;
-- unexpected exceptions finalize open `SourceRun` and `SyncRun` records as failed;
-- scheduled and manual triggers remain distinguishable in PostgreSQL.
+- Webmaster: verified host, summary, query history/detail and technical endpoints;
+- Metrika: counter/goals, traffic, landing/device/goal data and unique target visits;
+- Topvisor: optional read-only position history;
+- browser never calls providers;
+- mutations, keyword import and paid checks prohibited;
+- HTTP/token/raw sensitive bodies not persisted or logged.
+
+## Period contract
+
+| Key | Days |
+|---|---:|
+| `week` | 7 |
+| `month` | 28 |
+| `quarter` | 90 |
+| `halfYear` | 180 |
+
+- `month` default;
+- previous period immediately precedes current and has equal length;
+- period end is based on factual Webmaster range, last report comparison or current date fallback;
+- error state is local to its period and must not contaminate later successful periods;
+- baseline technical endpoint errors are merged into that period as `partial`.
+
+## Goal semantics
+
+- all site-scoped allowed goals may remain in detail and cumulative goal actions;
+- only `includeInSeoConversion=true` goal IDs form the unique-target OR filter;
+- unique target visits count a visit once even if several included goals were reached;
+- director conversion = unique target visits / Yandex organic visits.
+
+## Persistence
+
+Worker writes:
+
+- `SyncRun`, `SourceRun`;
+- Webmaster/Metrika historical metric tables;
+- `RankingCapture`;
+- `TechnicalSnapshot`;
+- append-only `ReportSnapshot`.
+
+Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; run `finishedAt` is captured at actual completion.
+
+## Failure behavior
+
+- overlapping full sync → `SYNC_ALREADY_RUNNING`;
+- partial provider endpoint → partial source/report with safe errors;
+- total provider failure may use previous report section for display, but source status remains failure/stale rather than success;
+- one site/provider error contributes to safe project status;
+- unexpected exception best-effort closes every open SourceRun and SyncRun as failed;
+- final project status `failed` sets nonzero process exit for systemd; `partial` remains an observable successful process with partial result;
+- lock release is guaranteed in `finally`/connection close.
 
 ## Commands
 
@@ -52,9 +89,18 @@ pnpm worker:sync:project -- <project-slug>
 pnpm worker:sync:REDACTED_CLIENT_DATA
 ```
 
-## Verified state
+Commands require a safe DB environment and provider secrets. `worker:sync:REDACTED_CLIENT_DATA` is not a browser action and does not deploy.
 
-- worker integration test writes runs, report snapshots, historical metrics, ranking captures and technical snapshots;
-- failure integration test proves open runs become `FAILED` on unexpected compiler failure;
-- advisory-lock integration test proves overlapping full sync denial and release;
-- compiled worker smoke proves the plain Node runtime does not import the web-only `server-only` marker.
+## Проверки
+
+- pure period/query/report tests;
+- provider 401/403/420/429/5xx handling;
+- partial technical metadata propagation;
+- goal inclusion in unique conversion;
+- SyncRun/SourceRun actual timestamps;
+- DB integration persistence;
+- unexpected failure finalization;
+- advisory lock overlap/release;
+- compiled worker smoke without web-only imports.
+
+DB-backed suites require isolated `TEST_DATABASE_*`; skipped suites are not evidence of DB behavior.

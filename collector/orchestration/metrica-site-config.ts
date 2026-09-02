@@ -82,5 +82,12 @@ export function getAllowedGoalsForSite(args: {
       label: goal.label,
       category: goal.category,
       direction: goal.direction,
+      includeInSeoConversion: goal.includeInSeoConversion,
     }));
+}
+
+export function getSeoConversionGoalIds(goals: MetricaAllowedGoal[]) {
+  return goals
+    .filter((goal) => goal.includeInSeoConversion)
+    .map((goal) => goal.goalId);
 }
