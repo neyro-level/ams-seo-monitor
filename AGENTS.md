@@ -35,7 +35,10 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - release/runtime — `docs/DEPLOYMENT.md` и `docs/ops/*`;
 - report UI — `docs/SITE_REPORT_IA.md` и `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
 - public UI — `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
-- бизнес-модули — `docs/modules/*`.
+- бизнес-модули — `docs/modules/*`;
+- platform conformance/roadmap — `docs/PLATFORM_CONFORMANCE.md` и `docs/MASTER_PLAN.md`;
+- local development — `docs/ops/LOCAL_DEVELOPMENT.md`;
+- architecture decisions — `docs/adr/*`.
 
 `docs/archive/*` — история решений, не активный canon.
 
@@ -65,7 +68,10 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - browser не вызывает Yandex/Topvisor API;
 - web process не получает provider tokens;
 - filesystem не используется как runtime database;
-- `src/domain/reports/report-compiler.ts` владеет report semantics; второй compiler запрещён.
+- `src/domain/reports/report-compiler.ts` владеет report semantics; второй compiler запрещён;
+- public AMS IMPULSE landing, dialogs, legal routes и `ch-*` visual language сохраняются; Refine/shadcn не переносятся в public UI;
+- новые vertical modules получают public `index.ts`; cross-module imports внутренних файлов запрещены;
+- executable import rules принадлежат `dependency-cruiser.config.cjs`.
 
 ## Архитектурные зоны
 
@@ -113,15 +119,32 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 Code/runtime scope:
 
 ```bash
-pnpm verify:config
-pnpm build:collector
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
+pnpm architecture:check
+pnpm test:unit
+pnpm verify:fast
 ```
 
-DB/auth/worker scope дополнительно требует доступной isolated test DB и соответствующих integration suites. Backup scope — `pnpm db:restore-smoke` на временной БД. UI scope — browser proof на `375 / 768 / 1280 / 1440`.
+DB/auth/worker scope:
+
+```bash
+pnpm dev:db:start
+pnpm test:integration
+```
+
+UI/browser scope:
+
+```bash
+pnpm playwright:install
+pnpm test:e2e
+```
+
+HEAVY candidate:
+
+```bash
+pnpm verify:heavy
+```
+
+Integration runner обязан fail-closed без isolated `*_test` database. UI scope требует browser proof на `375 / 768 / 1280 / 1440`. Backup scope — `pnpm db:restore-smoke` только на временной БД.
 
 ## Обновление документации
 
@@ -132,6 +155,7 @@ DB/auth/worker scope дополнительно требует доступно�
 - stack/dependency policy → `docs/TECH_STACK.md`;
 - DB/backup → `docs/DATABASE.md`;
 - release/recovery/onboarding → профильный `docs/ops/*`;
+- platform requirement mapping → `docs/PLATFORM_CONFORMANCE.md`;
 - завершённый этап → очистить `docs/MASTER_PLAN.md`, не хранить выполненный план как active backlog.
 
 ## Done

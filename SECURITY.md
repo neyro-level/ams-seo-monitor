@@ -150,6 +150,9 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - concurrent full worker sync blocked by PostgreSQL advisory lock;
 - partial/error metadata remains honest;
 - production DB not used for local tests;
+- local PostgreSQL binds only to `127.0.0.1`; credentials stay in ignored `.env.local`;
+- integration runner accepts only explicit `TEST_DATABASE_*` with a `*_test` database name;
+- public/auth-boundary E2E does not embed login credentials or production data.
 - production migration/deploy/restore requires explicit owner action.
 
 ## Проверки security-scope

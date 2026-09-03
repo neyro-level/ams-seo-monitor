@@ -1,5 +1,5 @@
-import { configDefaults, defineConfig } from "vitest/config";
 import path from "node:path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -11,16 +11,13 @@ export default defineConfig({
     environment: "node",
     fileParallelism: false,
     setupFiles: ["./tests/setup-test-env.ts"],
-    exclude: [
-      ...configDefaults.exclude,
-      "tests/e2e/**",
+    include: [
       "tests/auth.authorization.test.ts",
-      "tests/navigation.test.ts",
       "tests/monitoring-service.test.ts",
       "tests/prisma-repositories.test.ts",
+      "tests/navigation.test.ts",
       "tests/prisma-sync-repository.test.ts",
       "tests/worker.sync-project.test.ts",
-      ...(process.platform === "win32" ? ["tests/backup-policy.test.ts"] : []),
     ],
   },
 });

@@ -18,6 +18,15 @@ AMS IMPULSE объединяет две связанные поверхност�
 - может отправить заявку через отдельный AMS Leads API;
 - не получает доступ к данным кабинета.
 
+### PLATFORM_ADMIN — target role
+
+- внутренний оператор АМС, не клиентская роль;
+- управляет organizations, memberships, projects, sites и безопасными SEO-настройками через Admin CMS;
+- не видит secret values и не выполняет provider mutations;
+- каждое значимое изменение проходит server permission, transaction и AuditEvent.
+
+Роль и migration ещё не реализованы; они входят в отдельный auth/data этап.
+
 ### SEO_ANALYST
 
 - видит все проекты, сайты, готовность конфигурации источников и доступные отчёты;
@@ -38,6 +47,17 @@ AMS IMPULSE объединяет две связанные поверхност�
 - использует provider credentials только в server environment;
 - собирает read-only evidence, сохраняет историю и компилирует отчёты;
 - не обслуживает browser requests.
+
+## Target scale and CMS
+
+- до 50 клиентских организаций;
+- несколько projects/sites на organization;
+- code-first internal mini CMS для повторяемого onboarding и настроек;
+- server pagination/filter/sort для растущих списков;
+- jobs/audit/idempotency для безопасных массовых и внешних операций;
+- публичный landing сохраняется как готовый project-specific UI.
+
+CMS управляет только разрешёнными полями и командами. Изменение Prisma schema, выполнение произвольного кода, доступ к secret values и generic `updateAnything` через UI запрещены.
 
 ## Продуктовая иерархия
 
@@ -125,7 +145,7 @@ AMS IMPULSE объединяет две связанные поверхност�
 
 - CRM, billing или task tracker;
 - public client reports;
-- self-service signup и browser admin;
+- self-service signup и клиентский browser admin;
 - provider write access, keyword import или paid rank checks;
 - raw user-level Metrica Logs API;
 - автоматическое изменение клиентских сайтов;

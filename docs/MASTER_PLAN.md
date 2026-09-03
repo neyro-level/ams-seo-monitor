@@ -2,116 +2,202 @@
 
 ## Назначение
 
-Только текущий state, открытые ограничения и ближайшие product steps. История завершённых waves и migration-планы находятся в Git и `docs/archive/`.
+Текущий verified state и последовательный roadmap превращения AMS IMPULSE в надёжную code-first платформу для обслуживания до 50 клиентских организаций. Universal requirements mapped in `docs/PLATFORM_CONFORMANCE.md`; architecture decision — `docs/adr/ADR-001-adopt-application-platform-standard.md`.
 
-## Текущий repository state
+## Стабильный baseline
 
-### Product
+Реализовано и работает:
 
-- AMS IMPULSE объединяет public landing и private SEO cabinet.
-- Hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`.
-- Public routes: `/`, legal pages, robots и sitemap.
-- Private routes: `/dashboard/`, `/analyst/`, `/c/*`, `/demo/`.
-- Contact form использует отдельный AMS Leads API и не пишет lead PII в PostgreSQL AMS IMPULSE.
+- публичный AMS IMPULSE landing и legal routes;
+- Next.js standalone behind Nginx;
+- Prisma/PostgreSQL runtime source of truth;
+- Better Auth username/session/organization foundation;
+- server-side analyst/client tenant isolation;
+- read-only Webmaster/Metrika/Topvisor adapters;
+- DB-backed worker, historical metrics и `SiteReportSnapshot`;
+- structured sync logs, health routes, advisory sync lock;
+- immutable exact-main release;
+- local + mandatory offsite PostgreSQL backup и restore smoke.
 
-### Runtime
+External UI является сохраняемым project asset. Его composition, typography, CTA и public `ch-*` tokens не меняются в platformization scope.
 
-- Next.js `output: "standalone"` behind Nginx.
-- PostgreSQL/Prisma — runtime source of truth.
-- Better Auth username/password; public signup disabled.
-- `SEO_ANALYST` и organization-scoped `CLIENT_VIEWER` проверяются server-side.
-- Worker oneshot отделён от web runtime и защищён PostgreSQL advisory lock.
-- Release artifact строится из reviewed source/lockfile на Linux target.
-- `pnpm build` собирает standalone `public/` и `.next/static/`, поэтому direct standalone assets не теряются.
+## Phase 1 — Platform guardrails
 
-### Data pipeline
+Статус: implemented; local HEAVY proof green.
 
-- Yandex Webmaster и Metrika adapters read-only.
-- Topvisor — optional read-only history; paid checks/import/mutations запрещены.
-- Worker сохраняет SyncRun/SourceRun, historical metrics, technical snapshots, ranking captures и четыре ReportSnapshot на site.
-- `SiteReportSnapshot` остаётся единственным browser-safe report contract.
-- Current/previous periods равны по длине: 7, 28, 90 и 180 дней.
-- Technical endpoint failures остаются `partial`; ошибка одного периода не переносится в другой.
-- Source/sync `finishedAt` фиксирует фактическое время завершения, а snapshot `generatedAt` — единый момент сборки.
-- Только цели с `includeInSeoConversion=true` входят в unique SEO conversion; остальные могут оставаться detail goals.
+Цель: сделать архитектурные и test-инварианты исполняемыми до module/CMS migration.
 
-### Operations
+Scope:
 
-- Repository содержит Nginx, web/worker/backup systemd units, migration/seed, immutable deploy, backup и restore-smoke tooling.
-- Production contract требует private offsite backup с HEAD confirmation до retention prune.
-- Code release rollback переключает immutable `current`; PostgreSQL rollback/restore является отдельной операцией.
+1. exact Node version file;
+2. Dependency Cruiser и current/target boundary rules;
+3. отдельные unit/integration test entrypoints;
+4. isolated Docker PostgreSQL contract для Windows local/test;
+5. safe test DB preflight;
+6. Playwright production-like golden paths для public UI, auth redirect, favicon и responsive overflow;
+7. canonical `architecture:check`, `verify:fast`, `verify:heavy` scripts;
+8. SourceCraft gates используют те же commands без скрытых skipped integration guarantees.
 
-## Проверено 2026-09-02
+Done:
 
-Local repository proof:
+- обычный unit run не содержит DB skips;
+- integration command fail-closed без безопасной test DB;
+- local DB config не содержит credentials в Git;
+- architecture violations блокируются;
+- public UI проходит 375/768/1280/1440 browser checks;
+- production code behavior не меняется.
 
-- locked dependencies установлены;
-- `pnpm build:collector` — pass;
-- `pnpm typecheck` — pass;
-- `pnpm lint` — pass;
-- `pnpm test` — 63 passed, 19 skipped без `TEST_DATABASE_*`;
-- `pnpm build` — pass, включая standalone asset assembly;
-- source-state, technical baseline и Metrika conversion regressions — pass.
+Verified proof:
 
-External public proof:
+- `verify:fast` blocks config/type/lint/import/unit failures;
+- 63 unit tests pass without skipped DB suites;
+- isolated PostgreSQL `18.6` starts on loopback and dev migrations/seed pass;
+- 14 integration tests pass after automatic test migrations/seed;
+- Dependency Cruiser checks 105 modules / 212 dependencies with zero violations;
+- production-like Next build passes;
+- 8 Playwright golden paths pass at 375, 768, 1280 and 1440;
+- pinned Node 24.20/PostgreSQL 18.6 CI devcontainer builds, and its integration harness passes without runtime apt installation;
+- `verify:heavy` passes end-to-end.
 
-- `https://impulse.ams24.ru/` отдаёт AMS IMPULSE landing;
-- `https://seo-monitor.ams24.ru/` перенаправляет на canonical domain;
-- `/api/health/live` возвращает 200;
-- внешний `/api/health/ready` получает 403, как требует Nginx boundary.
+## Phase 2 — Platform request and access context
 
-Не перепроверено в этом проходе из-за отсутствия isolated `TEST_DATABASE_*` и production credentials:
+Цель: единый server boundary вместо распределённых auth/error helpers.
 
-- DB-backed integration suites;
-- authenticated analyst/client matrix на live;
-- live worker sync;
-- production backup object и restore smoke;
-- exact deployed SHA.
+Scope:
 
-Эти пункты не считаются сломанными; их live-state требует отдельного безопасного operational proof.
+- `ActorContext`: user, role, memberships/active organization, permissions, correlation ID;
+- capability predicates для project/report/admin действий;
+- central env validation;
+- stable error envelope и domain-to-transport mapping;
+- request/correlation propagation в logs;
+- version/release health DTO;
+- auth adapter изолирован от business modules.
 
-## Ближайший обязательный gate
+Не менять product roles без migration/access matrix.
 
-Перед merge/release текущих исправлений:
+## Phase 3 — Audit, idempotency and jobs foundation
 
-1. выполнить полный project profile повторно;
-2. при доступной isolated test DB выполнить 19 DB/auth/worker integration tests;
-3. проверить standalone public/static asset smoke;
-4. провести HEAVY review, потому что затронуты worker semantics и release assembly;
-5. deploy выполнять только отдельной owner-командой из reviewed canonical `main`.
+Цель: подготовить безопасные CMS mutations и повторяемые операции.
 
-## Product backlog
+Schema migration:
 
-### SZ REDACTED_CLIENT_DATA onboarding
+- `AuditEvent`;
+- `IdempotencyKey`;
+- `OutboxEvent`;
+- `JobRun`;
+- `RetentionRun` только вместе с первой retention policy.
 
-Нужны подтверждённые site URL, Webmaster host access, Metrika counter/goals, timezone и client membership delivery. Acceptance: seed/config valid, provider preflight pass, four periods compiled, tenant isolation pass.
+Runtime:
 
-### Analyst detail views
+- transaction = business change + audit + outbox/idempotency marker;
+- PostgreSQL claim/lease/backoff/dead-letter;
+- no external HTTP inside transaction;
+- worker heartbeat/failed-job visibility;
+- manual bounded retry с audit.
 
-Дать аналитику доступ к normalized historical/technical data через отдельный analyst-only DTO. Raw responses, credentials и client leakage запрещены.
+## Phase 4 — Vertical module boundaries
 
-### Explicit Topvisor activation
+Мигрировать по одному домену, каждый отдельным clean-cutover PR:
 
-Только после credentials и owner decision. Разрешены read-only history endpoints; checker/import/mutations запрещены.
+1. Identity and Access;
+2. Project Registry;
+3. Reporting;
+4. Ranking Analytics;
+5. Data Ingestion;
+6. Platform Operations.
 
-### Availability monitoring
+Каждый module получает `domain/application/infrastructure/presentation/index.ts`. Другие modules импортируют только public entrypoint. После переноса старый global path удаляется. Dependency Cruiser rules ужесточаются после каждого cutover.
 
-Authenticated external probe для public availability, private login path и report freshness без response body/secret leakage.
+## Phase 5 — Admin CMS
 
-### Dashboard design-system normalization
+Цель: internal code-first mini CMS для 50 клиентов.
 
-Перевести оставшиеся hard-coded chart/status/Tailwind colors на зарегистрированные CRM tokens и выполнить visual proof приватных routes на 375/768/1280/1440. Это presentation-only scope; report order, semantics и auth boundary не менять.
+Stack добавляется только здесь и используется сразу:
 
-### Local development bootstrap
+- Refine Core;
+- shadcn/ui source components;
+- React Hook Form + Zod;
+- protected admin route group.
 
-Добавить безопасные `dev:status`, `dev:start`, `dev:bootstrap-admin`, `dev:stop` с isolated `_dev`/`_test` PostgreSQL. Не использовать production DB и не добавлять auth bypass.
+Первый resource set:
 
-## Не делать без отдельного решения
+- organizations/memberships;
+- projects/sites;
+- provider connections без secret values;
+- goal definitions и conversion inclusion;
+- tracked query sets;
+- thresholds/clusters;
+- sync runs/job status.
 
-- production migration, deploy или rollback;
-- destructive DB cleanup/restore;
-- public reports или public signup;
-- provider mutations/paid rank checks;
-- dependency major upgrade;
-- direct push/merge в `main`;
-- возврат filesystem/static-export/Basic-Auth architecture.
+Каждая mutation — named command, server authorization, tenant scope, transaction и AuditEvent. Arbitrary Prisma CRUD запрещён. Public landing не использует Refine.
+
+## Phase 6 — Observability and security hardening
+
+- Sentry server/client/worker adapters с PII scrubbing и release markers;
+- correlation-aware structured logs;
+- worker sync freshness и failed-job health;
+- public/write rate limits по реальному surface;
+- CSP staged через Report-Only;
+- explicit CORS для external contracts;
+- secret/env startup validation;
+- authenticated E2E tenant matrix;
+- RLS decision после DB-session prototype и integration proof.
+
+## Phase 7 — Scale and operations proof
+
+Для 50 организаций:
+
+- measured query plans и composite tenant indexes;
+- server pagination/filter/sort allowlists;
+- bounded exports;
+- worker concurrency/backpressure;
+- backup volume/restore timing;
+- retention/privacy rules;
+- load sample на representative data;
+- availability and stale-report monitoring.
+
+Redis, separate search engine и separate backend добавляются только при измеренном blocker и отдельном ADR.
+
+## Phase 8 — Template readiness
+
+Template repository сейчас не создаётся.
+
+Сначала AMS IMPULSE должен доказать:
+
+- два или более vertical modules с одинаковым public contract pattern;
+- working ActorContext/audit/jobs foundation;
+- repeatable local/CI PostgreSQL;
+- Refine admin resources без project-specific leakage;
+- configurable brand/legal/navigation boundaries;
+- documented extraction list platform vs project code.
+
+Только после этого reusable core копируется в отдельный repository. AMS IMPULSE landing остаётся project-specific reference asset и переносится в template как opt-in example, а не как обязательный universal theme.
+
+## Product work after platform foundation
+
+- SZ REDACTED_CLIENT_DATA onboarding;
+- analyst detail views;
+- explicit Topvisor activation;
+- external availability/freshness monitoring;
+- dashboard CRM-token normalization.
+
+Эти задачи выполняются через новые module boundaries по мере их готовности.
+
+## Не внедрять без отдельного product/architecture решения
+
+- CRM contacts, pipeline или kanban;
+- public signup/reports;
+- provider mutations или paid checks;
+- runtime-editable DB schema;
+- plugin marketplace;
+- Redis, NestJS, microservices, second ORM/auth/backend;
+- object storage без user files;
+- RLS без ActorContext transaction contract;
+- отдельный search engine без measured PostgreSQL limit.
+
+## Gates
+
+- Phase 1: dependency/tooling impact, HEAVY.
+- Phases 2–7: auth/data/runtime impact, HEAVY.
+- Public UI preservation: browser proof 375/768/1280/1440.
+- Production deploy всегда отдельная owner-команда после reviewed canonical main.

@@ -1,0 +1,8 @@
+{
+  "name": "AMS SEO Monitor CI",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "remoteUser": "root"
+}

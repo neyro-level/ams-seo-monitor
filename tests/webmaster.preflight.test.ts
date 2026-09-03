@@ -62,8 +62,8 @@ describe("webmaster preflight", () => {
       },
     );
 
-    await expect(client.preflight()).rejects.toMatchObject<WebmasterSafeError>({
+    await expect(client.preflight()).rejects.toMatchObject({
       code: "TARGET_SITE_MISSING",
-    });
+    } satisfies Partial<WebmasterSafeError>);
   });
 });

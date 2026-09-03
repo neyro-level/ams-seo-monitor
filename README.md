@@ -77,33 +77,39 @@ systemd timer
 - TypeScript `6.0.3`, Zod `4.5.4`;
 - Prisma `7.10.0`, PostgreSQL `18.x`;
 - Better Auth `1.7.2`;
-- Tailwind CSS `4.3.3`, Recharts `3.10.1`.
+- Tailwind CSS `4.3.3`, Recharts `3.10.1`;
+- Vitest, Playwright и Dependency Cruiser.
 
 ## Локальная подготовка
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm prisma:generate
+pnpm playwright:install
 ```
 
-Web runtime требует безопасную development/test PostgreSQL и Better Auth env. Не подключайте локальную разработку к production DB. Проект пока не содержит автоматизированного `dev:start`/`dev:status`; локальный DB/auth bootstrap выполняется только по профильному runbook или отдельной задаче.
+Создайте ignored `.env.local` по `.env.example`, затем:
 
 ```bash
+pnpm dev:db:start
+pnpm dev:db:migrate
+pnpm dev:db:seed
 pnpm dev
 ```
+
+Docker PostgreSQL слушает только `127.0.0.1`, использует отдельные `seo_monitor_dev` и `seo_monitor_test` и сохраняет named volume между перезапусками. Production DB/credentials запрещены. Полный порядок: [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md).
 
 ## Проверки
 
 ```bash
-pnpm verify:config
-pnpm build:collector
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
+pnpm architecture:check
+pnpm test:unit
+pnpm test:integration
+pnpm test:e2e
+pnpm verify:fast
+pnpm verify:heavy
 ```
 
-DB-backed integration tests дополнительно требуют `TEST_DATABASE_*`. Без этих переменных Vitest честно пропускает соответствующие suites. Restore smoke выполняется только на безопасной временной БД:
+`test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и seed. `test:e2e` строит standalone runtime и проверяет public UI/auth boundary на 375/768/1280/1440. Restore smoke production backup выполняется отдельно:
 
 ```bash
 pnpm db:restore-smoke
@@ -133,7 +139,8 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md);
 - [`SECURITY.md`](SECURITY.md);
-- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md).
+- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md);
+- [`docs/PLATFORM_CONFORMANCE.md`](docs/PLATFORM_CONFORMANCE.md) — project mapping универсального platform standard.
 
 Профильные документы:
 
@@ -145,6 +152,8 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/SITE_REPORT_IA.md`](docs/SITE_REPORT_IA.md);
 - [`docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`](docs/EXTERNAL_SITE_DESIGN_SYSTEM.md);
 - [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);
+- [`docs/adr/ADR-001-adopt-application-platform-standard.md`](docs/adr/ADR-001-adopt-application-platform-standard.md);
+- [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md);
 - [`docs/modules/`](docs/modules/);
 - [`docs/ops/`](docs/ops/).
 
