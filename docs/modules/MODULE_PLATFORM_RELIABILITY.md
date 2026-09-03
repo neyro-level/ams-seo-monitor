@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Обеспечивает atomic enqueue, idempotency, audit trail, PostgreSQL outbox, job attempts, leases, retry/backoff и dead-letter visibility для будущих Admin CMS commands и внешних side effects.
+Обеспечивает atomic enqueue, idempotency, audit trail, PostgreSQL outbox, job attempts, leases, retry/backoff и dead-letter visibility для Platform Admin commands и внешних side effects.
 
 ## Не входит в scope
 
@@ -14,7 +14,7 @@
 
 ## Роли и права
 
-- PLATFORM_ADMIN: будущий enqueue/retry через server commands с audit;
+- PLATFORM_ADMIN: typed enqueue/retry через server commands с audit;
 - SEO_ANALYST: sync read/run по существующим capabilities;
 - CLIENT_VIEWER: outbox/job data не доступна;
 - SYSTEM worker: claim/complete/fail только по lease ownership.

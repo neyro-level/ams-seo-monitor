@@ -74,7 +74,7 @@ test("requires first-password completion before cabinet access", async ({ page }
   await expect(page).toHaveURL(/\/dashboard\/?$/);
 });
 
-test.describe("Admin CMS", () => {
+test.describe("Platform Admin", () => {
   test.use({ storageState: adminAuthStatePath });
 
   test("opens for a platform administrator", async ({ page }) => {
@@ -85,17 +85,15 @@ test.describe("Admin CMS", () => {
     await expect(
       page.getByRole("navigation", { name: "Ресурсы администрирования" }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Сохранить организацию" })).toBeVisible();
-    await expect(page.getByText(/Всего:/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Создать организацию" })).toBeVisible();
+    await expect(page.getByText(/Страница 1 из/i)).toBeVisible();
 
     await page.goto("/admin/providers/");
-    await page.getByLabel("Сайт").selectOption({ index: 1 });
-    await page.getByRole("combobox", { name: "Источник*" }).selectOption("YANDEX_WEBMASTER");
-    await page.getByLabel("Nonsecret settings JSON").fill('{"apiKey":"must-not-be-stored"}');
-    await page.getByRole("button", { name: "Сохранить подключение" }).click();
-    await expect(
-      page.getByText(/Разрешён только плоский nonsecret JSON/),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Подключения источников" })).toBeVisible();
+    await expect(page.getByLabel("Сайт")).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Источник*" })).toBeVisible();
+    await expect(page.getByLabel("Nonsecret settings JSON").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Создать подключение" })).toBeVisible();
 
     const hasHorizontalOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

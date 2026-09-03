@@ -4,18 +4,18 @@
 
 Управляет иерархией `Organization → Project → Site`, provider mappings, profiles и готовностью конфигурации. PostgreSQL — runtime registry; `config/*` — reviewed nonsecret seed/input.
 
-Workstream 4 делает `Project` эталонным вертикальным срезом Standard 3.0. Существующие `ProjectService`/`SiteService` остаются compatibility reads для report и worker paths до их профильной миграции; новые Project mutations через них запрещены.
+Workstream 4 делает `Project` эталонным вертикальным срезом Standard 3.0. Workstream 5 переносит Site, ProviderConnection, GoalDefinition, TrackedQuerySet, ThresholdProfile и QueryClusterProfile на те же typed Platform Admin patterns. Существующие `ProjectService`/`SiteService` остаются compatibility reads для report и worker paths до их профильной миграции; новые Project mutations через них запрещены.
 
 ## Ownership
 
-- schema: `prisma/schema.prisma` и additive migration `20260903190000_add_project_version`;
+- schema: `prisma/schema.prisma` и additive migrations `20260903190000_add_project_version`, `20260903203000_add_platform_admin_versions`;
 - domain contracts: `src/modules/project-registry/domain/project.ts`;
 - queries/commands/resource authorization: `src/modules/project-registry/application/project-*`;
 - transaction-bound mutation repository: `PrismaProjectReferenceRepository`;
 - server query repository: `PrismaProjectQueryRepository`;
 - server composition: `src/modules/project-registry/infrastructure/project-reference-runtime.ts`;
 - browser-safe contracts: `src/modules/project-registry/contracts.ts`;
-- management route: `/admin/projects`;
+- management routes: `/admin/projects`, `/admin/sites`, `/admin/providers`, `/admin/goals`, `/admin/tracked-queries`, `/admin/profiles`;
 - seed inputs: `config/clients`, `config/goals`, `config/clusters`, `config/tracked-queries`, `config/thresholds.json`.
 
 ## Access
@@ -87,13 +87,14 @@ Server Action
 
 ## Verification
 
-- Project domain schema and error tests;
+- Project reference slice plus typed Platform Admin resource tests;
 - platform-admin/analyst/tenant-role permission matrix;
-- own-tenant read and mutation;
+- own-tenant read and mutation where the module grants tenant scope;
 - cross-tenant and anonymous denial;
 - stale version conflict with no extra audit;
-- successful create/status/settings mutation with one AuditEvent each;
-- PostgreSQL migration and integration test;
+- successful create/update of site/provider/goal/tracked/profile mutations with one AuditEvent each;
+- tracked query history preservation;
+- PostgreSQL migrations and integration tests;
 - URL search/status/sort/pagination behavior;
 - responsive browser proof at 375, 768, 1280 and 1440 px;
 - typecheck, lint and architecture guards.

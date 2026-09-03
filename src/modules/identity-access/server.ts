@@ -16,3 +16,14 @@ export {
   getAuthorizedSiteAccess,
 } from "./infrastructure/authorization.ts";
 export { getCurrentActorContext } from "./infrastructure/session.ts";
+export { PrismaIdentityAdminRepository } from "./infrastructure/prisma-identity-admin-repository.ts";
+export {
+  createMembership,
+  createOrganization,
+  getIdentityAdminFormOptions,
+  listMemberships,
+  listOrganizations,
+  removeMembership,
+  updateMembership,
+  updateOrganization,
+} from "./infrastructure/identity-admin-runtime.ts";

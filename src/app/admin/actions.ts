@@ -3,218 +3,330 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { defineAction } from "../../platform/actions/define-action.ts";
+import { getCurrentPrincipalState } from "../../modules/identity-access/server.ts";
+import { IdentityAdminError } from "../../modules/identity-access/contracts.ts";
 import {
-  getAdminCmsService,
-  getProjectService,
-  getReliabilityService,
-} from "../../infrastructure/service-container.ts";
-import {
-  getCurrentActorContext,
-  getCurrentCabinetRedirect,
+  createMembership,
+  createOrganization,
+  removeMembership,
+  updateMembership,
+  updateOrganization,
 } from "../../modules/identity-access/server.ts";
-import { hasPermission } from "../../modules/identity-access/index.ts";
-import type { AdminCommandName } from "../../modules/admin-cms/index.ts";
+import {
+  PlatformOperationsAdminError,
+  type RequestProjectSyncInput,
+} from "../../modules/platform-operations/contracts.ts";
+import { requestProjectSync } from "../../modules/platform-operations/server.ts";
+import {
+  ProjectRegistryAdminError,
+  type CreateGoalDefinitionInput,
+  type CreateProviderConnectionInput,
+  type CreateQueryClusterProfileInput,
+  type CreateSiteInput,
+  type CreateThresholdProfileInput,
+  type CreateTrackedQuerySetInput,
+  type UpdateGoalDefinitionInput,
+  type UpdateProviderConnectionInput,
+  type UpdateQueryClusterProfileInput,
+  type UpdateSiteInput,
+  type UpdateThresholdProfileInput,
+  type UpdateTrackedQuerySetInput,
+} from "../../modules/project-registry/contracts.ts";
+import {
+  saveGoalDefinition,
+  saveProviderConnection,
+  saveQueryClusterProfile,
+  saveSite,
+  saveThresholdProfile,
+  saveTrackedQuerySet,
+} from "../../modules/project-registry/server.ts";
+import type {
+  CreateMembershipInput,
+  CreateOrganizationInput,
+  RemoveMembershipInput,
+  UpdateMembershipInput,
+  UpdateOrganizationInput,
+} from "../../modules/identity-access/contracts.ts";
 
-
-export interface AdminCommandResult {
-  ok: boolean;
-  message: string;
+async function currentPrincipal() {
+  const state = await getCurrentPrincipalState();
+  if (!state) redirect("/?login=1");
+  return state.principal;
 }
 
-const identifier = z.string().trim().min(1).max(128);
-const slug = z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-const optionalId = z.string().trim().transform((value) => value || undefined).optional();
-const checkbox = z.union([z.boolean(), z.literal("true"), z.literal("false"), z.literal("on")]).transform((value) => value === true || value === "true" || value === "on");
-const finiteNumber = z.coerce.number().finite();
-
-const organizationSchema = z.object({ id: optionalId, slug, name: z.string().trim().min(2).max(160) });
-const membershipSchema = z.object({ organizationId: identifier, userId: identifier, role: z.string().trim().min(2).max(64) });
-const removeMembershipSchema = membershipSchema.pick({
-  organizationId: true,
-  userId: true,
-});
-const projectSchema = z.object({
-  id: optionalId,
-  organizationId: identifier,
-  slug,
-  name: z.string().trim().min(2).max(160),
-  status: z.enum(["ACTIVE", "PLANNED", "DISABLED"]),
-  thresholdProfileId: identifier,
-  clusterProfileId: identifier,
-});
-const siteSchema = z.object({
-  id: optionalId,
-  projectId: identifier,
-  slug,
-  name: z.string().trim().min(2).max(160),
-  url: z.url(),
-  timezone: z.string().trim().min(1).max(64),
-  enabled: checkbox,
-});
-const sensitiveSettingKey = /(token|secret|password|credential|authorization|api.?key)/i;
-const settingsSchema = z.string().trim().max(10_000).transform((value, context) => {
-  if (!value) return null;
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    const validated = z
-      .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
-      .safeParse(parsed);
-    if (!validated.success || Object.keys(validated.data).some((key) => sensitiveSettingKey.test(key))) {
-      throw new Error("INVALID_SETTINGS");
-    }
-    return validated.data;
-  } catch {
-    context.addIssue({
-      code: "custom",
-      message: "Разрешён только плоский nonsecret JSON без token, password, secret и API key",
-    });
-    return z.NEVER;
-  }
-});
-const providerSchema = z.object({
-  siteId: identifier,
-  provider: z.enum(["YANDEX_WEBMASTER", "YANDEX_METRIKA", "TOPVISOR"]),
-  externalId: z.string().trim().transform((value) => value || null),
-  enabled: checkbox,
-  settingsJson: settingsSchema,
-});
-const goalSchema = z.object({
-  projectId: identifier,
-  externalGoalId: identifier,
-  label: z.string().trim().min(2).max(160),
-  category: z.enum(["LEAD_SUBMIT", "PHONE_CLICK", "MESSENGER_CLICK", "FORM_START", "FILE_DOWNLOAD", "OTHER"]),
-  direction: z.enum(["PRIMARY", "SECONDARY"]),
-  includeInSeoConversion: checkbox,
-});
-const trackedQuerySchema = z.object({
-  siteId: identifier,
-  source: z.enum(["OWNER_PROVIDED", "TOPVISOR"]),
-  baselineLabel: z.string().trim().min(2).max(160),
-  queries: z.string().max(500_000).transform((value) => [...new Set(value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean))]).pipe(z.array(z.string().min(1).max(500)).min(1).max(5000)),
-});
-const thresholdSchema = z.object({
-  slug,
-  minimumShows: z.coerce.number().int().min(0),
-  maximumCtrPercent: finiteNumber,
-  maximumAveragePosition: finiteNumber,
-  showsDropPercent: finiteNumber,
-  clicksDropPercent: finiteNumber,
-  positionWorsenedDelta: finiteNumber,
-  pagesInSearchDropPercent: finiteNumber,
-  organicVisitsDropPercent: finiteNumber,
-  goalConversionDropPercent: finiteNumber,
-});
-const clusterGroupSchema = z.object({
-  slug,
-  label: z.string().trim().min(1).max(160),
-  order: z.number().int().min(0),
-  brandTerms: z.array(z.string().trim().min(1)).max(500),
-  terms: z.array(z.string().trim().min(1)).max(500),
-});
-const clusterSchema = z.object({
-  slug,
-  name: z.string().trim().min(2).max(160),
-  groupsJson: z.string().max(200_000).transform((value, context) => {
-    try {
-      const parsed = clusterGroupSchema.array().min(1).safeParse(JSON.parse(value) as unknown);
-      if (!parsed.success) throw new Error("INVALID_GROUPS");
-      return parsed.data;
-    } catch {
-      context.addIssue({ code: "custom", message: "Группы должны соответствовать документированному JSON-массиву" });
-      return z.NEVER;
-    }
-  }),
-});
-const syncSchema = z.object({ projectSlug: slug, idempotencyKey: identifier });
-
-async function requireAdmin() {
-  const onboardingRedirect = await getCurrentCabinetRedirect();
-  if (onboardingRedirect) redirect(onboardingRedirect);
-  const actor = await getCurrentActorContext();
-  if (!actor) redirect("/?login=1");
-  if (!hasPermission(actor, "platform:manage")) redirect("/dashboard/");
-  return actor;
-}
-
-function failure(error: unknown): AdminCommandResult {
+function failure(error: unknown, correlationId: string) {
   if (error instanceof z.ZodError) {
-    return { ok: false, message: error.issues[0]?.message ?? "Проверьте поля формы" };
-  }
-  if (error instanceof Error && error.message === "ADMIN_ACCESS_DENIED") {
-    return { ok: false, message: "Недостаточно прав" };
-  }
-  return { ok: false, message: "Команда не выполнена. Проверьте уникальность и связанные записи." };
-}
-
-export async function executeAdminCommand(
-  command: AdminCommandName,
-  values: Record<string, unknown>,
-): Promise<AdminCommandResult> {
-  const actor = await requireAdmin();
-  const admin = getAdminCmsService();
-
-  try {
-    switch (command) {
-      case "saveOrganization":
-        await admin.saveOrganization(actor, organizationSchema.parse(values));
-        break;
-      case "saveMembership":
-        await admin.saveMembership(actor, membershipSchema.parse(values));
-        break;
-      case "removeMembership":
-        await admin.removeMembership(actor, removeMembershipSchema.parse(values));
-        break;
-      case "saveProject":
-        await admin.saveProject(actor, projectSchema.parse(values));
-        break;
-      case "saveSite":
-        await admin.saveSite(actor, siteSchema.parse(values));
-        break;
-      case "saveProviderConnection": {
-        const input = providerSchema.parse(values);
-        await admin.saveProviderConnection(actor, { ...input, settings: input.settingsJson });
-        break;
-      }
-      case "saveGoal":
-        await admin.saveGoal(actor, goalSchema.parse(values));
-        break;
-      case "replaceTrackedQuerySet":
-        await admin.replaceTrackedQuerySet(actor, trackedQuerySchema.parse(values));
-        break;
-      case "saveThresholdProfile":
-        await admin.saveThresholdProfile(actor, thresholdSchema.parse(values));
-        break;
-      case "saveClusterProfile": {
-        const input = clusterSchema.parse(values);
-        await admin.saveClusterProfile(actor, { slug: input.slug, name: input.name, groups: input.groupsJson });
-        break;
-      }
-      case "requestProjectSync": {
-        const input = syncSchema.parse(values);
-        const project = await getProjectService().getProjectAccessForUser(actor, input.projectSlug);
-        if (!project) throw new Error("PROJECT_NOT_FOUND");
-        await getReliabilityService().enqueue({
-          organizationId: project.organizationId,
-          organizationScope: project.organizationId,
-          idempotencyScope: "admin.project-sync",
-          idempotencyKey: input.idempotencyKey,
-          topic: "project.sync.requested",
-          payload: { projectSlug: project.projectSlug, trigger: "manual" },
-          actorType: "USER",
-          actorId: actor.userId,
-          action: "project.sync.request",
-          entityType: "Project",
-          entityId: project.projectId,
-          source: "admin-cms",
-          correlationId: actor.correlationId,
-        });
-        break;
-      }
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of error.issues) {
+      const field = String(issue.path[0] ?? "form");
+      fieldErrors[field] = [...(fieldErrors[field] ?? []), issue.message];
     }
-  } catch (error) {
-    return failure(error);
+    return {
+      ok: false as const,
+      code: "PLATFORM_ADMIN_INPUT_INVALID",
+      message: "Проверьте заполненные поля.",
+      correlationId,
+      fieldErrors,
+    };
   }
 
-  revalidatePath("/admin", "layout");
-  return { ok: true, message: "Данные сохранены" };
+  const code =
+    error instanceof IdentityAdminError
+      ? error.code
+      : error instanceof ProjectRegistryAdminError
+        ? error.code
+        : error instanceof PlatformOperationsAdminError
+          ? error.code
+          : "PLATFORM_ADMIN_ACTION_FAILED";
+
+  const messages: Record<string, string> = {
+    IDENTITY_ADMIN_ACCESS_DENIED: "Недостаточно прав для Platform Admin.",
+    ORGANIZATION_NOT_FOUND_OR_FORBIDDEN: "Организация недоступна или уже удалена.",
+    ORGANIZATION_STALE: "Организация уже изменена. Обновите страницу.",
+    ORGANIZATION_SLUG_CONFLICT: "Организация с таким slug уже существует.",
+    MEMBERSHIP_NOT_FOUND_OR_FORBIDDEN: "Доступ пользователя недоступен или уже удалён.",
+    MEMBERSHIP_STALE: "Запись доступа уже изменена. Обновите страницу.",
+    MEMBERSHIP_ALREADY_EXISTS: "У пользователя уже есть доступ в эту организацию.",
+    MEMBERSHIP_REFERENCE_INVALID: "Организация или пользователь недоступны.",
+    PROJECT_REGISTRY_ADMIN_ACCESS_DENIED: "Недостаточно прав для изменения реестра.",
+    SITE_CONFLICT: "Сайт с таким slug уже существует в проекте.",
+    SITE_NOT_FOUND_OR_FORBIDDEN: "Сайт недоступен или уже удалён.",
+    SITE_REFERENCE_INVALID: "Выбранный проект недоступен.",
+    SITE_STALE: "Сайт уже изменён. Обновите страницу.",
+    PROVIDER_CONNECTION_CONFLICT: "Подключение этого источника для сайта уже существует.",
+    PROVIDER_CONNECTION_NOT_FOUND_OR_FORBIDDEN: "Подключение источника недоступно.",
+    PROVIDER_CONNECTION_REFERENCE_INVALID: "Выбранный сайт недоступен.",
+    PROVIDER_CONNECTION_STALE: "Подключение уже изменено. Обновите страницу.",
+    GOAL_DEFINITION_CONFLICT: "Цель с таким external ID уже существует в проекте.",
+    GOAL_DEFINITION_NOT_FOUND_OR_FORBIDDEN: "Цель недоступна.",
+    GOAL_DEFINITION_REFERENCE_INVALID: "Проект или выбранные сайты недоступны.",
+    GOAL_DEFINITION_STALE: "Цель уже изменена. Обновите страницу.",
+    TRACKED_QUERY_SET_CONFLICT: "Для сайта уже существует набор запросов.",
+    TRACKED_QUERY_SET_NOT_FOUND_OR_FORBIDDEN: "Набор запросов недоступен.",
+    TRACKED_QUERY_SET_REFERENCE_INVALID: "Выбранный сайт недоступен.",
+    TRACKED_QUERY_SET_STALE: "Набор запросов уже изменён. Обновите страницу.",
+    THRESHOLD_PROFILE_NOT_FOUND_OR_FORBIDDEN: "Пороговый профиль недоступен.",
+    THRESHOLD_PROFILE_REFERENCE_INVALID: "Пороговый профиль недоступен.",
+    THRESHOLD_PROFILE_SLUG_CONFLICT: "Пороговый профиль с таким slug уже существует.",
+    THRESHOLD_PROFILE_STALE: "Пороговый профиль уже изменён. Обновите страницу.",
+    QUERY_CLUSTER_PROFILE_NOT_FOUND_OR_FORBIDDEN: "Кластерный профиль недоступен.",
+    QUERY_CLUSTER_PROFILE_REFERENCE_INVALID: "Кластерный профиль недоступен.",
+    QUERY_CLUSTER_PROFILE_SLUG_CONFLICT: "Кластерный профиль с таким slug уже существует.",
+    QUERY_CLUSTER_PROFILE_STALE: "Кластерный профиль уже изменён. Обновите страницу.",
+    PLATFORM_OPERATIONS_ADMIN_ACCESS_DENIED: "Недостаточно прав для операций платформы.",
+    PROJECT_SYNC_NOT_FOUND: "Проект для синхронизации не найден.",
+    PROJECT_SYNC_INVALID_SCOPE: "Проект недоступен для этого действия.",
+  };
+
+  return {
+    ok: false as const,
+    code,
+    message: messages[code] ?? "Не удалось сохранить изменения.",
+    correlationId,
+    fieldErrors: {},
+  };
 }
+
+function revalidateAdmin(resource: string) {
+  revalidatePath("/admin", "layout");
+  revalidatePath(`/admin/${resource}`);
+}
+
+export const createOrganizationAction = defineAction(async (input: CreateOrganizationInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await createOrganization(principal, input);
+    revalidateAdmin("organizations");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateOrganizationAction = defineAction(async (input: UpdateOrganizationInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await updateOrganization(principal, input);
+    revalidateAdmin("organizations");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const createMembershipAction = defineAction(async (input: CreateMembershipInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await createMembership(principal, input);
+    revalidateAdmin("memberships");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateMembershipAction = defineAction(async (input: UpdateMembershipInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await updateMembership(principal, input);
+    revalidateAdmin("memberships");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const removeMembershipAction = defineAction(async (input: RemoveMembershipInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await removeMembership(principal, input);
+    revalidateAdmin("memberships");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const createSiteAction = defineAction(async (input: CreateSiteInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveSite(principal, input);
+    revalidateAdmin("sites");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateSiteAction = defineAction(async (input: UpdateSiteInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveSite(principal, input);
+    revalidateAdmin("sites");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const createProviderConnectionAction = defineAction(async (input: CreateProviderConnectionInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveProviderConnection(principal, input);
+    revalidateAdmin("providers");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateProviderConnectionAction = defineAction(async (input: UpdateProviderConnectionInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveProviderConnection(principal, input);
+    revalidateAdmin("providers");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const createGoalDefinitionAction = defineAction(async (input: CreateGoalDefinitionInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveGoalDefinition(principal, input);
+    revalidateAdmin("goals");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateGoalDefinitionAction = defineAction(async (input: UpdateGoalDefinitionInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveGoalDefinition(principal, input);
+    revalidateAdmin("goals");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const createTrackedQuerySetAction = defineAction(async (input: CreateTrackedQuerySetInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveTrackedQuerySet(principal, input);
+    revalidateAdmin("tracked-queries");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateTrackedQuerySetAction = defineAction(async (input: UpdateTrackedQuerySetInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveTrackedQuerySet(principal, input);
+    revalidateAdmin("tracked-queries");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const createThresholdProfileAction = defineAction(async (input: CreateThresholdProfileInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveThresholdProfile(principal, input);
+    revalidateAdmin("profiles");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateThresholdProfileAction = defineAction(async (input: UpdateThresholdProfileInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveThresholdProfile(principal, input);
+    revalidateAdmin("profiles");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const createQueryClusterProfileAction = defineAction(async (input: CreateQueryClusterProfileInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveQueryClusterProfile(principal, input);
+    revalidateAdmin("profiles");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const updateQueryClusterProfileAction = defineAction(async (input: UpdateQueryClusterProfileInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await saveQueryClusterProfile(principal, input);
+    revalidateAdmin("profiles");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});
+
+export const requestProjectSyncAction = defineAction(async (input: RequestProjectSyncInput) => {
+  const principal = await currentPrincipal();
+  try {
+    const data = await requestProjectSync(principal, input);
+    revalidateAdmin("operations");
+    return { ok: true as const, data };
+  } catch (error) {
+    return failure(error, principal.correlationId);
+  }
+});

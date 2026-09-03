@@ -1,5 +1,6 @@
 export { PrismaMonitoringRepository } from "./infrastructure/prisma-monitoring-repository.ts";
 export { PrismaProjectRepository } from "./infrastructure/prisma-project-repository.ts";
+export { PrismaProjectRegistryAdminRepository } from "./infrastructure/prisma-platform-admin-repository.ts";
 export {
   changeProjectStatus,
   createProject,
@@ -9,6 +10,21 @@ export {
   listProjects,
   updateProjectSettings,
 } from "./infrastructure/project-reference-runtime.ts";
+export {
+  getProjectRegistryAdminFormOptions,
+  listGoalDefinitions,
+  listProviderConnections,
+  listQueryClusterProfiles,
+  listSites,
+  listThresholdProfiles,
+  listTrackedQuerySets,
+  saveGoalDefinition,
+  saveProviderConnection,
+  saveQueryClusterProfile,
+  saveSite,
+  saveThresholdProfile,
+  saveTrackedQuerySet,
+} from "./infrastructure/platform-admin-runtime.ts";
 export {
   getApprovedRoutes,
   getClientBySlug,

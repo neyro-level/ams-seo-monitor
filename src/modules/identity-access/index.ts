@@ -14,6 +14,32 @@ export type {
   TenantUserPrincipal,
 } from "../../platform/authorization/principal.ts";
 export {
+  createMembershipInputSchema,
+  createOrganizationInputSchema,
+  identityAdminListQuerySchema,
+  nextIdentityVersion,
+  removeMembershipInputSchema,
+  tenantRoleSchema,
+  toLegacyMembershipRole,
+  updateMembershipInputSchema,
+  updateOrganizationInputSchema,
+  IdentityAdminError,
+} from "./domain/admin-identity.ts";
+export type {
+  CreateMembershipInput,
+  CreateOrganizationInput,
+  IdentityAdminErrorCode,
+  IdentityAdminFormOptions,
+  IdentityAdminListQuery,
+  MembershipListItem,
+  MembershipListResult,
+  OrganizationListItem,
+  OrganizationListResult,
+  RemoveMembershipInput,
+  UpdateMembershipInput,
+  UpdateOrganizationInput,
+} from "./domain/admin-identity.ts";
+export {
   getActorOrganizationIds,
   getPermissionsForRole,
   hasPermission,

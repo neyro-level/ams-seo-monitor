@@ -327,6 +327,8 @@ DB → scoped repository → query/command → action → UI → audit/tests
 Branch: `work/v3-application-patterns`
 Base: Workstream 4 HEAD
 Gate: HEAVY — mutations/authorization/UI
+Status: implemented and verified in the local worktree; checkpoint, push and PR are the remaining delivery steps.
+
 
 Scope:
 

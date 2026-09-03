@@ -77,9 +77,9 @@ AMS IMPULSE — публичный SEO landing + приватная multi-tenant
 | Queue | custom direct PostgreSQL dispatcher | outbox → pg-boss → handler | MIGRATE | separate pg-boss pool/schema lifecycle |
 | Worker principal | implicit system execution | JobPrincipal with organizationId | ADD | scoped job adapter |
 | Sync/import lifecycle | SyncRun/SourceRun | ImportRun guarantees | KEEP/MIGRATE | extend domain-specific runs with tenant/correlation/statistics |
-| Private list UI | server lists + custom table/filter | TanStack Table + nuqs | MIGRATE | use reference slice; preserve server filtering |
-| Forms | RHF/Zod present | RHF UX + server canonical Zod | KEEP/MIGRATE | remove generic dispatcher, split actions/commands |
-| Refine | installed and used as resource registry | forbidden without ADR | REMOVE | no justified value; remove in Platform Admin migration |
+| Private list UI | TanStack Table + nuqs on Project and Platform Admin routes | TanStack Table + nuqs | KEEP/MIGRATE | preserve server filtering and route-owned state |
+| Forms | RHF/Zod + typed Server Actions on Project and Platform Admin routes | RHF UX + server canonical Zod | KEEP/MIGRATE | extend to remaining modules without generic dispatcher |
+| Refine | removed from runtime in Workstream 5 | forbidden without ADR | REMOVE | no justified value |
 | Public UI | project-specific AMS IMPULSE design | product design not universal platform | KEEP | freeze composition/CTA/tokens |
 | Logs | custom JSON/sync logger | pino JSON + redaction | MIGRATE | pino in observability workstream |
 | Correlation | auth/health/audit partial | boundary-to-provider propagation | ADD | principal/command/job/provider propagation |
@@ -103,7 +103,7 @@ AMS IMPULSE — публичный SEO landing + приватная multi-tenant
 3. Platform Admin protected by 2FA and first-password lifecycle.
 4. Tenant ownership/backfill/composite constraints proven on real PostgreSQL.
 5. scopedDb transaction behavior and full negative isolation matrix green.
-6. Business writes use defineCommand; generic dispatcher removed.
+6. Business writes use defineCommand; generic dispatcher removed from runtime.
 7. pg-boss schema/pool/runtime migration contract proven.
 8. pino redaction and health heartbeat/queue/freshness proven.
 9. SourceCraft HEAVY runs required DB/security profile reproducibly.

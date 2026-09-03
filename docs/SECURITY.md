@@ -184,7 +184,7 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - health/auth responses возвращают matching `X-Correlation-ID`;
 - idempotency key is tenant-scoped and payload-hash bound;
 - audit/outbox/idempotency enqueue is one transaction;
-- Admin CMS допускает только fixed named commands; resource mutation и safe AuditEvent атомарны;
+- Platform Admin использует только typed Server Actions и owner commands; resource mutation и safe AuditEvent атомарны;
 - provider settings из browser принимают только плоский nonsecret JSON и отклоняют sensitive key names;
 - tracked query replacement сохраняет records/history и меняет lifecycle через `enabled`;
 - outbox payload, audit markers and JobRun errors exclude secrets/raw PII;

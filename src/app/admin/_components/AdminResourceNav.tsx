@@ -1,21 +1,18 @@
-"use client";
-
-import { useMenu } from "@refinedev/core";
 import Link from "next/link";
+import {
+  NON_PROJECT_PLATFORM_ADMIN_RESOURCES,
+} from "../../../modules/platform-admin/index.ts";
 import { cn } from "../../../shared/lib/cn.ts";
 
 export function AdminResourceNav({ currentPath }: { currentPath: string }) {
-  const { menuItems } = useMenu();
-
   return (
     <nav aria-label="Ресурсы администрирования" className="flex gap-2 overflow-x-auto pb-1">
-      {menuItems.map((item) => {
-        const href = typeof item.route === "string" ? item.route : `/admin/${item.name}/`;
-        const active = currentPath === href;
+      {NON_PROJECT_PLATFORM_ADMIN_RESOURCES.map((item) => {
+        const active = currentPath === item.href;
         return (
           <Link
             key={item.key}
-            href={href}
+            href={item.href}
             className={cn(
               "inline-flex min-h-11 shrink-0 items-center rounded-xl border px-4 text-sm font-semibold transition-colors",
               active
@@ -23,7 +20,7 @@ export function AdminResourceNav({ currentPath }: { currentPath: string }) {
                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
             )}
           >
-            {String(item.meta?.label ?? item.label ?? item.name)}
+            {item.label}
           </Link>
         );
       })}

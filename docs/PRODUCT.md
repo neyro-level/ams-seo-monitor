@@ -1,6 +1,6 @@
 # PRODUCT
 
-> Product behavior remains authoritative during Standard 3.0 migration. Technical names `ActorContext`/`Admin CMS` and current role storage are legacy implementation details; target PrincipalContext and Platform Admin mapping are defined in `MASTER_PLAN.md`.
+> Product behavior remains authoritative during Standard 3.0 migration. Legacy `ActorContext` and compatibility role storage remain implementation details; PrincipalContext and Platform Admin mapping are defined in `MASTER_PLAN.md`.
 
 ## Назначение
 
@@ -27,7 +27,7 @@ AMS IMPULSE объединяет две связанные поверхност�
 - не получает secret values и не выполняет provider mutations;
 - каждая browser mutation проходит fresh server permission, named command, transaction и AuditEvent.
 
-Role/capability и protected Admin CMS реализованы. Public signup и client self-service admin остаются вне scope.
+Role/capability и protected Platform Admin реализованы. Public signup и client self-service admin остаются вне scope.
 
 ### SEO_ANALYST
 
@@ -100,8 +100,8 @@ CMS управляет только разрешёнными полями и к�
 ### Onboarding проекта
 
 1. Оператор подтверждает URL, timezone и provider access.
-2. Через protected Admin CMS создаёт organization, membership, project, site и nonsecret provider mapping.
-3. Настраивает goals, tracked query set, thresholds и clusters через named audited commands.
+2. Через protected Platform Admin создаёт organization, membership, project, site и nonsecret provider mapping.
+3. Настраивает goals, tracked query set, thresholds и clusters через typed audited commands.
 4. Reviewed checked-in config остаётся seed/input для repeatable bootstrap, но не runtime database.
 5. Production credentials настраиваются отдельным operator step вне browser и Git.
 

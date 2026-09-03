@@ -1,6 +1,6 @@
 # ARCHITECTURE
 
-> Migration status: sections below describe the current runtime baseline. They are not target patterns for new code where `ActorContext`, Refine, global Prisma access, direct outbox execution or host-built releases conflict with Standard 3.0. Target cutovers are in `MASTER_PLAN.md`.
+> Migration status: sections below describe the current runtime baseline. They are not target patterns for new code where `ActorContext`, global Prisma access, direct outbox execution or host-built releases conflict with Standard 3.0. Target cutovers are in `MASTER_PLAN.md`.
 
 ## Runtime model
 
@@ -101,17 +101,17 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 - infrastructure: reliability transaction repository и bounded topic dispatcher;
 - worker entrypoint экспортируется отдельно от framework-neutral API.
 
-### Admin CMS — `src/modules/admin-cms`, `src/app/admin`
+### Platform Admin — `src/modules/platform-admin`, `src/app/admin`
 
-- protected resource registry использует Refine Core только внутри private admin surface;
-- server-rendered lists применяют allowlisted search/sort и bounded pagination;
-- React Hook Form + Zod валидируют command forms, shadcn-style source components задают локальные primitives;
-- browser transport dispatches только фиксированный union named commands;
-- каждый command повторно проверяет fresh `ActorContext` и `platform:manage`;
-- каждая database mutation и `AuditEvent` фиксируются в одной Prisma transaction;
-- provider settings принимают только плоский nonsecret JSON и отклоняют sensitive keys;
-- tracked query replacement отключает отсутствующие запросы, но не удаляет их историю;
-- public AMS IMPULSE landing не импортирует Refine или Admin UI.
+- shared module owns static resources, URL query parsing and dashboard summary;
+- typed route composition uses owner runtimes from Identity Access, Project Registry and Platform Operations;
+- private list pages use server filters plus TanStack Table and `nuqs` server parsing;
+- create/update forms use React Hook Form + Zod and explicit Server Actions;
+- generic dispatcher, Refine resource registry and arbitrary Prisma CRUD are removed;
+- every mutation re-checks fresh `PrincipalContext`, loads its owned resource and writes safe AuditEvent;
+- provider settings accept only flat nonsecret JSON;
+- tracked query replacement keeps history through `enabled` lifecycle;
+- public AMS IMPULSE landing does not import Platform Admin UI.
 
 ### Shared platform — `src/platform`, `src/shared`, `src/infrastructure`
 
