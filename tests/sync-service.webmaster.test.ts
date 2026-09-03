@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   mergeWebmasterTechnicalData,
   summarizeSourceRun,
-} from "../src/application/services/sync-service";
-import { getClientBySlug } from "../src/modules/client-registry/registry";
+} from "../src/modules/data-ingestion/index";
+import { getClientBySlug } from "../src/modules/project-registry/server";
 import { createWebmasterSourceFixture } from "./helpers/source-dto-fixtures";
 
 function getREDACTED_CLIENT_DATASite() {

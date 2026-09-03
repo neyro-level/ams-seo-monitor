@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { stdin } from "node:process";
 import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
-import { parseSystemRole } from "../src/application/ports/actor-context";
+import { parseSystemRole } from "../src/modules/identity-access/index";
 
 type AuthAdminCommand =
   | "create"

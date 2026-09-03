@@ -2,7 +2,7 @@
 
 import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { NavigationSection } from "../../modules/access/navigation";
+import type { NavigationSection } from "../../modules/project-registry/presentation";
 import { ShellNav } from "./ShellNav";
 
 type MobileDrawerProps = {

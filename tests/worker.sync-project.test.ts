@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, Provider } from "@prisma/client";
 import { Pool } from "pg";
-import { syncProjectToDatabase } from "../src/worker/sync-project";
+import { syncProjectToDatabase } from "../src/modules/data-ingestion/worker";
 import { topvisorSiteDataSchema } from "../src/shared/schemas/rank-source";
 import type { MetricaSiteAudit } from "../src/shared/schemas/metrica-source";
 import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";

@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "../../../../components/shell/AppShell";
 import { ReportPeriodSelector } from "../../../../components/dashboard/ReportPeriodSelector";
-import { SiteReportView } from "../../../../modules/dashboards/SiteReportView";
-import { getCurrentActorContext } from "../../../../infrastructure/auth/session";
+import { SiteReportView } from "../../../../modules/reporting/presentation";
+import { getCurrentActorContext } from "../../../../modules/identity-access/server";
 import {
   getMonitoringService,
   getProjectService,

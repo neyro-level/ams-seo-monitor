@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { compileSiteReportSnapshot } from "../src/domain/reports/report-compiler";
+import { compileSiteReportSnapshot } from "../src/modules/reporting/index";
 import {
   getClientBySlug,
   getRegistryBundle,
-} from "../src/modules/client-registry/registry";
+} from "../src/modules/project-registry/server";
 import {
   createMetricaSourceFixture,
   createWebmasterSourceFixture,

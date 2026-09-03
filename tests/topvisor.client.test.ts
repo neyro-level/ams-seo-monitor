@@ -5,7 +5,7 @@ import {
   readTopvisorEnvironment,
   TopvisorSafeError,
 } from "../collector/sources/topvisor/client";
-import { getClientBySlug } from "../src/modules/client-registry/registry";
+import { getClientBySlug } from "../src/modules/project-registry/server";
 
 function getTopvisorSite() {
   const site = getClientBySlug("REDACTED_CLIENT_DATA")?.sites.find(

@@ -1,4 +1,4 @@
-import type { SiteSourceCollectors } from "../../src/application/ports/provider-collectors";
+import type { SiteSourceCollectors } from "../../src/modules/data-ingestion/index";
 import {
   createTopvisorClient,
   readTopvisorEnvironment,
@@ -17,7 +17,7 @@ export type {
   SiteSourceCollectors,
   TopvisorCollectOptions,
   WebmasterCollectOptions,
-} from "../../src/application/ports/provider-collectors";
+} from "../../src/modules/data-ingestion/index";
 
 export function createLiveSiteCollectors(
   env: NodeJS.ProcessEnv = process.env,

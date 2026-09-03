@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, ReportFreshness, ReportPeriodKey } from "@prisma/client";
 import { Pool } from "pg";
-import { PrismaProjectRepository } from "../src/infrastructure/database/repositories/prisma-project-repository";
-import { PrismaReportRepository } from "../src/infrastructure/database/repositories/prisma-report-repository";
+import { PrismaProjectRepository } from "../src/modules/project-registry/server";
+import { PrismaReportRepository } from "../src/modules/reporting/server";
 import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
 import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
 

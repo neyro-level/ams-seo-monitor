@@ -4,7 +4,7 @@ import {
   getPermissionsForRole,
   hasPermission,
   parseSystemRole,
-} from "../src/application/ports/actor-context";
+} from "../src/modules/identity-access/index";
 import { createActorContext } from "./helpers/actor-context";
 
 describe("ActorContext permissions", () => {

@@ -72,10 +72,10 @@
 | TypeScript | strict app/collector/tests | соответствует | сохранить |
 | Tailwind | v4 | соответствует | токенизировать остаточный dashboard drift |
 | Zod | DTO/provider + central DB/Auth/Leads/error/health contracts | соответствует Phase 2 boundaries | расширять на future commands |
-| Prisma/PostgreSQL | production source of truth + additive PLATFORM_ADMIN migration | mutation/audit foundation отсутствует | Phase 3 schema |
+| Prisma/PostgreSQL | production source of truth + additive platform/reliability migrations | соответствует Phase 3 foundation | расширять только real module schema |
 | Better Auth | session adapter → fresh ActorContext, permissions, memberships, correlation | соответствует Phase 2 | сохранить adapter boundary |
 | Tenant isolation | capability + ActorContext memberships → repository scope | соответствует application layer | расширять integration matrix |
-| Modular monolith | global domain/application/infrastructure layers | нет vertical module ownership и public `index.ts` | мигрировать по одному домену |
+| Modular monolith | six vertical modules with public root entrypoints | соответствует Phase 4; internals protected by executable rules | preserve boundaries in Admin CMS |
 | Public UI | готовый AMS IMPULSE landing | переносить в generic cabinet нельзя | freeze external composition; configurable brand only later |
 | Private UI | custom dashboard primitives | нет Refine/shadcn/RHF CMS shell | добавить только в protected admin route group |
 | Commands/queries | read services, SyncService, validated ReliabilityService commands | CMS resource mutations not yet implemented | Phase 5 named commands |
@@ -87,7 +87,7 @@
 | Unit tests | 76 Vitest tests, isolated from DB suites | соответствует Phase 3 | expand per module |
 | Integration tests | 21 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 3 | expand per module |
 | E2E | 8 Playwright checks on 375/768/1280/1440 | соответствует Phase 1–3 | expand authenticated paths |
-| Architecture QA | Dependency Cruiser: 115 modules / 244 dependencies | соответствует current boundaries | tighten after module cutover |
+| Architecture QA | Dependency Cruiser: 129 modules / 275 dependencies | соответствует Phase 4 vertical boundaries | extend rules with each new module |
 | Local development | Docker PostgreSQL 18.6, separate dev/test DB, fail-closed guards | соответствует Phase 1 | добавить auth bootstrap в Phase 2/5 |
 | Release | exact-main immutable deploy + SHA health/env rollback contract | соответствует Phase 2 | verify on next production release |
 | Backup | local + mandatory offsite + restore smoke | соответствует | сохранить |

@@ -7,7 +7,7 @@ Worker — отдельный compiled Node oneshot process для provider sync
 Entry points:
 
 - source: `src/worker/main.ts`;
-- orchestration: `src/worker/sync-project.ts`, `src/application/services/sync-service.ts`;
+- orchestration: `src/modules/data-ingestion/worker.ts`, `src/modules/data-ingestion/index.ts`;
 - composition: `src/infrastructure/worker-service-container.ts`;
 - compiled: `dist-collector/src/worker/main.js`.
 

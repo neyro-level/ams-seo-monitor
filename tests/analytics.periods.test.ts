@@ -5,7 +5,7 @@ import {
   derivePreviousPeriod,
   getInclusivePeriodDays,
   REPORT_PERIOD_KEYS,
-} from "../src/domain/analytics/periods";
+} from "../src/modules/reporting/index";
 
 describe("equal comparison periods", () => {
   it("derives the immediately preceding period with equal inclusive length", () => {

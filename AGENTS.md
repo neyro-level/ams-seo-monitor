@@ -71,9 +71,9 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - browser не вызывает Yandex/Topvisor API;
 - web process не получает provider tokens;
 - filesystem не используется как runtime database;
-- `src/domain/reports/report-compiler.ts` владеет report semantics; второй compiler запрещён;
+- `src/modules/reporting/domain/report-compiler.ts` владеет report semantics; второй compiler запрещён;
 - public AMS IMPULSE landing, dialogs, legal routes и `ch-*` visual language сохраняются; Refine/shadcn не переносятся в public UI;
-- новые vertical modules получают public `index.ts`; cross-module imports внутренних файлов запрещены;
+- vertical modules публикуют только root entrypoints (`index.ts`, а при необходимости `server.ts`, `client.ts`, `worker.ts`); cross-module imports внутренних слоёв запрещены;
 - executable import rules принадлежат `dependency-cruiser.config.cjs`;
 - `src/platform` владеет neutral env, correlation, error и health contracts;
 - значимый deferred side effect начинается atomic enqueue: IdempotencyKey + AuditEvent + OutboxEvent;
@@ -85,18 +85,19 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 
 - `src/app` — routes, layouts, metadata, health/auth handlers;
 - `src/components` — presentation и client interaction;
-- `src/application` — services и ports;
-- `src/domain` — pure analytics и report compiler;
-- `src/infrastructure` — Prisma, Better Auth, logging и composition roots;
-- `src/worker` — DB-backed sync orchestration;
+- `src/modules/identity-access` — ActorContext, capabilities и Better Auth adapters;
+- `src/modules/project-registry` — tenant-scoped projects/sites, monitoring registry и overview;
+- `src/modules/reporting` — report reads, periods, compiler и browser-safe presentation;
+- `src/modules/ranking-analytics` — deterministic ranking/query analytics;
+- `src/modules/data-ingestion` — sync lifecycle, ports, persistence и worker orchestration;
+- `src/modules/platform-operations` — audit/idempotency/outbox/job lifecycle;
+- `src/infrastructure` — shared Prisma context и web/worker composition roots;
+- `src/worker` — compiled worker entrypoint;
 - `collector/sources` — read-only provider adapters;
 - `src/shared/schemas` — Zod contracts;
 - `prisma` — schema и immutable migrations;
 - `config` — reviewed nonsecret seed inputs;
 - `ops` — reviewed production assets;
-- `src/application/services/reliability-service.ts` — enqueue/claim/finalization policy;
-- `src/infrastructure/database/repositories/prisma-reliability-repository.ts` — reliability transaction owner;
-- `src/worker/process-outbox.ts` — bounded registered topic dispatch;
 - `scripts` — verification, admin, backup/release boundaries.
 
 ## Data и migrations

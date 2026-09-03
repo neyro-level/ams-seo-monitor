@@ -2,7 +2,7 @@ import {
   getPermissionsForRole,
   type ActorContext,
   type SystemRole,
-} from "../../src/application/ports/actor-context";
+} from "../../src/modules/identity-access/index";
 
 export function createActorContext(
   overrides: Partial<ActorContext> & { systemRole?: SystemRole } = {},

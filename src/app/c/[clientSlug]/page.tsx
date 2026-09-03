@@ -7,8 +7,8 @@ import { KpiCard } from "../../../components/dashboard/KpiCard";
 import { PageHeader } from "../../../components/dashboard/PageHeader";
 import { SectionCard } from "../../../components/dashboard/SectionCard";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner";
-import { getCurrentActorContext } from "../../../infrastructure/auth/session";
-import { buildClientOverview } from "../../../modules/dashboards/overview";
+import { getCurrentActorContext } from "../../../modules/identity-access/server";
+import { buildClientOverview } from "../../../modules/project-registry/presentation";
 
 type ClientOverviewPageProps = {
   params: Promise<{

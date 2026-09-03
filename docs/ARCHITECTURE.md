@@ -27,7 +27,17 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 
 ## Слои и ownership
 
-### Presentation — `src/app`, `src/components`, `src/modules`
+Бизнес-код организован как vertical modular monolith: каждый module владеет своими use cases, contracts, adapters и presentation. Внешний код импортирует module только через root entrypoints:
+
+- `index.ts` — framework-neutral application/domain API;
+- `server.ts` — server-only adapters;
+- `client.ts` — client presentation;
+- `presentation.ts` — server-rendered presentation;
+- `worker.ts` — worker orchestration.
+
+Прямой импорт `domain/application/infrastructure/presentation` другого module запрещён `dependency-cruiser.config.cjs`.
+
+### Presentation — `src/app`, `src/components`
 
 Владеет routes, metadata, layouts, rendering и browser interaction.
 
@@ -38,45 +48,53 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 - не импортирует Prisma, SQL и provider clients;
 - не вычисляет ranking/conversion/provider semantics.
 
-### Application — `src/application`
+### Identity and Access — `src/modules/identity-access`
 
-Владеет use cases и ports:
+- domain: `ActorContext`, permissions, capabilities и tenant scope;
+- infrastructure: Better Auth, session и server-side authorization;
+- presentation: login dialog;
+- Better Auth остаётся adapter, а не cross-module domain API.
 
-- `ActorContext`, permissions и tenant scope — application access contract;
-- `ProjectService` — tenant-scoped projects/sites;
-- `SiteService` — project overview;
-- `ReportService` — authorized report reads;
-- `MonitoringService` — runtime registry/readiness context;
-- `AnalystService` — analyst dashboard;
-- `SyncService` — provider collection lifecycle и persistence orchestration.
+### Project Registry — `src/modules/project-registry`
 
-Application types не зависят от Prisma generated types.
+- application: `ProjectService`, `SiteService`, `MonitoringService`, `AnalystService` и repository ports;
+- infrastructure: Prisma repositories и checked-in seed registry adapter;
+- presentation: tenant-aware navigation и overview DTO composition.
 
-### Domain — `src/domain`
+### Reporting — `src/modules/reporting`
 
-- `analytics/periods.ts` — четыре period presets и previous-period math;
-- `analytics/webmaster-queries.ts` — deterministic query analytics;
-- `reports/report-compiler.ts` — единственный compiler `SiteReportSnapshot`.
+- application: authorized report reads и repository port;
+- domain: четыре period presets, previous-period math и единственный compiler `SiteReportSnapshot`;
+- infrastructure: Prisma report repository;
+- presentation: browser-safe report view и demo snapshot.
 
-Domain не знает React, Better Auth, Prisma, PostgreSQL и HTTP transport.
+### Ranking Analytics — `src/modules/ranking-analytics`
 
-### Platform — `src/platform`
+- deterministic Webmaster query merge и opportunity calculations;
+- не знает React, Prisma, PostgreSQL и HTTP transport.
 
-- `config` — server/public environment schemas;
-- `http` — correlation ID, error envelope и release-aware health DTO;
-- `reliability` application port/service — idempotent enqueue and job lifecycle;
-- не импортирует project business layers;
-- используется adapters/routes как технический contract.
+### Data Ingestion — `src/modules/data-ingestion`
 
-### Infrastructure — `src/infrastructure`
+- application: `SyncService`, provider ports, sync repository и logging contracts;
+- infrastructure: Prisma persistence, safe JSON-line logging и project sync orchestration;
+- provider clients остаются в `collector/sources`.
 
-- `database/prisma` — singleton Prisma/pg context;
-- `database/repositories` — реализации application ports;
-- `PrismaReliabilityRepository` — audit/idempotency/outbox/job transaction owner;
-- `auth` — Better Auth, session и server-side authorization;
-- `logging` — safe structured sync events;
-- `service-container.ts` — web composition root;
-- `worker-service-container.ts` — worker composition root.
+### Platform Operations — `src/modules/platform-operations`
+
+- application: idempotent enqueue, audit/outbox и job lifecycle;
+- infrastructure: reliability transaction repository и bounded topic dispatcher;
+- worker entrypoint экспортируется отдельно от framework-neutral API.
+
+### Shared platform — `src/platform`, `src/shared`, `src/infrastructure`
+
+- `src/platform/config` — server/public environment schemas;
+- `src/platform/http` — correlation ID, error envelope и release-aware health DTO;
+- `src/shared/schemas` — browser/provider-safe Zod contracts;
+- `src/infrastructure/database/prisma` — singleton Prisma/pg context;
+- `src/infrastructure/service-container.ts` — web composition root;
+- `src/infrastructure/worker-service-container.ts` — worker composition root.
+
+Shared platform не импортирует project business internals. Composition roots используют только public module entrypoints.
 
 ### Provider adapters — `collector/sources`
 
@@ -109,15 +127,17 @@ Worker:
 ## Направление зависимостей
 
 ```text
-Presentation
-→ Application services
-→ Application ports + Domain
-← Infrastructure implementations
+Routes/components
+→ public module entrypoint
+→ module application
+→ module domain + ports
+← module infrastructure
+← shared Prisma/provider adapters
 
-Worker composition root
-→ Application SyncService
-→ Domain + provider ports
-← Prisma repositories + provider adapters
+Worker entry
+→ module worker entrypoint
+→ module application
+← module infrastructure + provider adapters
 ```
 
 Запрещены:

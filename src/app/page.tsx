@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LoginDialog } from "../components/auth/LoginDialog";
+import { LoginDialog } from "../modules/identity-access/client";
 import { LeadRequestDialog } from "../components/marketing/LeadRequestDialog";
 import { SiteFooter } from "../components/marketing/SiteFooter";
 

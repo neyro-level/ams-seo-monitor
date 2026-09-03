@@ -39,7 +39,7 @@ permissions[]
 correlationId
 ```
 
-Source: `src/application/ports/actor-context.ts`.
+Source: `src/modules/identity-access/domain/actor-context.ts`.
 
 Контекст создаётся только на сервере:
 
@@ -115,10 +115,9 @@ pnpm user:remove-from-organization -- --username <name> --organization <slug>
 
 ## Entry points
 
-- `src/application/ports/actor-context.ts`;
-- `src/infrastructure/auth/auth.ts`;
-- `src/infrastructure/auth/session.ts`;
-- `src/infrastructure/auth/authorization.ts`;
+- `src/modules/identity-access/index.ts` — ActorContext и capability contract;
+- `src/modules/identity-access/server.ts` — auth/session/authorization adapters;
+- `src/modules/identity-access/client.ts` — login presentation;
 - `src/app/api/auth/[...all]/route.ts`;
 - `scripts/auth-admin.ts`.
 

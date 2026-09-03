@@ -9,9 +9,9 @@ import {
   getActorContextByUserId,
   getAuthorizedProjectAccess,
   getAuthorizedSiteAccess,
-} from "../src/infrastructure/auth/authorization";
+} from "../src/modules/identity-access/server";
 import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
-import type { ActorContext } from "../src/application/ports/actor-context";
+import type { ActorContext } from "../src/modules/identity-access/index";
 
 const authTestDatabaseUrl = process.env.AUTH_TEST_DATABASE_URL ?? null;
 const authTestDatabaseHost =
