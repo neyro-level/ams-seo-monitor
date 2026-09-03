@@ -198,7 +198,7 @@ Done:
 
 ## Workstream 1 — Runtime and architecture foundation
 
-Branch: `rewrite/v3-runtime-foundation`
+Branch: `work/v3-runtime-foundation`
 Base: Workstream 0 HEAD
 Gate: HEAVY — dependencies/runtime/architecture
 
@@ -229,7 +229,7 @@ Done:
 
 ## Workstream 2 — Principal and Better Auth cutover
 
-Branch: `rewrite/v3-principal-auth`
+Branch: `work/v3-principal-auth`
 Base: Workstream 1 HEAD
 Gate: HEAVY — auth/permissions/schema/E2E
 
@@ -257,7 +257,7 @@ Done:
 
 ## Workstream 3 — Tenant schema, scopedDb and constraints
 
-Branch: `rewrite/v3-tenant-database`
+Branch: `work/v3-tenant-database`
 Base: Workstream 2 HEAD
 Gate: HEAVY — additive migrations/tenant isolation
 
@@ -292,7 +292,7 @@ Done:
 
 ## Workstream 4 — Project Registry reference slice
 
-Branch: `rewrite/v3-project-slice`
+Branch: `work/v3-project-slice`
 Base: Workstream 3 HEAD
 Gate: HEAVY — reference business slice
 
@@ -322,7 +322,7 @@ DB → scoped repository → query/command → action → UI → audit/tests
 
 ## Workstream 5 — Platform Admin and remaining application patterns
 
-Branch: `rewrite/v3-application-patterns`
+Branch: `work/v3-application-patterns`
 Base: Workstream 4 HEAD
 Gate: HEAVY — mutations/authorization/UI
 
@@ -348,7 +348,7 @@ Done:
 
 ## Workstream 6 — Data ingestion, outbox and pg-boss
 
-Branch: `rewrite/v3-integrations-jobs`
+Branch: `work/v3-integrations-jobs`
 Base: Workstream 5 HEAD
 Gate: HEAVY — integrations/jobs/dependencies/schema
 
@@ -375,7 +375,7 @@ Done:
 
 ## Workstream 7 — Observability, testing and CI
 
-Branch: `rewrite/v3-observability-ci`
+Branch: `work/v3-observability-ci`
 Base: Workstream 6 HEAD
 Gate: HEAVY — security/PII/CI
 
@@ -401,7 +401,7 @@ Done:
 
 ## Workstream 8 — Docker production foundation
 
-Branch: `rewrite/v3-docker-production`
+Branch: `work/v3-docker-production`
 Base: Workstream 7 HEAD
 Gate: HEAVY — infrastructure/release/migrations
 
