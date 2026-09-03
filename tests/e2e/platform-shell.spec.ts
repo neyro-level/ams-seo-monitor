@@ -47,6 +47,33 @@ test("keeps private routes behind the login boundary", async ({ page }) => {
   await expect(page.getByLabel("Пароль")).toBeVisible();
 });
 
+test("requires first-password completion before cabinet access", async ({ page }, testInfo) => {
+  const onboardingUsernameByProject: Record<string, string> = {
+    "mobile-375": "e2e.onboarding.mobile",
+    "tablet-768": "e2e.onboarding.tablet",
+    "desktop-1280": "e2e.onboarding.desktop1280",
+    "desktop-1440": "e2e.onboarding.desktop1440",
+  };
+  const username = onboardingUsernameByProject[testInfo.project.name];
+  if (!username) throw new Error(`Missing onboarding identity for ${testInfo.project.name}`);
+
+  await page.goto("/?login=1");
+  await page.getByLabel("Логин").fill(username);
+  await page.getByLabel("Пароль").fill("E2e-local-only-2026!");
+  await page
+    .getByRole("dialog", { name: "Вход в кабинет" })
+    .getByRole("button", { name: "Войти", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/onboarding\/password\/?$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Измените временный пароль" }),
+  ).toBeVisible();
+  await page.getByLabel("Текущий временный пароль").fill("E2e-local-only-2026!");
+  await page.getByLabel("Новый пароль").fill(`Changed-${testInfo.project.name}-2026!`);
+  await page.getByRole("button", { name: "Изменить пароль" }).click();
+  await expect(page).toHaveURL(/\/dashboard\/?$/);
+});
+
 test.describe("Admin CMS", () => {
   test.use({ storageState: adminAuthStatePath });
 

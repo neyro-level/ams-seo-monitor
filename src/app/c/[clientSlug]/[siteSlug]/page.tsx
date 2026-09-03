@@ -4,7 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { AppShell } from "../../../../components/shell/AppShell.tsx";
 import { ReportPeriodSelector } from "../../../../components/dashboard/ReportPeriodSelector.tsx";
 import { SiteReportView } from "../../../../modules/reporting/presentation.ts";
-import { getCurrentActorContext } from "../../../../modules/identity-access/server.ts";
+import {
+  getCurrentActorContext,
+  getCurrentCabinetRedirect,
+} from "../../../../modules/identity-access/server.ts";
 import {
   getMonitoringService,
   getProjectService,
@@ -28,10 +31,10 @@ function resolvePeriodKey(period: string | undefined): ReportPeriodKey {
 }
 
 export default async function SiteReportPage({ params, searchParams }: SiteReportPageProps) {
+  const onboardingRedirect = await getCurrentCabinetRedirect();
+  if (onboardingRedirect) redirect(onboardingRedirect);
   const user = await getCurrentActorContext();
-  if (!user) {
-    redirect("/?login=1");
-  }
+  if (!user) redirect("/?login=1");
 
   const { clientSlug, siteSlug } = await params;
   const { period } = await searchParams;

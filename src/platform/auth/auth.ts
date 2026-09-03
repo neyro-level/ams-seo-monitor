@@ -2,12 +2,12 @@ import "server-only";
 
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth";
-import { organization, username } from "better-auth/plugins";
+import { twoFactor, username } from "better-auth/plugins";
 import {
   hasDatabaseConfiguration,
   readAuthEnvironment,
-} from "../../../platform/config/server-environment.ts";
-import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
+} from "../config/server-environment.ts";
+import { getPrismaClient } from "../database/prisma/client.ts";
 
 const authEnvironment = readAuthEnvironment();
 
@@ -42,8 +42,8 @@ export const auth =
             minUsernameLength: 3,
             maxUsernameLength: 30,
           }),
-          organization({
-            allowUserToCreateOrganization: false,
+          twoFactor({
+            issuer: "AMS IMPULSE",
           }),
         ],
       })

@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { AppShell } from "../../components/shell/AppShell.tsx";
 import { SiteReportView } from "../../modules/reporting/presentation.ts";
 import { getDemoSnapshot } from "../../modules/reporting/presentation.ts";
-import { getCurrentActorContext } from "../../modules/identity-access/server.ts";
+import {
+  getCurrentActorContext,
+  getCurrentCabinetRedirect,
+} from "../../modules/identity-access/server.ts";
 import { siteRegistrySchema } from "../../shared/schemas/registry.ts";
 
 const demoSite = siteRegistrySchema.parse({
@@ -25,10 +28,10 @@ const demoSite = siteRegistrySchema.parse({
 });
 
 export default async function DemoPage() {
+  const onboardingRedirect = await getCurrentCabinetRedirect();
+  if (onboardingRedirect) redirect(onboardingRedirect);
   const user = await getCurrentActorContext();
-  if (!user) {
-    redirect("/?login=1");
-  }
+  if (!user) redirect("/?login=1");
 
   return (
     <AppShell currentPath="/demo/" user={user}>

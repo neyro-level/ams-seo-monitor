@@ -1,4 +1,4 @@
-import { SystemRole } from "../src/generated/prisma/client.ts"
+import { MembershipRole, SystemRole } from "../src/generated/prisma/client.ts";
 import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
 import { randomUUID } from "node:crypto";
 import { stdin } from "node:process";
@@ -96,6 +96,13 @@ async function readPasswordFromStdin() {
   return password;
 }
 
+function parseTenantRole(value: string | undefined): MembershipRole {
+  if (!value || value === "VIEWER") return MembershipRole.VIEWER;
+  if (value === "ORG_OWNER") return MembershipRole.ORG_OWNER;
+  if (value === "ORG_MEMBER") return MembershipRole.ORG_MEMBER;
+  throw new Error("--tenant-role must be ORG_OWNER, ORG_MEMBER or VIEWER");
+}
+
 async function createUser() {
   const username = requireUsername();
   const email = (options.email ?? `${username}@users.impulse.invalid`).toLowerCase();
@@ -127,6 +134,7 @@ async function createUser() {
         name,
         emailVerified: false,
         systemRole,
+        mustChangePassword: true,
       },
     }),
     prisma.account.create({
@@ -185,7 +193,8 @@ async function setSystemRole() {
 async function addToOrganization() {
   const username = requireUsername();
   const organizationSlug = requireOption("organization");
-  const role = options["role"] ?? "client_viewer";
+  const legacyRole = options["role"] ?? "client_viewer";
+  const tenantRole = parseTenantRole(options["tenant-role"]);
   const user = await findUserByUsername(username);
   const organization = await prisma.organization.findUnique({ where: { slug: organizationSlug } });
 
@@ -200,11 +209,12 @@ async function addToOrganization() {
         userId: user.id,
       },
     },
-    update: { role },
+    update: { role: legacyRole, tenantRole },
     create: {
       organizationId: organization.id,
       userId: user.id,
-      role,
+      role: legacyRole,
+      tenantRole,
     },
   });
 

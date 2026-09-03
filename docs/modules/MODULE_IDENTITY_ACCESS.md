@@ -1,127 +1,115 @@
 # Module: Identity and Access
 
-> Legacy implementation contract. Target PrincipalContext, AMS-owned Membership, first-password lifecycle and 2FA are defined by Workstream 2 in `../MASTER_PLAN.md`; new code must not extend Better Auth organization tenancy.
-
 ## Назначение
 
-Создаёт единый server-side ActorContext и capability boundary для пользователей, организаций, проектов, отчётов и будущей Admin CMS.
+Разделяет Better Auth identity/session lifecycle и AMS business authorization. Создаёт server-only `PrincipalContext`, first-password/2FA gates и AMS Membership roles.
 
 ## Не входит в scope
 
 - public signup;
-- self-service password reset/invitations;
-- Admin CMS forms;
-- AuditEvent persistence — следующий data phase;
-- PostgreSQL RLS;
-- client-side authorization как security boundary.
+- self-service invitation/reset;
+- impersonation;
+- RLS;
+- external API client;
+- removal legacy plugin-compatible data before stabilization.
 
-## Роли и права
+## Data ownership
 
-### PLATFORM_ADMIN
+- Better Auth: User identity, Account, Session, Verification and TwoFactor security state;
+- AMS: Organization, Member, `Member.tenantRole`, business permission/resource policies and onboarding state;
+- compatibility-only: `Session.activeOrganizationId`, `Member.role`, Invitation/plugin records.
 
-Внутренний оператор АМС. Global project/report/sync read, будущие organization/project/settings/membership commands. Cross-tenant actions требуют AuditEvent после появления audit foundation.
+## Principal types
 
-### SEO_ANALYST
+- `platform-admin` — PLATFORM_ADMIN, no organizationId;
+- `platform-analyst` — project-specific SEO_ANALYST, no fake tenant;
+- `tenant-user` — fresh Membership + `ORG_OWNER | ORG_MEMBER | VIEWER`;
+- `job` — explicit organizationId;
+- `api-client` — reserved until a real external contract exists.
 
-Global read проектов/отчётов/sync status. Не управляет users, memberships или platform settings.
+## Roles and permissions
 
-### CLIENT_VIEWER
+- Platform Admin has platform permissions and must name a target organization for cross-tenant operations.
+- Platform Analyst has global project/report/sync read but no platform/membership management.
+- Tenant user receives only role-mapped organization permissions.
+- Permission and module resource authorization are separate required checks.
 
-Только organization-scoped project/report read по активным memberships.
+## Commands
 
-Capabilities являются server contract. UI использует их только для presentation.
+- `auth.complete-password-onboarding` clears server-owned onboarding state and appends AuditEvent after Better Auth password change;
+- future user/membership commands must use `defineAction → defineCommand`, not direct CLI/UI CRUD.
 
-## Владение данными
+## Queries
 
-- Better Auth: User, Session, Account, Verification, Organization, Member, Invitation;
-- application contract: ActorContext, Permission, MembershipScope;
-- adapter: Better Auth session + Prisma identity lookup.
+- `getPrincipalStateByUserId`;
+- `getCurrentPrincipalState`;
+- `getCurrentCabinetRedirect`;
+- `requirePlatformAdmin`, `requirePlatformAnalyst`, `requireTenantUser`.
 
-## ActorContext
+## DTO
+
+Principal does not expose email, session token, password hash, TOTP secret, backup codes or raw membership records to browser code.
+
+## Invariants
+
+- Browser cannot construct PrincipalContext.
+- Disabled user has no principal.
+- Platform principals have no fake organization.
+- Tenant principal requires fresh membership.
+- Session active organization is only a server-side compatibility preference and is revalidated.
+- `mustChangePassword=true` blocks the cabinet.
+- Platform Admin requires verified TOTP in production.
+- Better Auth Organization Plugin is not registered.
+
+## Tenant behavior
+
+Client scope is derived from `Member.tenantRole`. Workstream 3 adds scopedDb and database-level tenant relation constraints; this module never trusts browser organization input.
+
+## Resource authorization
+
+Identity module authorizes principal class. Project/report modules own concrete resource loaders.
+
+## State lifecycle
 
 ```text
-userId
-email
-name
-systemRole
-activeOrganizationId
-memberships[]: membershipId, organizationId, role
-permissions[]
-correlationId
+admin-created user
+→ mustChangePassword
+→ Better Auth password change
+→ audited onboarding completion
+→ cabinet
+
+platform admin
+→ TOTP enrollment
+→ verified twoFactorEnabled
+→ production cabinet
 ```
 
-Контекст создаётся только на сервере. Client `organizationId`, role, permission и correlation ID не являются доказательством доступа.
+## Concurrency
 
-## Permissions
+Password/2FA provider state is owned by Better Auth. Onboarding completion is idempotent: an already-completed state returns `changed=false`.
 
-```text
-platform:manage
-membership:manage:any
-project:read:any
-project:read:organization
-project:manage:any
-report:read:any
-report:read:organization
-sync:read:any
-sync:run:any
-settings:manage:any
-```
+## Idempotency
 
-`PLATFORM_ADMIN` получает полный platform set. `SEO_ANALYST` получает global read + sync read/run. `CLIENT_VIEWER` получает organization-scoped project/report read.
-
-## Команды
-
-Текущий operator CLI:
-
-- create user;
-- disable user;
-- set system role;
-- add/remove membership.
-
-Phase 2 добавляет `PLATFORM_ADMIN` в role parser. Browser mutations остаются запрещены до AuditEvent/command foundation.
-
-## Запросы
-
-- create current ActorContext from session;
-- resolve actor by user ID for integration/operator tests;
-- list/get authorized projects/sites;
-- get authorized report;
-- capability predicate.
-
-## Инварианты
-
-- disabled user не получает ActorContext;
-- PLATFORM_ADMIN/SEO_ANALYST global access различается permissions, а не scattered role checks;
-- CLIENT_VIEWER scope = current memberships from DB;
-- membership revocation действует на следующий request;
-- every private request получает correlation ID;
-- project/report repository query всегда получает computed server scope;
-- public signup remains disabled;
-- secrets/password/session token не входят в ActorContext.
-
-## Взаимодействия
-
-- Project Registry принимает ActorContext и строит tenant scope;
-- Reporting повторно проверяет project/site access;
-- App routes используют capability predicates;
-- structured errors/logs получают correlationId;
-- future Admin CMS использует те же capabilities.
-
-## Idempotency и retries
-
-Read context может безопасно повторяться. User/membership mutations не получают retry semantics до Phase 3 idempotency/audit foundation.
+No external/retryable identity API exists. Future invite/webhook paths need an explicit idempotency contract.
 
 ## Audit
 
-До Phase 3 operator mutations фиксируются Git/server operator evidence. После AuditEvent role/membership/platform-admin actions обязаны писать audit в одной transaction.
+Password onboarding writes User audit marker. Platform Admin cross-tenant and membership commands must write explicit target organization audit in their own transaction.
 
-## Тесты
+## Integrations
 
-- role → permission matrix;
-- disabled user denied;
-- membership list and active organization;
-- analyst/admin global reads;
-- client cross-tenant denial;
-- correlation ID exists and is stable inside one ActorContext;
-- CLI accepts PLATFORM_ADMIN and rejects unknown role;
-- E2E unauthenticated/private boundary.
+Better Auth adapter only. No Organization Plugin, no second auth provider.
+
+## Failure behavior
+
+- unauthenticated → login;
+- must-change-password → `/onboarding/password/`;
+- production Platform Admin without 2FA → `/onboarding/two-factor/`;
+- disabled/no membership tenant user → cabinet denied without tenant disclosure.
+
+## Tests
+
+- principal kind/permission/type guards;
+- real PostgreSQL platform/analyst/tenant/no-membership factory matrix;
+- first-password E2E at 375/768/1280/1440;
+- required before production: real controlled TOTP enrollment and sign-in proof.
