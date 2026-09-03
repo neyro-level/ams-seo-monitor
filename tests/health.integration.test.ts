@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { GET as getLiveHealth } from "../src/app/api/health/live/route";
-import { GET as getReadyHealth } from "../src/app/api/health/ready/route";
-import { liveHealthSchema, readyHealthSchema } from "../src/platform/http/health";
+import { GET as getLiveHealth } from "../src/app/api/health/live/route.ts";
+import { GET as getReadyHealth } from "../src/app/api/health/ready/route.ts";
+import { liveHealthSchema, readyHealthSchema } from "../src/platform/http/health.ts";
 
 describe("release-aware health routes", () => {
   it("returns a safe liveness DTO with matching correlation header", async () => {

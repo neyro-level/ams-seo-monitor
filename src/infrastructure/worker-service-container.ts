@@ -1,20 +1,20 @@
-import { SyncService } from "../modules/data-ingestion";
+import { SyncService } from "../modules/data-ingestion/index.ts";
 import {
   JsonLineSyncLogger,
   PrismaSyncRepository,
-} from "../modules/data-ingestion/server";
-import { ReliabilityService } from "../modules/platform-operations";
-import { PrismaReliabilityRepository } from "../modules/platform-operations/server";
+} from "../modules/data-ingestion/server.ts";
+import { ReliabilityService } from "../modules/platform-operations/index.ts";
+import { PrismaReliabilityRepository } from "../modules/platform-operations/server.ts";
 import {
   MonitoringService,
   ProjectService,
-} from "../modules/project-registry";
+} from "../modules/project-registry/index.ts";
 import {
   PrismaMonitoringRepository,
   PrismaProjectRepository,
-} from "../modules/project-registry/server";
-import { ReportService } from "../modules/reporting";
-import { PrismaReportRepository } from "../modules/reporting/server";
+} from "../modules/project-registry/worker.ts";
+import { ReportService } from "../modules/reporting/index.ts";
+import { PrismaReportRepository } from "../modules/reporting/server.ts";
 
 const projectRepository = new PrismaProjectRepository();
 const monitoringRepository = new PrismaMonitoringRepository();

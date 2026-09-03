@@ -1,4 +1,4 @@
-import type { ReportPeriodKey, SiteReportSnapshot } from "../../../../shared/schemas/report";
+import type { ReportPeriodKey, SiteReportSnapshot } from "../../../../shared/schemas/report.ts";
 
 export interface StoredReportSnapshotRecord {
   siteId: string;

@@ -4,11 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardHeader } from "../../../components/ui/card";
-import { Input, Textarea } from "../../../components/ui/input";
-import type { AdminFormDefinition } from "../../../modules/admin-cms/presentation";
-import { executeAdminCommand, type AdminCommandResult } from "../actions";
+import { Button } from "../../../components/ui/button.tsx";
+import { Card, CardContent, CardHeader } from "../../../components/ui/card.tsx";
+import { Input, Textarea } from "../../../components/ui/input.tsx";
+import type { AdminFormDefinition } from "../../../modules/admin-cms/presentation.ts";
+import { executeAdminCommand, type AdminCommandResult } from "../actions.ts";
 
 type AdminFormValues = Record<string, string | number | boolean>;
 

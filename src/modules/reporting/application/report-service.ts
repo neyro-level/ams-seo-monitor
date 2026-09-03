@@ -1,8 +1,8 @@
-import type { ProjectRepository } from "../../project-registry/index";
-import type { ReportRepository, StoredReportSnapshotRecord } from "./ports/report-repository";
-import type { ReportPeriodKey, SiteReportSnapshot } from "../../../shared/schemas/report";
-import { hasPermission, type ActorContext } from "../../identity-access/index";
-import { ProjectService } from "../../project-registry/index";
+import type { ProjectRepository } from "../../project-registry/index.ts";
+import type { ReportRepository, StoredReportSnapshotRecord } from "./ports/report-repository.ts";
+import type { ReportPeriodKey, SiteReportSnapshot } from "../../../shared/schemas/report.ts";
+import { hasPermission, type ActorContext } from "../../identity-access/index.ts";
+import { ProjectService } from "../../project-registry/index.ts";
 
 export class ReportService {
   private readonly projectService: ProjectService;

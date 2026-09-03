@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { slugPattern, timezonePattern } from "./registry";
+import { slugPattern, timezonePattern } from "./registry.ts";
 
 const isoDateTimeSchema = z.string().datetime({ offset: true });
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);

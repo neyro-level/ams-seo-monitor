@@ -17,7 +17,7 @@ module.exports = {
       severity: "error",
       from: { path: "^src/domain/" },
       to: {
-        path: "^(src/(app|application|components|infrastructure|modules|worker)/|collector/)",
+        path: "^(src/(app|application|components|infrastructure|modules|platform|worker)/|collector/)",
       },
     },
     {
@@ -34,7 +34,7 @@ module.exports = {
       severity: "error",
       from: { path: "^src/application/" },
       to: {
-        path: "^(src/(app|components|infrastructure|modules|worker)/|collector/)",
+        path: "^(src/(app|components|infrastructure|modules|platform|worker)/|collector/)",
       },
     },
     {
@@ -42,7 +42,7 @@ module.exports = {
       severity: "error",
       from: { path: "^src/shared/" },
       to: {
-        path: "^(src/(app|application|components|domain|infrastructure|modules|worker)/|collector/)",
+        path: "^(src/(app|application|components|domain|infrastructure|modules|platform|worker)/|collector/)",
       },
     },
     {
@@ -57,12 +57,12 @@ module.exports = {
       name: "presentation-does-not-import-database-internals",
       severity: "error",
       from: { path: "^src/(app|components)/|^src/modules/[^/]+/(presentation/|presentation\\.ts$|client\\.ts$)" },
-      to: { path: "^src/infrastructure/database/" },
+      to: { path: "^src/(infrastructure/database|platform/database)/" },
     },
     {
       name: "infrastructure-does-not-depend-on-presentation",
       severity: "error",
-      from: { path: "^src/infrastructure/" },
+      from: { path: "^src/(infrastructure|platform/database)/" },
       to: { path: "^src/(app|components)/|^src/modules/[^/]+/(presentation/|presentation\\.ts$|client\\.ts$)" },
     },
     {
@@ -133,6 +133,16 @@ module.exports = {
       severity: "error",
       from: { pathNot: "^src/modules/admin-cms/" },
       to: { path: "^src/modules/admin-cms/(domain|application|infrastructure|presentation)/" },
+    },
+    {
+      name: "only-platform-database-imports-generated-prisma-client",
+      severity: "error",
+      from: {
+        pathNot: "^src/(platform/database|modules/[^/]+/infrastructure|generated)/",
+      },
+      to: {
+        path: "^src/generated/prisma/",
+      },
     },
   ],
   options: {

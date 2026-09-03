@@ -4,8 +4,8 @@ import type {
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
-} from "../application/ports/project-repository";
-import { getPrismaClient } from "../../../infrastructure/database/prisma/client";
+} from "../application/ports/project-repository.ts";
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 
 function mapSiteRecord(site: {
   id: string;

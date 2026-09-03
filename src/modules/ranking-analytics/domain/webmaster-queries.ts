@@ -1,7 +1,7 @@
 import type {
   WebmasterQueryCollection,
   WebmasterQueryOrderBy,
-} from "../../../shared/schemas/webmaster-source";
+} from "../../../shared/schemas/webmaster-source.ts";
 
 export type MergedWebmasterQuery = {
   queryId: string;

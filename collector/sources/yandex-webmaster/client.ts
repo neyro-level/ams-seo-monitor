@@ -3,13 +3,13 @@ import {
   webmasterQueryOrderBySchema,
   type WebmasterEndpointError,
   type WebmasterHostAccess,
-} from "../../../src/shared/schemas/webmaster-source";
+} from "../../../src/shared/schemas/webmaster-source.ts";
 import {
   WebmasterSafeError,
   type FetchLike,
   getWebmasterJson,
   type QueryValue,
-} from "./http";
+} from "./http.ts";
 import {
   buildWebmasterSiteData,
   findExactVerifiedHost,
@@ -20,8 +20,8 @@ import {
   normalizeSiteUrl,
   normalizeSitemaps,
   normalizeSummary,
-} from "./normalize";
-import { requireTrustedApiBaseUrl } from "../trusted-api-url";
+} from "./normalize.ts";
+import { requireTrustedApiBaseUrl } from "../trusted-api-url.ts";
 
 export type WebmasterEnvironment = {
   token: string;

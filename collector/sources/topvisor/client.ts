@@ -1,11 +1,11 @@
 import { z } from "zod";
-import type { SiteRegistry } from "../../../src/shared/schemas/registry";
-import { requireTrustedApiBaseUrl } from "../trusted-api-url";
+import type { SiteRegistry } from "../../../src/shared/schemas/registry.ts";
+import { requireTrustedApiBaseUrl } from "../trusted-api-url.ts";
 import {
   topvisorSiteDataSchema,
   type RankSnapshot,
   type TopvisorSiteData,
-} from "../../../src/shared/schemas/rank-source";
+} from "../../../src/shared/schemas/rank-source.ts";
 
 export type TopvisorEnvironment = {
   baseUrl: string;

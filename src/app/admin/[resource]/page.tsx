@@ -3,26 +3,26 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
-import { KpiCard } from "../../../components/dashboard/KpiCard";
-import { PageHeader } from "../../../components/dashboard/PageHeader";
-import { AppShell } from "../../../components/shell/AppShell";
-import { Badge } from "../../../components/ui/badge";
-import { Button } from "../../../components/ui/button";
-import { Card, CardContent } from "../../../components/ui/card";
-import { getAdminCmsService } from "../../../infrastructure/service-container";
+import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
+import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
+import { AppShell } from "../../../components/shell/AppShell.tsx";
+import { Badge } from "../../../components/ui/badge.tsx";
+import { Button } from "../../../components/ui/button.tsx";
+import { Card, CardContent } from "../../../components/ui/card.tsx";
+import { getAdminCmsService } from "../../../infrastructure/service-container.ts";
 import {
   getAdminResourceDefinition,
   isAdminResourceKey,
   type AdminListQuery,
-} from "../../../modules/admin-cms";
+} from "../../../modules/admin-cms/index.ts";
 import {
   AdminRefineProvider,
   getAdminForms,
-} from "../../../modules/admin-cms/presentation";
-import { hasPermission } from "../../../modules/identity-access";
-import { getCurrentActorContext } from "../../../modules/identity-access/server";
-import { AdminCommandForm } from "../_components/AdminCommandForm";
-import { AdminResourceNav } from "../_components/AdminResourceNav";
+} from "../../../modules/admin-cms/presentation.ts";
+import { hasPermission } from "../../../modules/identity-access/index.ts";
+import { getCurrentActorContext } from "../../../modules/identity-access/server.ts";
+import { AdminCommandForm } from "../_components/AdminCommandForm.tsx";
+import { AdminResourceNav } from "../_components/AdminResourceNav.tsx";
 
 type AdminResourcePageProps = {
   params: Promise<{ resource: string }>;

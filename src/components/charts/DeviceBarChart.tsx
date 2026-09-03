@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatInteger, formatPercent } from "../../shared/format/metrics";
+import { formatInteger, formatPercent } from "../../shared/format/metrics.ts";
 
 function toDisplayNumber(value: unknown) {
   return typeof value === "number" ? value : null;

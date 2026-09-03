@@ -1,6 +1,6 @@
-import type { AdminCommandName } from "../domain/commands";
-import type { AdminFormOptions } from "../application/ports/admin-repository";
-import type { AdminResourceKey } from "../domain/resources";
+import type { AdminCommandName } from "../domain/commands.ts";
+import type { AdminFormOptions } from "../application/ports/admin-repository.ts";
+import type { AdminResourceKey } from "../domain/resources.ts";
 
 export interface AdminFieldDefinition {
   name: string;

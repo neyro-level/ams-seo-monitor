@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildQueryOpportunities,
   mergeWebmasterQueryCollections,
-} from "../src/modules/ranking-analytics/index";
-import type { WebmasterQueryCollection } from "../src/shared/schemas/webmaster-source";
+} from "../src/modules/ranking-analytics/index.ts";
+import type { WebmasterQueryCollection } from "../src/shared/schemas/webmaster-source.ts";
 
 const baseQuery = {
   queryId: "q-1",

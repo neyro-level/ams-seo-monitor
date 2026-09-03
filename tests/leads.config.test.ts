@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { sendLead } from "../src/shared/leads/send-lead";
+import { sendLead } from "../src/shared/leads/send-lead.ts";
 
 const payload = {
   name: "Тест",

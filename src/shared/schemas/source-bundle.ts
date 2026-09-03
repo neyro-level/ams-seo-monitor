@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { topvisorSiteDataSchema } from "./rank-source";
-import { metricaSiteAuditSchema } from "./metrica-source";
-import { reportPeriodKeySchema } from "./report";
-import { slugPattern } from "./registry";
-import { webmasterSiteDataSchema } from "./webmaster-source";
+import { topvisorSiteDataSchema } from "./rank-source.ts";
+import { metricaSiteAuditSchema } from "./metrica-source.ts";
+import { reportPeriodKeySchema } from "./report.ts";
+import { slugPattern } from "./registry.ts";
+import { webmasterSiteDataSchema } from "./webmaster-source.ts";
 
 export const siteSourceBundleSchema = z.object({
   schemaVersion: z.literal(1),

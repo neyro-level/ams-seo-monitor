@@ -6,7 +6,7 @@ import type {
   FailReliabilityEventResult,
   OutboxHealth,
   ReliabilityRepository,
-} from "./ports/reliability-repository";
+} from "./ports/reliability-repository.ts";
 
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([

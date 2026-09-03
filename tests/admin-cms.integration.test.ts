@@ -1,11 +1,11 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client.ts"
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
-import { AdminCmsService } from "../src/modules/admin-cms";
-import { PrismaAdminRepository } from "../src/modules/admin-cms/server";
-import { createActorContext } from "./helpers/actor-context";
+import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
+import { AdminCmsService } from "../src/modules/admin-cms/index.ts";
+import { PrismaAdminRepository } from "../src/modules/admin-cms/server.ts";
+import { createActorContext } from "./helpers/actor-context.ts";
 
 const integrationEnabled = Boolean(
   process.env.TEST_DATABASE_HOST &&

@@ -7,10 +7,10 @@ import {
   getAdminCmsService,
   getProjectService,
   getReliabilityService,
-} from "../../infrastructure/service-container";
-import { getCurrentActorContext } from "../../modules/identity-access/server";
-import { hasPermission } from "../../modules/identity-access";
-import type { AdminCommandName } from "../../modules/admin-cms";
+} from "../../infrastructure/service-container.ts";
+import { getCurrentActorContext } from "../../modules/identity-access/server.ts";
+import { hasPermission } from "../../modules/identity-access/index.ts";
+import type { AdminCommandName } from "../../modules/admin-cms/index.ts";
 
 
 export interface AdminCommandResult {

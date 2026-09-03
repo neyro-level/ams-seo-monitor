@@ -1,5 +1,5 @@
 
-import { siteReportSnapshotSchema, type SiteReportSnapshot } from "../../../shared/schemas/report";
+import { siteReportSnapshotSchema, type SiteReportSnapshot } from "../../../shared/schemas/report.ts";
 
 const syntheticSnapshot = siteReportSnapshotSchema.parse({
   schemaVersion: 1,

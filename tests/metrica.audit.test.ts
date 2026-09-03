@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { createMetricaClient, readMetricaEnvironment } from "../collector/sources/yandex-metrica/client";
+import { createMetricaClient, readMetricaEnvironment } from "../collector/sources/yandex-metrica/client.ts";
 
 function fixturePath(name: string) {
   return path.join(process.cwd(), "tests", "fixtures", "yandex-metrica", name);

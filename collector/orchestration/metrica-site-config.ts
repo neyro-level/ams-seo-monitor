@@ -7,12 +7,12 @@ import {
   thresholdsSchema,
   type GoalProfile,
   type SiteRegistry,
-} from "../../src/shared/schemas/registry";
-import { type MetricaAllowedGoal } from "../../src/shared/schemas/metrica-source";
+} from "../../src/shared/schemas/registry.ts";
+import { type MetricaAllowedGoal } from "../../src/shared/schemas/metrica-source.ts";
 import {
   trackedQuerySetSchema,
   type TrackedQuerySet,
-} from "../../src/shared/schemas/tracked-query";
+} from "../../src/shared/schemas/tracked-query.ts";
 
 function normalizeSiteUrl(url: string) {
   const parsed = new URL(url);

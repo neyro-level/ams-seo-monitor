@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
 import { createLocalAccountIssuer } from "better-auth/db";
-import { getPrismaClient } from "../src/infrastructure/database/prisma/client";
+import { getPrismaClient } from "../src/platform/database/prisma/client.ts";
 
 const E2E_USERNAME = "e2e.platform.admin";
 const E2E_EMAIL = "e2e-platform-admin@example.invalid";

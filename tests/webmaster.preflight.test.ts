@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createWebmasterClient } from "../collector/sources/yandex-webmaster/client";
-import { WebmasterSafeError } from "../collector/sources/yandex-webmaster/http";
+import { createWebmasterClient } from "../collector/sources/yandex-webmaster/client.ts";
+import { WebmasterSafeError } from "../collector/sources/yandex-webmaster/http.ts";
 
 function createJsonResponse(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {

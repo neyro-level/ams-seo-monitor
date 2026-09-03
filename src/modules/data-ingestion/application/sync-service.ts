@@ -3,18 +3,18 @@ import {
   derivePeriodEndingOn,
   derivePreviousPeriod,
   type DatePeriod,
-} from "../../reporting/index";
-import type { SiteSourceCollectors } from "./ports/provider-collectors";
-import type { SyncLogEvent, SyncLogger } from "./ports/sync-logger";
+} from "../../reporting/index.ts";
+import type { SiteSourceCollectors } from "./ports/provider-collectors.ts";
+import type { SyncLogEvent, SyncLogger } from "./ports/sync-logger.ts";
 import {
   compileSiteReportSnapshot,
   type SafeSourceFailure,
-} from "../../reporting/index";
-import type { MetricaSiteAudit } from "../../../shared/schemas/metrica-source";
-import type { TopvisorSiteData } from "../../../shared/schemas/rank-source";
-import type { GoalProfile } from "../../../shared/schemas/registry";
-import type { ReportPeriodKey, SiteReportSnapshot } from "../../../shared/schemas/report";
-import type { WebmasterSiteData } from "../../../shared/schemas/webmaster-source";
+} from "../../reporting/index.ts";
+import type { MetricaSiteAudit } from "../../../shared/schemas/metrica-source.ts";
+import type { TopvisorSiteData } from "../../../shared/schemas/rank-source.ts";
+import type { GoalProfile } from "../../../shared/schemas/registry.ts";
+import type { ReportPeriodKey, SiteReportSnapshot } from "../../../shared/schemas/report.ts";
+import type { WebmasterSiteData } from "../../../shared/schemas/webmaster-source.ts";
 import type {
   CreateSourceRunInput,
   CreateSyncRunInput,
@@ -31,10 +31,10 @@ import type {
   StoreWebmasterQueryMetricsInput,
   StoredSourceRunRecord,
   SyncRepository,
-} from "./ports/sync-repository";
-import { MonitoringService } from "../../project-registry/index";
-import { ProjectService } from "../../project-registry/index";
-import { ReportService } from "../../reporting/index";
+} from "./ports/sync-repository.ts";
+import { MonitoringService } from "../../project-registry/index.ts";
+import { ProjectService } from "../../project-registry/index.ts";
+import { ReportService } from "../../reporting/index.ts";
 
 export interface SyncProjectToDatabaseArgs {
   projectSlug: string;

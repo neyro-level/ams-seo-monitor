@@ -1,14 +1,14 @@
-import { syncProjectToDatabase } from "../src/modules/data-ingestion/worker";
+import { syncProjectToDatabase } from "../src/modules/data-ingestion/worker.ts";
 import {
   createMetricaClient,
   readMetricaEnvironment,
-} from "./sources/yandex-metrica/client";
-import { MetricaSafeError } from "./sources/yandex-metrica/http";
+} from "./sources/yandex-metrica/client.ts";
+import { MetricaSafeError } from "./sources/yandex-metrica/http.ts";
 import {
   createWebmasterClient,
   readWebmasterEnvironment,
-} from "./sources/yandex-webmaster/client";
-import { WebmasterSafeError } from "./sources/yandex-webmaster/http";
+} from "./sources/yandex-webmaster/client.ts";
+import { WebmasterSafeError } from "./sources/yandex-webmaster/http.ts";
 
 async function main() {
   const command = process.argv[2] ?? "webmaster-preflight";

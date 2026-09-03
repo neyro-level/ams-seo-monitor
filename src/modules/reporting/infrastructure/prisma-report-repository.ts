@@ -2,13 +2,13 @@
 import type {
   ReportRepository,
   StoredReportSnapshotRecord,
-} from "../application/ports/report-repository";
+} from "../application/ports/report-repository.ts";
 import {
   reportPeriodKeySchema,
   siteReportSnapshotSchema,
   type ReportPeriodKey,
-} from "../../../shared/schemas/report";
-import { getPrismaClient } from "../../../infrastructure/database/prisma/client";
+} from "../../../shared/schemas/report.ts";
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 
 const PRISMA_PERIOD_KEY_BY_APP_PERIOD: Record<ReportPeriodKey, "WEEK" | "MONTH" | "QUARTER" | "HALF_YEAR"> = {
   week: "WEEK",

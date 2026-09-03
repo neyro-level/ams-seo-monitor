@@ -1,6 +1,6 @@
-import { metricaSiteAuditSchema } from "../../src/shared/schemas/metrica-source";
-import type { SiteRegistry } from "../../src/shared/schemas/registry";
-import { webmasterSiteDataSchema } from "../../src/shared/schemas/webmaster-source";
+import { metricaSiteAuditSchema } from "../../src/shared/schemas/metrica-source.ts";
+import type { SiteRegistry } from "../../src/shared/schemas/registry.ts";
+import { webmasterSiteDataSchema } from "../../src/shared/schemas/webmaster-source.ts";
 
 const meta = {
   sampled: false,

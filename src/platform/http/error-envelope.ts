@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { correlationIdSchema } from "./correlation";
+import { correlationIdSchema } from "./correlation.ts";
 
 export const publicErrorEnvelopeSchema = z.object({
   ok: z.literal(false),

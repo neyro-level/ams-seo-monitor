@@ -13,7 +13,7 @@ import {
   type GoalProfile,
   type SiteRegistry,
   type ThresholdsConfig,
-} from "../../../shared/schemas/registry";
+} from "../../../shared/schemas/registry.ts";
 
 const configRoot = path.join(process.cwd(), "config");
 

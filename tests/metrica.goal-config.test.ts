@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSeoConversionGoalIds } from "../collector/orchestration/metrica-site-config";
+import { getSeoConversionGoalIds } from "../collector/orchestration/metrica-site-config.ts";
 
 const goal = (goalId: string, includeInSeoConversion: boolean) => ({
   goalId,

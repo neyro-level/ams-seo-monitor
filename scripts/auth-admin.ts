@@ -1,10 +1,10 @@
-import { SystemRole } from "@prisma/client";
-import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
+import { SystemRole } from "../src/generated/prisma/client.ts"
+import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
 import { randomUUID } from "node:crypto";
 import { stdin } from "node:process";
 import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
-import { parseSystemRole } from "../src/modules/identity-access/index";
+import { parseSystemRole } from "../src/modules/identity-access/index.ts";
 
 type AuthAdminCommand =
   | "create"

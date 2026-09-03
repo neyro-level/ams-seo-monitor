@@ -1,7 +1,7 @@
-export { auth, hasAuthConfiguration } from "./infrastructure/auth";
+export { auth, hasAuthConfiguration } from "./infrastructure/auth.ts";
 export {
   getActorContextByUserId,
   getAuthorizedProjectAccess,
   getAuthorizedSiteAccess,
-} from "./infrastructure/authorization";
-export { getCurrentActorContext } from "./infrastructure/session";
+} from "./infrastructure/authorization.ts";
+export { getCurrentActorContext } from "./infrastructure/session.ts";

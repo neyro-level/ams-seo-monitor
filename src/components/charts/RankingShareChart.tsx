@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { TrackedRankingReport } from "../../shared/schemas/report";
+import type { TrackedRankingReport } from "../../shared/schemas/report.ts";
 
 type RankingShareChartProps = {
   ranking: TrackedRankingReport;

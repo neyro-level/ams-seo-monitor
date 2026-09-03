@@ -1,22 +1,20 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  GoalCategory,
-  GoalDirection,
-  ProjectStatus,
-  Provider,
-  RankingSource,
-} from "@prisma/client";
+import { GoalCategory,
+GoalDirection,
+ProjectStatus,
+Provider,
+RankingSource, } from "../src/generated/prisma/client.ts"
 import {
   clientRegistrySchema,
   clusterProfileSchema,
   goalProfileSchema,
   thresholdsSchema,
   type ClientRegistry,
-} from "../src/shared/schemas/registry";
-import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
-import { trackedQuerySetSchema } from "../src/shared/schemas/tracked-query";
+} from "../src/shared/schemas/registry.ts";
+import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
+import { trackedQuerySetSchema } from "../src/shared/schemas/tracked-query.ts";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const database = createPrismaContext({

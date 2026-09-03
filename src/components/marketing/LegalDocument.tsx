@@ -1,8 +1,8 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { legalOperator } from "../../shared/legal/legal-config";
-import { SiteFooter } from "./SiteFooter";
+import { legalOperator } from "../../shared/legal/legal-config.ts";
+import { SiteFooter } from "./SiteFooter.tsx";
 
 type LegalDocumentProps = {
   eyebrow: string;

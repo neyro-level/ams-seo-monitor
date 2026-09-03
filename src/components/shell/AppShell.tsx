@@ -1,9 +1,9 @@
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
-import { buildNavigation } from "../../modules/project-registry/presentation";
-import type { ActorContext } from "../../modules/identity-access/index";
-import { MobileDrawer } from "./MobileDrawer";
-import { ShellNav } from "./ShellNav";
+import { buildNavigation } from "../../modules/project-registry/presentation.ts";
+import type { ActorContext } from "../../modules/identity-access/index.ts";
+import { MobileDrawer } from "./MobileDrawer.tsx";
+import { ShellNav } from "./ShellNav.tsx";
 
 type AppShellProps = {
   currentPath: string;

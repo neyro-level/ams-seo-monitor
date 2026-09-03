@@ -4,7 +4,7 @@ export {
   hasPermission,
   parseSystemRole,
   PERMISSIONS,
-} from "./domain/actor-context";
+} from "./domain/actor-context.ts";
 export type {
   ActorContext,
   AuthorizedProjectAccess,
@@ -12,4 +12,4 @@ export type {
   MembershipScope,
   Permission,
   SystemRole,
-} from "./domain/actor-context";
+} from "./domain/actor-context.ts";

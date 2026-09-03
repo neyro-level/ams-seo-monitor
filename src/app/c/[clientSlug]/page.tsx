@@ -2,13 +2,13 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AppShell } from "../../../components/shell/AppShell";
-import { KpiCard } from "../../../components/dashboard/KpiCard";
-import { PageHeader } from "../../../components/dashboard/PageHeader";
-import { SectionCard } from "../../../components/dashboard/SectionCard";
-import { StatusBanner } from "../../../components/dashboard/StatusBanner";
-import { getCurrentActorContext } from "../../../modules/identity-access/server";
-import { buildClientOverview } from "../../../modules/project-registry/presentation";
+import { AppShell } from "../../../components/shell/AppShell.tsx";
+import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
+import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
+import { SectionCard } from "../../../components/dashboard/SectionCard.tsx";
+import { StatusBanner } from "../../../components/dashboard/StatusBanner.tsx";
+import { getCurrentActorContext } from "../../../modules/identity-access/server.ts";
+import { buildClientOverview } from "../../../modules/project-registry/presentation.ts";
 
 type ClientOverviewPageProps = {
   params: Promise<{

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { adminAuthStatePath } from "./auth-state";
+import { adminAuthStatePath } from "./auth-state.ts";
 
 test("preserves the public AMS IMPULSE surface", async ({ page, request }) => {
   await page.goto("/");

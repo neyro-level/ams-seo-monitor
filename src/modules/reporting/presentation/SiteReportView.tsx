@@ -1,16 +1,16 @@
 import type { ReactNode } from "react";
-import { MetricTrendChart } from "../../../components/charts/MetricTrendChart";
-import { RankingShareChart } from "../../../components/charts/RankingShareChart";
-import { KpiCard } from "../../../components/dashboard/KpiCard";
-import { PageHeader } from "../../../components/dashboard/PageHeader";
-import { SectionCard } from "../../../components/dashboard/SectionCard";
-import { StatusBanner } from "../../../components/dashboard/StatusBanner";
-import { StatePanel } from "../../../components/states/StatePanel";
-import { DataTable } from "../../../components/tables/DataTable";
-import { TrackedQueryTable } from "../../../components/tables/TrackedQueryTable";
-import { formatDuration, formatInteger, formatPercent, formatPosition } from "../../../shared/format/metrics";
-import type { ReportComparison, SiteReportSnapshot } from "../../../shared/schemas/report";
-import type { SiteRegistry } from "../../../shared/schemas/registry";
+import { MetricTrendChart } from "../../../components/charts/MetricTrendChart.tsx";
+import { RankingShareChart } from "../../../components/charts/RankingShareChart.tsx";
+import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
+import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
+import { SectionCard } from "../../../components/dashboard/SectionCard.tsx";
+import { StatusBanner } from "../../../components/dashboard/StatusBanner.tsx";
+import { StatePanel } from "../../../components/states/StatePanel.tsx";
+import { DataTable } from "../../../components/tables/DataTable.tsx";
+import { TrackedQueryTable } from "../../../components/tables/TrackedQueryTable.tsx";
+import { formatDuration, formatInteger, formatPercent, formatPosition } from "../../../shared/format/metrics.ts";
+import type { ReportComparison, SiteReportSnapshot } from "../../../shared/schemas/report.ts";
+import type { SiteRegistry } from "../../../shared/schemas/registry.ts";
 
 type ComparisonMetric = ReportComparison["metrics"]["shows"];
 

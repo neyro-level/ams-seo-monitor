@@ -2,12 +2,12 @@ import type {
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
-} from "./ports/project-repository";
+} from "./ports/project-repository.ts";
 import {
   getActorOrganizationIds,
   hasPermission,
   type ActorContext,
-} from "../../identity-access/index";
+} from "../../identity-access/index.ts";
 
 export interface ProjectSiteSummary {
   siteId: string;

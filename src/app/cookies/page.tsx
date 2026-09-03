@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { LegalDocument } from "../../components/marketing/LegalDocument";
-import { CookiesContent } from "../../components/marketing/legal/LegalContents";
+import { LegalDocument } from "../../components/marketing/LegalDocument.tsx";
+import { CookiesContent } from "../../components/marketing/legal/LegalContents.tsx";
 
 export const metadata: Metadata = {
   title: "Правила использования Cookie",

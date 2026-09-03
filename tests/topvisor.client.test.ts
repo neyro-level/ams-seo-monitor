@@ -4,8 +4,8 @@ import {
   normalizeTopvisorHistory,
   readTopvisorEnvironment,
   TopvisorSafeError,
-} from "../collector/sources/topvisor/client";
-import { getClientBySlug } from "../src/modules/project-registry/server";
+} from "../collector/sources/topvisor/client.ts";
+import { getClientBySlug } from "../src/modules/project-registry/server.ts";
 
 function getTopvisorSite() {
   const site = getClientBySlug("REDACTED_CLIENT_DATA")?.sites.find(

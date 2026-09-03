@@ -1,23 +1,23 @@
-import type { SiteSourceCollectors } from "../../src/modules/data-ingestion/index";
+import type { SiteSourceCollectors } from "../../src/modules/data-ingestion/index.ts";
 import {
   createTopvisorClient,
   readTopvisorEnvironment,
-} from "../sources/topvisor/client";
+} from "../sources/topvisor/client.ts";
 import {
   createMetricaClient,
   readMetricaEnvironment,
-} from "../sources/yandex-metrica/client";
+} from "../sources/yandex-metrica/client.ts";
 import {
   createWebmasterClient,
   readWebmasterEnvironment,
-} from "../sources/yandex-webmaster/client";
+} from "../sources/yandex-webmaster/client.ts";
 
 export type {
   MetricaCollectOptions,
   SiteSourceCollectors,
   TopvisorCollectOptions,
   WebmasterCollectOptions,
-} from "../../src/modules/data-ingestion/index";
+} from "../../src/modules/data-ingestion/index.ts";
 
 export function createLiveSiteCollectors(
   env: NodeJS.ProcessEnv = process.env,

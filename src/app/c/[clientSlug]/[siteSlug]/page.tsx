@@ -1,16 +1,16 @@
 export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
-import { AppShell } from "../../../../components/shell/AppShell";
-import { ReportPeriodSelector } from "../../../../components/dashboard/ReportPeriodSelector";
-import { SiteReportView } from "../../../../modules/reporting/presentation";
-import { getCurrentActorContext } from "../../../../modules/identity-access/server";
+import { AppShell } from "../../../../components/shell/AppShell.tsx";
+import { ReportPeriodSelector } from "../../../../components/dashboard/ReportPeriodSelector.tsx";
+import { SiteReportView } from "../../../../modules/reporting/presentation.ts";
+import { getCurrentActorContext } from "../../../../modules/identity-access/server.ts";
 import {
   getMonitoringService,
   getProjectService,
   getReportService,
-} from "../../../../infrastructure/service-container";
-import { reportPeriodKeySchema, type ReportPeriodKey } from "../../../../shared/schemas/report";
+} from "../../../../infrastructure/service-container.ts";
+import { reportPeriodKeySchema, type ReportPeriodKey } from "../../../../shared/schemas/report.ts";
 
 type SiteReportPageProps = {
   params: Promise<{

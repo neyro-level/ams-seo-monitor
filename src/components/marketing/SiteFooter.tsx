@@ -1,6 +1,6 @@
 import { ArrowUpRight, MessageCircle, Send } from "lucide-react";
 import Link from "next/link";
-import { legalLinks, legalOperator, publicContacts } from "../../shared/legal/legal-config";
+import { legalLinks, legalOperator, publicContacts } from "../../shared/legal/legal-config.ts";
 
 export function SiteFooter() {
   const phoneHref = `tel:${legalOperator.phone.replace(/[^\d+]/g, "")}`;

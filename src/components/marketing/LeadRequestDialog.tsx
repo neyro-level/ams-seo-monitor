@@ -4,7 +4,7 @@ import { ArrowUpRight, Check, Loader2, Phone, UserRound, X } from "lucide-react"
 import Link from "next/link";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { sendLead } from "../../shared/leads/send-lead";
+import { sendLead } from "../../shared/leads/send-lead.ts";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 

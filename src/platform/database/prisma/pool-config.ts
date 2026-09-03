@@ -2,7 +2,7 @@ import type { PoolConfig } from "pg";
 import {
   readDatabaseEnvironment,
   type DatabaseEnvironment,
-} from "../../../platform/config/server-environment";
+} from "../../config/server-environment.ts";
 
 export function createPgPoolConfig(databaseUrl: string): PoolConfig {
   const parsed = new URL(databaseUrl);

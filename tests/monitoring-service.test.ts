@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client.ts"
 import { Pool } from "pg";
-import { MonitoringService } from "../src/modules/project-registry/index";
-import { PrismaMonitoringRepository } from "../src/modules/project-registry/server";
-import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
+import { MonitoringService } from "../src/modules/project-registry/index.ts";
+import { PrismaMonitoringRepository } from "../src/modules/project-registry/server.ts";
+import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
 
 const monitoringTestEnabled = Boolean(
   process.env.TEST_DATABASE_HOST &&

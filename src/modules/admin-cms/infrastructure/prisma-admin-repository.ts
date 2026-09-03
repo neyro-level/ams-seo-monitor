@@ -1,6 +1,6 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
-import { getPrismaClient } from "../../../infrastructure/database/prisma/client";
-import type { AdminResourceKey } from "../domain/resources";
+import { Prisma, type PrismaClient } from "../../../generated/prisma/client.ts"
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
+import type { AdminResourceKey } from "../domain/resources.ts";
 import type {
   AdminDashboardSummary,
   AdminFormOptions,
@@ -19,7 +19,7 @@ import type {
   SaveProviderConnectionInput,
   SaveSiteInput,
   SaveThresholdProfileInput,
-} from "../application/ports/admin-repository";
+} from "../application/ports/admin-repository.ts";
 
 type TransactionClient = Prisma.TransactionClient;
 

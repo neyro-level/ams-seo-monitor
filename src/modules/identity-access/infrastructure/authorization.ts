@@ -1,15 +1,15 @@
 import "server-only";
 
-import { createCorrelationId } from "../../../platform/http/correlation";
-import { ProjectService } from "../../project-registry/index";
-import { PrismaProjectRepository } from "../../project-registry/server";
-import { getPrismaClient } from "../../../infrastructure/database/prisma/client";
+import { createCorrelationId } from "../../../platform/http/correlation.ts";
+import { ProjectService } from "../../project-registry/index.ts";
+import { PrismaProjectRepository } from "../../project-registry/server.ts";
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 import {
   getPermissionsForRole,
   type ActorContext,
   type AuthorizedProjectAccess,
   type AuthorizedSiteAccess,
-} from "../domain/actor-context";
+} from "../domain/actor-context.ts";
 
 const projectService = new ProjectService(new PrismaProjectRepository());
 

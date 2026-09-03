@@ -1,9 +1,9 @@
 import "server-only";
 
-import type { ActorContext } from "../../identity-access/index";
-import type { AnalystOverview } from "../application/analyst-service";
-import type { ClientOverview } from "../application/site-service";
-import { getAnalystService, getSiteService } from "../../../infrastructure/service-container";
+import type { ActorContext } from "../../identity-access/index.ts";
+import type { AnalystOverview } from "../application/analyst-service.ts";
+import type { ClientOverview } from "../application/site-service.ts";
+import { getAnalystService, getSiteService } from "../../../infrastructure/service-container.ts";
 
 export async function buildAnalystOverview(
   user: ActorContext,

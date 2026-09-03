@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { LegalDocument } from "../../components/marketing/LegalDocument";
-import { PrivacyContent } from "../../components/marketing/legal/LegalContents";
+import { LegalDocument } from "../../components/marketing/LegalDocument.tsx";
+import { PrivacyContent } from "../../components/marketing/legal/LegalContents.tsx";
 
 export const metadata: Metadata = {
   title: "Политика конфиденциальности",

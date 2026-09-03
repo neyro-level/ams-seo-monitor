@@ -2,9 +2,9 @@ import {
   findSiteConfigByUrl,
   getAllowedGoalsForSite,
   getSeoConversionGoalIds,
-} from "../../orchestration/metrica-site-config";
-import { type MetricaAllowedGoal, type MetricaCounterAccess } from "../../../src/shared/schemas/metrica-source";
-import { MetricaSafeError, type FetchLike, getMetricaJson } from "./http";
+} from "../../orchestration/metrica-site-config.ts";
+import { type MetricaAllowedGoal, type MetricaCounterAccess } from "../../../src/shared/schemas/metrica-source.ts";
+import { MetricaSafeError, type FetchLike, getMetricaJson } from "./http.ts";
 import {
   buildMetricaPreflight,
   buildMetricaSiteAudit,
@@ -19,14 +19,14 @@ import {
   normalizeSummaryFromTotals,
   normalizeTargetVisitTotals,
   resolveCounterAccess,
-} from "./normalize";
+} from "./normalize.ts";
 import {
   METRICA_COUNTERS_ENDPOINT,
   METRICA_GOALS_ENDPOINT,
   METRICA_REPORT_BYTIME_ENDPOINT,
   METRICA_REPORT_TABLE_ENDPOINT,
-} from "./contract";
-import { requireTrustedApiBaseUrl } from "../trusted-api-url";
+} from "./contract.ts";
+import { requireTrustedApiBaseUrl } from "../trusted-api-url.ts";
 
 export type MetricaEnvironment = {
   token: string;

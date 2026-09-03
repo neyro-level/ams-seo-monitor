@@ -1,4 +1,4 @@
-import { metricaSafeErrorCodeSchema, type MetricaSafeErrorCode } from "../../../src/shared/schemas/metrica-source";
+import { metricaSafeErrorCodeSchema, type MetricaSafeErrorCode } from "../../../src/shared/schemas/metrica-source.ts";
 
 export class MetricaSafeError extends Error {
   code: MetricaSafeErrorCode;
