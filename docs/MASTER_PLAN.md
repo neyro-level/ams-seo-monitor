@@ -56,7 +56,8 @@ Verified proof:
 - Dependency Cruiser checks 105 modules / 212 dependencies with zero violations;
 - production-like Next build passes;
 - 8 Playwright golden paths pass at 375, 768, 1280 and 1440;
-- pinned Node 24.20/PostgreSQL 18.6 CI devcontainer builds, and its integration harness passes without runtime apt installation;
+- local pinned Node 24.20/PostgreSQL 18.6 integration image/harness pass;
+- SourceCraft devcontainer build оказался нестабильным на cloud worker и удалён; exact-head cloud gate оставлен deterministic Node-only, а real DB/E2E являются обязательным operator evidence.
 - `verify:heavy` passes end-to-end.
 
 ## Phase 2 — Platform request and access context

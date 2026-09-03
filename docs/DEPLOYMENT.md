@@ -77,4 +77,4 @@ Canonical public domain: `https://impulse.ams24.ru`. Legacy `https://seo-monitor
 
 ## Gate
 
-Runtime, migrations, backup, Nginx/systemd and dependency changes require HEAVY review. Exact-head HEAVY runs `verify:fast`, real PostgreSQL integration, collector/build proof and Playwright golden paths. Merge does not deploy. Production deploy is a separate owner command and follows `docs/ops/DEPLOY_RUNBOOK.md`.
+Runtime, migrations, backup, Nginx/systemd and dependency changes require HEAVY review. SourceCraft exact-head gate выполняет `verify:fast` и collector/build proof; operator отдельно подтверждает real PostgreSQL integration и Playwright до merge. Merge does not deploy. Production deploy is a separate owner command and follows `docs/ops/DEPLOY_RUNBOOK.md`.

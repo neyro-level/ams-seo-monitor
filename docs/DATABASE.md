@@ -53,7 +53,7 @@ Production contract:
 - credentials exist only in ignored `.env.local`;
 - named volume survives normal stop/start;
 - integration runner rejects a database name without `_test`, then generates Prisma client, applies migrations, runs seed and executes DB suites;
-- CI provisions an ephemeral PostgreSQL 18 cluster before HEAVY integration tests.
+- SourceCraft cloud gate пока не поднимает PostgreSQL: real integration proof выполняется operator HEAVY на isolated Docker DB и фиксируется перед merge.
 
 Runbook: `docs/ops/LOCAL_DEVELOPMENT.md`.
 
