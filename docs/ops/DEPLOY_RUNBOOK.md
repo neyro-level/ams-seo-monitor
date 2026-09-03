@@ -22,6 +22,8 @@ pnpm release:build
 
 Artifact contains reviewed source, config seed, Prisma schema/migrations, public assets, scripts and ops files plus `release-manifest.json`. It does not package local node_modules, Windows standalone output, DB data or secrets.
 
+Reviewed runtime assets include `seo-monitor-web`, sync worker, outbox worker and backup service/timer units.
+
 Manifest binds:
 
 - exact commit SHA;
@@ -62,9 +64,9 @@ After successful preparation:
 6. validate and reload Nginx;
 7. restart web;
 8. run worker once;
-9. enable worker and backup timers;
+9. enable sync-worker, outbox and backup timers;
 10. verify services/timers;
-11. require loopback live/ready DTOs to report exact target SHA and ready DB/auth dependencies;
+11. require loopback live/ready DTOs to report exact target SHA, ready DB/auth and typed outbox counts;
 12. verify standalone server, worker and Prisma schema files;
 13. record previous release and deployed SHA;
 14. remove uploaded temp artifact/checksum.
@@ -76,13 +78,14 @@ Required:
 - public `/` = 200 and canonical metadata;
 - `/ams-favicon.svg` and representative `/_next/static/*` = 200;
 - `/api/health/live` = 200, valid correlation ID and exact deployed SHA;
-- loopback `/api/health/ready` = 200, same SHA, PostgreSQL ready and auth configured;
+- loopback `/api/health/ready` = 200, same SHA, PostgreSQL ready, auth configured and typed outbox counts;
 - external `/api/health/ready` = 403;
 - unauthenticated `/analyst/` redirects to `/?login=1`;
 - analyst sign-in and report read work;
 - client cannot read foreign project/site/report;
 - worker run finishes and DB timestamps/status are credible;
-- worker/backup timers active;
+- outbox drain service is idle-success or processes only registered events;
+- sync-worker, outbox and backup timers active;
 - latest backup has confirmed offsite object.
 
 Do not paste response bodies containing user/report data into public logs.

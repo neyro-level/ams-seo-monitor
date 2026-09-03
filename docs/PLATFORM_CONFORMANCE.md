@@ -78,16 +78,16 @@
 | Modular monolith | global domain/application/infrastructure layers | нет vertical module ownership и public `index.ts` | мигрировать по одному домену |
 | Public UI | готовый AMS IMPULSE landing | переносить в generic cabinet нельзя | freeze external composition; configurable brand only later |
 | Private UI | custom dashboard primitives | нет Refine/shadcn/RHF CMS shell | добавить только в protected admin route group |
-| Commands/queries | read services, SyncService | CRUD/mutations ещё не оформлены | command contracts before Admin CMS |
-| DTO | `SiteReportSnapshot` и service DTO | нет universal error envelope | platform transport contract |
-| Audit | Git + SyncRun/SourceRun | нет user mutation AuditEvent | add before first CMS write |
-| Outbox/jobs | dedicated sync worker, advisory lock | нет generic retry/dead-letter queue | add before outbound/admin jobs |
-| Idempotency | provider metric upserts | нет common idempotency record | add with command/outbox foundation |
-| Observability | JSON sync logger + correlation/release-aware health | нет Sentry и worker freshness/dead-letter health | Phase 6 |
-| Unit tests | 76 Vitest tests, isolated from DB suites | соответствует Phase 2 | расширять с modules |
-| Integration tests | 18 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 2 | расширять capability matrix |
-| E2E | 8 Playwright checks on 375/768/1280/1440 | соответствует Phase 1/2 | расширять authenticated paths |
-| Architecture QA | Dependency Cruiser: 111 modules / 232 dependencies | соответствует current boundaries | ужесточать after module cutover |
+| Commands/queries | read services, SyncService, validated ReliabilityService commands | CMS resource mutations not yet implemented | Phase 5 named commands |
+| DTO | `SiteReportSnapshot`, service DTO, standard error/health envelopes | соответствует Phase 2 | extend per module |
+| Audit | AuditEvent atomic with idempotent enqueue | соответствует Phase 3 foundation | connect all CMS mutations |
+| Outbox/jobs | leases, JobRun, retry/backoff, dead-letter, five-minute worker | соответствует Phase 3 foundation | add only registered handlers |
+| Idempotency | tenant-scoped key + canonical payload hash + unique constraint | соответствует Phase 3 | apply to commands/webhooks |
+| Observability | JSON sync logs + correlation/release health + outbox counts | нет Sentry и worker freshness threshold | Phase 6 |
+| Unit tests | 76 Vitest tests, isolated from DB suites | соответствует Phase 3 | expand per module |
+| Integration tests | 21 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 3 | expand per module |
+| E2E | 8 Playwright checks on 375/768/1280/1440 | соответствует Phase 1–3 | expand authenticated paths |
+| Architecture QA | Dependency Cruiser: 115 modules / 244 dependencies | соответствует current boundaries | tighten after module cutover |
 | Local development | Docker PostgreSQL 18.6, separate dev/test DB, fail-closed guards | соответствует Phase 1 | добавить auth bootstrap в Phase 2/5 |
 | Release | exact-main immutable deploy + SHA health/env rollback contract | соответствует Phase 2 | verify on next production release |
 | Backup | local + mandatory offsite + restore smoke | соответствует | сохранить |

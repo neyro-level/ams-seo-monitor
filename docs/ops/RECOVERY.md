@@ -63,6 +63,14 @@ Deploy останавливается до symlink switch. Нельзя реда
 
 Проверить failed SyncRun/SourceRuns, safe logs и advisory lock release. Повторять только после root-cause correction.
 
+### Outbox failure
+
+- PENDING после retryable failure обрабатывается только после `availableAt`;
+- PROCESSING со stale lease может быть reclaimed;
+- DEAD_LETTER не повторяется автоматически;
+- manual retry требует root-cause correction, new idempotent command и audit;
+- rollback отключает несовместимый outbox timer и восстанавливает units previous release.
+
 ### Data corruption/loss
 
 Остановить writes, сохранить текущее состояние, проверить offsite dump во временной DB и эскалировать owner decision. Не запускать destructive cleanup.

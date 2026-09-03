@@ -45,6 +45,14 @@ Production contract:
 - `/api/health/ready` выполняет реальный DB ping;
 - отсутствие DB configuration приводит к явному unavailable/503, а не fallback на filesystem.
 
+Phase 3 migration `20260903061657_add_reliability_foundation`:
+
+- creates audit/idempotency/outbox/job tables and constraints;
+- removes obsolete less-specific metric indexes;
+- removes historical periodKey defaults no longer present in Prisma schema;
+- normalizes generated index names;
+- contains no destructive row deletion or column removal.
+
 ## Local and test PostgreSQL
 
 - Docker image: PostgreSQL `18.6`;

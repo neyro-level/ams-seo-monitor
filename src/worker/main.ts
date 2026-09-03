@@ -1,8 +1,9 @@
 import type { CreateSyncRunInput } from "../application/ports/sync-repository";
+import { drainOutbox } from "./process-outbox";
 import { syncProjectToDatabase } from "./sync-project";
 
 const command = process.argv[2] ?? null;
-const projectSlug = process.argv[3] ?? null;
+const argument = process.argv[3] ?? null;
 const requestedTrigger = process.argv[4] ?? "manual";
 const allowedTriggers: CreateSyncRunInput["trigger"][] = [
   "daily",
@@ -12,9 +13,18 @@ const allowedTriggers: CreateSyncRunInput["trigger"][] = [
 ];
 
 async function main() {
-  if (command !== "project-sync" || !projectSlug) {
+  if (command === "outbox-drain") {
+    const result = await drainOutbox({ workerId: argument ?? "seo-monitor-worker" });
+    process.stdout.write(`${JSON.stringify({ event: "outbox_drain_finished", ...result })}\n`);
+    if (result.failed > 0) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  if (command !== "project-sync" || !argument) {
     throw new Error(
-      "Usage: node dist-collector/src/worker/main.js project-sync <project-slug> [daily|manual|preflight|backfill]",
+      "Usage: worker project-sync <project-slug> [trigger] | outbox-drain [worker-id]",
     );
   }
   if (!allowedTriggers.includes(requestedTrigger as CreateSyncRunInput["trigger"])) {
@@ -22,13 +32,11 @@ async function main() {
   }
 
   const result = await syncProjectToDatabase({
-    projectSlug,
+    projectSlug: argument,
     trigger: requestedTrigger as CreateSyncRunInput["trigger"],
     env: process.env,
   });
-
-  process.stdout.write(`${JSON.stringify(result)}
-`);
+  process.stdout.write(`${JSON.stringify(result)}\n`);
 
   if (result.status === "failed") {
     process.exitCode = 1;
@@ -40,8 +48,7 @@ main().catch((error) => {
     `${JSON.stringify({
       event: "worker_failed",
       message: error instanceof Error ? error.message : String(error),
-    })}
-`,
+    })}\n`,
   );
   process.exit(1);
 });

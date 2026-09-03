@@ -48,6 +48,8 @@ systemd timer
 - UI не импортирует Prisma и не рассчитывает provider semantics;
 - PostgreSQL — runtime source of truth; `config/*` используется как проверяемый seed/input;
 - worker отделён от web runtime;
+- reliability foundation атомарно связывает idempotency, audit, outbox и JobRun;
+- outbox worker uses leases, bounded retry/backoff and dead-letter;
 - `partial`, `stale` и `null` не маскируются как `success`, `current` или `0`.
 
 ## Реализованные поверхности
@@ -66,7 +68,7 @@ systemd timer
 - `/c/{clientSlug}/` — сайты проекта;
 - `/c/{clientSlug}/{siteSlug}/?period=week|month|quarter|halfYear` — отчёт сайта;
 - `/demo/` — авторизованный fixture-отчёт;
-- `/api/health/ready` — внутренняя readiness-проверка PostgreSQL + auth с тем же release SHA.
+- `/api/health/ready` — внутренняя readiness-проверка PostgreSQL + auth + outbox counts с тем же release SHA.
 
 ## Стек
 
@@ -138,6 +140,7 @@ Provider preflight и worker sync требуют разрешённого scope 
 pnpm collector:webmaster:preflight
 pnpm collector:metrica:preflight
 pnpm worker:sync:REDACTED_CLIENT_DATA
+pnpm worker:outbox:drain
 ```
 
 ## Release
@@ -171,6 +174,7 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);
 - [`docs/adr/ADR-001-adopt-application-platform-standard.md`](docs/adr/ADR-001-adopt-application-platform-standard.md);
 - [`docs/adr/ADR-002-actor-context-and-capabilities.md`](docs/adr/ADR-002-actor-context-and-capabilities.md);
+- [`docs/modules/MODULE_PLATFORM_RELIABILITY.md`](docs/modules/MODULE_PLATFORM_RELIABILITY.md);
 - [`docs/modules/MODULE_IDENTITY_ACCESS.md`](docs/modules/MODULE_IDENTITY_ACCESS.md);
 - [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md);
 - [`docs/modules/`](docs/modules/);

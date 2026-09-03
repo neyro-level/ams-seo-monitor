@@ -12,6 +12,30 @@ enum SystemRole {
   CLIENT_VIEWER
 }
 
+enum AuditActorType {
+  USER
+  SYSTEM
+}
+
+enum IdempotencyStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  DEAD_LETTER
+}
+
+enum JobRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 enum ProjectStatus {
   ACTIVE
   PLANNED
@@ -185,6 +209,10 @@ model Organization {
   members     Member[]
   invitations Invitation[]
   projects    Project[]
+  auditEvents AuditEvent[]
+  idempotencyKeys IdempotencyKey[]
+  outboxEvents OutboxEvent[]
+  jobRuns JobRun[]
 }
 
 model Member {
@@ -609,4 +637,91 @@ model ReportSnapshot {
   site             Site           @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([siteId, periodKey, generatedAt])
+}
+
+model AuditEvent {
+  id             String         @id @default(cuid())
+  organizationId String?
+  actorType      AuditActorType
+  actorId        String?
+  action         String
+  entityType     String
+  entityId       String?
+  beforeMarker   Json?
+  afterMarker    Json?
+  source         String
+  correlationId  String
+  createdAt      DateTime       @default(now())
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([correlationId])
+}
+
+model IdempotencyKey {
+  id                String             @id @default(cuid())
+  organizationScope String
+  organizationId    String?
+  scope             String
+  key               String
+  requestHash       String
+  status            IdempotencyStatus
+  response           Json?
+  errorCode         String?
+  outboxEventId     String?            @unique
+  expiresAt         DateTime
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  organization      Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  outboxEvent       OutboxEvent?       @relation(fields: [outboxEventId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([scope, organizationScope, key])
+  @@index([status, expiresAt])
+  @@index([organizationId, createdAt])
+}
+
+model OutboxEvent {
+  id             String       @id @default(cuid())
+  organizationId String?
+  topic          String
+  payload        Json
+  status         OutboxStatus @default(PENDING)
+  attempts       Int          @default(0)
+  availableAt    DateTime     @default(now())
+  lockedAt       DateTime?
+  lockedBy       String?
+  lastErrorCode  String?
+  correlationId  String
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  idempotencyKey IdempotencyKey?
+  jobRuns        JobRun[]
+
+  @@index([status, availableAt])
+  @@index([lockedAt])
+  @@index([organizationId, topic, createdAt])
+}
+
+model JobRun {
+  id             String       @id @default(cuid())
+  organizationId String?
+  outboxEventId  String
+  jobType        String
+  status         JobRunStatus
+  attempt        Int
+  workerId       String
+  startedAt      DateTime
+  finishedAt     DateTime?
+  safeErrorCode  String?
+  correlationId  String
+  createdAt      DateTime     @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  outboxEvent    OutboxEvent   @relation(fields: [outboxEventId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([outboxEventId, attempt])
+  @@index([status, startedAt])
+  @@index([organizationId, jobType, startedAt])
 }

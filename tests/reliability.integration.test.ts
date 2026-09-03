@@ -1,0 +1,138 @@
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { ReliabilityService } from "../src/application/services/reliability-service";
+import { PrismaReliabilityRepository } from "../src/infrastructure/database/repositories/prisma-reliability-repository";
+import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
+import { drainOutbox } from "../src/worker/process-outbox";
+
+const integrationEnabled = Boolean(
+  process.env.TEST_DATABASE_HOST &&
+    process.env.TEST_DATABASE_USER &&
+    process.env.TEST_DATABASE_PASSWORD &&
+    process.env.TEST_DATABASE_NAME,
+);
+const integrationDescription = integrationEnabled ? describe : describe.skip;
+const correlationId = "00000000-0000-4000-8000-000000000030";
+
+integrationDescription("reliability foundation", () => {
+  let prisma: PrismaClient;
+  let pool: Pool;
+  let organizationId: string;
+  let now = new Date("2026-09-03T00:00:00.000Z");
+  const repository = new PrismaReliabilityRepository();
+  const service = new ReliabilityService(repository, () => now);
+
+  beforeAll(async () => {
+    pool = new Pool(
+      createPgPoolConfigFromEnvironment({
+        DATABASE_HOST: process.env.TEST_DATABASE_HOST,
+        DATABASE_PORT: process.env.TEST_DATABASE_PORT,
+        DATABASE_USER: process.env.TEST_DATABASE_USER,
+        DATABASE_PASSWORD: process.env.TEST_DATABASE_PASSWORD,
+        DATABASE_NAME: process.env.TEST_DATABASE_NAME,
+        DATABASE_SSLMODE: process.env.TEST_DATABASE_SSLMODE,
+      }),
+    );
+    prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+    organizationId = (
+      await prisma.organization.findUniqueOrThrow({
+        where: { slug: "REDACTED_CLIENT_DATA" },
+        select: { id: true },
+      })
+    ).id;
+    await prisma.jobRun.deleteMany();
+    await prisma.idempotencyKey.deleteMany();
+    await prisma.auditEvent.deleteMany();
+    await prisma.outboxEvent.deleteMany();
+  });
+
+  afterAll(async () => {
+    await prisma.jobRun.deleteMany();
+    await prisma.idempotencyKey.deleteMany();
+    await prisma.auditEvent.deleteMany();
+    await prisma.outboxEvent.deleteMany();
+    await prisma.$disconnect();
+    await pool.end();
+  });
+
+  it("atomically enqueues audit, idempotency and outbox records", async () => {
+    const command = {
+      organizationId,
+      organizationScope: organizationId,
+      idempotencyScope: "project.sync.enqueue",
+      idempotencyKey: "request-001",
+      topic: "test.reliability",
+      payload: { projectSlug: "REDACTED_CLIENT_DATA", trigger: "manual" },
+      actorType: "USER" as const,
+      actorId: "platform-admin-test",
+      action: "project.sync.enqueue",
+      entityType: "Project",
+      entityId: "REDACTED_CLIENT_DATA",
+      source: "integration-test",
+      correlationId,
+    };
+
+    const first = await service.enqueue(command);
+    const duplicate = await service.enqueue({
+      ...command,
+      payload: { trigger: "manual", projectSlug: "REDACTED_CLIENT_DATA" },
+    });
+
+    expect(first.duplicate).toBe(false);
+    expect(duplicate).toEqual({ outboxEventId: first.outboxEventId, duplicate: true });
+    expect(await prisma.auditEvent.count()).toBe(1);
+    expect(await prisma.idempotencyKey.count()).toBe(1);
+    expect(await prisma.outboxEvent.count()).toBe(1);
+    await expect(
+      service.enqueue({ ...command, payload: { projectSlug: "other", trigger: "manual" } }),
+    ).rejects.toMatchObject({ code: "IDEMPOTENCY_KEY_REUSED" });
+  });
+
+  it("claims with ownership, retries with backoff and completes exactly once", async () => {
+    const firstClaim = await service.claim("worker-a", 60_000);
+    expect(firstClaim).toMatchObject({ workerId: "worker-a", attempt: 1 });
+    expect(await service.claim("worker-b", 60_000)).toBeNull();
+
+    await expect(
+      service.complete({ ...firstClaim!, workerId: "worker-b" }),
+    ).rejects.toMatchObject({ code: "OUTBOX_LEASE_LOST" });
+
+    const failure = await service.fail(firstClaim!, "TEMPORARY_FAILURE", true, 3);
+    expect(failure.status).toBe("pending");
+    expect(failure.availableAt).toBe("2026-09-03T00:00:30.000Z");
+
+    now = new Date("2026-09-03T00:00:31.000Z");
+    const secondClaim = await service.claim("worker-b", 60_000);
+    expect(secondClaim).toMatchObject({ workerId: "worker-b", attempt: 2 });
+    await service.complete(secondClaim!);
+
+    expect(await service.getHealth()).toEqual({ pending: 0, processing: 0, deadLetter: 0 });
+    expect(
+      await prisma.jobRun.findMany({ orderBy: { attempt: "asc" }, select: { status: true } }),
+    ).toEqual([{ status: "FAILED" }, { status: "SUCCESS" }]);
+  });
+
+  it("moves unknown topics to dead letter through the real outbox processor", async () => {
+    await service.enqueue({
+      organizationId: null,
+      organizationScope: "platform",
+      idempotencyScope: "outbox.unknown",
+      idempotencyKey: "request-unknown",
+      topic: "unknown.topic",
+      payload: { value: "test" },
+      actorType: "SYSTEM",
+      actorId: null,
+      action: "outbox.test.enqueue",
+      entityType: "OutboxEvent",
+      entityId: null,
+      source: "integration-test",
+      correlationId,
+    });
+
+    const result = await drainOutbox({ workerId: "integration-worker", maxEvents: 1 });
+    expect(result).toEqual({ claimed: 1, completed: 0, failed: 1 });
+    expect(await service.getHealth()).toEqual({ pending: 0, processing: 0, deadLetter: 1 });
+  });
+});

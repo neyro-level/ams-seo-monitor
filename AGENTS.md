@@ -76,6 +76,10 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - новые vertical modules получают public `index.ts`; cross-module imports внутренних файлов запрещены;
 - executable import rules принадлежат `dependency-cruiser.config.cjs`;
 - `src/platform` владеет neutral env, correlation, error и health contracts;
+- значимый deferred side effect начинается atomic enqueue: IdempotencyKey + AuditEvent + OutboxEvent;
+- external handler выполняется вне transaction;
+- outbox complete/fail требует lease owner; retries bounded, exhausted → dead-letter;
+- новый topic требует schema, handler и success/retry/permanent tests.
 
 ## Архитектурные зоны
 
@@ -90,6 +94,9 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - `prisma` — schema и immutable migrations;
 - `config` — reviewed nonsecret seed inputs;
 - `ops` — reviewed production assets;
+- `src/application/services/reliability-service.ts` — enqueue/claim/finalization policy;
+- `src/infrastructure/database/repositories/prisma-reliability-repository.ts` — reliability transaction owner;
+- `src/worker/process-outbox.ts` — bounded registered topic dispatch;
 - `scripts` — verification, admin, backup/release boundaries.
 
 ## Data и migrations
@@ -102,7 +109,7 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 
 ## Security
 
-- `PLATFORM_ADMIN` — internal role; browser mutations запрещены до audit/idempotency foundation.
+- `PLATFORM_ADMIN` — internal role; browser mutations разрешаются только как named audited commands после появления соответствующего Admin CMS resource.
 - Private reads требуют capability + tenant scope; navigation visibility не является защитой.
 - Public errors используют stable envelope и correlation ID.
 - Production web env валидируется до build; release SHA materialize-ит deploy, не browser.

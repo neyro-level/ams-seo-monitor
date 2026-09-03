@@ -1,0 +1,12 @@
+[Unit]
+Description=Run AMS SEO Monitor outbox worker every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30s
+Persistent=true
+Unit=seo-monitor-outbox.service
+
+[Install]
+WantedBy=timers.target

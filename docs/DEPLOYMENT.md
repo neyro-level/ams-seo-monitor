@@ -23,6 +23,8 @@ systemd timer
 - `ops/systemd/seo-monitor-web.service`;
 - `ops/systemd/seo-monitor-worker.service`;
 - `ops/systemd/seo-monitor-worker.timer`;
+- `ops/systemd/seo-monitor-outbox.service`;
+- `ops/systemd/seo-monitor-outbox.timer`;
 - `ops/systemd/seo-monitor-db-backup.service`;
 - `ops/systemd/seo-monitor-db-backup.timer`;
 - `ops/postgres/backup.sh`;
@@ -62,13 +64,13 @@ Secret values remain outside artifact/Git. Deploy reads env as literal values, v
 ## Health and smoke
 
 - `/api/health/live` — safe liveness, correlation ID и deployed SHA;
-- `/api/health/ready` — DB + auth readiness, correlation ID и тот же SHA; Nginx localhost-only;
+- `/api/health/ready` — DB + auth readiness, outbox counts, correlation ID и тот же SHA; Nginx localhost-only;
 - unauthenticated private route redirects to `/?login=1`;
 - analyst login works;
 - client foreign tenant route denied;
 - favicon/static assets return 200 from standalone assembly;
 - worker manual start succeeds;
-- backup timer and worker timer active;
+- backup, sync-worker and outbox timers active;
 - rollback обновляет release env на SHA previous release.
 
 ## Domain
