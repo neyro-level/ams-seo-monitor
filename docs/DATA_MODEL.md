@@ -1,5 +1,7 @@
 # DATA MODEL
 
+> Migration status: this document describes the current database. Additive tenant ownership, scopedDb and composite constraints are planned in `MASTER_PLAN.md`; no legacy field/table is removed in the first Standard 3.0 release train.
+
 ## Источники истины
 
 - `prisma/schema.prisma` — фактическая структура PostgreSQL;

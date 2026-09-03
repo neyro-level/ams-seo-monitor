@@ -2,7 +2,7 @@
 
 ## Статус
 
-Принято для поэтапного внедрения.
+Superseded as target architecture by the owner decision to adopt Core Standard 3.0. Preserved as implementation history for the v1 migration.
 
 ## Контекст
 

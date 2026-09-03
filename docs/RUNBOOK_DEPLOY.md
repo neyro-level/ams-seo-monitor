@@ -1,5 +1,7 @@
 # DEPLOY RUNBOOK
 
+> Legacy operational baseline. Do not use this procedure for a new Standard 3.0 release until Workstream 8 replaces host install/build with immutable OCI image + Docker Compose and proves rollback. Current production remains unchanged.
+
 ## Scope
 
 Manual production deploy of reviewed canonical `main`. Merge, artifact build and deploy are separate gates. Этот runbook не разрешает выполнять deploy без owner-команды.

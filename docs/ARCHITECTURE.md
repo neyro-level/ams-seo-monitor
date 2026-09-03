@@ -1,5 +1,7 @@
 # ARCHITECTURE
 
+> Migration status: sections below describe the current runtime baseline. They are not target patterns for new code where `ActorContext`, Refine, global Prisma access, direct outbox execution or host-built releases conflict with Standard 3.0. Target cutovers are in `MASTER_PLAN.md`.
+
 ## Runtime model
 
 ```text

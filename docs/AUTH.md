@@ -1,5 +1,7 @@
 # AUTH
 
+> Legacy runtime contract: Better Auth Organization Plugin and `ActorContext` remain factual `origin/main` behavior only until Workstream 2. New auth/tenant code must target AMS-owned Membership and discriminated PrincipalContext from `MASTER_PLAN.md`.
+
 ## Модель
 
 Better Auth `1.7.2` с Prisma adapter, username plugin и organization plugin — authentication boundary. Application authorization использует server-generated `ActorContext` и versioned capabilities.

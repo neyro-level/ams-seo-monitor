@@ -1,5 +1,7 @@
 # Module: Project Registry
 
+> Migration baseline. Target registry commands/queries require PrincipalContext, scopedDb, module-owned resource authorization, optimistic concurrency and composite tenant constraints from `../MASTER_PLAN.md`.
+
 ## Назначение
 
 Управляет иерархией `Organization → Project → Site`, provider mappings, profiles и готовностью конфигурации. PostgreSQL — runtime registry; `config/*` — reviewed nonsecret seed/input.

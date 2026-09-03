@@ -2,161 +2,139 @@
 
 ## Назначение
 
-Проектная карта соответствия `AMS Application Platform Core Standard` v1.0. Она переводит универсальные требования стандарта в конкретные решения AMS IMPULSE и не копирует стандарт целиком.
+Project gap register для `AMS Application Platform Core Standard 3.0` от 2026-09-03.
 
-Фактическое состояние определяют `package.json`, Prisma schema, migrations, код и tests. Roadmap хранится в `docs/MASTER_PLAN.md`.
+Это не второй roadmap. Порядок работ и branch stack находятся в `docs/MASTER_PLAN.md`. Фактическое состояние определяют `package.json`, lockfile, Prisma schema/migrations, runtime code, tests и проверяемый production.
 
-## Целевой профиль
+Статусы:
 
-- до 50 клиентских организаций;
-- несколько проектов и сайтов на организацию;
-- публичный AMS IMPULSE landing сохраняется визуально и функционально;
-- приватный кабинет развивается в code-first mini CMS;
-- один modular monolith, один Next.js runtime, одна PostgreSQL;
-- отдельный worker process, но не отдельный backend;
-- tenant isolation, audit и repeatable operations важнее скорости добавления произвольного CRUD.
+- `KEEP` — соответствует и сохраняется;
+- `MIGRATE` — работоспособный legacy contract, который должен быть заменён clean cutover;
+- `ADD` — обязательная гарантия отсутствует;
+- `VERIFY` — требуется external/production proof;
+- `N/A` — стандартная возможность не нужна продукту.
 
-## Решение по универсальному стандарту
+## Product adaptation
 
-### Обязательно для AMS IMPULSE
+AMS IMPULSE — публичный SEO landing + приватная multi-tenant отчётность + внутренняя Platform Admin surface.
 
-- Next.js App Router, strict TypeScript, Tailwind, Zod, Prisma, PostgreSQL, pnpm;
-- Better Auth через isolated adapter boundary;
-- modular monolith и публичные module entrypoints;
-- server-side authorization, tenant scope и explicit DTO;
-- business commands/queries вместо arbitrary model updates;
-- transaction + audit для значимых mutations;
-- idempotency для retryable external/inbound operations;
-- PostgreSQL-backed jobs/outbox для deferred side effects;
-- Vitest unit + real PostgreSQL integration + Playwright golden paths;
-- Dependency Cruiser import boundaries;
-- Sentry и structured logs с correlation ID и PII scrubbing;
-- automatic backup, restore proof и exact-main release;
-- code-first CMS resources, versioned roles/permissions и safe configuration.
+Применяются:
 
-### Внедряется только вместе с реальным CMS-модулем
+- modular monolith;
+- server-first Next.js;
+- PrincipalContext;
+- AMS-owned Membership/RBAC;
+- scopedDb и tenant constraints;
+- defineCommand/defineAction;
+- shadcn/TanStack/nuqs/RHF/Zod private UI patterns;
+- transactional outbox + pg-boss;
+- pino, optional compliant Sentry, health and CI;
+- immutable Docker image + Compose + host Nginx + Managed PostgreSQL.
 
-- Refine Core;
-- shadcn/ui primitives;
-- React Hook Form;
-- server pagination/filter/sort contracts;
-- resource data/auth/access providers;
-- saved views и configurable safe fields.
+Не применяются без нового product trigger:
 
-Эти зависимости не добавляются пустыми. Они входят в этап Admin CMS и используются сразу.
+- Contact/CRM pipeline/kanban/tasks;
+- billing/payment;
+- public signup;
+- external `/api/v1`, ApiClient и OpenAPI;
+- user files/object storage;
+- realtime;
+- Redis;
+- search engine;
+- RLS;
+- generic template repository.
 
-### Не относится к текущему продукту
+`SyncRun`/`SourceRun` являются project-specific import lifecycle вместо generic `ImportRun`. CUID сохраняется как approved opaque existing identifier; массовый re-key запрещён.
 
-- `Contact`, CRM pipeline, kanban и Big Data contact import;
-- payment-like flows;
-- публичная partner API;
-- user-defined production schema;
-- plugin marketplace.
+## Принципиальные расхождения
 
-Добавлять эти сущности только после отдельного product contract. SEO Monitor не должен превращаться в generic CRM.
+| Область | Current `origin/main` | Standard 3.0 | Status | Решение |
+|---|---|---|---|---|
+| Source of truth | зрелый hybrid canon, conformance v1 | canonical v3 docs roles | MIGRATE | нормализовать SECURITY/deploy canon и supersede v1 ADR |
+| Runtime | Node 24, Next 16 standalone | тот же runtime внутри OCI image | KEEP/MIGRATE | сохранить application runtime, заменить release topology |
+| TypeScript | strict app/collector/tests | strict ESM | MIGRATE | проверить ESM collector и Prisma generated output |
+| Prisma generator | `prisma-client-js`, implicit output | Prisma 7 `prisma-client`, explicit output | MIGRATE | отдельный runtime workstream |
+| PostgreSQL | Prisma 7 + PostgreSQL 18 | PostgreSQL 18 + driver adapter | KEEP | сохранить versions и migration history |
+| IDs | CUID | UUIDv7 или approved opaque ID | KEEP | CUID formally approved для existing product records |
+| Module boundaries | seven vertical modules | vertical modules + public API | KEEP | усилить server-only/global Prisma/static guards |
+| Module contracts | partial legacy module docs | full Standard 3.0 ownership/principal/command/query/tenancy contract | MIGRATE | обновлять профильный module doc вместе с его workstream |
+| Platform folders | shared DB/composition under `src/infrastructure` | canonical `src/platform/*` | MIGRATE | clean path migration без второго runtime |
+| Auth identity | Better Auth username/session | Better Auth identity/password/session/2FA | KEEP/ADD | сохранить adapter, добавить first-password + 2FA |
+| Organization tenancy | Better Auth Organization Plugin + AMS services | plugin запрещён, AMS owns tenancy | MIGRATE | удалить plugin runtime, retain DB compatibility until contract release |
+| Request context | aggregate `ActorContext` with memberships | discriminated `PrincipalContext` | MIGRATE | platform-admin/platform-analyst/tenant-user/job factories |
+| Tenant roles | global `SEO_ANALYST`, `CLIENT_VIEWER` system roles | tenant `ORG_OWNER/ORG_MEMBER/VIEWER` | MIGRATE | client access перенести в Membership; analyst остаётся explicit platform principal |
+| Resource authorization | capability + repository filters | permission + module-owned resource loader | ADD | `require<Project|Site|...>ForAction` per module |
+| scopedDb | unrestricted global client inside repositories | scoped DB context + transaction proof | ADD | platform database boundary and integration matrix |
+| Tenant columns | Project has organizationId; descendants derive through relations | every tenant-owned model explicit | ADD | additive backfill and composite constraints |
+| Composite tenant FKs | mostly single-column relations | tenant-aware FK/unique | ADD | generated + reviewed SQL migrations |
+| Nested tenant writes | present in Prisma upsert/create paths | prohibited | MIGRATE | explicit repository operations inside command transaction |
+| Raw SQL | `$queryRawUnsafe("select 1")` exists | unsafe raw SQL prohibited | MIGRATE | replace immediately and add static guard |
+| Mutations | services + generic `executeAdminCommand` transport | defineAction → defineCommand | MIGRATE | Project reference slice then rollout |
+| Transaction owner | repository methods own transactions | defineCommand owns business transaction | MIGRATE | transaction-bound repositories |
+| Concurrency | no uniform optimistic policy | explicit version/expected state | ADD | Project first, remaining mutable entities by lifecycle |
+| Audit/outbox | foundation implemented | command-owned atomic audit/outbox | KEEP/MIGRATE | reuse schema, move ownership to defineCommand |
+| Outbox payload | topic/payload/status, no schemaVersion/occurredAt | versioned bounded payload | ADD | additive fields + Zod/size guard |
+| Queue | custom direct PostgreSQL dispatcher | outbox → pg-boss → handler | MIGRATE | separate pg-boss pool/schema lifecycle |
+| Worker principal | implicit system execution | JobPrincipal with organizationId | ADD | scoped job adapter |
+| Sync/import lifecycle | SyncRun/SourceRun | ImportRun guarantees | KEEP/MIGRATE | extend domain-specific runs with tenant/correlation/statistics |
+| Private list UI | server lists + custom table/filter | TanStack Table + nuqs | MIGRATE | use reference slice; preserve server filtering |
+| Forms | RHF/Zod present | RHF UX + server canonical Zod | KEEP/MIGRATE | remove generic dispatcher, split actions/commands |
+| Refine | installed and used as resource registry | forbidden without ADR | REMOVE | no justified value; remove in Platform Admin migration |
+| Public UI | project-specific AMS IMPULSE design | product design not universal platform | KEEP | freeze composition/CTA/tokens |
+| Logs | custom JSON/sync logger | pino JSON + redaction | MIGRATE | pino in observability workstream |
+| Correlation | auth/health/audit partial | boundary-to-provider propagation | ADD | principal/command/job/provider propagation |
+| Sentry | absent | conditional on compliance | VERIFY | decide in SECURITY; no fake connected state |
+| Health | live/ready + DB/auth/outbox | heartbeat/queue/integration freshness | ADD | extend after pg-boss |
+| Unit/integration/E2E | Vitest, real PG, responsive Playwright | same + wider matrices | KEEP/ADD | add principal/scopedDb/concurrency/first-password golden paths |
+| Architecture QA | Dependency Cruiser boundaries | cruiser + static guards | ADD | unsafe raw/global Prisma/tenant registry/server-client guards |
+| CI | SourceCraft Node gate; DB/E2E operator evidence | PR checks include risk-required tests | MIGRATE | establish reproducible integration service/profile |
+| Production artifact | source archive built on target host | immutable OCI image built outside host | MIGRATE | multi-stage Dockerfile + registry digest |
+| Production processes | systemd web/oneshot workers | Compose web + worker from one image | MIGRATE | host Nginx remains, worker becomes long-running queue runtime where required |
+| Database network | documented local/private, exact live topology not canonical | private Timeweb Managed PostgreSQL | VERIFY | inspect provider/network before infra implementation |
+| DB identities | app/migrator partially separated | runtime/migration/pg-boss separation | VERIFY/ADD | confirm Timeweb permissions and compensate via ADR if limited |
+| Connection budget | not fully documented | explicit web/worker/pg-boss/reserve budget | ADD | measure before production cutover |
+| Release | exact SHA + symlink rollback | exact SHA + image digest + migration steps | MIGRATE | blue/green-compatible container rollout |
+| Backup/restore | offsite backup + restore smoke | RPO/RTO + periodic proof | KEEP/ADD | preserve tooling, define RPO/RTO and image-era runbook |
 
-### Отложено до доказанной необходимости
+## Hard blockers before new production
 
-- PostgreSQL RLS — после ActorContext/transaction contract и integration matrix;
-- Redis — только при измеренной нехватке PostgreSQL jobs/locks;
-- NestJS/отдельный backend — текущий modular monolith достаточен;
-- object storage — только при пользовательских файлах;
-- отдельный search engine — сначала PostgreSQL;
-- микросервисы, Nx/Turborepo, второй ORM/auth/backend — запрещены без ADR.
+1. Better Auth Organization Plugin removed from runtime.
+2. PrincipalContext and AMS Membership authorization active.
+3. Platform Admin protected by 2FA and first-password lifecycle.
+4. Tenant ownership/backfill/composite constraints proven on real PostgreSQL.
+5. scopedDb transaction behavior and full negative isolation matrix green.
+6. Business writes use defineCommand; generic dispatcher removed.
+7. pg-boss schema/pool/runtime migration contract proven.
+8. pino redaction and health heartbeat/queue/freshness proven.
+9. SourceCraft HEAVY runs required DB/security profile reproducibly.
+10. Immutable image/Compose/Managed PostgreSQL topology and rollback rehearsed.
 
-## Матрица соответствия
+## Deliberate decisions
 
-| Область стандарта | Текущее состояние | Gap | Решение |
-|---|---|---|---|
-| Runtime | Next.js standalone + exact `.node-version` | соответствует | сохранить |
-| TypeScript | strict app/collector/tests | соответствует | сохранить |
-| Tailwind | v4 | соответствует | токенизировать остаточный dashboard drift |
-| Zod | DTO/provider/env/error/health + Admin command schemas | соответствует Phase 5 boundaries | расширять вместе с real commands |
-| Prisma/PostgreSQL | production source of truth + additive platform/reliability migrations | соответствует Phase 3 foundation | расширять только real module schema |
-| Better Auth | session adapter → fresh ActorContext, permissions, memberships, correlation | соответствует Phase 2 | сохранить adapter boundary |
-| Tenant isolation | capability + ActorContext memberships → repository scope | соответствует application layer | расширять integration matrix |
-| Modular monolith | seven vertical modules with public root entrypoints | соответствует Phase 4–5; internals protected by executable rules | preserve boundaries |
-| Public UI | готовый AMS IMPULSE landing | переносить в generic cabinet нельзя | freeze external composition; configurable brand only later |
-| Private UI | existing dashboard + protected Refine resource registry, shadcn-style primitives, RHF/Zod forms | соответствует Phase 5 | не переносить stack в public UI |
-| Commands/queries | bounded resource queries + fixed named audited commands | соответствует Phase 5 | arbitrary Prisma CRUD запрещён |
-| DTO | `SiteReportSnapshot`, service DTO, standard error/health envelopes | соответствует Phase 2 | extend per module |
-| Audit | resource mutations and deferred enqueue are atomic with AuditEvent | соответствует Phase 3/5 | сохранить safe markers |
-| Outbox/jobs | leases, JobRun, retry/backoff, dead-letter, five-minute worker | соответствует Phase 3 foundation | add only registered handlers |
-| Idempotency | tenant-scoped key + canonical payload hash + unique constraint | соответствует Phase 3 | apply to commands/webhooks |
-| Observability | JSON sync logs + correlation/release health + outbox counts | нет Sentry и worker freshness threshold | Phase 6 |
-| Unit tests | 77 Vitest tests, isolated from DB suites | соответствует Phase 5, включая build-safe lazy adapter | expand with observable contracts |
-| Integration tests | 25 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 5, включая Admin rollback/ownership/history | expand per module |
-| E2E | 13 Playwright setup/public/auth/Admin checks on 375/768/1280/1440 | соответствует Phase 5 | preserve golden paths |
-| Architecture QA | Dependency Cruiser: 149 modules / 325 dependencies | соответствует Phase 5 module boundaries | extend rules with each new module |
-| Local development | Docker PostgreSQL 18.6, separate dev/test DB, fail-closed guards, loopback-only E2E admin seed | соответствует Phase 5 | сохранить |
-| Release | exact-main immutable deploy + SHA health/env rollback contract | соответствует Phase 2 | verify on next production release |
-| Backup | local + mandatory offsite + restore smoke | соответствует | сохранить |
-| Documentation | core/module/ops canon + conformance + ADR | соответствует | синхронизировать по фазам |
+### SEO_ANALYST
 
-## Целевые бизнес-модули AMS IMPULSE
+`SEO_ANALYST` is not converted into a fake tenant member and does not become Platform Admin. It becomes a project-specific `platform-analyst` principal with explicit global read/sync permissions. Every cross-tenant query remains intentional and test-covered.
 
-### Identity and Access
+### Existing IDs
 
-Users, sessions, organizations, memberships, roles, permissions, invitations и ActorContext. Better Auth остаётся adapter, а не domain API.
+Existing CUID values remain. They are opaque and not authorization. New mass UUID migration would add risk without product value. Any future ID policy change requires ADR and compatibility plan.
 
-### Project Registry
+### Profiles
 
-Organizations, projects, sites, provider connections, thresholds, clusters, goals и tracked query sets. Это основа mini CMS.
+Threshold/cluster profiles may remain platform-owned only while Platform Admin exclusively manages them and cross-tenant reuse is intentional. If tenant users receive management rights, profiles must gain organization ownership before that feature.
 
-### Reporting
+### RLS
 
-`SiteReportSnapshot`, report reads, director dashboard и analyst detail DTO. Provider/raw data не попадает в client DTO.
+Not part of this rewrite. scopedDb + resource authorization + composite tenant constraints are implemented first. RLS remains an ADR-triggered defensive layer.
 
-### Ranking Analytics
+### Sentry
 
-Tracked queries, owner baseline, Topvisor captures и ranking calculations.
+Sentry is not automatically enabled. SECURITY must record compliance/data-location decision. `connected` requires real project/DSN, controlled event, flush and external confirmation.
 
-### Data Ingestion
+### Database contract removal
 
-SyncRun/SourceRun, provider adapters, normalization, persistence и report compilation.
+Legacy Better Auth/plugin and denormalized compatibility fields are not dropped in the first common release. Removal is a later contract release after stabilization.
 
-### Platform Operations
+## Proof source
 
-AuditEvent, IdempotencyKey, OutboxEvent, JobRun, RetentionRun, health, Sentry, structured logs и release markers.
-
-### Admin CMS
-
-Protected internal UI for platform operators. Управляет только разрешёнными project/config/access operations. Не позволяет менять Prisma schema или выполнять arbitrary updates.
-
-## Roadmap principles
-
-1. Сначала executable guardrails и repeatable test environment.
-2. Затем ActorContext, errors, audit/outbox schema.
-3. После этого vertical module migration без одновременного UI redesign.
-4. Только затем Refine/shadcn/RHF Admin CMS на стабильных commands/queries.
-5. Provider sync и report semantics сохраняются при migration.
-6. Публичный landing и legal UI не переводятся на Refine и не меняются визуально.
-7. Каждый schema/auth/module этап — отдельная branch/PR и HEAVY Gate.
-8. Template repository извлекается только после стабилизации минимум двух реальных module implementations; в текущем scope template не создаётся.
-
-## Scale assumptions
-
-50 организаций не требуют микросервисов, Redis или отдельного search engine. Требуются:
-
-- composite tenant indexes;
-- server pagination/filter allowlists;
-- bounded queries;
-- background sync/job concurrency limits;
-- per-tenant authorization tests;
-- worker freshness/failed-job visibility;
-- measured query plans перед оптимизацией.
-
-## External UI preservation
-
-Публичная поверхность `/`, lead/login dialogs, legal routes, visual tokens и composition являются проектным asset AMS IMPULSE. В platformization разрешено:
-
-- вынести brand/contact/legal values в typed config;
-- улучшить accessibility, loading и error behavior;
-- добавить regression E2E/screenshots.
-
-Запрещено без отдельного UI scope:
-
-- переносить landing на Refine/shadcn;
-- менять композицию, типографику, CTA или визуальный язык;
-- смешивать public `ch-*` tokens с private `crm-*` tokens;
-- превращать проектный landing в универсальную CMS-тему.
+Completion evidence belongs in PR checks, migration logs, tests and release proof—not in optimistic status labels here. `docs/MASTER_PLAN.md` is updated only when workstream scope or ordering changes.

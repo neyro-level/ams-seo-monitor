@@ -1,5 +1,7 @@
 # DEPLOYMENT
 
+> Legacy production baseline: the current release is standalone/systemd and remains operational until Workstream 8. Standard 3.0 target is an immutable OCI image + Docker Compose web/worker + host Nginx + private Managed PostgreSQL; production cutover requires a separate owner command.
+
 ## Runtime
 
 ```text
@@ -79,4 +81,4 @@ Canonical public domain: `https://impulse.ams24.ru`. Legacy `https://seo-monitor
 
 ## Gate
 
-Runtime, migrations, backup, Nginx/systemd and dependency changes require HEAVY review. SourceCraft exact-head gate выполняет `verify:fast` и collector/build proof; operator отдельно подтверждает real PostgreSQL integration и Playwright до merge. Merge does not deploy. Production deploy is a separate owner command and follows `docs/ops/DEPLOY_RUNBOOK.md`.
+Runtime, migrations, backup, Nginx/systemd/Compose and dependency changes require HEAVY review. SourceCraft exact-head gate and operator evidence remain required. Merge does not deploy. Production follows `docs/RUNBOOK_DEPLOY.md` only after its Docker/Compose rewrite is reviewed.

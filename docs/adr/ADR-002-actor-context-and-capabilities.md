@@ -2,7 +2,7 @@
 
 ## Статус
 
-Принято для Phase 2.
+Implemented history for Phase 2; superseded as target authorization model by Standard 3.0 PrincipalContext migration.
 
 ## Контекст
 
