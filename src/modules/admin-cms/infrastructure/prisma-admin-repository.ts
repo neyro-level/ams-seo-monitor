@@ -61,7 +61,11 @@ function sortRows(rows: AdminResourceRow[], query: AdminListQuery) {
 }
 
 export class PrismaAdminRepository implements AdminRepository {
-  constructor(private readonly prisma: PrismaClient = getPrismaClient()) {}
+  constructor(private readonly injectedPrisma?: PrismaClient) {}
+
+  private get prisma() {
+    return this.injectedPrisma ?? getPrismaClient();
+  }
 
   private async auditedMutation(
     audit: AuditContext,

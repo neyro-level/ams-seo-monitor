@@ -84,7 +84,7 @@
 | Outbox/jobs | leases, JobRun, retry/backoff, dead-letter, five-minute worker | соответствует Phase 3 foundation | add only registered handlers |
 | Idempotency | tenant-scoped key + canonical payload hash + unique constraint | соответствует Phase 3 | apply to commands/webhooks |
 | Observability | JSON sync logs + correlation/release health + outbox counts | нет Sentry и worker freshness threshold | Phase 6 |
-| Unit tests | 76 Vitest tests, isolated from DB suites | соответствует Phase 5 | expand with observable contracts |
+| Unit tests | 77 Vitest tests, isolated from DB suites | соответствует Phase 5, включая build-safe lazy adapter | expand with observable contracts |
 | Integration tests | 25 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 5, включая Admin rollback/ownership/history | expand per module |
 | E2E | 13 Playwright setup/public/auth/Admin checks on 375/768/1280/1440 | соответствует Phase 5 | preserve golden paths |
 | Architecture QA | Dependency Cruiser: 149 modules / 325 dependencies | соответствует Phase 5 module boundaries | extend rules with each new module |

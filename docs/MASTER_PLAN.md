@@ -171,7 +171,7 @@ Public AMS IMPULSE landing не импортирует Refine и визуаль�
 Phase proof:
 
 - typecheck/lint/build and collector build pass;
-- 76 unit tests and 25 real PostgreSQL integration tests pass;
+- 77 unit tests and 25 real PostgreSQL integration tests pass;
 - Admin integration proves atomic audit, rollback, immutable ownership, membership revocation and query-history preservation;
 - Dependency Cruiser: 149 modules / 325 dependencies, zero violations;
 - 13 Playwright setup/public/auth/Admin checks pass on 375/768/1280/1440.
