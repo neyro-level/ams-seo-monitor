@@ -21,11 +21,11 @@ AMS IMPULSE объединяет две связанные поверхност�
 ### PLATFORM_ADMIN
 
 - внутренний оператор АМС, не клиентская роль;
-- в будущей Admin CMS будет управлять organizations, memberships, projects, sites и безопасными SEO-настройками;
+- управляет organizations, memberships, projects, sites и безопасными SEO-настройками в `/admin/*`;
 - не получает secret values и не выполняет provider mutations;
-- будущая browser mutation обязана пройти server permission, transaction и AuditEvent.
+- каждая browser mutation проходит fresh server permission, named command, transaction и AuditEvent.
 
-Role/capability foundation реализован. Browser Admin CMS остаётся Phase 5 после audit/idempotency command foundation.
+Role/capability и protected Admin CMS реализованы. Public signup и client self-service admin остаются вне scope.
 
 ### SEO_ANALYST
 
@@ -98,10 +98,10 @@ CMS управляет только разрешёнными полями и к�
 ### Onboarding проекта
 
 1. Оператор подтверждает URL, timezone и provider access.
-2. Создаёт/обновляет checked-in nonsecret seed config.
-3. Проверяет diff и config contracts.
-4. Reviewed seed обновляет PostgreSQL без хранения secrets в Git.
-5. Membership и production credentials настраиваются отдельными operator steps.
+2. Через protected Admin CMS создаёт organization, membership, project, site и nonsecret provider mapping.
+3. Настраивает goals, tracked query set, thresholds и clusters через named audited commands.
+4. Reviewed checked-in config остаётся seed/input для repeatable bootstrap, но не runtime database.
+5. Production credentials настраиваются отдельным operator step вне browser и Git.
 
 ## Директорский отчёт
 

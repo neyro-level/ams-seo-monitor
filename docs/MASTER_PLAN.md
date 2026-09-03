@@ -151,28 +151,30 @@ Phase proof:
 - 8 Playwright checks pass on 375/768/1280/1440;
 - public AMS IMPULSE surface and private login boundary remain unchanged.
 
-## Phase 5 — Admin CMS
+## Phase 5 — Admin CMS — completed
 
-Цель: internal code-first mini CMS для 50 клиентов.
+Internal code-first mini CMS реализована для PLATFORM_ADMIN:
 
-Stack добавляется только здесь и используется сразу:
+- Refine Core resource registry;
+- local shadcn-style source components;
+- React Hook Form + Zod command forms;
+- protected `/admin/*` route group;
+- organizations, memberships, projects, sites, provider connections, goals, tracked query sets, thresholds/clusters, sync runs and job status;
+- allowlisted search/sort and bounded server pagination;
+- fixed named commands with fresh server authorization;
+- resource mutation + safe AuditEvent in one Prisma transaction;
+- nonsecret provider settings validation and lifecycle-preserving tracked query replacement;
+- idempotent project sync enqueue through existing reliability foundation.
 
-- Refine Core;
-- shadcn/ui source components;
-- React Hook Form + Zod;
-- protected admin route group.
+Public AMS IMPULSE landing не импортирует Refine и визуально не меняется.
 
-Первый resource set:
+Phase proof:
 
-- organizations/memberships;
-- projects/sites;
-- provider connections без secret values;
-- goal definitions и conversion inclusion;
-- tracked query sets;
-- thresholds/clusters;
-- sync runs/job status.
-
-Каждая mutation — named command, server authorization, tenant scope, transaction и AuditEvent. Arbitrary Prisma CRUD запрещён. Public landing не использует Refine.
+- typecheck/lint/build and collector build pass;
+- 76 unit tests and 25 real PostgreSQL integration tests pass;
+- Admin integration proves atomic audit, rollback, immutable ownership, membership revocation and query-history preservation;
+- Dependency Cruiser: 149 modules / 325 dependencies, zero violations;
+- 13 Playwright setup/public/auth/Admin checks pass on 375/768/1280/1440.
 
 ## Phase 6 — Observability and security hardening
 

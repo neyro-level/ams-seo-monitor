@@ -2,7 +2,7 @@
 
 import { LockKeyhole, LogIn, UserRound, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { authClient } from "../infrastructure/auth-client";
 
@@ -15,6 +15,7 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const loginSucceededRef = useRef(false);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
         return;
       }
 
+      loginSucceededRef.current = true;
       const dialog = document.getElementById("impulse-login-dialog") as HTMLDialogElement | null;
       dialog?.close();
       router.replace("/dashboard/");
@@ -86,9 +88,10 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
         }}
         onClose={() => {
           setErrorMessage(null);
-          if (window.location.search.includes("login=")) {
+          if (!loginSucceededRef.current && window.location.search.includes("login=")) {
             window.history.replaceState(null, "", "/");
           }
+          loginSucceededRef.current = false;
         }}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeDialog();

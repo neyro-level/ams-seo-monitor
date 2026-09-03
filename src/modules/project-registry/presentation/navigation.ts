@@ -61,6 +61,15 @@ export async function buildNavigation(
           label: rootLabel,
           active: currentPath === rootHref,
         },
+        ...(hasPermission(user, "platform:manage")
+          ? [
+              {
+                href: "/admin/organizations/",
+                label: "Администрирование",
+                active: currentPath.startsWith("/admin/"),
+              },
+            ]
+          : []),
       ],
     },
     {

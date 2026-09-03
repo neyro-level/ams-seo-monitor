@@ -16,7 +16,7 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm start",
+    command: "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/seed-e2e-admin.ts --confirm-local-e2e && node --env-file=.env.local .next/standalone/server.js",
     url: `${baseURL}/api/health/live`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
@@ -24,24 +24,38 @@ export default defineConfig({
       HOSTNAME: "127.0.0.1",
       PORT: "3100",
       NODE_ENV: "production",
+      BETTER_AUTH_SECRET: "e2e-only-secret-at-least-thirty-two-characters",
+      BETTER_AUTH_URL: baseURL,
     },
   },
   projects: [
     {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
       name: "mobile-375",
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 } },
+      dependencies: ["setup"],
+      testIgnore: /auth\.setup\.ts/,
     },
     {
       name: "tablet-768",
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } },
+      dependencies: ["setup"],
+      testIgnore: /auth\.setup\.ts/,
     },
     {
       name: "desktop-1280",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+      dependencies: ["setup"],
+      testIgnore: /auth\.setup\.ts/,
     },
     {
       name: "desktop-1440",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+      dependencies: ["setup"],
+      testIgnore: /auth\.setup\.ts/,
     },
   ],
 });
