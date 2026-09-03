@@ -37,7 +37,7 @@ repositoryTestDescription("Prisma repositories", () => {
         slug: "REDACTED_CLIENT_DATA",
         project: { slug: "REDACTED_CLIENT_DATA" },
       },
-      select: { id: true },
+      select: { id: true, organizationId: true },
     });
 
     await prisma.reportSnapshot.deleteMany({
@@ -96,6 +96,7 @@ repositoryTestDescription("Prisma repositories", () => {
     await prisma.reportSnapshot.create({
       data: {
         siteId: site.id,
+        organizationId: site.organizationId,
         periodKey: ReportPeriodKey.MONTH,
         schemaVersion: 1,
         generatedAt: new Date("2026-08-30T00:00:00+03:00"),

@@ -124,6 +124,31 @@ function toDateTime(value: string) {
 }
 
 export class PrismaSyncRepository implements SyncRepository {
+  private readonly siteOrganizationIds = new Map<string, string>();
+
+  private async getOrganizationIdForSite(siteId: string): Promise<string> {
+    const cached = this.siteOrganizationIds.get(siteId);
+    if (cached) return cached;
+    const site = await getPrismaClient().site.findUniqueOrThrow({
+      where: { id: siteId },
+      select: { project: { select: { organizationId: true } } },
+    });
+    const organizationId = site.project.organizationId;
+    this.siteOrganizationIds.set(siteId, organizationId);
+    return organizationId;
+  }
+
+  private async getOrganizationIdForTrackedQuery(trackedQueryId: string): Promise<string> {
+    const query = await getPrismaClient().trackedQuery.findUniqueOrThrow({
+      where: { id: trackedQueryId },
+      select: {
+        trackedQuerySet: {
+          select: { site: { select: { project: { select: { organizationId: true } } } } },
+        },
+      },
+    });
+    return query.trackedQuerySet.site.project.organizationId;
+  }
   async tryAcquireFullSyncLock(scope: string): Promise<SyncLockHandle | null> {
     const client = await getPrismaPool().connect();
     try {
@@ -162,6 +187,7 @@ export class PrismaSyncRepository implements SyncRepository {
   async createSyncRun(input: CreateSyncRunInput): Promise<StoredRunRecord> {
     const syncRun = await getPrismaClient().syncRun.create({
       data: {
+        organizationId: input.organizationId,
         trigger: PRISMA_TRIGGER_BY_APP_TRIGGER[input.trigger],
         status: SyncRunStatus.RUNNING,
         startedAt: toDateTime(input.startedAt),
@@ -173,8 +199,18 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async createSourceRun(input: CreateSourceRunInput): Promise<StoredSourceRunRecord> {
-    const sourceRun = await getPrismaClient().sourceRun.create({
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
+    const prisma = getPrismaClient();
+    const syncRun = await prisma.syncRun.findUniqueOrThrow({
+      where: { id: input.syncRunId },
+      select: { organizationId: true },
+    });
+    if (syncRun.organizationId && syncRun.organizationId !== organizationId) {
+      throw new Error("SYNC_RUN_CROSS_TENANT_SOURCE");
+    }
+    const sourceRun = await prisma.sourceRun.create({
       data: {
+        organizationId,
         syncRunId: input.syncRunId,
         siteId: input.siteId,
         provider: input.provider,
@@ -182,6 +218,10 @@ export class PrismaSyncRepository implements SyncRepository {
         startedAt: toDateTime(input.startedAt),
       },
       select: { id: true },
+    });
+    await prisma.syncRun.update({
+      where: { id: input.syncRunId },
+      data: { organizationId },
     });
 
     return { sourceRunId: sourceRun.id };
@@ -214,8 +254,10 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeReportSnapshot(input: StoreReportSnapshotInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     await getPrismaClient().reportSnapshot.create({
       data: {
+        organizationId,
         siteId: input.siteId,
         periodKey: PRISMA_REPORT_PERIOD_BY_APP_PERIOD[input.periodKey],
         schemaVersion: input.snapshot.schemaVersion,
@@ -227,6 +269,7 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeWebmasterDailyMetrics(input: StoreWebmasterDailyMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     for (const row of input.rows) {
       await getPrismaClient().webmasterDailyMetric.upsert({
         where: {
@@ -240,6 +283,7 @@ export class PrismaSyncRepository implements SyncRepository {
           clicks: row.clicks,
           ctr: row.ctr?.toString() ?? null,
           averagePosition: row.averagePosition?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
         create: {
@@ -249,6 +293,7 @@ export class PrismaSyncRepository implements SyncRepository {
           clicks: row.clicks,
           ctr: row.ctr?.toString() ?? null,
           averagePosition: row.averagePosition?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
       });
@@ -256,6 +301,7 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeWebmasterQueryMetrics(input: StoreWebmasterQueryMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     for (const row of input.rows) {
       await getPrismaClient().webmasterQueryDailyMetric.upsert({
         where: {
@@ -276,6 +322,7 @@ export class PrismaSyncRepository implements SyncRepository {
           ctr: row.ctr?.toString() ?? null,
           averagePosition: row.averagePosition?.toString() ?? null,
           averageClickPosition: row.averageClickPosition?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
         create: {
@@ -292,6 +339,7 @@ export class PrismaSyncRepository implements SyncRepository {
           ctr: row.ctr?.toString() ?? null,
           averagePosition: row.averagePosition?.toString() ?? null,
           averageClickPosition: row.averageClickPosition?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
       });
@@ -299,6 +347,7 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeMetrikaDailyMetrics(input: StoreMetrikaDailyMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     for (const row of input.rows) {
       await getPrismaClient().metrikaDailyMetric.upsert({
         where: {
@@ -319,6 +368,7 @@ export class PrismaSyncRepository implements SyncRepository {
           uniqueTargetUsers: row.uniqueTargetUsers,
           allVisits: row.allVisits,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
         create: {
@@ -335,6 +385,7 @@ export class PrismaSyncRepository implements SyncRepository {
           uniqueTargetUsers: row.uniqueTargetUsers,
           allVisits: row.allVisits,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
       });
@@ -342,6 +393,7 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeLandingPageMetrics(input: StoreLandingPageMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     for (const row of input.rows) {
       await getPrismaClient().landingPageDailyMetric.upsert({
         where: {
@@ -362,6 +414,7 @@ export class PrismaSyncRepository implements SyncRepository {
           goalReaches: row.goalReaches,
           targetVisits: row.targetVisits,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
         create: {
@@ -378,6 +431,7 @@ export class PrismaSyncRepository implements SyncRepository {
           goalReaches: row.goalReaches,
           targetVisits: row.targetVisits,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
       });
@@ -385,6 +439,7 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeMetrikaDeviceMetrics(input: StoreMetrikaDeviceMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     for (const row of input.rows) {
       await getPrismaClient().metrikaDeviceDailyMetric.upsert({
         where: {
@@ -400,6 +455,7 @@ export class PrismaSyncRepository implements SyncRepository {
           users: row.users,
           goalReaches: row.goalReaches,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
         create: {
@@ -411,6 +467,7 @@ export class PrismaSyncRepository implements SyncRepository {
           users: row.users,
           goalReaches: row.goalReaches,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
       });
@@ -418,6 +475,7 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeMetrikaGoalMetrics(input: StoreMetrikaGoalMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     for (const row of input.rows) {
       await getPrismaClient().metrikaGoalDailyMetric.upsert({
         where: {
@@ -436,6 +494,7 @@ export class PrismaSyncRepository implements SyncRepository {
           visits: row.visits,
           users: row.users,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
         create: {
@@ -450,6 +509,7 @@ export class PrismaSyncRepository implements SyncRepository {
           visits: row.visits,
           users: row.users,
           conversionRate: row.conversionRate?.toString() ?? null,
+          organizationId,
           sourceRunId: input.sourceRunId,
         },
       });
@@ -457,7 +517,12 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeRankingCaptures(input: StoreRankingCapturesInput): Promise<void> {
-    for (const row of input.rows) {
+    const organizationIds = await Promise.all(
+      input.rows.map((row) => this.getOrganizationIdForTrackedQuery(row.trackedQueryId)),
+    );
+    for (const [index, row] of input.rows.entries()) {
+      const organizationId = organizationIds[index];
+      if (!organizationId) throw new Error("TRACKED_QUERY_ORGANIZATION_MISSING");
       await getPrismaClient().rankingCapture.upsert({
         where: {
           trackedQueryId_capturedAt_source: {
@@ -467,10 +532,12 @@ export class PrismaSyncRepository implements SyncRepository {
           },
         },
         update: {
+          organizationId,
           position: row.position,
           sourceRunId: input.sourceRunId,
         },
         create: {
+          organizationId,
           trackedQueryId: row.trackedQueryId,
           capturedAt: toDateTime(row.capturedAt),
           position: row.position,
@@ -482,8 +549,10 @@ export class PrismaSyncRepository implements SyncRepository {
   }
 
   async storeTechnicalSnapshots(input: StoreTechnicalSnapshotsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
     await getPrismaClient().technicalSnapshot.createMany({
       data: input.rows.map((row) => ({
+        organizationId,
         siteId: input.siteId,
         sourceRunId: input.sourceRunId,
         capturedAt: toDateTime(row.capturedAt),

@@ -198,6 +198,7 @@ async function main() {
           url: site.siteUrl,
           timezone: site.timezone,
           enabled: site.enabled,
+          organizationId: organization.id,
         },
         create: {
           projectId: project.id,
@@ -206,6 +207,7 @@ async function main() {
           url: site.siteUrl,
           timezone: site.timezone,
           enabled: site.enabled,
+          organizationId: organization.id,
         },
       });
 
@@ -244,6 +246,7 @@ async function main() {
             externalId: row.externalId,
             enabled: row.enabled,
             settingsJson: row.settingsJson,
+            organizationId: organization.id,
           },
           create: {
             siteId: siteRecord.id,
@@ -251,6 +254,7 @@ async function main() {
             externalId: row.externalId,
             enabled: row.enabled,
             settingsJson: row.settingsJson,
+            organizationId: organization.id,
           },
         });
       }
@@ -278,6 +282,7 @@ async function main() {
             category: goalCategoryToEnum(goal.category),
             direction: goalDirectionToEnum(goal.direction),
             includeInSeoConversion: goal.includeInSeoConversion,
+            organizationId: organization.id,
           },
           create: {
             projectId: project.id,
@@ -286,6 +291,7 @@ async function main() {
             category: goalCategoryToEnum(goal.category),
             direction: goalDirectionToEnum(goal.direction),
             includeInSeoConversion: goal.includeInSeoConversion,
+            organizationId: organization.id,
           },
         });
 
@@ -302,6 +308,7 @@ async function main() {
             data: {
               goalDefinitionId: goalRecord.id,
               siteId,
+              organizationId: organization.id,
             },
           });
         }
@@ -324,12 +331,14 @@ async function main() {
           source: RankingSource.OWNER_PROVIDED,
           baselineLabel: trackedQuerySet.baselineLabel,
           expectedCount: trackedQuerySet.expectedCount,
+          organizationId: organization.id,
         },
         create: {
           siteId,
           source: RankingSource.OWNER_PROVIDED,
           baselineLabel: trackedQuerySet.baselineLabel,
           expectedCount: trackedQuerySet.expectedCount,
+          organizationId: organization.id,
         },
       });
 
@@ -355,6 +364,7 @@ async function main() {
             enabled: true,
             baselineCurrentPosition: query.position.current,
             baselinePreviousPosition: query.position.baseline,
+            organizationId: organization.id,
           },
           create: {
             trackedQuerySetId: trackedSetRecord.id,
@@ -363,6 +373,7 @@ async function main() {
             enabled: true,
             baselineCurrentPosition: query.position.current,
             baselinePreviousPosition: query.position.baseline,
+            organizationId: organization.id,
           },
         });
       }

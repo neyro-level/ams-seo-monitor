@@ -4,7 +4,14 @@ import { Pool } from "pg";
 import { createPgPoolConfigFromEnvironment } from "./pool-config.ts";
 import type { DatabaseEnvironment } from "../../config/server-environment.ts";
 
-export function createPrismaContext(environment: DatabaseEnvironment) {
+export interface PrismaContext {
+  adapter: PrismaPg;
+  pool: Pool;
+  prisma: PrismaClient;
+  close(): Promise<void>;
+}
+
+export function createPrismaContext(environment: DatabaseEnvironment): PrismaContext {
   const pool = new Pool(createPgPoolConfigFromEnvironment(environment));
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter });

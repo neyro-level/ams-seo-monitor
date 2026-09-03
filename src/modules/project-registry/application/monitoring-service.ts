@@ -19,6 +19,8 @@ import type {
 } from "./ports/monitoring-repository.ts";
 
 export interface MonitoringProjectContext {
+  projectId: string;
+  organizationId: string;
   client: ClientRegistry;
   clusterProfile: ClusterProfile;
   goalProfile: GoalProfile;
@@ -210,6 +212,8 @@ export class MonitoringService {
     }
 
     return {
+      projectId: project.projectId,
+      organizationId: project.organizationId,
       client: buildClientRegistry(project),
       clusterProfile: buildClusterProfile(project),
       goalProfile: buildGoalProfile(project),

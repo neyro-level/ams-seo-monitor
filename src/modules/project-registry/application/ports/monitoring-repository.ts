@@ -63,6 +63,8 @@ export interface MonitoringThresholdRecord {
 }
 
 export interface MonitoringProjectRecord {
+  projectId: string;
+  organizationId: string;
   projectSlug: string;
   name: string;
   enabled: boolean;
