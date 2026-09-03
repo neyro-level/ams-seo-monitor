@@ -8,11 +8,11 @@
 
 - adapters: `collector/sources/*`;
 - live composition: `collector/orchestration/live-collectors.ts`;
-- period/query analytics: `src/domain/analytics/*`;
-- report compiler: `src/domain/reports/report-compiler.ts`;
-- worker entry: `src/worker/*`;
-- orchestration: `src/application/services/sync-service.ts`;
-- persistence: `src/infrastructure/database/repositories/prisma-sync-repository.ts`;
+- period/query analytics: `src/modules/reporting/domain/periods.ts`, `src/modules/ranking-analytics/domain/webmaster-queries.ts`;
+- report compiler: `src/modules/reporting/domain/report-compiler.ts`;
+- worker entry: `src/worker/main.ts`;
+- orchestration API: `src/modules/data-ingestion/index.ts`, `src/modules/data-ingestion/worker.ts`;
+- persistence adapters: `src/modules/data-ingestion/server.ts`;
 - contracts: `src/shared/schemas/*`.
 
 ## Runtime

@@ -1,5 +1,5 @@
 import { toNextJsHandler } from "better-auth/next-js";
-import { auth } from "@/infrastructure/auth/auth";
+import { auth } from "@/modules/identity-access/server";
 import { createCorrelationId } from "@/platform/http/correlation";
 import { createPublicErrorResponse } from "@/platform/http/error-envelope";
 

@@ -130,9 +130,9 @@ Proof:
 
 `RetentionRun` intentionally remains absent until Phase 7 defines a real retention policy.
 
-## Phase 4 — Vertical module boundaries
+## Phase 4 — Vertical module boundaries — completed
 
-Мигрировать по одному домену, каждый отдельным clean-cutover PR:
+Clean cutover завершён для шести доменов:
 
 1. Identity and Access;
 2. Project Registry;
@@ -141,7 +141,15 @@ Proof:
 5. Data Ingestion;
 6. Platform Operations.
 
-Каждый module получает `domain/application/infrastructure/presentation/index.ts`. Другие modules импортируют только public entrypoint. После переноса старый global path удаляется. Dependency Cruiser rules ужесточаются после каждого cutover.
+Каждый domain владеет внутренними `domain/application/infrastructure/presentation` слоями по фактической потребности и публикует root entrypoints. Все callers переведены, старые global implementation paths удалены. Dependency Cruiser запрещает cross-module imports внутренних слоёв.
+
+Phase proof:
+
+- typecheck/lint/build and collector build pass;
+- 76 unit tests and 21 real PostgreSQL integration tests pass;
+- Dependency Cruiser: 129 modules / 275 dependencies, zero violations;
+- 8 Playwright checks pass on 375/768/1280/1440;
+- public AMS IMPULSE surface and private login boundary remain unchanged.
 
 ## Phase 5 — Admin CMS
 

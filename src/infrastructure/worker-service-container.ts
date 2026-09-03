@@ -1,14 +1,20 @@
-import { MonitoringService } from "../application/services/monitoring-service";
-import { ProjectService } from "../application/services/project-service";
-import { ReportService } from "../application/services/report-service";
-import { ReliabilityService } from "../application/services/reliability-service";
-import { SyncService } from "../application/services/sync-service";
-import { PrismaMonitoringRepository } from "./database/repositories/prisma-monitoring-repository";
-import { PrismaProjectRepository } from "./database/repositories/prisma-project-repository";
-import { PrismaReportRepository } from "./database/repositories/prisma-report-repository";
-import { PrismaReliabilityRepository } from "./database/repositories/prisma-reliability-repository";
-import { PrismaSyncRepository } from "./database/repositories/prisma-sync-repository";
-import { JsonLineSyncLogger } from "./logging/json-line-sync-logger";
+import { SyncService } from "../modules/data-ingestion";
+import {
+  JsonLineSyncLogger,
+  PrismaSyncRepository,
+} from "../modules/data-ingestion/server";
+import { ReliabilityService } from "../modules/platform-operations";
+import { PrismaReliabilityRepository } from "../modules/platform-operations/server";
+import {
+  MonitoringService,
+  ProjectService,
+} from "../modules/project-registry";
+import {
+  PrismaMonitoringRepository,
+  PrismaProjectRepository,
+} from "../modules/project-registry/server";
+import { ReportService } from "../modules/reporting";
+import { PrismaReportRepository } from "../modules/reporting/server";
 
 const projectRepository = new PrismaProjectRepository();
 const monitoringRepository = new PrismaMonitoringRepository();

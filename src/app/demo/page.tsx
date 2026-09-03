@@ -2,9 +2,9 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { AppShell } from "../../components/shell/AppShell";
-import { SiteReportView } from "../../modules/dashboards/SiteReportView";
-import { getDemoSnapshot } from "../../modules/report-data/demo-data";
-import { getCurrentActorContext } from "../../infrastructure/auth/session";
+import { SiteReportView } from "../../modules/reporting/presentation";
+import { getDemoSnapshot } from "../../modules/reporting/presentation";
+import { getCurrentActorContext } from "../../modules/identity-access/server";
 import { siteRegistrySchema } from "../../shared/schemas/registry";
 
 const demoSite = siteRegistrySchema.parse({

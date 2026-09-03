@@ -3,7 +3,7 @@ import {
   getApprovedRoutes,
   getGoalProfileForClient,
   getRegistryBundle,
-} from "../src/modules/client-registry/registry";
+} from "../src/modules/project-registry/server";
 
 describe("registry bundle", () => {
   it("loads clients, clusters and thresholds", () => {

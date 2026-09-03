@@ -1,7 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
-import { buildNavigation } from "../../modules/access/navigation";
-import type { ActorContext } from "../../application/ports/actor-context";
+import { buildNavigation } from "../../modules/project-registry/presentation";
+import type { ActorContext } from "../../modules/identity-access/index";
 import { MobileDrawer } from "./MobileDrawer";
 import { ShellNav } from "./ShellNav";
 

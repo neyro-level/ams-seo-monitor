@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { ReportService } from "../src/application/services/report-service";
+import { ReportService } from "../src/modules/reporting/index";
 import type {
   ProjectAccessScope,
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
-} from "../src/application/ports/project-repository";
+} from "../src/modules/project-registry/index";
 import type {
   ReportRepository,
   StoredReportSnapshotRecord,
-} from "../src/application/ports/report-repository";
+} from "../src/modules/reporting/index";
 import { createActorContext } from "./helpers/actor-context";
 import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
 

@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
-import { buildNavigation } from "../src/modules/access/navigation";
-import { getActorContextByUserId } from "../src/infrastructure/auth/authorization";
-import type { ActorContext } from "../src/application/ports/actor-context";
+import { buildNavigation } from "../src/modules/project-registry/presentation";
+import { getActorContextByUserId } from "../src/modules/identity-access/server";
+import type { ActorContext } from "../src/modules/identity-access/index";
 import { createActorContext } from "./helpers/actor-context";
 
 const navigationTestEnabled = Boolean(

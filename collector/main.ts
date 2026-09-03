@@ -1,4 +1,4 @@
-import { syncProjectToDatabase } from "../src/worker/sync-project";
+import { syncProjectToDatabase } from "../src/modules/data-ingestion/worker";
 import {
   createMetricaClient,
   readMetricaEnvironment,

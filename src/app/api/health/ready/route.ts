@@ -3,7 +3,7 @@ import {
   getMonitoringService,
   getReliabilityService,
 } from "../../../../infrastructure/service-container";
-import { hasAuthConfiguration } from "../../../../infrastructure/auth/auth";
+import { hasAuthConfiguration } from "../../../../modules/identity-access/server";
 import { readReleaseSha } from "../../../../platform/config/server-environment";
 import { createCorrelationId } from "../../../../platform/http/correlation";
 import { createPublicErrorResponse } from "../../../../platform/http/error-envelope";

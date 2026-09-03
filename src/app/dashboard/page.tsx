@@ -6,9 +6,9 @@ import { AppShell } from "../../components/shell/AppShell";
 import { KpiCard } from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { SectionCard } from "../../components/dashboard/SectionCard";
-import { getCurrentActorContext } from "../../infrastructure/auth/session";
-import { buildAnalystOverview } from "../../modules/dashboards/overview";
-import { hasPermission } from "../../application/ports/actor-context";
+import { getCurrentActorContext } from "../../modules/identity-access/server";
+import { buildAnalystOverview } from "../../modules/project-registry/presentation";
+import { hasPermission } from "../../modules/identity-access/index";
 
 export default async function DashboardPage() {
   const user = await getCurrentActorContext();

@@ -1,6 +1,6 @@
 import { Building2, ChartNoAxesCombined, Globe2 } from "lucide-react";
 import Link from "next/link";
-import type { NavigationSection } from "../../modules/access/navigation";
+import type { NavigationSection } from "../../modules/project-registry/presentation";
 
 type ShellNavProps = {
   sections: NavigationSection[];

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
-import { PrismaSyncRepository } from "../src/infrastructure/database/repositories/prisma-sync-repository";
+import { PrismaSyncRepository } from "../src/modules/data-ingestion/server";
 import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
 import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
 

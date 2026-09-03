@@ -10,7 +10,7 @@
 - seed input: `config/tracked-queries/*`;
 - schemas: `src/shared/schemas/tracked-query.ts`, `rank-source.ts`, `report.ts`;
 - optional source: `collector/sources/topvisor/client.ts`;
-- compiler: `src/domain/reports/report-compiler.ts`;
+- compiler: `src/modules/reporting/domain/report-compiler.ts`;
 - UI: `RankingShareChart.tsx`, `TrackedQueryTable.tsx`.
 
 ## Sources
