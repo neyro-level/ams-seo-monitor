@@ -21,11 +21,14 @@
 | Tailwind CSS | `4.3.3` | styles |
 | Recharts | `3.10.1` | report charts |
 | Lucide React | `1.37.0` | icons |
-| Vitest | `4.1.11` | unit/integration tests |
+| Vitest | `4.1.11` | unit/real-PostgreSQL integration tests |
+| Playwright | `1.62.1` | production-like E2E and responsive contracts |
+| Dependency Cruiser | `18.2.0` | executable import boundaries |
 
 ## Build contract
 
 - `next.config.ts`: `output: "standalone"`, `poweredByHeader: false`;
+- `.node-version`: exact `24.20.0` для local/CI/release parity;
 - `pnpm build`: Prisma generate → config verification → Next build → standalone asset assembly;
 - `scripts/prepare-standalone.mjs` copies `public/` and `.next/static/` into `.next/standalone`;
 - `pnpm build:collector`: Prisma generate + `tsconfig.collector.json`;
@@ -39,6 +42,13 @@
 - package and lockfile always change together;
 - compatibility is proven by typecheck, lint, tests, build and affected runtime smoke;
 - production Node version must satisfy `scripts/verify-release-runtime.mjs`.
+
+## Planned, not installed yet
+
+- Refine Core, shadcn/ui и React Hook Form — добавляются вместе с первым рабочим Admin CMS resource;
+- Sentry — добавляется в observability phase с PII scrubbing и release markers.
+
+Пустые platform dependencies без callsites запрещены.
 
 ## Deliberate exclusions
 

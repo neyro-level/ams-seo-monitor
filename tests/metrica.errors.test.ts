@@ -49,7 +49,7 @@ describe("metrica errors", () => {
         endpoint: "/management/v1/counters",
         fetchImpl: async () => createJsonResponse({ errors: [{ error_type: "access_denied" }], code: 403, message: "Access is denied" }, 403),
       }),
-    ).rejects.toMatchObject<MetricaSafeError>({ code: "FORBIDDEN", status: 403 });
+    ).rejects.toMatchObject({ code: "FORBIDDEN", status: 403 } satisfies Partial<MetricaSafeError>);
   });
   it.each([
     "http://169.254.169.254",

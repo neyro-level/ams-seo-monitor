@@ -25,11 +25,8 @@ workflows:
               - corepack prepare pnpm@11.5.1 --activate
               - node scripts/verify-release-runtime.mjs
               - pnpm install --frozen-lockfile
-              - pnpm verify:config
               - pnpm verify:snapshots
-              - pnpm typecheck
-              - pnpm lint
-              - pnpm test
+              - pnpm verify:fast
               - pnpm build
 
   merge-heavy:
@@ -48,16 +45,18 @@ workflows:
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
         cubes:
           - name: verify
-            image: docker.io/library/node:24.20.0-bookworm
+            devcontainer:
+              workspace_folder: "./.devcontainer/ci"
             script:
               - corepack enable
               - corepack prepare pnpm@11.5.1 --activate
               - node scripts/verify-release-runtime.mjs
               - pnpm install --frozen-lockfile
               - node scripts/ci/verify-exact-head.mjs
-              - pnpm verify:config
               - pnpm verify:snapshots
-              - pnpm typecheck
-              - pnpm lint
-              - pnpm test
+              - pnpm verify:fast
+              - bash scripts/ci/run-postgres-integration.sh
+              - pnpm build:collector
               - pnpm build
+              - pnpm exec playwright install --with-deps chromium
+              - pnpm test:e2e:run

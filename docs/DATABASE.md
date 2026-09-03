@@ -45,6 +45,18 @@ Production contract:
 - `/api/health/ready` выполняет реальный DB ping;
 - отсутствие DB configuration приводит к явному unavailable/503, а не fallback на filesystem.
 
+## Local and test PostgreSQL
+
+- Docker image: PostgreSQL `18.6`;
+- bind: `127.0.0.1`, default host port `55432`;
+- separate databases: `seo_monitor_dev`, `seo_monitor_test`;
+- credentials exist only in ignored `.env.local`;
+- named volume survives normal stop/start;
+- integration runner rejects a database name without `_test`, then generates Prisma client, applies migrations, runs seed and executes DB suites;
+- CI provisions an ephemeral PostgreSQL 18 cluster before HEAVY integration tests.
+
+Runbook: `docs/ops/LOCAL_DEVELOPMENT.md`.
+
 ## Backup contract
 
 Каждый production backup:

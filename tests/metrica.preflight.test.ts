@@ -49,6 +49,6 @@ describe("metrica preflight", () => {
         endpoint: "/management/v1/counters",
         fetchImpl: async () => createJsonResponse({ errors: [{ error_type: "quota" }], code: 420, message: "Too many requests" }, 420),
       }),
-    ).rejects.toMatchObject<MetricaSafeError>({ code: "RATE_LIMITED", status: 420 });
+    ).rejects.toMatchObject({ code: "RATE_LIMITED", status: 420 } satisfies Partial<MetricaSafeError>);
   });
 });

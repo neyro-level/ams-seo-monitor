@@ -154,6 +154,18 @@ LeadRequestDialog
 
 AMS IMPULSE не пишет имя и телефон заявки в свою PostgreSQL. Публичный site key не даёт доступ к данным; delivery credentials остаются только во внешнем service environment.
 
+## Executable guardrails
+
+- `dependency-cruiser.config.cjs` блокирует циклы, inner-to-outer imports, production-to-tests и прямой database import из presentation;
+- `vitest.config.mts` запускает unit suites без скрытых DB skips;
+- `vitest.integration.config.mts` изолирует real-PostgreSQL suites;
+- `scripts/run-integration-tests.mjs` fail-closed проверяет `*_test`, применяет migrations/seed и только затем запускает integration;
+- `docker-compose.dev.yml` поднимает loopback-only PostgreSQL `18.6` с отдельными dev/test databases;
+- `playwright.config.ts` проверяет public UI и auth redirect на 375/768/1280/1440;
+- `.sourcecraft/ci.yaml` использует `verify:fast`, exact-head real-PostgreSQL integration и Playwright в HEAVY Gate.
+
+Текущая global-layer структура мигрируется в vertical modules по `docs/MASTER_PLAN.md`; пустые параллельные modules не создаются.
+
 ## Production runtime
 
 - `ops/nginx/ams-seo-monitor.conf` — TLS, public assets, reverse proxy, internal readiness;

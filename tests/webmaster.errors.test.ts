@@ -18,7 +18,7 @@ describe("webmaster error handling", () => {
         endpoint: "/user",
         fetchImpl: async () => createJsonResponse({ error_code: "INVALID_OAUTH_TOKEN" }, 401),
       }),
-    ).rejects.toMatchObject<WebmasterSafeError>({ code: "UNAUTHORIZED", status: 401 });
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED", status: 401 } satisfies Partial<WebmasterSafeError>);
   });
 
   it("maps 403 to FORBIDDEN", async () => {
@@ -29,7 +29,7 @@ describe("webmaster error handling", () => {
         endpoint: "/user/77/hosts",
         fetchImpl: async () => createJsonResponse({ error_code: "INVALID_USER_ID" }, 403),
       }),
-    ).rejects.toMatchObject<WebmasterSafeError>({ code: "FORBIDDEN", status: 403 });
+    ).rejects.toMatchObject({ code: "FORBIDDEN", status: 403 } satisfies Partial<WebmasterSafeError>);
   });
 
   it("maps 429 to RATE_LIMITED without retry loop", async () => {
@@ -44,7 +44,7 @@ describe("webmaster error handling", () => {
           return createJsonResponse({ error_code: "TOO_MANY_REQUESTS_ERROR" }, 429);
         },
       }),
-    ).rejects.toMatchObject<WebmasterSafeError>({ code: "RATE_LIMITED", status: 429 });
+    ).rejects.toMatchObject({ code: "RATE_LIMITED", status: 429 } satisfies Partial<WebmasterSafeError>);
     expect(calls).toBe(1);
   });
 
