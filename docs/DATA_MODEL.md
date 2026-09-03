@@ -178,6 +178,36 @@ Periods:
 - direct query-to-lead attribution запрещена;
 - данные разных projects/sites/periods не смешиваются.
 
+## Reliability records
+
+### AuditEvent
+
+Safe append-only marker: optional organization, actor type/id, action, entity, before/after markers, source, correlation ID and timestamp. Organization deletion sets relation null without deleting platform audit history.
+
+### IdempotencyKey
+
+Unique `(scope, organizationScope, key)`. Stores SHA-256 request hash, lifecycle status, response marker, expiry and optional OutboxEvent link. `organizationScope` is always explicit: organization ID or `platform`.
+
+### OutboxEvent
+
+Status `PENDING → PROCESSING → PROCESSED` or `DEAD_LETTER`; stores topic, JSON payload, attempts, availability, lease owner/time, safe error, correlation and processed timestamp.
+
+### JobRun
+
+One row per attempt, unique `(outboxEventId, attempt)`. Stores worker, RUNNING/SUCCESS/FAILED, timing and safe error code.
+
+Invariants:
+
+- enqueue transaction atomically creates idempotency marker, event and audit;
+- same key + same hash returns the original event;
+- same key + different hash is rejected;
+- claim uses conditional lease ownership;
+- only lease owner completes/fails;
+- retry uses bounded exponential backoff;
+- permanent/exhausted failures become dead-letter;
+- payload/audit/error fields never contain secrets or raw PII;
+- `RetentionRun` is not added until a concrete retention policy exists.
+
 ## Delete и retention
 
 - auth child records cascade вместе с User/Organization по schema rules;

@@ -49,7 +49,10 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - web environment не содержит provider tokens;
 - worker environment не содержит Better Auth secret;
 - provider calls только read-only и только к exact allowlisted HTTPS origins;
-- logs содержат IDs, timestamps, counts, duration, status и safe error code, но не token/header/raw body/PII.
+- logs содержат IDs, timestamps, counts, duration, status и safe error code, но не token/header/raw body/PII;
+- outbox worker dispatches only registered topics and bounded JSON payloads;
+- lease ownership prevents one worker from completing another worker's job;
+- safe error codes replace raw exception/response bodies.
 
 ### AMS Leads API
 
@@ -167,6 +170,10 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - report reads требуют отдельный report capability;
 - public error envelope содержит stable code, safe message, fieldErrors и correlationId;
 - health/auth responses возвращают matching `X-Correlation-ID`;
+- idempotency key is tenant-scoped and payload-hash bound;
+- audit/outbox/idempotency enqueue is one transaction;
+- outbox payload, audit markers and JobRun errors exclude secrets/raw PII;
+- retries are bounded; permanent failures become visible dead-letter;
 - release health SHA поступает из root-owned deploy-generated env;
 - concurrent full worker sync blocked by PostgreSQL advisory lock;
 - partial/error metadata remains honest;

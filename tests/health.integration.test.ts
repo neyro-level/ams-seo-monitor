@@ -19,6 +19,14 @@ describe("release-aware health routes", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("x-correlation-id")).toBe(payload.correlationId);
-    expect(payload.dependencies).toEqual({ postgresql: "ready", auth: "configured" });
+    expect(payload.dependencies).toMatchObject({
+      postgresql: "ready",
+      auth: "configured",
+      outbox: {
+        pending: expect.any(Number),
+        processing: expect.any(Number),
+        deadLetter: expect.any(Number),
+      },
+    });
   });
 });

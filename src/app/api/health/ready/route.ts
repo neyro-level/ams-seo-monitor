@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { getMonitoringService } from "../../../../infrastructure/service-container";
+import {
+  getMonitoringService,
+  getReliabilityService,
+} from "../../../../infrastructure/service-container";
 import { hasAuthConfiguration } from "../../../../infrastructure/auth/auth";
 import { readReleaseSha } from "../../../../platform/config/server-environment";
 import { createCorrelationId } from "../../../../platform/http/correlation";
@@ -16,7 +19,10 @@ export async function GET() {
     if (!hasAuthConfiguration()) {
       throw new Error("Auth configuration is unavailable");
     }
-    await getMonitoringService().ping();
+    const [, outbox] = await Promise.all([
+      getMonitoringService().ping(),
+      getReliabilityService().getHealth(),
+    ]);
 
     return NextResponse.json(
       readyHealthSchema.parse({
@@ -27,6 +33,7 @@ export async function GET() {
         dependencies: {
           postgresql: "ready",
           auth: "configured",
+          outbox,
         },
       }),
       {

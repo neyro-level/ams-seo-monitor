@@ -53,6 +53,8 @@ for (const relativePath of [
   "ops/systemd/seo-monitor-web.service",
   "ops/systemd/seo-monitor-worker.service",
   "ops/systemd/seo-monitor-worker.timer",
+  "ops/systemd/seo-monitor-outbox.service",
+  "ops/systemd/seo-monitor-outbox.timer",
   "ops/systemd/seo-monitor-db-backup.service",
   "ops/systemd/seo-monitor-db-backup.timer",
   "ops/postgres/backup.sh",

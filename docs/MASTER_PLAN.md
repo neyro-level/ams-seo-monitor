@@ -57,7 +57,7 @@ Verified proof:
 - production-like Next build passes;
 - 8 Playwright golden paths pass at 375, 768, 1280 and 1440;
 - local pinned Node 24.20/PostgreSQL 18.6 integration image/harness pass;
-- SourceCraft devcontainer build оказался нестабильным на cloud worker и удалён; exact-head cloud gate оставлен deterministic Node-only, а real DB/E2E являются обязательным operator evidence.
+- SourceCraft devcontainer build оказался нестабильным на cloud worker и удалён; exact-head cloud gate оставлен deterministic Node-only, а real DB/E2E являются обязательным operator evidence;
 - `verify:heavy` passes end-to-end.
 
 ## Phase 2 — Platform request and access context
@@ -92,30 +92,43 @@ Verified proof:
 
 Остаётся для следующих phases:
 
-- AuditEvent/idempotency/outbox before browser mutations;
 - Sentry и correlation propagation в full structured logs;
 - authenticated Admin CMS E2E;
 - production release SHA contract проверяется только после отдельного reviewed deploy.
 
 ## Phase 3 — Audit, idempotency and jobs foundation
 
-Цель: подготовить безопасные CMS mutations и повторяемые операции.
+Статус: implemented; local HEAVY proof green.
 
-Schema migration:
+Реализовано:
 
-- `AuditEvent`;
-- `IdempotencyKey`;
-- `OutboxEvent`;
-- `JobRun`;
-- `RetentionRun` только вместе с первой retention policy.
+- AuditEvent, IdempotencyKey, OutboxEvent and JobRun models;
+- generated migration также устраняет накопленный Prisma schema/index/default drift;
+- atomic enqueue transaction: idempotency + outbox + audit;
+- canonical JSON SHA-256 request binding;
+- same key/same hash duplicate return and different-hash rejection;
+- conditional PostgreSQL lease ownership;
+- JobRun per attempt;
+- retryable bounded exponential backoff;
+- permanent/exhausted dead-letter;
+- registered `project.sync.requested` handler outside transaction;
+- unknown/invalid topic permanent failure;
+- bounded `outbox-drain` worker;
+- five-minute systemd outbox timer with compatible rollback;
+- readiness outbox counts.
 
-Runtime:
+Proof:
 
-- transaction = business change + audit + outbox/idempotency marker;
-- PostgreSQL claim/lease/backoff/dead-letter;
-- no external HTTP inside transaction;
-- worker heartbeat/failed-job visibility;
-- manual bounded retry с audit.
+- clean five-migration path on PostgreSQL 18.6;
+- 21 integration tests pass, including atomicity/idempotency/lease/retry/dead-letter;
+- 76 unit tests pass;
+- Dependency Cruiser: 115 modules / 244 dependencies, zero violations;
+- compiled outbox worker idle smoke passes;
+- `verify:heavy` and responsive Playwright pass;
+- outbox systemd units pass `systemd-analyze verify` on the production host without activation;
+- deploy remote shell passes `bash -n`.
+
+`RetentionRun` intentionally remains absent until Phase 7 defines a real retention policy.
 
 ## Phase 4 — Vertical module boundaries
 

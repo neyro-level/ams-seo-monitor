@@ -64,6 +64,7 @@ Domain не знает React, Better Auth, Prisma, PostgreSQL и HTTP transport.
 
 - `config` — server/public environment schemas;
 - `http` — correlation ID, error envelope и release-aware health DTO;
+- `reliability` application port/service — idempotent enqueue and job lifecycle;
 - не импортирует project business layers;
 - используется adapters/routes как технический contract.
 
@@ -71,6 +72,7 @@ Domain не знает React, Better Auth, Prisma, PostgreSQL и HTTP transport.
 
 - `database/prisma` — singleton Prisma/pg context;
 - `database/repositories` — реализации application ports;
+- `PrismaReliabilityRepository` — audit/idempotency/outbox/job transaction owner;
 - `auth` — Better Auth, session и server-side authorization;
 - `logging` — safe structured sync events;
 - `service-container.ts` — web composition root;
@@ -99,6 +101,9 @@ Worker:
 - сохраняет history/technical/ranking records;
 - компилирует и сохраняет четыре `ReportSnapshot` на сайт;
 - завершает runs фактическими timestamps и safe statuses;
+- `outbox-drain` claims bounded batches, dispatches registered topics and persists JobRun attempts;
+- unknown/invalid topics become permanent dead-letter; retryable failures use bounded backoff;
+- `project.sync.requested` invokes the existing SyncService outside enqueue transaction;
 - не обслуживает HTTP.
 
 ## Направление зависимостей
@@ -164,6 +169,28 @@ LeadRequestDialog
 
 AMS IMPULSE не пишет имя и телефон заявки в свою PostgreSQL. Публичный site key не даёт доступ к данным; delivery credentials остаются только во внешнем service environment.
 
+## Reliability flow
+
+```text
+server command
+→ Zod + capability + tenant scope
+→ ReliabilityService.enqueue
+→ PostgreSQL transaction
+   ├── IdempotencyKey
+   ├── OutboxEvent
+   └── AuditEvent
+
+outbox timer
+→ conditional lease claim
+→ JobRun RUNNING
+→ registered handler outside transaction
+→ PROCESSED/SUCCESS
+   or PENDING/FAILED + backoff
+   or DEAD_LETTER/FAILED
+```
+
+Readiness exposes outbox counts without treating dead-letter as PostgreSQL outage.
+
 ## Executable guardrails
 
 - `dependency-cruiser.config.cjs` блокирует циклы, inner-to-outer imports, production-to-tests и прямой database import из presentation;
@@ -181,6 +208,7 @@ AMS IMPULSE не пишет имя и телефон заявки в свою Po
 - `ops/nginx/ams-seo-monitor.conf` — TLS, public assets, reverse proxy, internal readiness;
 - `ops/systemd/seo-monitor-web.service` — standalone Next;
 - `ops/systemd/seo-monitor-worker.{service,timer}` — provider sync;
+- `ops/systemd/seo-monitor-outbox.{service,timer}` — five-minute bounded outbox drain;
 - `ops/systemd/seo-monitor-db-backup.{service,timer}` — PostgreSQL backup;
 - `scripts/build-release.mjs` — immutable source artifact;
 - `scripts/deploy-production.mjs` — target build, migration, seed, backup/restore smoke, cutover/rollback;

@@ -49,7 +49,8 @@
     "collector:metrica:audit": "pnpm build:collector && node dist-collector/collector/main.js metrica-audit",
     "collector:sync:REDACTED_CLIENT_DATA": "pnpm build:collector && node dist-collector/collector/main.js client-sync REDACTED_CLIENT_DATA",
     "worker:sync:project": "pnpm build:collector && node dist-collector/src/worker/main.js project-sync",
-    "worker:sync:REDACTED_CLIENT_DATA": "pnpm build:collector && node dist-collector/src/worker/main.js project-sync REDACTED_CLIENT_DATA"
+    "worker:sync:REDACTED_CLIENT_DATA": "pnpm build:collector && node dist-collector/src/worker/main.js project-sync REDACTED_CLIENT_DATA",
+    "worker:outbox:drain": "pnpm build:collector && node dist-collector/src/worker/main.js outbox-drain"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.7.2",

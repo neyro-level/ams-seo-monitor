@@ -71,6 +71,17 @@ Worker writes:
 
 Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; run `finishedAt` is captured at actual completion.
 
+## Outbox lifecycle
+
+- separate `seo-monitor-outbox.timer` runs every five minutes;
+- one drain handles at most 25 events;
+- claim creates JobRun and increments attempt under conditional lease;
+- handler runs outside DB transaction;
+- complete/fail checks worker ownership;
+- retry base 30 seconds, exponential, capped at one hour and five attempts;
+- invalid payload/unknown topic goes directly to dead-letter;
+- readiness exposes pending/processing/dead-letter counts.
+
 ## Failure behavior
 
 - overlapping full sync → `SYNC_ALREADY_RUNNING`;
@@ -87,6 +98,7 @@ Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; 
 pnpm build:collector
 pnpm worker:sync:project -- <project-slug>
 pnpm worker:sync:REDACTED_CLIENT_DATA
+pnpm worker:outbox:drain
 ```
 
 Commands require a safe DB environment and provider secrets. `worker:sync:REDACTED_CLIENT_DATA` is not a browser action and does not deploy.
@@ -101,6 +113,10 @@ Commands require a safe DB environment and provider secrets. `worker:sync:REDACT
 - DB integration persistence;
 - unexpected failure finalization;
 - advisory lock overlap/release;
+- outbox idempotency/hash reuse;
+- lease ownership and stale claim;
+- retry/backoff/dead-letter;
+- JobRun attempt history;
 - compiled worker smoke without web-only imports.
 
 DB-backed suites require isolated `TEST_DATABASE_*`; skipped suites are not evidence of DB behavior.

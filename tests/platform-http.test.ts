@@ -56,7 +56,11 @@ describe("platform HTTP contracts", () => {
         service: "ams-seo-monitor",
         releaseSha: "a".repeat(40),
         correlationId,
-        dependencies: { postgresql: "ready", auth: "configured" },
+        dependencies: {
+          postgresql: "ready",
+          auth: "configured",
+          outbox: { pending: 0, processing: 0, deadLetter: 0 },
+        },
       }),
     ).toMatchObject({ releaseSha: "a".repeat(40) });
   });

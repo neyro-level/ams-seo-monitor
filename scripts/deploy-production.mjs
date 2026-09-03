@@ -93,8 +93,8 @@ write_release_env() {
 }
 
 rollback_previous() {
-  systemctl stop seo-monitor-worker.service seo-monitor-web.service >/dev/null 2>&1 || true
-  systemctl disable --now seo-monitor-worker.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
+  systemctl stop seo-monitor-worker.service seo-monitor-outbox.service seo-monitor-web.service >/dev/null 2>&1 || true
+  systemctl disable --now seo-monitor-worker.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
 
   if [ -n "$PREVIOUS" ]; then
     rm -f "$ROOT/current.rollback"
@@ -117,13 +117,23 @@ rollback_previous() {
       install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
       install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-db-backup.service" /etc/systemd/system/seo-monitor-db-backup.service
       install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/system/seo-monitor-db-backup.timer
+      if [ -f "$PREVIOUS/ops/systemd/seo-monitor-outbox.service" ]; then
+        install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-outbox.service" /etc/systemd/system/seo-monitor-outbox.service
+        install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-outbox.timer" /etc/systemd/system/seo-monitor-outbox.timer
+      else
+        rm -f /etc/systemd/system/seo-monitor-outbox.service /etc/systemd/system/seo-monitor-outbox.timer
+      fi
       systemctl daemon-reload
       nginx -t
       systemctl reload nginx
       systemctl restart seo-monitor-web.service || true
       systemctl enable --now seo-monitor-worker.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
+      if [ -f "$PREVIOUS/ops/systemd/seo-monitor-outbox.timer" ]; then
+        systemctl enable --now seo-monitor-outbox.timer >/dev/null 2>&1 || true
+      fi
     elif [ -f "$PREVIOUS/ops/systemd/ams-seo-monitor.service" ]; then
       install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.service" /etc/systemd/system/ams-seo-monitor.service
+      rm -f /etc/systemd/system/seo-monitor-outbox.service /etc/systemd/system/seo-monitor-outbox.timer
       install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.timer" /etc/systemd/system/ams-seo-monitor.timer
       systemctl daemon-reload
       nginx -t
@@ -243,6 +253,8 @@ fi
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
+install -m 0644 "$RELEASE/ops/systemd/seo-monitor-outbox.service" /etc/systemd/system/seo-monitor-outbox.service
+install -m 0644 "$RELEASE/ops/systemd/seo-monitor-outbox.timer" /etc/systemd/system/seo-monitor-outbox.timer
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.service" /etc/systemd/system/seo-monitor-db-backup.service
 install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/system/seo-monitor-db-backup.timer
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
@@ -262,12 +274,14 @@ systemctl start seo-monitor-worker.service
 systemctl stop ams-seo-monitor.service >/dev/null 2>&1 || true
 systemctl disable --now ams-seo-monitor.timer >/dev/null 2>&1 || true
 systemctl enable --now seo-monitor-worker.timer
+systemctl enable --now seo-monitor-outbox.timer
 systemctl enable --now seo-monitor-db-backup.timer
 systemctl is-active seo-monitor-web.service
 systemctl is-active seo-monitor-worker.timer
+systemctl is-active seo-monitor-outbox.timer
 systemctl is-active seo-monitor-db-backup.timer
 curl -fsS http://127.0.0.1:3000/api/health/live | python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["releaseSha"] == sys.argv[1]' "$SHA"
-curl -fsS http://127.0.0.1:3000/api/health/ready | python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["releaseSha"] == sys.argv[1]; assert payload["dependencies"] == {"postgresql":"ready","auth":"configured"}' "$SHA"
+curl -fsS http://127.0.0.1:3000/api/health/ready | python3 -c 'import json,sys; payload=json.load(sys.stdin); deps=payload["dependencies"]; assert payload["releaseSha"] == sys.argv[1]; assert deps["postgresql"] == "ready"; assert deps["auth"] == "configured"; assert isinstance(deps["outbox"]["deadLetter"], int)' "$SHA"
 test -s "$ROOT/current/.next/standalone/server.js"
 test -s "$ROOT/current/dist-collector/src/worker/main.js"
 test -s "$ROOT/current/prisma/schema.prisma"

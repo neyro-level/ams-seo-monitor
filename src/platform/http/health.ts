@@ -19,6 +19,11 @@ export const readyHealthSchema = z.object({
   dependencies: z.object({
     postgresql: z.literal("ready"),
     auth: z.literal("configured"),
+    outbox: z.object({
+      pending: z.number().int().nonnegative(),
+      processing: z.number().int().nonnegative(),
+      deadLetter: z.number().int().nonnegative(),
+    }),
   }),
 });
 
