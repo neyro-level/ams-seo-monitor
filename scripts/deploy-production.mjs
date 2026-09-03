@@ -84,6 +84,14 @@ if [ -n "$PREVIOUS" ] && [ "$PREVIOUS" = "$RELEASE" ]; then
   exit 1
 fi
 
+write_release_env() {
+  local release_sha="$1"
+  printf 'RELEASE_SHA=%s\n' "$release_sha" > "$ROOT/shared/release.env.next"
+  chown root:www-data "$ROOT/shared/release.env.next"
+  chmod 0640 "$ROOT/shared/release.env.next"
+  mv -f "$ROOT/shared/release.env.next" "$ROOT/shared/release.env"
+}
+
 rollback_previous() {
   systemctl stop seo-monitor-worker.service seo-monitor-web.service >/dev/null 2>&1 || true
   systemctl disable --now seo-monitor-worker.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
@@ -92,6 +100,10 @@ rollback_previous() {
     rm -f "$ROOT/current.rollback"
     ln -s "$PREVIOUS" "$ROOT/current.rollback"
     mv -Tf "$ROOT/current.rollback" "$ROOT/current"
+    PREVIOUS_SHA="$(basename "$PREVIOUS")"
+    if [[ "$PREVIOUS_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+      write_release_env "$PREVIOUS_SHA"
+    fi
 
     if [ -f "$PREVIOUS/ops/nginx/ams-seo-monitor.conf" ]; then
       install -m 0644 "$PREVIOUS/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
@@ -208,7 +220,7 @@ corepack prepare pnpm@11.5.1 --activate
 chmod 0755 "$RELEASE/node_modules/.bin/prisma" || true
 (
   cd "$RELEASE"
-  run_with_env_file "$WEB_ENV_FILE" python3 -c 'import os; keys=("NEXT_PUBLIC_LEADS_API_URL","NEXT_PUBLIC_LEADS_PROJECT_ID","NEXT_PUBLIC_LEADS_SITE_KEY"); missing=[key for key in keys if not os.environ.get(key)]; assert not missing, "Missing web build env: " + ",".join(missing)'
+  run_with_env_file "$WEB_ENV_FILE" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/verify-web-environment.ts"
   run_with_env_file "$WEB_ENV_FILE" pnpm build
   pnpm build:collector
 )
@@ -240,6 +252,7 @@ trap post_switch_rollback ERR
 rm -f "$ROOT/current.next"
 ln -s "$RELEASE" "$ROOT/current.next"
 mv -Tf "$ROOT/current.next" "$ROOT/current"
+write_release_env "$SHA"
 
 systemctl daemon-reload
 nginx -t
@@ -253,8 +266,8 @@ systemctl enable --now seo-monitor-db-backup.timer
 systemctl is-active seo-monitor-web.service
 systemctl is-active seo-monitor-worker.timer
 systemctl is-active seo-monitor-db-backup.timer
-curl -fsS http://127.0.0.1:3000/api/health/live >/dev/null
-curl -fsS http://127.0.0.1:3000/api/health/ready >/dev/null
+curl -fsS http://127.0.0.1:3000/api/health/live | python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["releaseSha"] == sys.argv[1]' "$SHA"
+curl -fsS http://127.0.0.1:3000/api/health/ready | python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["releaseSha"] == sys.argv[1]; assert payload["dependencies"] == {"postgresql":"ready","auth":"configured"}' "$SHA"
 test -s "$ROOT/current/.next/standalone/server.js"
 test -s "$ROOT/current/dist-collector/src/worker/main.js"
 test -s "$ROOT/current/prisma/schema.prisma"

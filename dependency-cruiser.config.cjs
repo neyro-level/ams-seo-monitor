@@ -38,11 +38,19 @@ module.exports = {
       },
     },
     {
-      name: "shared-does-not-depend-on-business-or-platform-layers",
+      name: "shared-does-not-depend-on-business-outer-layers",
       severity: "error",
       from: { path: "^src/shared/" },
       to: {
         path: "^(src/(app|application|components|domain|infrastructure|modules|worker)/|collector/)",
+      },
+    },
+    {
+      name: "platform-does-not-depend-on-project-layers",
+      severity: "error",
+      from: { path: "^src/platform/" },
+      to: {
+        path: "^(src/(app|application|components|domain|infrastructure|modules|shared|worker)/|collector/)",
       },
     },
     {

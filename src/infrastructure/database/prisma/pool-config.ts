@@ -1,14 +1,8 @@
 import type { PoolConfig } from "pg";
-
-export interface PgConnectionEnvironment {
-  DATABASE_URL?: string;
-  DATABASE_HOST?: string;
-  DATABASE_PORT?: string;
-  DATABASE_USER?: string;
-  DATABASE_PASSWORD?: string;
-  DATABASE_NAME?: string;
-  DATABASE_SSLMODE?: string;
-}
+import {
+  readDatabaseEnvironment,
+  type DatabaseEnvironment,
+} from "../../../platform/config/server-environment";
 
 export function createPgPoolConfig(databaseUrl: string): PoolConfig {
   const parsed = new URL(databaseUrl);
@@ -24,21 +18,26 @@ export function createPgPoolConfig(databaseUrl: string): PoolConfig {
   };
 }
 
-export function createPgPoolConfigFromEnvironment(env: PgConnectionEnvironment): PoolConfig {
-  if (env.DATABASE_HOST && env.DATABASE_USER && env.DATABASE_PASSWORD && env.DATABASE_NAME) {
+export function createPgPoolConfigFromEnvironment(env: DatabaseEnvironment): PoolConfig {
+  const parsedEnvironment = readDatabaseEnvironment(env);
+  if (
+    parsedEnvironment.DATABASE_HOST &&
+    parsedEnvironment.DATABASE_USER &&
+    parsedEnvironment.DATABASE_PASSWORD &&
+    parsedEnvironment.DATABASE_NAME
+  ) {
     return {
-      host: env.DATABASE_HOST,
-      port: env.DATABASE_PORT ? Number(env.DATABASE_PORT) : 5432,
-      user: env.DATABASE_USER,
-      password: env.DATABASE_PASSWORD,
-      database: env.DATABASE_NAME,
-      ssl: env.DATABASE_SSLMODE === "disable" ? false : undefined,
+      host: parsedEnvironment.DATABASE_HOST,
+      port: parsedEnvironment.DATABASE_PORT ? Number(parsedEnvironment.DATABASE_PORT) : 5432,
+      user: parsedEnvironment.DATABASE_USER,
+      password: parsedEnvironment.DATABASE_PASSWORD,
+      database: parsedEnvironment.DATABASE_NAME,
+      ssl: parsedEnvironment.DATABASE_SSLMODE === "disable" ? false : undefined,
     };
   }
 
-  if (!env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is not set");
+  if (!parsedEnvironment.DATABASE_URL) {
+    throw new Error("Database URL is unavailable");
   }
-
-  return createPgPoolConfig(env.DATABASE_URL);
+  return createPgPoolConfig(parsedEnvironment.DATABASE_URL);
 }

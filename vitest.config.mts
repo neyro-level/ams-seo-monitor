@@ -15,6 +15,7 @@ export default defineConfig({
       ...configDefaults.exclude,
       "tests/e2e/**",
       "tests/auth.authorization.test.ts",
+      "tests/health.integration.test.ts",
       "tests/navigation.test.ts",
       "tests/monitoring-service.test.ts",
       "tests/prisma-repositories.test.ts",

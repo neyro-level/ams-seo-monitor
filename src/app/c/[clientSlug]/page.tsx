@@ -7,7 +7,7 @@ import { KpiCard } from "../../../components/dashboard/KpiCard";
 import { PageHeader } from "../../../components/dashboard/PageHeader";
 import { SectionCard } from "../../../components/dashboard/SectionCard";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner";
-import { getCurrentAuthenticatedUser } from "../../../infrastructure/auth/session";
+import { getCurrentActorContext } from "../../../infrastructure/auth/session";
 import { buildClientOverview } from "../../../modules/dashboards/overview";
 
 type ClientOverviewPageProps = {
@@ -17,7 +17,7 @@ type ClientOverviewPageProps = {
 };
 
 export default async function ClientOverviewPage({ params }: ClientOverviewPageProps) {
-  const user = await getCurrentAuthenticatedUser();
+  const user = await getCurrentActorContext();
   if (!user) {
     redirect("/?login=1");
   }

@@ -1,35 +1,49 @@
 import { NextResponse } from "next/server";
 import { getMonitoringService } from "../../../../infrastructure/service-container";
+import { hasAuthConfiguration } from "../../../../infrastructure/auth/auth";
+import { readReleaseSha } from "../../../../platform/config/server-environment";
+import { createCorrelationId } from "../../../../platform/http/correlation";
+import { createPublicErrorResponse } from "../../../../platform/http/error-envelope";
+import { readyHealthSchema } from "../../../../platform/http/health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const correlationId = createCorrelationId();
+
   try {
+    if (!hasAuthConfiguration()) {
+      throw new Error("Auth configuration is unavailable");
+    }
     await getMonitoringService().ping();
+
     return NextResponse.json(
-      {
+      readyHealthSchema.parse({
         status: "ready",
-        dependency: "postgresql",
-      },
+        service: "ams-seo-monitor",
+        releaseSha: readReleaseSha(),
+        correlationId,
+        dependencies: {
+          postgresql: "ready",
+          auth: "configured",
+        },
+      }),
       {
         headers: {
           "Cache-Control": "no-store",
+          "X-Correlation-ID": correlationId,
         },
       },
     );
   } catch {
-    return NextResponse.json(
+    return createPublicErrorResponse(
       {
-        status: "unavailable",
-        dependency: "postgresql",
+        code: "READINESS_FAILED",
+        message: "Сервис временно не готов принимать запросы.",
+        correlationId,
       },
-      {
-        status: 503,
-        headers: {
-          "Cache-Control": "no-store",
-        },
-      },
+      503,
     );
   }
 }

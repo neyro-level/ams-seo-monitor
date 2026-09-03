@@ -1,3 +1,5 @@
+import { readPublicLeadsEnvironment } from "../../platform/config/public-environment";
+
 export type LeadUtmPayload = {
   utm_source?: string;
   utm_medium?: string;
@@ -21,38 +23,13 @@ type LeadApiResponse = {
   filtered?: boolean;
   error?: { message?: string } | string;
 };
-const TRUSTED_LEADS_API_URL = "https://ams24.ru/api/leads";
-
-function getLeadConfiguration() {
-  const apiUrl = process.env.NEXT_PUBLIC_LEADS_API_URL;
-  const projectId = process.env.NEXT_PUBLIC_LEADS_PROJECT_ID;
-  const siteKey = process.env.NEXT_PUBLIC_LEADS_SITE_KEY;
-
-  if (!apiUrl || !projectId || !siteKey) {
-    throw new Error("Отправка заявок временно не настроена.");
-  }
-
-  let trustedApiUrl: string;
-  try {
-    const parsedApiUrl = new URL(apiUrl);
-    if (
-      parsedApiUrl.origin !== "https://ams24.ru" ||
-      parsedApiUrl.pathname !== "/api/leads" ||
-      parsedApiUrl.search.length > 0 ||
-      parsedApiUrl.hash.length > 0
-    ) {
-      throw new Error("Untrusted Leads API URL");
-    }
-    trustedApiUrl = TRUSTED_LEADS_API_URL;
-  } catch {
-    throw new Error("Отправка заявок временно не настроена.");
-  }
-
-  return { apiUrl: trustedApiUrl, projectId, siteKey };
-}
 
 export async function sendLead(payload: SendLeadPayload): Promise<LeadApiResponse> {
-  const { apiUrl, projectId, siteKey } = getLeadConfiguration();
+  const { apiUrl, projectId, siteKey } = readPublicLeadsEnvironment({
+    NEXT_PUBLIC_LEADS_API_URL: process.env.NEXT_PUBLIC_LEADS_API_URL,
+    NEXT_PUBLIC_LEADS_PROJECT_ID: process.env.NEXT_PUBLIC_LEADS_PROJECT_ID,
+    NEXT_PUBLIC_LEADS_SITE_KEY: process.env.NEXT_PUBLIC_LEADS_SITE_KEY,
+  });
   const response = await fetch(apiUrl, {
     method: "POST",
     headers: {

@@ -3,7 +3,11 @@ import type {
   StoredProjectRecord,
   StoredSiteRecord,
 } from "../ports/project-repository";
-import type { AuthenticatedUser } from "../ports/authenticated-user";
+import {
+  getActorOrganizationIds,
+  hasPermission,
+  type ActorContext,
+} from "../ports/actor-context";
 
 export interface ProjectSiteSummary {
   siteId: string;
@@ -78,28 +82,30 @@ function toProjectSummary(project: ProjectTree): ProjectSummary {
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
-  private async getAccessScope(user: AuthenticatedUser) {
-    if (user.systemRole === "SEO_ANALYST") {
+  private getAccessScope(actor: ActorContext) {
+    if (hasPermission(actor, "project:read:any")) {
       return { organizationIds: null };
     }
+    if (hasPermission(actor, "project:read:organization")) {
+      return { organizationIds: getActorOrganizationIds(actor) };
+    }
 
-    const organizationIds = await this.projectRepository.listOrganizationIdsForUser(user.userId);
-    return { organizationIds };
+    return { organizationIds: [] };
   }
 
-  async listProjectTreesForUser(user: AuthenticatedUser): Promise<ProjectTree[]> {
-    const scope = await this.getAccessScope(user);
+  async listProjectTreesForUser(user: ActorContext): Promise<ProjectTree[]> {
+    const scope = this.getAccessScope(user);
     const projects = await this.projectRepository.listProjects(scope);
     return projects.map(toProjectTree);
   }
 
-  async listProjectsForUser(user: AuthenticatedUser): Promise<ProjectSummary[]> {
+  async listProjectsForUser(user: ActorContext): Promise<ProjectSummary[]> {
     const projects = await this.listProjectTreesForUser(user);
     return projects.map(toProjectSummary);
   }
 
   async getProjectTreeForUser(
-    user: AuthenticatedUser,
+    user: ActorContext,
     projectSlug: string,
   ): Promise<ProjectTree | null> {
     const project = await this.getProjectAccessForUser(user, projectSlug);
@@ -107,19 +113,19 @@ export class ProjectService {
   }
 
   async getProjectAccessForUser(
-    user: AuthenticatedUser,
+    user: ActorContext,
     projectSlug: string,
   ): Promise<StoredProjectRecord | null> {
-    const scope = await this.getAccessScope(user);
+    const scope = this.getAccessScope(user);
     return this.projectRepository.findProjectBySlug(projectSlug, scope);
   }
 
   async getSiteAccessForUser(
-    user: AuthenticatedUser,
+    user: ActorContext,
     projectSlug: string,
     siteSlug: string,
   ): Promise<StoredSiteRecord | null> {
-    const scope = await this.getAccessScope(user);
+    const scope = this.getAccessScope(user);
     return this.projectRepository.findSiteBySlugs(projectSlug, siteSlug, scope);
   }
 

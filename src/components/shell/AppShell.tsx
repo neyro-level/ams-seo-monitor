@@ -1,13 +1,13 @@
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { buildNavigation } from "../../modules/access/navigation";
-import type { AuthenticatedUser } from "../../application/ports/authenticated-user";
+import type { ActorContext } from "../../application/ports/actor-context";
 import { MobileDrawer } from "./MobileDrawer";
 import { ShellNav } from "./ShellNav";
 
 type AppShellProps = {
   currentPath: string;
-  user: AuthenticatedUser;
+  user: ActorContext;
   children: ReactNode;
 };
 

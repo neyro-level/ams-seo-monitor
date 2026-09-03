@@ -39,6 +39,7 @@
     "user:add-to-organization": "tsx scripts/auth-admin.ts add-to-organization",
     "user:remove-from-organization": "tsx scripts/auth-admin.ts remove-from-organization",
     "verify:config": "node scripts/verify-config.mjs",
+    "verify:web-environment": "node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/verify-web-environment.ts",
     "verify:snapshots": "node scripts/verify-snapshots.mjs",
     "db:restore-smoke": "node scripts/db-restore-smoke.mjs",
     "project:add": "node scripts/project-add.mjs",

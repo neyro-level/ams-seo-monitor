@@ -71,10 +71,10 @@
 | Runtime | Next.js standalone + exact `.node-version` | соответствует | сохранить |
 | TypeScript | strict app/collector/tests | соответствует | сохранить |
 | Tailwind | v4 | соответствует | токенизировать остаточный dashboard drift |
-| Zod | DTO/provider/config schemas | env и некоторые request boundaries распределены | централизовать env/transport contracts |
-| Prisma/PostgreSQL | production source of truth | mutation/audit foundation отсутствует | staged schema migration |
-| Better Auth | username, sessions, organizations | нет unified ActorContext/permissions/correlation | platform auth context |
-| Tenant isolation | server repository scope | scope привязан к отдельным helpers | capability guards + integration matrix |
+| Zod | DTO/provider + central DB/Auth/Leads/error/health contracts | соответствует Phase 2 boundaries | расширять на future commands |
+| Prisma/PostgreSQL | production source of truth + additive PLATFORM_ADMIN migration | mutation/audit foundation отсутствует | Phase 3 schema |
+| Better Auth | session adapter → fresh ActorContext, permissions, memberships, correlation | соответствует Phase 2 | сохранить adapter boundary |
+| Tenant isolation | capability + ActorContext memberships → repository scope | соответствует application layer | расширять integration matrix |
 | Modular monolith | global domain/application/infrastructure layers | нет vertical module ownership и public `index.ts` | мигрировать по одному домену |
 | Public UI | готовый AMS IMPULSE landing | переносить в generic cabinet нельзя | freeze external composition; configurable brand only later |
 | Private UI | custom dashboard primitives | нет Refine/shadcn/RHF CMS shell | добавить только в protected admin route group |
@@ -83,13 +83,13 @@
 | Audit | Git + SyncRun/SourceRun | нет user mutation AuditEvent | add before first CMS write |
 | Outbox/jobs | dedicated sync worker, advisory lock | нет generic retry/dead-letter queue | add before outbound/admin jobs |
 | Idempotency | provider metric upserts | нет common idempotency record | add with command/outbox foundation |
-| Observability | JSON sync logger, health | нет Sentry/correlation/release endpoint/worker freshness | staged observability foundation |
-| Unit tests | 63 Vitest tests, isolated from DB suites | соответствует | сохранить |
-| Integration tests | 14 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 1 | расширять с modules |
-| E2E | 8 Playwright checks on 375/768/1280/1440 | соответствует Phase 1 | расширять golden paths |
-| Architecture QA | Dependency Cruiser: 105 modules / 212 dependencies | соответствует current boundaries | ужесточать после module cutover |
+| Observability | JSON sync logger + correlation/release-aware health | нет Sentry и worker freshness/dead-letter health | Phase 6 |
+| Unit tests | 76 Vitest tests, isolated from DB suites | соответствует Phase 2 | расширять с modules |
+| Integration tests | 18 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 2 | расширять capability matrix |
+| E2E | 8 Playwright checks on 375/768/1280/1440 | соответствует Phase 1/2 | расширять authenticated paths |
+| Architecture QA | Dependency Cruiser: 111 modules / 232 dependencies | соответствует current boundaries | ужесточать after module cutover |
 | Local development | Docker PostgreSQL 18.6, separate dev/test DB, fail-closed guards | соответствует Phase 1 | добавить auth bootstrap в Phase 2/5 |
-| Release | exact-main immutable deploy | соответствует | добавить release/version observability |
+| Release | exact-main immutable deploy + SHA health/env rollback contract | соответствует Phase 2 | verify on next production release |
 | Backup | local + mandatory offsite + restore smoke | соответствует | сохранить |
 | Documentation | core/module/ops canon + conformance + ADR | соответствует | синхронизировать по фазам |
 

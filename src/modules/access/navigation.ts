@@ -1,4 +1,7 @@
-import type { AuthenticatedUser } from "../../application/ports/authenticated-user";
+import {
+  hasPermission,
+  type ActorContext,
+} from "../../application/ports/actor-context";
 import { getProjectService } from "../../infrastructure/service-container";
 
 export type NavigationChild = {
@@ -22,7 +25,7 @@ export type NavigationSection = {
 
 export async function buildNavigation(
   currentPath: string,
-  user: AuthenticatedUser,
+  user: ActorContext,
 ): Promise<NavigationSection[]> {
   const projectTrees = await getProjectService().listProjectTreesForUser(user);
   const clientPathMatch = currentPath.match(/^\/c\/([^/]+)\//);
@@ -45,8 +48,9 @@ export async function buildNavigation(
     })),
   }));
 
-  const rootHref = user.systemRole === "SEO_ANALYST" ? "/analyst/" : "/dashboard/";
-  const rootLabel = user.systemRole === "SEO_ANALYST" ? "Все проекты" : "Мои проекты";
+  const hasGlobalProjectAccess = hasPermission(user, "project:read:any");
+  const rootHref = hasGlobalProjectAccess ? "/analyst/" : "/dashboard/";
+  const rootLabel = hasGlobalProjectAccess ? "Все проекты" : "Мои проекты";
 
   return [
     {

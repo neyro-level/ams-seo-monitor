@@ -56,24 +56,46 @@ Verified proof:
 - Dependency Cruiser checks 105 modules / 212 dependencies with zero violations;
 - production-like Next build passes;
 - 8 Playwright golden paths pass at 375, 768, 1280 and 1440;
-- pinned Node 24.20/PostgreSQL 18.6 CI devcontainer builds, and its integration harness passes without runtime apt installation;
+- local pinned Node 24.20/PostgreSQL 18.6 integration image/harness pass;
+- SourceCraft devcontainer build оказался нестабильным на cloud worker и удалён; exact-head cloud gate оставлен deterministic Node-only, а real DB/E2E являются обязательным operator evidence.
 - `verify:heavy` passes end-to-end.
 
 ## Phase 2 — Platform request and access context
 
-Цель: единый server boundary вместо распределённых auth/error helpers.
+Статус: implemented; local HEAVY proof green.
 
-Scope:
+Реализовано:
 
-- `ActorContext`: user, role, memberships/active organization, permissions, correlation ID;
-- capability predicates для project/report/admin действий;
-- central env validation;
-- stable error envelope и domain-to-transport mapping;
-- request/correlation propagation в logs;
-- version/release health DTO;
-- auth adapter изолирован от business modules.
+- `PLATFORM_ADMIN` additive enum migration без изменения existing users;
+- `ActorContext`: fresh user, memberships, validated active organization, permissions, correlation ID;
+- code-versioned capability matrix для platform/project/report/sync/settings;
+- ProjectService tenant scope больше не делает скрытый membership lookup;
+- ReportService отдельно требует report-read capability;
+- analyst/navigation/dashboard используют capability, не role equality;
+- central DB/Auth/Leads/release environment validation;
+- standard public error envelope;
+- correlation headers для auth/health;
+- release-aware live/ready DTO с exact SHA;
+- deploy-generated root-owned `shared/release.env` и rollback SHA synchronization;
+- production web env preflight до build.
 
-Не менять product roles без migration/access matrix.
+Verified proof:
+
+- migration clean path: 4 migrations applied to isolated PostgreSQL 18.6;
+- 76 unit tests pass;
+- 18 real-PostgreSQL integration tests pass;
+- 8 responsive Playwright E2E pass;
+- Dependency Cruiser: 111 modules / 232 dependencies, zero violations;
+- `verify:fast` and `verify:heavy` pass;
+- deploy remote shell syntax passes;
+- public AMS IMPULSE composition remains unchanged.
+
+Остаётся для следующих phases:
+
+- AuditEvent/idempotency/outbox before browser mutations;
+- Sentry и correlation propagation в full structured logs;
+- authenticated Admin CMS E2E;
+- production release SHA contract проверяется только после отдельного reviewed deploy.
 
 ## Phase 3 — Audit, idempotency and jobs foundation
 

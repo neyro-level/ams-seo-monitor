@@ -13,6 +13,7 @@ export default defineConfig({
     setupFiles: ["./tests/setup-test-env.ts"],
     include: [
       "tests/auth.authorization.test.ts",
+      "tests/health.integration.test.ts",
       "tests/monitoring-service.test.ts",
       "tests/prisma-repositories.test.ts",
       "tests/navigation.test.ts",

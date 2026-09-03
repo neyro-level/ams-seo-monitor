@@ -18,14 +18,14 @@ AMS IMPULSE объединяет две связанные поверхност�
 - может отправить заявку через отдельный AMS Leads API;
 - не получает доступ к данным кабинета.
 
-### PLATFORM_ADMIN — target role
+### PLATFORM_ADMIN
 
 - внутренний оператор АМС, не клиентская роль;
-- управляет organizations, memberships, projects, sites и безопасными SEO-настройками через Admin CMS;
-- не видит secret values и не выполняет provider mutations;
-- каждое значимое изменение проходит server permission, transaction и AuditEvent.
+- в будущей Admin CMS будет управлять organizations, memberships, projects, sites и безопасными SEO-настройками;
+- не получает secret values и не выполняет provider mutations;
+- будущая browser mutation обязана пройти server permission, transaction и AuditEvent.
 
-Роль и migration ещё не реализованы; они входят в отдельный auth/data этап.
+Role/capability foundation реализован. Browser Admin CMS остаётся Phase 5 после audit/idempotency command foundation.
 
 ### SEO_ANALYST
 

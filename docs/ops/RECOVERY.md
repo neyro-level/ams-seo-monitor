@@ -15,12 +15,13 @@ Code rollback не откатывает schema/data. DB restore не являе�
 
 - возвращает previous `current` symlink;
 - восстанавливает previous Nginx/systemd topology;
+- атомарно возвращает `shared/release.env` к SHA previous release;
 - проверяет Nginx;
 - перезапускает предыдущий web/worker runtime;
 - не удаляет failed immutable release автоматически;
 - не меняет PostgreSQL data.
 
-Перед ручным rollback нужны exact current/previous SHA, service state и совместимость previous code с уже применённой schema.
+Перед ручным rollback нужны exact current/previous SHA, release health DTO, service state и совместимость previous code с уже применённой schema.
 
 ## Database recovery
 
@@ -75,6 +76,7 @@ Deploy останавливается до symlink switch. Нельзя реда
 - exact code SHA and rollback SHA;
 - DB migration state;
 - health/auth/tenant smoke;
+- live/ready DTO SHA совпадает с restored release env;
 - worker status and timestamps;
 - backup checksum/offsite confirmation;
 - temporary restore row-count checks;

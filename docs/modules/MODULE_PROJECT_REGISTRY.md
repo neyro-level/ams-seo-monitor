@@ -15,8 +15,9 @@
 
 ## Access
 
-- `SEO_ANALYST`: все projects/sites;
-- `CLIENT_VIEWER`: только memberships своей organization;
+- `PLATFORM_ADMIN`: global project read; future manage commands после audit foundation;
+- `SEO_ANALYST`: global project read;
+- `CLIENT_VIEWER`: organization-scoped read по ActorContext memberships;
 - worker: enabled projects/sites/provider connections;
 - browser не изменяет registry.
 
@@ -30,7 +31,9 @@
 - runtime navigation и routes читают DB, не JSON;
 - clientSlug/siteSlug сохраняют URL contract;
 - enabled site считается configuration-ready при двух или более enabled provider connections; optional Topvisor не должен ломать этот статус;
-- foreign tenant filter применяется в DB query.
+- foreign tenant filter применяется в DB query;
+- ProjectService получает computed capability scope; repository не вычисляет membership по user ID и не доверяет client organization;
+- membership revocation отражается при создании следующего ActorContext.
 
 ## Onboarding
 
@@ -41,6 +44,6 @@
 - duplicate/collision/placeholder/config reference validation;
 - no overwrite и dry-run project wizard;
 - seed idempotency;
-- analyst/client tenant matrix;
+- platform-admin/analyst/client capability и tenant matrix;
 - configuration readiness при 2 и 3 enabled sources;
 - disabled planned site state.

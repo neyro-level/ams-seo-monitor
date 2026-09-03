@@ -2,91 +2,135 @@
 
 ## Модель
 
-Better Auth `1.7.2` с Prisma adapter, username plugin и organization plugin — единственный application auth boundary.
+Better Auth `1.7.2` с Prisma adapter, username plugin и organization plugin — authentication boundary. Application authorization использует server-generated `ActorContext` и versioned capabilities.
 
 - public signup выключен;
 - accounts создаёт только operator CLI;
-- private routes проверяют session server-side;
-- tenant access определяется memberships в PostgreSQL;
-- Nginx не заменяет auth.
+- private routes читают fresh User + memberships на каждый request;
+- disabled user не получает ActorContext;
+- Nginx и client navigation не заменяют authorization.
 
-## Roles
+## System roles
+
+### PLATFORM_ADMIN
+
+Внутренний operator АМС. Получает platform/project/report/sync/settings capabilities. Будущие browser mutations остаются запрещены до AuditEvent/command foundation.
 
 ### SEO_ANALYST
 
-- global read access к projects/sites/reports;
-- доступ к `/analyst/`;
-- не получает provider credentials через UI.
+Global project/report read и sync read/run. Не управляет memberships или platform settings.
 
 ### CLIENT_VIEWER
 
-- доступ только к project subtree своей organization membership;
-- не открывает `/analyst/`;
-- foreign project/site/report получает denial/not-found.
+Только organization-scoped project/report read по текущим memberships.
 
-## Sign-in
+`PLATFORM_ADMIN` добавлен additive migration `20260903090000_add_platform_admin_role`. Existing users не меняются автоматически.
 
-- login identifier: immutable lowercase `username`;
-- username ограничен `a-z`, digits и `_`, длина 3–30;
-- Better Auth email field остаётся внутренним compatibility field;
-- password policy для operator provisioning: ровно 8 цифр;
-- password читается bounded stdin и запрещён в argv;
-- login modal расположен на public `/`; `?login=1` открывает его после redirect.
+## ActorContext
 
-## Authorization flow
+```text
+userId
+email
+name
+systemRole
+activeOrganizationId
+memberships[]
+permissions[]
+correlationId
+```
+
+Source: `src/application/ports/actor-context.ts`.
+
+Контекст создаётся только на сервере:
 
 ```text
 request headers
 → Better Auth session
-→ getCurrentAuthenticatedUser
-→ fresh User read
+→ fresh User + Member records
 → disabledAt check
-→ SEO_ANALYST global scope или Member organization IDs
-→ scoped repository query
-→ DTO
+→ validate activeOrganizationId against memberships
+→ role capability map
+→ server correlation ID
+→ ActorContext
 ```
 
-Удаление membership или установка `disabledAt` влияет на следующий server-side read; navigation hiding не участвует в решении.
+Client role, organization ID, permissions и correlation ID не считаются доказательством доступа.
 
-## Entry points
+## Capabilities
 
-- `src/infrastructure/auth/auth.ts` — Better Auth configuration;
-- `src/infrastructure/auth/session.ts` — request session;
-- `src/infrastructure/auth/authorization.ts` — active user/project/site access;
-- `src/app/api/auth/[...all]/route.ts` — auth HTTP handler;
-- `src/components/auth/LoginDialog.tsx` — client login UI;
-- `scripts/auth-admin.ts` — operator provisioning and access changes.
+```text
+platform:manage
+membership:manage:any
+project:read:any
+project:read:organization
+project:manage:any
+report:read:any
+report:read:organization
+sync:read:any
+sync:run:any
+settings:manage:any
+```
+
+ProjectService строит repository scope из capabilities + ActorContext memberships. ReportService отдельно требует report-read capability. Platform admin и analyst global access больше не зависит от scattered `systemRole === ...` checks.
+
+## Sign-in
+
+- immutable lowercase username;
+- username: `a-z`, digits, `_`, length 3–30;
+- public signup disabled;
+- operator password contract: ровно 8 цифр;
+- password передаётся bounded stdin, не argv;
+- login modal расположен на `/`; `?login=1` открывает его после redirect.
 
 ## Admin commands
 
 ```bash
-# Password is provided through stdin; --password is rejected.
-<secret-provider> | pnpm user:create -- --username <name> --name <display-name> --system-role CLIENT_VIEWER
+<secret-provider> | pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN
 pnpm user:disable -- --username <name>
 pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
 pnpm user:add-to-organization -- --username <name> --organization <slug>
 pnpm user:remove-from-organization -- --username <name> --organization <slug>
 ```
 
-Команды требуют server-side DB env. Они не запускаются из browser, не делают deploy и не печатают password.
+`parseSystemRole` принимает только versioned roles. Role/membership browser mutations появятся только после Phase 3 audit/idempotency foundation.
 
-## Failure behavior
+## Environment
 
-- auth без обязательной DB/secret/base URL configuration возвращает safe 503 route response;
-- unauthenticated page redirect: `/?login=1`;
-- non-analyst `/analyst/` redirect: `/dashboard/`;
-- disabled user считается unauthenticated;
-- foreign tenant route не раскрывает чужие данные.
+`src/platform/config/server-environment.ts` валидирует:
+
+- complete DB URL или complete DB component set;
+- DB port/protocol;
+- Better Auth secret minimum length;
+- complete Better Auth pair;
+- HTTPS auth URL outside loopback.
+
+`/api/health/ready` требует DB reachability и configured auth.
+
+## Errors и correlation
+
+- каждый auth request получает `X-Correlation-ID`;
+- auth unavailable использует standard public error envelope;
+- stack, SQL, session token и secret не возвращаются;
+- ActorContext correlation ID предназначен для будущих logs/audit/Sentry.
+
+## Entry points
+
+- `src/application/ports/actor-context.ts`;
+- `src/infrastructure/auth/auth.ts`;
+- `src/infrastructure/auth/session.ts`;
+- `src/infrastructure/auth/authorization.ts`;
+- `src/app/api/auth/[...all]/route.ts`;
+- `scripts/auth-admin.ts`.
 
 ## Проверки
 
-- analyst/client/disabled-user matrix;
-- cross-tenant project/site/report denial;
-- public signup disabled;
-- username normalization/uniqueness/immutability;
-- password not accepted through argv;
-- membership add/remove behavior;
-- auth unavailable safe response;
-- no auth secrets/Prisma records in browser payload.
-
-Live login smoke требует отдельные test credentials и не подменяется unit tests.
+- role → capability matrix;
+- platform admin/analyst global reads;
+- client membership scope;
+- active organization validation;
+- disabled user denial;
+- foreign project/site/report denial;
+- report capability denial;
+- correlation ID contract;
+- invalid role/env/error envelope rejection;
+- unauthenticated E2E redirect/login dialog.

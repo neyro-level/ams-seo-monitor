@@ -1,4 +1,4 @@
-import type { AuthenticatedUser } from "../ports/authenticated-user";
+import type { ActorContext } from "../ports/actor-context";
 import { ProjectService } from "./project-service";
 
 export interface ClientOverview {
@@ -20,7 +20,7 @@ export class SiteService {
   constructor(private readonly projectService: ProjectService) {}
 
   async getProjectOverviewForUser(
-    user: AuthenticatedUser,
+    user: ActorContext,
     clientSlug: string,
   ): Promise<ClientOverview | null> {
     const project = await this.projectService.getProjectTreeForUser(user, clientSlug);

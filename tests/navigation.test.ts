@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaContext } from "../src/infrastructure/database/prisma/context";
 import { buildNavigation } from "../src/modules/access/navigation";
+import { getActorContextByUserId } from "../src/infrastructure/auth/authorization";
+import type { ActorContext } from "../src/application/ports/actor-context";
+import { createActorContext } from "./helpers/actor-context";
 
 const navigationTestEnabled = Boolean(
   process.env.DATABASE_HOST &&
@@ -10,24 +13,22 @@ const navigationTestEnabled = Boolean(
 );
 const navigationTestDescription = navigationTestEnabled ? describe : describe.skip;
 
-const analystUser = {
+const analystActor = createActorContext({
   userId: "analyst-1",
   email: "analyst@test.local",
   name: "Analyst",
-  systemRole: "SEO_ANALYST" as const,
-  activeOrganizationId: null,
-};
+  systemRole: "SEO_ANALYST",
+});
 
-const clientViewerUser = {
+const clientViewerIdentity = {
   userId: "navigation-viewer-1",
   email: "viewer@test.local",
   name: "Viewer",
-  systemRole: "CLIENT_VIEWER" as const,
-  activeOrganizationId: null,
 };
 
 navigationTestDescription("database-backed navigation isolation", () => {
   let database: ReturnType<typeof createPrismaContext> | null = null;
+  let clientViewerActor: ActorContext | null = null;
 
   beforeAll(async () => {
     database = createPrismaContext({
@@ -44,12 +45,12 @@ navigationTestDescription("database-backed navigation isolation", () => {
       select: { id: true },
     });
     await database.prisma.user.upsert({
-      where: { id: clientViewerUser.userId },
+      where: { id: clientViewerIdentity.userId },
       update: { disabledAt: null, systemRole: "CLIENT_VIEWER" },
       create: {
-        id: clientViewerUser.userId,
-        email: clientViewerUser.email,
-        name: clientViewerUser.name,
+        id: clientViewerIdentity.userId,
+        email: clientViewerIdentity.email,
+        name: clientViewerIdentity.name,
         emailVerified: false,
         systemRole: "CLIENT_VIEWER",
       },
@@ -58,26 +59,30 @@ navigationTestDescription("database-backed navigation isolation", () => {
       where: {
         organizationId_userId: {
           organizationId: organization.id,
-          userId: clientViewerUser.userId,
+          userId: clientViewerIdentity.userId,
         },
       },
       update: { role: "client_viewer" },
       create: {
         organizationId: organization.id,
-        userId: clientViewerUser.userId,
+        userId: clientViewerIdentity.userId,
         role: "client_viewer",
       },
     });
+    clientViewerActor = await getActorContextByUserId(clientViewerIdentity.userId, {
+      correlationId: "00000000-0000-4000-8000-000000000002",
+    });
+    if (!clientViewerActor) throw new Error("Missing client viewer ActorContext");
   });
 
   afterAll(async () => {
     if (!database) return;
-    await database.prisma.member.deleteMany({ where: { userId: clientViewerUser.userId } });
-    await database.prisma.user.deleteMany({ where: { id: clientViewerUser.userId } });
+    await database.prisma.member.deleteMany({ where: { userId: clientViewerIdentity.userId } });
+    await database.prisma.user.deleteMany({ where: { id: clientViewerIdentity.userId } });
     await database.close();
   });
   it("renders only the current client subtree on a client route", async () => {
-    const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/", clientViewerUser);
+    const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/", clientViewerActor!);
     const items = sections.flatMap((section) => section.items);
 
     expect(sections).toHaveLength(2);
@@ -92,7 +97,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
   });
 
   it("renders all projects directly on the analyst root", async () => {
-    const sections = await buildNavigation("/analyst/", analystUser);
+    const sections = await buildNavigation("/analyst/", analystActor);
     const serialized = JSON.stringify(sections);
     const mainItems = sections[0]?.items ?? [];
     const projectItems = sections[1]?.items ?? [];

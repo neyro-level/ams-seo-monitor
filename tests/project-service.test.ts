@@ -6,23 +6,40 @@ import type {
   StoredProjectRecord,
   StoredSiteRecord,
 } from "../src/application/ports/project-repository";
-import type { AuthenticatedUser } from "../src/application/ports/authenticated-user";
+import { createActorContext } from "./helpers/actor-context";
 
-const analystUser: AuthenticatedUser = {
+const analystUser = createActorContext({
   userId: "analyst-1",
   email: "analyst@test.local",
   name: "Analyst",
   systemRole: "SEO_ANALYST",
-  activeOrganizationId: null,
-};
+});
 
-const REDACTED_CLIENT_DATAViewer: AuthenticatedUser = {
+const REDACTED_CLIENT_DATAViewer = createActorContext({
   userId: "viewer-1",
   email: "viewer@test.local",
   name: "Viewer",
   systemRole: "CLIENT_VIEWER",
-  activeOrganizationId: null,
-};
+  memberships: [
+    {
+      membershipId: "membership-REDACTED_CLIENT_DATA",
+      organizationId: "org-REDACTED_CLIENT_DATA",
+      role: "client_viewer",
+    },
+  ],
+});
+
+const platformAdmin = createActorContext({
+  userId: "platform-admin-1",
+  systemRole: "PLATFORM_ADMIN",
+});
+
+const deniedActor = createActorContext({
+  userId: "denied-1",
+  systemRole: "CLIENT_VIEWER",
+  memberships: REDACTED_CLIENT_DATAViewer.memberships,
+  permissions: [],
+});
 
 const projects: StoredProjectRecord[] = [
   {
@@ -82,10 +99,6 @@ const projects: StoredProjectRecord[] = [
 ];
 
 class FakeProjectRepository implements ProjectRepository {
-  async listOrganizationIdsForUser(userId: string): Promise<string[]> {
-    return userId === "viewer-1" ? ["org-REDACTED_CLIENT_DATA"] : [];
-  }
-
   async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
     return scope.organizationIds === null
       ? projects
@@ -118,10 +131,18 @@ describe("ProjectService", () => {
     expect(await projectService.listProjectsForUser(analystUser)).toHaveLength(2);
   });
 
+  it("allows platform admin through capabilities rather than analyst role equality", async () => {
+    expect(await projectService.listProjectsForUser(platformAdmin)).toHaveLength(2);
+  });
+
   it("limits client viewer to own organization", async () => {
     const visibleProjects = await projectService.listProjectsForUser(REDACTED_CLIENT_DATAViewer);
     expect(visibleProjects).toHaveLength(1);
     expect(visibleProjects[0]?.projectSlug).toBe("REDACTED_CLIENT_DATA");
+  });
+
+  it("denies an actor without project read capability", async () => {
+    expect(await projectService.listProjectsForUser(deniedActor)).toEqual([]);
   });
 
   it("returns site access only inside allowed organization", async () => {

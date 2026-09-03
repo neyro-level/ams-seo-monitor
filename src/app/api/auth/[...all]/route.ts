@@ -1,25 +1,34 @@
-import { NextResponse } from "next/server";
 import { toNextJsHandler } from "better-auth/next-js";
 import { auth } from "@/infrastructure/auth/auth";
+import { createCorrelationId } from "@/platform/http/correlation";
+import { createPublicErrorResponse } from "@/platform/http/error-envelope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function resolveHandler(method: "GET" | "POST") {
+async function handleAuthRequest(method: "GET" | "POST", request: Request) {
+  const correlationId = createCorrelationId();
   if (!auth) {
-    return () => NextResponse.json({ error: "auth_unavailable" }, { status: 503 });
+    return createPublicErrorResponse(
+      {
+        code: "AUTH_UNAVAILABLE",
+        message: "Сервис авторизации временно недоступен.",
+        correlationId,
+      },
+      503,
+    );
   }
 
   const handlers = toNextJsHandler(auth);
-  return method === "GET" ? handlers.GET : handlers.POST;
+  const response = await (method === "GET" ? handlers.GET : handlers.POST)(request);
+  response.headers.set("X-Correlation-ID", correlationId);
+  return response;
 }
 
-export async function GET(request: Request) {
-  const handler = resolveHandler("GET");
-  return handler(request);
+export function GET(request: Request) {
+  return handleAuthRequest("GET", request);
 }
 
-export async function POST(request: Request) {
-  const handler = resolveHandler("POST");
-  return handler(request);
+export function POST(request: Request) {
+  return handleAuthRequest("POST", request);
 }

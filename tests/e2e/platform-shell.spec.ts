@@ -14,6 +14,31 @@ test("preserves the public AMS IMPULSE surface", async ({ page, request }) => {
   expect(faviconResponse.status()).toBe(200);
   expect(faviconResponse.headers()["content-type"]).toContain("image/svg+xml");
 
+  const healthResponse = await request.get("/api/health/live");
+  expect(healthResponse.status()).toBe(200);
+  const health = (await healthResponse.json()) as {
+    status: string;
+    releaseSha: string | null;
+    correlationId: string;
+  };
+  expect(health).toMatchObject({ status: "ok", releaseSha: null });
+  expect(health.correlationId).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  );
+  expect(healthResponse.headers()["x-correlation-id"]).toBe(health.correlationId);
+
+  const authResponse = await request.get("/api/auth/get-session");
+  expect(authResponse.status()).toBe(503);
+  const authError = (await authResponse.json()) as {
+    ok: boolean;
+    error: { code: string; correlationId: string };
+  };
+  expect(authError).toMatchObject({
+    ok: false,
+    error: { code: "AUTH_UNAVAILABLE" },
+  });
+  expect(authResponse.headers()["x-correlation-id"]).toBe(authError.error.correlationId);
+
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );

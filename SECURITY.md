@@ -26,8 +26,10 @@ Security boundary состоит из public browser surface, Next.js applicatio
 ### Next.js application
 
 - Better Auth проверяет session;
-- `getCurrentAuthenticatedUser()` повторно читает user и отклоняет `disabledAt`;
-- private pages выполняют server-side role/membership check до чтения project/report;
+- `getCurrentActorContext()` повторно читает User + Member records и отклоняет `disabledAt`;
+- active organization принимается только если входит в fresh memberships;
+- private pages/services проверяют capability и tenant scope до чтения project/report;
+- каждый private ActorContext получает server-generated correlation ID;
 - public signup выключен;
 - presentation не обращается к Prisma напрямую;
 - readiness не возвращает connection details и закрыта Nginx для внешнего доступа.
@@ -70,22 +72,27 @@ Public contact form отправляет имя, телефон, source/UTM и a
 
 ## Roles и authorization
 
+### PLATFORM_ADMIN
+
+Internal global platform capabilities. Browser mutations запрещены до AuditEvent/transaction command foundation.
+
 ### SEO_ANALYST
 
-Global read scope по projects/sites/reports.
+Global project/report/sync read capabilities без platform/membership management.
 
 ### CLIENT_VIEWER
 
-Только organization memberships. Знание `clientSlug`, `siteSlug` или report URL не даёт доступ.
+Только organization-scoped project/report capabilities по fresh memberships. Знание `clientSlug`, `siteSlug` или report URL не даёт доступ.
 
 Authorization flow:
 
 ```text
-session
-→ active user
-→ system role / current memberships
+Better Auth session
+→ fresh non-disabled User + memberships
+→ code-versioned capabilities
+→ validated active organization
 → scoped project/site query
-→ explicit DTO
+→ explicit DTO + correlation ID
 ```
 
 Foreign tenant access возвращает denial/not-found без раскрытия существования записи.
@@ -119,6 +126,15 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - project identifier;
 - public site key.
 
+## Environment validation
+
+- DB принимает только complete URL или complete component set;
+- auth secret/URL проверяются вместе;
+- non-loopback Better Auth URL требует HTTPS;
+- Leads endpoint/project/site key проходят exact public schema;
+- invalid production web env блокирует deploy build;
+- `RELEASE_SHA` принимает только full lowercase Git SHA.
+
 ## PII
 
 - User/session tables могут содержать email, IP и user-agent, доступные только auth/server layer;
@@ -147,21 +163,30 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - provider origin exact-allowlisted HTTPS;
 - secret values absent from code/docs/logs/browser;
 - lead PII not stored in AMS IMPULSE DB;
+- permissions вычисляются server-side из versioned role matrix;
+- report reads требуют отдельный report capability;
+- public error envelope содержит stable code, safe message, fieldErrors и correlationId;
+- health/auth responses возвращают matching `X-Correlation-ID`;
+- release health SHA поступает из root-owned deploy-generated env;
 - concurrent full worker sync blocked by PostgreSQL advisory lock;
 - partial/error metadata remains honest;
 - production DB not used for local tests;
 - local PostgreSQL binds only to `127.0.0.1`; credentials stay in ignored `.env.local`;
 - integration runner accepts only explicit `TEST_DATABASE_*` with a `*_test` database name;
-- public/auth-boundary E2E does not embed login credentials or production data.
+- public/auth-boundary E2E does not embed login credentials or production data;
 - production migration/deploy/restore requires explicit owner action.
 
 ## Проверки security-scope
 
-- analyst/client/disabled-user authorization matrix;
+- platform-admin/analyst/client/disabled-user capability matrix;
+- fresh memberships и active organization validation;
 - foreign project/site/report denial;
-- auth unavailable returns safe 503;
+- report capability denial;
+- auth unavailable standard 503 envelope;
+- correlation/error/health schema tests;
+- invalid DB/auth/release/public env rejection;
 - public signup disabled;
-- exact provider origin enforcement;
+- exact provider/Leads origin enforcement;
 - no secret/raw body in logs and DTO;
 - readiness external denial;
 - private noindex metadata;

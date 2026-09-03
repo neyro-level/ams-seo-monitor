@@ -45,7 +45,7 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 ## Product invariants
 
 - hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`;
-- роли: `SEO_ANALYST`, `CLIENT_VIEWER`;
+- роли: `PLATFORM_ADMIN`, `SEO_ANALYST`, `CLIENT_VIEWER`;
 - browser-safe report contract: `SiteReportSnapshot`;
 - periods: `week`, `month`, `quarter`, `halfYear`; default — `month`;
 - `partial` ≠ `success`, `stale` ≠ `current`, `null` ≠ `0`;
@@ -58,6 +58,9 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 
 - Next.js работает как standalone server application, не static export;
 - PostgreSQL — единственный runtime source of truth;
+- `ActorContext` создаётся server-side из fresh User + Member records;
+- authorization использует versioned capabilities, а не scattered role checks;
+- active organization принимается только из ActorContext memberships;
 - `config/*` — checked-in nonsecret seed/input, не runtime registry;
 - Better Auth — application authentication boundary;
 - authorization проверяется server-side на каждом private read;
@@ -71,7 +74,8 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - `src/domain/reports/report-compiler.ts` владеет report semantics; второй compiler запрещён;
 - public AMS IMPULSE landing, dialogs, legal routes и `ch-*` visual language сохраняются; Refine/shadcn не переносятся в public UI;
 - новые vertical modules получают public `index.ts`; cross-module imports внутренних файлов запрещены;
-- executable import rules принадлежат `dependency-cruiser.config.cjs`.
+- executable import rules принадлежат `dependency-cruiser.config.cjs`;
+- `src/platform` владеет neutral env, correlation, error и health contracts;
 
 ## Архитектурные зоны
 
@@ -98,6 +102,10 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 
 ## Security
 
+- `PLATFORM_ADMIN` — internal role; browser mutations запрещены до audit/idempotency foundation.
+- Private reads требуют capability + tenant scope; navigation visibility не является защитой.
+- Public errors используют stable envelope и correlation ID.
+- Production web env валидируется до build; release SHA materialize-ит deploy, не browser.
 - Public signup выключен.
 - Provider credentials, DB URLs, Better Auth secret, backup credentials и delivery tokens не попадают в Git, docs, browser или logs.
 - Public Leads API site key не считается секретом; bot/delivery credentials остаются во внешнем Leads API.
@@ -142,6 +150,12 @@ HEAVY candidate:
 
 ```bash
 pnpm verify:heavy
+```
+
+Production/release scope дополнительно:
+
+```bash
+pnpm verify:web-environment
 ```
 
 Integration runner обязан fail-closed без isolated `*_test` database. UI scope требует browser proof на `375 / 768 / 1280 / 1440`. Backup scope — `pnpm db:restore-smoke` только на временной БД.

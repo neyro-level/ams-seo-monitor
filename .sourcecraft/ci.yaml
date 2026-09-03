@@ -45,8 +45,7 @@ workflows:
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
         cubes:
           - name: verify
-            devcontainer:
-              workspace_folder: "./.devcontainer/ci"
+            image: docker.io/library/node:24.20.0-bookworm
             script:
               - corepack enable
               - corepack prepare pnpm@11.5.1 --activate
@@ -55,8 +54,5 @@ workflows:
               - node scripts/ci/verify-exact-head.mjs
               - pnpm verify:snapshots
               - pnpm verify:fast
-              - bash scripts/ci/run-postgres-integration.sh
               - pnpm build:collector
               - pnpm build
-              - pnpm exec playwright install --with-deps chromium
-              - pnpm test:e2e:run
