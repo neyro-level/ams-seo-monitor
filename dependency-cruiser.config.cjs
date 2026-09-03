@@ -128,6 +128,12 @@ module.exports = {
       from: { pathNot: "^src/modules/platform-operations/" },
       to: { path: "^src/modules/platform-operations/(domain|application|infrastructure|presentation)/" },
     },
+    {
+      name: "admin-cms-internals-are-private",
+      severity: "error",
+      from: { pathNot: "^src/modules/admin-cms/" },
+      to: { path: "^src/modules/admin-cms/(domain|application|infrastructure|presentation)/" },
+    },
   ],
   options: {
     doNotFollow: { path: "node_modules" },

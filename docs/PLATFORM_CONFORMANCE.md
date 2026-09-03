@@ -71,24 +71,24 @@
 | Runtime | Next.js standalone + exact `.node-version` | соответствует | сохранить |
 | TypeScript | strict app/collector/tests | соответствует | сохранить |
 | Tailwind | v4 | соответствует | токенизировать остаточный dashboard drift |
-| Zod | DTO/provider + central DB/Auth/Leads/error/health contracts | соответствует Phase 2 boundaries | расширять на future commands |
+| Zod | DTO/provider/env/error/health + Admin command schemas | соответствует Phase 5 boundaries | расширять вместе с real commands |
 | Prisma/PostgreSQL | production source of truth + additive platform/reliability migrations | соответствует Phase 3 foundation | расширять только real module schema |
 | Better Auth | session adapter → fresh ActorContext, permissions, memberships, correlation | соответствует Phase 2 | сохранить adapter boundary |
 | Tenant isolation | capability + ActorContext memberships → repository scope | соответствует application layer | расширять integration matrix |
-| Modular monolith | six vertical modules with public root entrypoints | соответствует Phase 4; internals protected by executable rules | preserve boundaries in Admin CMS |
+| Modular monolith | seven vertical modules with public root entrypoints | соответствует Phase 4–5; internals protected by executable rules | preserve boundaries |
 | Public UI | готовый AMS IMPULSE landing | переносить в generic cabinet нельзя | freeze external composition; configurable brand only later |
-| Private UI | custom dashboard primitives | нет Refine/shadcn/RHF CMS shell | добавить только в protected admin route group |
-| Commands/queries | read services, SyncService, validated ReliabilityService commands | CMS resource mutations not yet implemented | Phase 5 named commands |
+| Private UI | existing dashboard + protected Refine resource registry, shadcn-style primitives, RHF/Zod forms | соответствует Phase 5 | не переносить stack в public UI |
+| Commands/queries | bounded resource queries + fixed named audited commands | соответствует Phase 5 | arbitrary Prisma CRUD запрещён |
 | DTO | `SiteReportSnapshot`, service DTO, standard error/health envelopes | соответствует Phase 2 | extend per module |
-| Audit | AuditEvent atomic with idempotent enqueue | соответствует Phase 3 foundation | connect all CMS mutations |
+| Audit | resource mutations and deferred enqueue are atomic with AuditEvent | соответствует Phase 3/5 | сохранить safe markers |
 | Outbox/jobs | leases, JobRun, retry/backoff, dead-letter, five-minute worker | соответствует Phase 3 foundation | add only registered handlers |
 | Idempotency | tenant-scoped key + canonical payload hash + unique constraint | соответствует Phase 3 | apply to commands/webhooks |
 | Observability | JSON sync logs + correlation/release health + outbox counts | нет Sentry и worker freshness threshold | Phase 6 |
-| Unit tests | 76 Vitest tests, isolated from DB suites | соответствует Phase 3 | expand per module |
-| Integration tests | 21 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 3 | expand per module |
-| E2E | 8 Playwright checks on 375/768/1280/1440 | соответствует Phase 1–3 | expand authenticated paths |
-| Architecture QA | Dependency Cruiser: 129 modules / 275 dependencies | соответствует Phase 4 vertical boundaries | extend rules with each new module |
-| Local development | Docker PostgreSQL 18.6, separate dev/test DB, fail-closed guards | соответствует Phase 1 | добавить auth bootstrap в Phase 2/5 |
+| Unit tests | 77 Vitest tests, isolated from DB suites | соответствует Phase 5, включая build-safe lazy adapter | expand with observable contracts |
+| Integration tests | 25 tests on isolated PostgreSQL 18 with migrations/seed | соответствует Phase 5, включая Admin rollback/ownership/history | expand per module |
+| E2E | 13 Playwright setup/public/auth/Admin checks on 375/768/1280/1440 | соответствует Phase 5 | preserve golden paths |
+| Architecture QA | Dependency Cruiser: 149 modules / 325 dependencies | соответствует Phase 5 module boundaries | extend rules with each new module |
+| Local development | Docker PostgreSQL 18.6, separate dev/test DB, fail-closed guards, loopback-only E2E admin seed | соответствует Phase 5 | сохранить |
 | Release | exact-main immutable deploy + SHA health/env rollback contract | соответствует Phase 2 | verify on next production release |
 | Backup | local + mandatory offsite + restore smoke | соответствует | сохранить |
 | Documentation | core/module/ops canon + conformance + ADR | соответствует | синхронизировать по фазам |

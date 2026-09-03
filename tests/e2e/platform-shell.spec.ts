@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { adminAuthStatePath } from "./auth-state";
 
 test("preserves the public AMS IMPULSE surface", async ({ page, request }) => {
   await page.goto("/");
@@ -28,16 +29,8 @@ test("preserves the public AMS IMPULSE surface", async ({ page, request }) => {
   expect(healthResponse.headers()["x-correlation-id"]).toBe(health.correlationId);
 
   const authResponse = await request.get("/api/auth/get-session");
-  expect(authResponse.status()).toBe(503);
-  const authError = (await authResponse.json()) as {
-    ok: boolean;
-    error: { code: string; correlationId: string };
-  };
-  expect(authError).toMatchObject({
-    ok: false,
-    error: { code: "AUTH_UNAVAILABLE" },
-  });
-  expect(authResponse.headers()["x-correlation-id"]).toBe(authError.error.correlationId);
+  expect(authResponse.status()).toBe(200);
+  expect(await authResponse.json()).toBeNull();
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -52,4 +45,34 @@ test("keeps private routes behind the login boundary", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Вход в кабинет" })).toBeVisible();
   await expect(page.getByLabel("Логин")).toBeVisible();
   await expect(page.getByLabel("Пароль")).toBeVisible();
+});
+
+test.describe("Admin CMS", () => {
+  test.use({ storageState: adminAuthStatePath });
+
+  test("opens for a platform administrator", async ({ page }) => {
+    await page.goto("/admin/organizations/");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Организации" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Ресурсы администрирования" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Сохранить организацию" })).toBeVisible();
+    await expect(page.getByText(/Всего:/)).toBeVisible();
+
+    await page.goto("/admin/providers/");
+    await page.getByLabel("Сайт").selectOption({ index: 1 });
+    await page.getByRole("combobox", { name: "Источник*" }).selectOption("YANDEX_WEBMASTER");
+    await page.getByLabel("Nonsecret settings JSON").fill('{"apiKey":"must-not-be-stored"}');
+    await page.getByRole("button", { name: "Сохранить подключение" }).click();
+    await expect(
+      page.getByText(/Разрешён только плоский nonsecret JSON/),
+    ).toBeVisible();
+
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalOverflow).toBe(false);
+  });
 });

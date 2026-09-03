@@ -12,6 +12,7 @@ export default defineConfig({
     fileParallelism: false,
     setupFiles: ["./tests/setup-test-env.ts"],
     include: [
+      "tests/admin-cms.integration.test.ts",
       "tests/auth.authorization.test.ts",
       "tests/health.integration.test.ts",
       "tests/monitoring-service.test.ts",

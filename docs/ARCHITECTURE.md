@@ -85,6 +85,18 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 - infrastructure: reliability transaction repository и bounded topic dispatcher;
 - worker entrypoint экспортируется отдельно от framework-neutral API.
 
+### Admin CMS — `src/modules/admin-cms`, `src/app/admin`
+
+- protected resource registry использует Refine Core только внутри private admin surface;
+- server-rendered lists применяют allowlisted search/sort и bounded pagination;
+- React Hook Form + Zod валидируют command forms, shadcn-style source components задают локальные primitives;
+- browser transport dispatches только фиксированный union named commands;
+- каждый command повторно проверяет fresh `ActorContext` и `platform:manage`;
+- каждая database mutation и `AuditEvent` фиксируются в одной Prisma transaction;
+- provider settings принимают только плоский nonsecret JSON и отклоняют sensitive keys;
+- tracked query replacement отключает отсутствующие запросы, но не удаляет их историю;
+- public AMS IMPULSE landing не импортирует Refine или Admin UI.
+
 ### Shared platform — `src/platform`, `src/shared`, `src/infrastructure`
 
 - `src/platform/config` — server/public environment schemas;

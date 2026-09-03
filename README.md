@@ -65,6 +65,7 @@ systemd timer
 
 - `/dashboard/` — входная точка кабинета;
 - `/analyst/` — все доступные аналитику проекты;
+- `/admin/{resource}/` — protected PLATFORM_ADMIN resources, filters, pagination и audited commands;
 - `/c/{clientSlug}/` — сайты проекта;
 - `/c/{clientSlug}/{siteSlug}/?period=week|month|quarter|halfYear` — отчёт сайта;
 - `/demo/` — авторизованный fixture-отчёт;
@@ -80,6 +81,7 @@ systemd timer
 - Prisma `7.10.0`, PostgreSQL `18.x`;
 - Better Auth `1.7.2`;
 - Tailwind CSS `4.3.3`, Recharts `3.10.1`;
+- Refine Core `5.0.12`, React Hook Form `7.87.0`, shadcn-style source primitives;
 - Vitest, Playwright и Dependency Cruiser.
 
 ## Локальная подготовка
@@ -120,7 +122,7 @@ pnpm verify:fast
 pnpm verify:heavy
 ```
 
-`test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и seed. `test:e2e` строит standalone runtime и проверяет public UI/auth boundary на 375/768/1280/1440.
+`test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и seed. `test:e2e` строит standalone runtime, создаёт только в loopback DB отдельного E2E PLATFORM_ADMIN и проверяет public UI, auth boundary и Admin CMS на 375/768/1280/1440.
 
 Production web env отдельно проверяется общей Zod boundary:
 

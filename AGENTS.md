@@ -74,6 +74,9 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - `src/modules/reporting/domain/report-compiler.ts` владеет report semantics; второй compiler запрещён;
 - public AMS IMPULSE landing, dialogs, legal routes и `ch-*` visual language сохраняются; Refine/shadcn не переносятся в public UI;
 - vertical modules публикуют только root entrypoints (`index.ts`, а при необходимости `server.ts`, `client.ts`, `worker.ts`); cross-module imports внутренних слоёв запрещены;
+- Admin CMS живёт только в `/admin/*`, требует `platform:manage` на route и command boundary и не меняет public AMS IMPULSE UI;
+- Admin mutations — fixed named commands; change + safe AuditEvent принадлежат одной transaction;
+- browser никогда не принимает/показывает provider secrets; settings JSON отклоняет sensitive keys;
 - executable import rules принадлежат `dependency-cruiser.config.cjs`;
 - `src/platform` владеет neutral env, correlation, error и health contracts;
 - значимый deferred side effect начинается atomic enqueue: IdempotencyKey + AuditEvent + OutboxEvent;
@@ -91,6 +94,7 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 - `src/modules/ranking-analytics` — deterministic ranking/query analytics;
 - `src/modules/data-ingestion` — sync lifecycle, ports, persistence и worker orchestration;
 - `src/modules/platform-operations` — audit/idempotency/outbox/job lifecycle;
+- `src/modules/admin-cms` — Refine resource registry, bounded queries, named commands и audited persistence;
 - `src/infrastructure` — shared Prisma context и web/worker composition roots;
 - `src/worker` — compiled worker entrypoint;
 - `collector/sources` — read-only provider adapters;

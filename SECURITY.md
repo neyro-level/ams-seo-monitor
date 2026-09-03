@@ -77,7 +77,7 @@ Public contact form отправляет имя, телефон, source/UTM и a
 
 ### PLATFORM_ADMIN
 
-Internal global platform capabilities. Browser mutations запрещены до AuditEvent/transaction command foundation.
+Internal global platform capabilities. `/admin/*` и каждый Admin command требуют fresh `ActorContext` + `platform:manage`; UI visibility не считается authorization.
 
 ### SEO_ANALYST
 
@@ -172,6 +172,9 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - health/auth responses возвращают matching `X-Correlation-ID`;
 - idempotency key is tenant-scoped and payload-hash bound;
 - audit/outbox/idempotency enqueue is one transaction;
+- Admin CMS допускает только fixed named commands; resource mutation и safe AuditEvent атомарны;
+- provider settings из browser принимают только плоский nonsecret JSON и отклоняют sensitive key names;
+- tracked query replacement сохраняет records/history и меняет lifecycle через `enabled`;
 - outbox payload, audit markers and JobRun errors exclude secrets/raw PII;
 - retries are bounded; permanent failures become visible dead-letter;
 - release health SHA поступает из root-owned deploy-generated env;

@@ -98,6 +98,16 @@ Project-level allowlist целей Metrika и optional site scope.
 - позиции nullable;
 - `enabled=false` сохраняет историю, но исключает query из активного core.
 
+## Admin CMS command lifecycle
+
+- Admin lists читают PostgreSQL через allowlisted resource queries с bounded pagination.
+- Mutation transport принимает только фиксированные named commands и повторно строит fresh `ActorContext`.
+- `PLATFORM_ADMIN` capability проверяется до repository call; browser state не определяет authorization.
+- Resource change и safe `AuditEvent` создаются в одной transaction; ошибка откатывает оба.
+- Organization/member/project/site не удаляются произвольно: membership можно явно отозвать, project/site отключаются через lifecycle fields.
+- Provider settings содержат только nonsecret mapping; sensitive keys отклоняются до persistence.
+- Замена tracked query set отключает отсутствующие queries вместо physical delete, сохраняя ranking history.
+
 ## Sync lifecycle
 
 ### SyncRun
