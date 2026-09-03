@@ -19,6 +19,7 @@ export default defineConfig({
       "tests/prisma-repositories.test.ts",
       "tests/navigation.test.ts",
       "tests/principal.integration.test.ts",
+      "tests/project-reference.integration.test.ts",
       "tests/reliability.integration.test.ts",
       "tests/prisma-sync-repository.test.ts",
       "tests/worker.sync-project.test.ts",

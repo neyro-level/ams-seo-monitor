@@ -54,7 +54,7 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 Владеет routes, metadata, layouts, rendering и browser interaction.
 
 - public: `/`, legal pages, robots, sitemap;
-- private: `/dashboard/`, `/analyst/`, `/c/*`, `/demo/`;
+- private: `/dashboard/`, `/analyst/`, `/c/*`, `/demo/`, `/admin/projects`;
 - API: Better Auth и health routes;
 - получает browser-safe DTO;
 - не импортирует Prisma, SQL и provider clients;
@@ -70,9 +70,12 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 
 ### Project Registry — `src/modules/project-registry`
 
-- application: `ProjectService`, `SiteService`, `MonitoringService`, `AnalystService` и repository ports;
-- infrastructure: Prisma repositories и checked-in seed registry adapter;
-- presentation: tenant-aware navigation и overview DTO composition.
+- legacy application reads: `ProjectService`, `SiteService`, `MonitoringService`, `AnalystService` и repository ports до профильной cutover;
+- reference slice application: canonical Project queries/commands, PrincipalContext authorization и module-owned resource loader;
+- infrastructure: separate scoped transaction repository, selected-field query repository и server composition root;
+- domain: browser-safe Zod command contracts, stable Project errors и optimistic `version`;
+- presentation: tenant-aware navigation, overview DTOs и `/admin/projects` server-paginated management UI;
+- Project mutation and AuditEvent share one transaction; application code does not import infrastructure adapters.
 
 ### Reporting — `src/modules/reporting`
 
