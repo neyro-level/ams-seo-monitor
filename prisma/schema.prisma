@@ -7,6 +7,7 @@ datasource db {
 }
 
 enum SystemRole {
+  PLATFORM_ADMIN
   SEO_ANALYST
   CLIENT_VIEWER
 }

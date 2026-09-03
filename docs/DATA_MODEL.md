@@ -17,9 +17,11 @@ PostgreSQL — единственный runtime source of truth.
 Better Auth user с `systemRole`, optional immutable `username` и `disabledAt`.
 
 - `username` и `email` уникальны;
-- `SEO_ANALYST` имеет global read scope;
-- `CLIENT_VIEWER` получает project scope только через `Member`;
-- disabled user не проходит authorization.
+- `PLATFORM_ADMIN` — internal global platform capabilities;
+- `SEO_ANALYST` — global project/report/sync read capabilities;
+- `CLIENT_VIEWER` получает organization scope только через `Member`;
+- disabled user не проходит authorization;
+- additive enum migration не меняет роли existing users автоматически.
 
 ### Session, Account, Verification
 
@@ -38,6 +40,10 @@ User ← Member → Organization → Project
 ### Invitation
 
 Schema совместимости Better Auth organization plugin. Public signup и self-service invitation flow не являются активным product scope.
+
+### ActorContext
+
+Не хранится как DB record. На каждый private request собирается из fresh User, memberships, active organization, code-versioned permissions и server correlation ID. Session/client values не заменяют DB membership check.
 
 ## Project registry
 

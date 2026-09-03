@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "../../components/shell/AppShell";
 import { SiteReportView } from "../../modules/dashboards/SiteReportView";
 import { getDemoSnapshot } from "../../modules/report-data/demo-data";
-import { getCurrentAuthenticatedUser } from "../../infrastructure/auth/session";
+import { getCurrentActorContext } from "../../infrastructure/auth/session";
 import { siteRegistrySchema } from "../../shared/schemas/registry";
 
 const demoSite = siteRegistrySchema.parse({
@@ -25,7 +25,7 @@ const demoSite = siteRegistrySchema.parse({
 });
 
 export default async function DemoPage() {
-  const user = await getCurrentAuthenticatedUser();
+  const user = await getCurrentActorContext();
   if (!user) {
     redirect("/?login=1");
   }

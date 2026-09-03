@@ -42,6 +42,7 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 
 Владеет use cases и ports:
 
+- `ActorContext`, permissions и tenant scope — application access contract;
 - `ProjectService` — tenant-scoped projects/sites;
 - `SiteService` — project overview;
 - `ReportService` — authorized report reads;
@@ -58,6 +59,13 @@ Application types не зависят от Prisma generated types.
 - `reports/report-compiler.ts` — единственный compiler `SiteReportSnapshot`.
 
 Domain не знает React, Better Auth, Prisma, PostgreSQL и HTTP transport.
+
+### Platform — `src/platform`
+
+- `config` — server/public environment schemas;
+- `http` — correlation ID, error envelope и release-aware health DTO;
+- не импортирует project business layers;
+- используется adapters/routes как технический contract.
 
 ### Infrastructure — `src/infrastructure`
 
@@ -135,13 +143,15 @@ PostgreSQL хранит:
 ```text
 request headers
 → Better Auth session
-→ active, non-disabled user
-→ SEO_ANALYST global scope or CLIENT_VIEWER organization memberships
-→ scoped project/site query
-→ explicit DTO
+→ fresh non-disabled User + memberships
+→ PLATFORM_ADMIN / SEO_ANALYST / CLIENT_VIEWER capability map
+→ validated active organization
+→ repository tenant scope
+→ report-specific capability
+→ explicit DTO + correlation ID
 ```
 
-Private routes повторяют server-side access check до чтения report data. Nginx не заменяет этот boundary.
+Private routes/services проверяют capabilities до data read. Membership revocation действует на следующий request. Nginx и navigation не заменяют этот boundary.
 
 ## Public lead flow
 
@@ -173,7 +183,10 @@ AMS IMPULSE не пишет имя и телефон заявки в свою Po
 - `ops/systemd/seo-monitor-worker.{service,timer}` — provider sync;
 - `ops/systemd/seo-monitor-db-backup.{service,timer}` — PostgreSQL backup;
 - `scripts/build-release.mjs` — immutable source artifact;
-- `scripts/deploy-production.mjs` — target build, migration, seed, backup/restore smoke, cutover/rollback.
+- `scripts/deploy-production.mjs` — target build, migration, seed, backup/restore smoke, cutover/rollback;
+- deploy атомарно пишет root-owned `shared/release.env` с exact `RELEASE_SHA`;
+- web systemd читает release env, а live/ready DTO возвращают exact SHA;
+- rollback синхронно возвращает previous release SHA.
 
 `pnpm build` после Next build копирует `public/` и `.next/static/` внутрь standalone tree; это обеспечивает корректную прямую работу standalone runtime.
 

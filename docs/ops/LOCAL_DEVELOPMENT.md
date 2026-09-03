@@ -37,7 +37,7 @@ pnpm dev
 
 Next.js читает `.env.local`. Local URL: `http://127.0.0.1:3000`.
 
-Auth user создаётся существующим bounded-stdin operator CLI. Local auth bypass и hardcoded password запрещены.
+Auth user создаётся existing bounded-stdin operator CLI с одной из versioned roles: `PLATFORM_ADMIN`, `SEO_ANALYST`, `CLIENT_VIEWER`. Local auth bypass и hardcoded password запрещены.
 
 ## Tests
 

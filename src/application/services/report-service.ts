@@ -1,7 +1,7 @@
 import type { ProjectRepository } from "../ports/project-repository";
 import type { ReportRepository, StoredReportSnapshotRecord } from "../ports/report-repository";
 import type { ReportPeriodKey, SiteReportSnapshot } from "../../shared/schemas/report";
-import type { AuthenticatedUser } from "../ports/authenticated-user";
+import { hasPermission, type ActorContext } from "../ports/actor-context";
 import { ProjectService } from "./project-service";
 
 export class ReportService {
@@ -18,11 +18,18 @@ export class ReportService {
   }
 
   async getSiteReportForUser(
-    user: AuthenticatedUser,
+    user: ActorContext,
     projectSlug: string,
     siteSlug: string,
     periodKey: ReportPeriodKey,
   ): Promise<SiteReportSnapshot | null> {
+    if (
+      !hasPermission(user, "report:read:any") &&
+      !hasPermission(user, "report:read:organization")
+    ) {
+      return null;
+    }
+
     const site = await this.projectService.getSiteAccessForUser(user, projectSlug, siteSlug);
     if (!site) {
       return null;

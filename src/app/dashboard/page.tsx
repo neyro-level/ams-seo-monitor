@@ -6,11 +6,12 @@ import { AppShell } from "../../components/shell/AppShell";
 import { KpiCard } from "../../components/dashboard/KpiCard";
 import { PageHeader } from "../../components/dashboard/PageHeader";
 import { SectionCard } from "../../components/dashboard/SectionCard";
-import { getCurrentAuthenticatedUser } from "../../infrastructure/auth/session";
+import { getCurrentActorContext } from "../../infrastructure/auth/session";
 import { buildAnalystOverview } from "../../modules/dashboards/overview";
+import { hasPermission } from "../../application/ports/actor-context";
 
 export default async function DashboardPage() {
-  const user = await getCurrentAuthenticatedUser();
+  const user = await getCurrentActorContext();
   if (!user) {
     redirect("/?login=1");
   }
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
           title="AMS IMPULSE"
           description="Приватный SEO-кабинет: проекты, сайты, Яндекс.Вебмастер, Метрика и управленческие отчёты."
           actions={
-            user.systemRole === "SEO_ANALYST" ? (
+            hasPermission(user, "project:read:any") ? (
               <Link
                 href="/analyst/"
                 className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"

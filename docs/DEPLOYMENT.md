@@ -35,8 +35,8 @@ systemd timer
 3. `scripts/build-release.mjs` creates immutable source artifact with commit SHA and lockfile checksum.
 4. Linux target rejects a pre-existing release directory for the same SHA.
 5. Target installs pnpm/dependencies from reviewed lockfile.
-6. Web build runs with validated public Leads API build variables.
-7. Build assembles `public/` and `.next/static/` inside standalone tree.
+6. Web environment проходит central DB/Auth/Leads schema preflight.
+7. Build assembles `public/` и `.next/static/` inside standalone tree.
 8. Worker compiles separately.
 9. Migrator applies reviewed Prisma migrations.
 10. Runtime grants/default privileges are restored for app role.
@@ -44,7 +44,8 @@ systemd timer
 12. Mandatory backup upload + HEAD confirmation and isolated restore smoke pass.
 13. Nginx/systemd assets are installed and validated.
 14. `current` symlink switches atomically.
-15. Health/auth/worker smoke determines success; failure triggers code rollback.
+15. Deploy атомарно materialize-ит root-owned `shared/release.env`.
+16. Live/ready health обязаны вернуть exact target SHA; failure triggers code rollback.
 
 Release rollback does not automatically reverse PostgreSQL migration/data.
 
@@ -53,20 +54,22 @@ Release rollback does not automatically reverse PostgreSQL migration/data.
 - web env: DB runtime + Better Auth + public Leads API build values;
 - worker env: DB runtime + provider tokens/mappings;
 - migrator env: schema migration credentials;
-- backup env: restricted offsite credentials with required-offsite mode.
+- backup env: restricted offsite credentials with required-offsite mode;
+- release env: deploy-generated `RELEASE_SHA`, mode `0640`, owner `root:www-data`.
 
-Secret values remain outside artifact/Git. Deploy reads env as literal values, not shell code.
+Secret values remain outside artifact/Git. Deploy reads env as literal values, validates them before build and никогда не принимает release SHA из browser input.
 
 ## Health and smoke
 
-- `/api/health/live` — process liveness, public safe response;
-- `/api/health/ready` — DB readiness, Nginx localhost-only;
+- `/api/health/live` — safe liveness, correlation ID и deployed SHA;
+- `/api/health/ready` — DB + auth readiness, correlation ID и тот же SHA; Nginx localhost-only;
 - unauthenticated private route redirects to `/?login=1`;
 - analyst login works;
 - client foreign tenant route denied;
 - favicon/static assets return 200 from standalone assembly;
 - worker manual start succeeds;
-- backup timer and worker timer active.
+- backup timer and worker timer active;
+- rollback обновляет release env на SHA previous release.
 
 ## Domain
 

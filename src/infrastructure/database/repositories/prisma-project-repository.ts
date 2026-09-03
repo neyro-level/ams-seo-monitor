@@ -61,14 +61,6 @@ function mapProjectRecord(project: {
 }
 
 export class PrismaProjectRepository implements ProjectRepository {
-  async listOrganizationIdsForUser(userId: string): Promise<string[]> {
-    const memberships = await getPrismaClient().member.findMany({
-      where: { userId },
-      select: { organizationId: true },
-    });
-    return memberships.map((membership) => membership.organizationId);
-  }
-
   async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
     const projects = await getPrismaClient().project.findMany({
       where:

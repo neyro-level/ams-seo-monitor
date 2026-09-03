@@ -43,7 +43,7 @@ systemd timer
 Главные инварианты:
 
 - `SiteReportSnapshot` — единственный browser-safe DTO отчёта;
-- Better Auth и server-side authorization защищают приватные маршруты;
+- Better Auth создаёт session; server ActorContext, capabilities и fresh memberships защищают приватные маршруты;
 - browser не обращается к provider APIs и не получает provider credentials;
 - UI не импортирует Prisma и не рассчитывает provider semantics;
 - PostgreSQL — runtime source of truth; `config/*` используется как проверяемый seed/input;
@@ -57,7 +57,7 @@ systemd timer
 - `/` — лендинг AMS IMPULSE;
 - `/politika/`, `/soglasie/`, `/cookies/`, `/terms/` — правовые страницы;
 - `/robots.txt`, `/sitemap.xml`;
-- `/api/health/live` — безопасная liveness-проверка.
+- `/api/health/live` — безопасная liveness-проверка с correlation ID и release SHA.
 
 Приватные:
 
@@ -66,7 +66,7 @@ systemd timer
 - `/c/{clientSlug}/` — сайты проекта;
 - `/c/{clientSlug}/{siteSlug}/?period=week|month|quarter|halfYear` — отчёт сайта;
 - `/demo/` — авторизованный fixture-отчёт;
-- `/api/health/ready` — внутренняя readiness-проверка PostgreSQL.
+- `/api/health/ready` — внутренняя readiness-проверка PostgreSQL + auth с тем же release SHA.
 
 ## Стек
 
@@ -98,6 +98,15 @@ pnpm dev
 
 Docker PostgreSQL слушает только `127.0.0.1`, использует отдельные `seo_monitor_dev` и `seo_monitor_test` и сохраняет named volume между перезапусками. Production DB/credentials запрещены. Полный порядок: [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md).
 
+Operator provisioning поддерживает `PLATFORM_ADMIN`, `SEO_ANALYST` и `CLIENT_VIEWER`:
+
+```bash
+<secret-provider> | pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN
+pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
+```
+
+Passwords остаются bounded-stdin only.
+
 ## Проверки
 
 ```bash
@@ -109,7 +118,15 @@ pnpm verify:fast
 pnpm verify:heavy
 ```
 
-`test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и seed. `test:e2e` строит standalone runtime и проверяет public UI/auth boundary на 375/768/1280/1440. Restore smoke production backup выполняется отдельно:
+`test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и seed. `test:e2e` строит standalone runtime и проверяет public UI/auth boundary на 375/768/1280/1440.
+
+Production web env отдельно проверяется общей Zod boundary:
+
+```bash
+pnpm verify:web-environment
+```
+
+Restore smoke production backup выполняется отдельно:
 
 ```bash
 pnpm db:restore-smoke
@@ -153,6 +170,8 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`](docs/EXTERNAL_SITE_DESIGN_SYSTEM.md);
 - [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);
 - [`docs/adr/ADR-001-adopt-application-platform-standard.md`](docs/adr/ADR-001-adopt-application-platform-standard.md);
+- [`docs/adr/ADR-002-actor-context-and-capabilities.md`](docs/adr/ADR-002-actor-context-and-capabilities.md);
+- [`docs/modules/MODULE_IDENTITY_ACCESS.md`](docs/modules/MODULE_IDENTITY_ACCESS.md);
 - [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md);
 - [`docs/modules/`](docs/modules/);
 - [`docs/ops/`](docs/ops/).

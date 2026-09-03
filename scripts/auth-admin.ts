@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { stdin } from "node:process";
 import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
+import { parseSystemRole } from "../src/application/ports/actor-context";
 
 type AuthAdminCommand =
   | "create"
@@ -70,13 +71,6 @@ async function findUserByUsername(username: string) {
     throw new Error(`User not found: ${username}`);
   }
   return user;
-}
-
-function parseSystemRole(value: string) {
-  if (value === SystemRole.SEO_ANALYST || value === SystemRole.CLIENT_VIEWER) {
-    return value;
-  }
-  throw new Error(`Unsupported system role: ${value}`);
 }
 
 async function readPasswordFromStdin() {

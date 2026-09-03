@@ -25,7 +25,6 @@ export interface ProjectAccessScope {
 }
 
 export interface ProjectRepository {
-  listOrganizationIdsForUser(userId: string): Promise<string[]>;
   listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]>;
   findProjectBySlug(
     projectSlug: string,

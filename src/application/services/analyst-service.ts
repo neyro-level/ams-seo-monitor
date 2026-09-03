@@ -1,4 +1,4 @@
-import type { AuthenticatedUser } from "../ports/authenticated-user";
+import type { ActorContext } from "../ports/actor-context";
 import { ProjectService, type ProjectSummary } from "./project-service";
 
 export interface AnalystOverview {
@@ -13,7 +13,7 @@ export interface AnalystOverview {
 export class AnalystService {
   constructor(private readonly projectService: ProjectService) {}
 
-  async getDashboardForUser(user: AuthenticatedUser): Promise<AnalystOverview> {
+  async getDashboardForUser(user: ActorContext): Promise<AnalystOverview> {
     const projectCards = await this.projectService.listProjectsForUser(user);
     const totalSites = projectCards.reduce((count, project) => count + project.totalSites, 0);
     const connectedSites = projectCards.reduce(

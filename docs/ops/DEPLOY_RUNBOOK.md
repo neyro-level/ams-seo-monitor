@@ -38,7 +38,7 @@ Deploy script:
 3. rejects an existing target release directory and in-place rebuild;
 4. verifies all protected env files;
 5. installs exact pnpm and frozen dependencies;
-6. validates public Leads API build variables;
+6. validates DB, Better Auth and exact public Leads environment through the shared Zod contracts;
 7. runs `pnpm build` and `pnpm build:collector` on Linux;
 8. confirms standalone public/static asset assembly;
 9. applies `prisma migrate deploy` with migrator role;
@@ -57,16 +57,17 @@ After successful preparation:
 1. install reviewed Nginx/systemd assets;
 2. arm post-switch rollback trap;
 3. atomically switch `current` symlink;
-4. `systemctl daemon-reload`;
-5. validate and reload Nginx;
-6. restart web;
-7. run worker once;
-8. enable worker and backup timers;
-9. verify services/timers;
-10. check loopback liveness/readiness;
-11. verify standalone server, worker and Prisma schema files;
-12. record previous release and deployed SHA;
-13. remove uploaded temp artifact/checksum.
+4. atomically write root-owned `shared/release.env` with exact target SHA;
+5. `systemctl daemon-reload`;
+6. validate and reload Nginx;
+7. restart web;
+8. run worker once;
+9. enable worker and backup timers;
+10. verify services/timers;
+11. require loopback live/ready DTOs to report exact target SHA and ready DB/auth dependencies;
+12. verify standalone server, worker and Prisma schema files;
+13. record previous release and deployed SHA;
+14. remove uploaded temp artifact/checksum.
 
 ## Post-deploy smoke
 
@@ -74,8 +75,8 @@ Required:
 
 - public `/` = 200 and canonical metadata;
 - `/ams-favicon.svg` and representative `/_next/static/*` = 200;
-- `/api/health/live` = 200;
-- loopback `/api/health/ready` = 200;
+- `/api/health/live` = 200, valid correlation ID and exact deployed SHA;
+- loopback `/api/health/ready` = 200, same SHA, PostgreSQL ready and auth configured;
 - external `/api/health/ready` = 403;
 - unauthenticated `/analyst/` redirects to `/?login=1`;
 - analyst sign-in and report read work;
@@ -93,6 +94,7 @@ Any post-switch command error triggers:
 - restore previous `current` symlink;
 - restore previous compatible Nginx/systemd assets;
 - reload/restart previous services;
+- restore `shared/release.env` to previous release SHA;
 - re-enable previous timer topology where applicable.
 
 Rollback does not reverse PostgreSQL migrations/data. A migration must be backward-compatible with the previous release or carry an explicit data recovery decision.

@@ -2,10 +2,10 @@ import "server-only";
 
 import { headers } from "next/headers";
 import { auth } from "./auth";
-import { getAuthenticatedUserById } from "./authorization";
-import type { AuthenticatedUser } from "../../application/ports/authenticated-user";
+import { getActorContextByUserId } from "./authorization";
+import type { ActorContext } from "../../application/ports/actor-context";
 
-export async function getCurrentAuthenticatedUser(): Promise<AuthenticatedUser | null> {
+export async function getCurrentActorContext(): Promise<ActorContext | null> {
   if (!auth) {
     return null;
   }
@@ -19,5 +19,7 @@ export async function getCurrentAuthenticatedUser(): Promise<AuthenticatedUser |
     return null;
   }
 
-  return getAuthenticatedUserById(session.user.id);
+  return getActorContextByUserId(session.user.id, {
+    activeOrganizationId: session.session.activeOrganizationId ?? null,
+  });
 }

@@ -10,24 +10,35 @@ import type {
   ReportRepository,
   StoredReportSnapshotRecord,
 } from "../src/application/ports/report-repository";
-import type { AuthenticatedUser } from "../src/application/ports/authenticated-user";
+import { createActorContext } from "./helpers/actor-context";
 import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
 
-const analystUser: AuthenticatedUser = {
+const analystUser = createActorContext({
   userId: "analyst-1",
   email: "analyst@test.local",
   name: "Analyst",
   systemRole: "SEO_ANALYST",
-  activeOrganizationId: null,
-};
+});
 
-const REDACTED_CLIENT_DATAViewer: AuthenticatedUser = {
+const REDACTED_CLIENT_DATAViewer = createActorContext({
   userId: "viewer-1",
   email: "viewer@test.local",
   name: "Viewer",
   systemRole: "CLIENT_VIEWER",
-  activeOrganizationId: null,
-};
+  memberships: [
+    {
+      membershipId: "membership-REDACTED_CLIENT_DATA",
+      organizationId: "org-REDACTED_CLIENT_DATA",
+      role: "client_viewer",
+    },
+  ],
+});
+
+const deniedReportActor = createActorContext({
+  userId: "viewer-denied-report",
+  memberships: REDACTED_CLIENT_DATAViewer.memberships,
+  permissions: ["project:read:organization"],
+});
 
 const sampleSite: StoredSiteRecord = {
   siteId: "site-REDACTED_CLIENT_DATA",
@@ -98,10 +109,6 @@ const sampleReport = siteReportSnapshotSchema.parse({
 });
 
 class FakeProjectRepository implements ProjectRepository {
-  async listOrganizationIdsForUser(userId: string): Promise<string[]> {
-    return userId === "viewer-1" ? ["org-REDACTED_CLIENT_DATA"] : [];
-  }
-
   async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
     if (scope.organizationIds !== null && !scope.organizationIds.includes(sampleProject.organizationId)) {
       return [];
@@ -169,6 +176,16 @@ describe("ReportService", () => {
       "month",
     );
     expect(report?.siteSlug).toBe("REDACTED_CLIENT_DATA");
+  });
+
+  it("denies report without report-read capability", async () => {
+    const deniedReport = await reportService.getSiteReportForUser(
+      deniedReportActor,
+      "REDACTED_CLIENT_DATA",
+      "REDACTED_CLIENT_DATA",
+      "month",
+    );
+    expect(deniedReport).toBeNull();
   });
 
   it("denies report outside allowed organization", async () => {

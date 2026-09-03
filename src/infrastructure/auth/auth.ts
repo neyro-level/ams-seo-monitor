@@ -3,22 +3,25 @@ import "server-only";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth";
 import { organization, username } from "better-auth/plugins";
-import { hasDatabaseUrl, getPrismaClient } from "../database/prisma/client";
+import {
+  hasDatabaseConfiguration,
+  readAuthEnvironment,
+} from "../../platform/config/server-environment";
+import { getPrismaClient } from "../database/prisma/client";
 
-const authSecret = process.env.BETTER_AUTH_SECRET ?? null;
-const authUrl = process.env.BETTER_AUTH_URL ?? null;
+const authEnvironment = readAuthEnvironment();
 
 export function hasAuthConfiguration() {
-  return authSecret !== null && authSecret.length > 0 && authUrl !== null && authUrl.length > 0;
+  return authEnvironment !== null && hasDatabaseConfiguration();
 }
 
 export const auth =
-  hasDatabaseUrl() && authSecret && authUrl
+  hasAuthConfiguration() && authEnvironment
     ? betterAuth({
-        secret: authSecret,
-        baseURL: authUrl,
+        secret: authEnvironment.secret,
+        baseURL: authEnvironment.baseUrl,
         trustedOrigins: [
-          authUrl,
+          authEnvironment.baseUrl,
           ...(process.env.NODE_ENV === "production"
             ? []
             : ["http://127.0.0.1:3000", "http://localhost:3000"]),
