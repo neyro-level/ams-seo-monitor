@@ -17,6 +17,26 @@
 
 Фактическое состояние определяют код, migrations, runtime config и проверяемый production. Этот план определяет только последовательность изменений.
 
+## Текущий checkpoint
+
+Migration stack Workstreams 0–8 полностью реализован, проверен локально, опубликован в SourceCraft и остаётся несмерженным:
+
+| Workstream | Branch | PR | Implementation checkpoint | Состояние |
+|---|---|---:|---|---|
+| 0 | `work/core-standard-v3-plan` | #28 | `33eb8d2` | open; target `main`; `pr-check` green |
+| 1 | `work/v3-runtime-foundation` | #29 | `37930cc` | open; depends on #28 |
+| 2 | `work/v3-principal-auth` | #30 | `f181e3b` | open; depends on #29 |
+| 3 | `work/v3-tenant-database` | #31 | `da2f328` | open; depends on #30 |
+| 4 | `work/v3-project-slice` | #32 | `82db746` | open; depends on #31 |
+| 5 | `work/v3-application-patterns` | #33 | `957a2a3` | open; depends on #32 |
+| 6–7 | `work/v3-integrations-jobs` | #34 | `d0d5b29` | open; pg-boss plus observability commits; depends on #33 |
+| 8 | `work/v3-docker-production` | #35 | `102011d` | open; depends on #34 |
+
+SourceCraft merge checks для PR #28–#35 успешны. Это не заменяет exact-head HEAVY Merge Gate: он выполняется один раз на актуальном head при последовательном выводе stack в `main`. Повторять уже пройденные локальные suites без нового SHA или нового риска не требуется.
+
+Следующий этап — общий review и последовательный merge train #28 → #35 по отдельной owner-команде `Проводи review и выводи в main`. Production остаётся следующим отдельным intent.
+
+
 ## Что сохраняется
 
 Без продуктового redesign сохраняются:
@@ -179,6 +199,7 @@ Force-push, merge старых stale branches и параллельное изм
 Branch: `work/core-standard-v3-plan`
 Base: `origin/main`
 Gate: docs review + `git diff --check`
+Status: implemented, verified and published as open PR #28 at `33eb8d2`.
 
 Deliverables:
 
@@ -201,6 +222,7 @@ Done:
 Branch: `work/v3-runtime-foundation`
 Base: Workstream 0 HEAD
 Gate: HEAVY — dependencies/runtime/architecture
+Status: implemented, verified and published as open PR #29 at `37930cc`; depends on #28.
 
 Scope:
 
@@ -232,6 +254,7 @@ Done:
 Branch: `work/v3-principal-auth`
 Base: Workstream 1 HEAD
 Gate: HEAVY — auth/permissions/schema/E2E
+Status: implemented, verified and published as open PR #30 at `f181e3b`; depends on #29.
 
 Scope:
 
@@ -260,6 +283,7 @@ Done:
 Branch: `work/v3-tenant-database`
 Base: Workstream 2 HEAD
 Gate: HEAVY — additive migrations/tenant isolation
+Status: implemented, verified and published as open PR #31 at `da2f328`; depends on #30.
 
 Migration strategy:
 
@@ -295,7 +319,7 @@ Done:
 Branch: `work/v3-project-slice`
 Base: Workstream 3 HEAD
 Gate: HEAVY — reference business slice
-Status: implemented and verified in the local worktree; checkpoint, push and PR are not requested yet.
+Status: implemented, verified and published as open PR #32 at `82db746`; depends on #31.
 
 
 Project становится эталонной entity:
@@ -327,7 +351,7 @@ DB → scoped repository → query/command → action → UI → audit/tests
 Branch: `work/v3-application-patterns`
 Base: Workstream 4 HEAD
 Gate: HEAVY — mutations/authorization/UI
-Status: implemented and verified in the local worktree; checkpoint, push and PR are the remaining delivery steps.
+Status: implemented, verified and published as open PR #33 at `957a2a3`; depends on #32.
 
 
 Scope:
@@ -355,7 +379,7 @@ Done:
 Branch: `work/v3-integrations-jobs`
 Base: Workstream 5 HEAD
 Gate: HEAVY — integrations/jobs/dependencies/schema
-Status: implemented and verified in the local worktree; checkpoint, push and PR are the remaining delivery steps.
+Status: implemented, verified and published in open PR #34 at `d0d5b29`; depends on #33.
 
 
 Scope:
@@ -381,10 +405,10 @@ Done:
 
 ## Workstream 7 — Observability, testing and CI
 
-Branch: `work/v3-observability-ci`
-Base: Workstream 6 HEAD
+Branch: `work/v3-integrations-jobs` — second commit in PR #34
+Base: Workstream 6 commit in the same branch
 Gate: HEAVY — security/PII/CI
-Status: implemented and verified in the local worktree; checkpoint, push and PR are the remaining delivery steps.
+Status: implemented and verified at `d0d5b29`; delivered together with Workstream 6 because both change the same worker/outbox/health runtime.
 
 
 Scope:
@@ -412,7 +436,7 @@ Done:
 Branch: `work/v3-docker-production`
 Base: Workstream 7 HEAD
 Gate: HEAVY — infrastructure/release/migrations
-Status: implemented and verified in the local worktree; checkpoint, push and PR are the remaining delivery steps.
+Status: implemented, verified and published as open PR #35 at `102011d`; depends on #34. No production deployment has occurred.
 
 
 Prerequisites requiring factual proof:
@@ -448,6 +472,8 @@ Done:
 ## Final integration and release
 
 Не создаётся заранее как обычный feature PR. Выполняется только по отдельной команде владельца после подготовки Workstreams 0–8.
+Текущее состояние: stack подготовлен до PR #35. Не начинать поверх migration chain независимый продуктовый workstream; сначала выполнить explicit merge train и установить новый clean baseline `origin/main`.
+
 
 Merge train:
 

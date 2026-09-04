@@ -86,13 +86,13 @@ systemd timer
 | TypeScript | `6.0.3` | strict |
 | Prisma | `7.10.0` | canonical 7.x |
 | `@prisma/client` | `7.10.0` | must match Prisma |
-| Better Auth | `1.7.2` | preserve identity adapter; tenancy plugin scheduled for removal |
-| pg-boss | not installed | Workstream 6 |
+| Better Auth | `1.7.2` | identity adapter; Organization Plugin removed from runtime |
+| pg-boss | `12.30.0` | canonical outbox/job transport |
 | PostgreSQL | `18.x`; local/test `18.6` | canonical 18 |
 | Tailwind CSS | `4.3.3` | preserve |
 | Zod | `4.5.4` | preserve |
 
-Current additional UI/runtime packages: Recharts `3.10.1`, React Hook Form `7.87.0`, Refine Core `5.0.12`. Refine is scheduled for removal; TanStack Table, nuqs, pino and Docker assets are not installed yet.
+Current additional UI/runtime packages: Recharts `3.10.1`, React Hook Form `7.87.0`, TanStack Table `8.21.3`, nuqs `2.10.1`, pino `10.3.1` and pg-boss `12.30.0`. Refine has been removed. Docker production assets are implemented in Workstream 8; production cutover remains a separate owner command.
 
 ## Локальная подготовка
 
@@ -157,7 +157,7 @@ pnpm worker:outbox:drain
 
 ## Release
 
-Release собирается только из clean reviewed canonical `main`. Linux target устанавливает зависимости из lockfile, строит standalone web и worker, применяет reviewed Prisma migrations, выполняет seed, обязательный backup/restore smoke и только затем переключает immutable release.
+Target release собирается из clean reviewed canonical `main` как immutable OCI image вне production host. Один image digest запускает web/worker и explicit migration/maintenance commands; rollout через Docker Compose выполняется после backup/restore proof. До отдельного merge и production intent действующий production baseline не изменяется.
 
 Merge и production deploy выполняются только отдельной командой владельца. Current baseline и target migration описаны в [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md).
 
