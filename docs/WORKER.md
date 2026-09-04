@@ -63,11 +63,12 @@ systemd timer / operator command
 
 Worker writes:
 
-- `SyncRun`, `SourceRun`;
-- Webmaster/Metrika historical metric tables;
+- `SyncRun`, `SourceRun` with organization/project/correlation stats;
+- pg-boss jobs in schema `pgboss`;
 - `RankingCapture`;
 - `TechnicalSnapshot`;
-- append-only `ReportSnapshot`.
+- append-only `ReportSnapshot`;
+- retention markers in `RetentionRun`.
 
 Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; run `finishedAt` is captured at actual completion.
 
@@ -75,9 +76,11 @@ Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; 
 
 - separate `seo-monitor-outbox.timer` runs every five minutes;
 - one drain handles at most 25 events;
-- claim creates JobRun and increments attempt under conditional lease;
-- handler runs outside DB transaction;
-- complete/fail checks worker ownership;
+- business transaction creates `OutboxEvent` only in PostgreSQL;
+- drain claims a ready event, publishes a versioned payload into pg-boss and then processes queued work;
+- pg-boss runtime starts with `migrate:false` and `createSchema:false`; schema install is a reviewed migration step, not worker behavior;
+- handler recreates JobPrincipal from the queued event and validates expected organization scope before sync;
+- complete/fail still update `OutboxEvent` and `JobRun`, so retry/dead-letter truth remains in app tables;
 - retry base 30 seconds, exponential, capped at one hour and five attempts;
 - invalid payload/unknown topic goes directly to dead-letter;
 - readiness exposes pending/processing/dead-letter counts.
@@ -99,6 +102,7 @@ pnpm build:collector
 pnpm worker:sync:project -- <project-slug>
 pnpm worker:sync:REDACTED_CLIENT_DATA
 pnpm worker:outbox:drain
+pnpm worker:outbox:retention
 ```
 
 Commands require a safe DB environment and provider secrets. `worker:sync:REDACTED_CLIENT_DATA` is not a browser action and does not deploy.

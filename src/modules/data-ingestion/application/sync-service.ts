@@ -35,12 +35,15 @@ import type {
 import { MonitoringService } from "../../project-registry/index.ts";
 import { ProjectService } from "../../project-registry/index.ts";
 import { ReportService } from "../../reporting/index.ts";
+import { createCorrelationId } from "../../../platform/http/correlation.ts";
 
 export interface SyncProjectToDatabaseArgs {
   projectSlug: string;
   trigger: CreateSyncRunInput["trigger"];
   collectors: SiteSourceCollectors;
   now?: () => string;
+  correlationId?: string;
+  expectedOrganizationId?: string | null;
 }
 
 export interface SyncProjectPeriodResult {
@@ -598,17 +601,24 @@ export class SyncService {
     const now = args.now ?? (() => new Date().toISOString());
     const syncStartedAtMs = Date.now();
     const generatedAt = now();
+    const correlationId = args.correlationId ?? createCorrelationId();
     const projectContext = await this.monitoringService.getProjectContext(args.projectSlug);
 
     if (!projectContext) {
       throw new Error(`Unknown project slug: ${args.projectSlug}`);
     }
+    if (args.expectedOrganizationId && projectContext.organizationId !== args.expectedOrganizationId) {
+      throw new Error("PROJECT_SYNC_INVALID_SCOPE");
+    }
 
     const collectors = args.collectors;
     const syncRun = await this.createSyncRun({
       organizationId: projectContext.organizationId,
+      projectId: projectContext.projectId,
+      projectSlug: projectContext.client.clientSlug,
       trigger: args.trigger,
       startedAt: generatedAt,
+      correlationId,
     });
     this.log({
       event: "sync_started",
@@ -690,9 +700,11 @@ export class SyncService {
             ? registerSourceRun(
                 await this.createSourceRun({
                   syncRunId: syncRun.syncRunId,
+                  projectId: projectContext.projectId,
                   siteId: siteRecord.siteId,
                   provider: "YANDEX_WEBMASTER",
                   startedAt: generatedAt,
+                  correlationId,
                 }),
                 siteRecord.siteId,
                 "YANDEX_WEBMASTER",
@@ -702,9 +714,11 @@ export class SyncService {
             ? registerSourceRun(
                 await this.createSourceRun({
                   syncRunId: syncRun.syncRunId,
+                  projectId: projectContext.projectId,
                   siteId: siteRecord.siteId,
                   provider: "YANDEX_METRIKA",
                   startedAt: generatedAt,
+                  correlationId,
                 }),
                 siteRecord.siteId,
                 "YANDEX_METRIKA",
@@ -714,9 +728,11 @@ export class SyncService {
             ? registerSourceRun(
                 await this.createSourceRun({
                   syncRunId: syncRun.syncRunId,
+                  projectId: projectContext.projectId,
                   siteId: siteRecord.siteId,
                   provider: "TOPVISOR",
                   startedAt: generatedAt,
+                  correlationId,
                 }),
                 siteRecord.siteId,
                 "TOPVISOR",
@@ -1033,6 +1049,9 @@ export class SyncService {
         status: finalStatus,
         finishedAt: now(),
         sitesProcessed: siteResults.length,
+        sitesSucceeded: siteResults.filter((site) => site.status === "success").length,
+        sitesPartial: siteResults.filter((site) => site.status === "partial").length,
+        sitesFailed: siteResults.filter((site) => site.status === "failed").length,
         safeError: [...projectSafeErrors][0] ?? null,
       });
 
@@ -1088,6 +1107,9 @@ export class SyncService {
           status: "failed",
           finishedAt: failedAt,
           sitesProcessed: siteResults.length,
+          sitesSucceeded: siteResults.filter((site) => site.status === "success").length,
+          sitesPartial: siteResults.filter((site) => site.status === "partial").length,
+          sitesFailed: siteResults.filter((site) => site.status === "failed").length,
           safeError: failure.code,
         });
       } catch {

@@ -237,23 +237,28 @@ Unique `(scope, organizationScope, key)`. Stores SHA-256 request hash, lifecycle
 
 ### OutboxEvent
 
-Status `PENDING → PROCESSING → PROCESSED` or `DEAD_LETTER`; stores topic, JSON payload, attempts, availability, lease owner/time, safe error, correlation and processed timestamp.
+Status `PENDING → PROCESSING → PROCESSED` or `DEAD_LETTER`; stores topic, JSON payload, `schemaVersion`, `occurredAt`, attempts, availability, lease owner/time, safe error, correlation and processed timestamp.
 
 ### JobRun
 
 One row per attempt, unique `(outboxEventId, attempt)`. Stores worker, RUNNING/SUCCESS/FAILED, timing and safe error code.
+
+### RetentionRun
+
+Retention execution marker: RUNNING/SUCCESS/FAILED, started/finished timestamps and deleted outbox/job-run counts.
 
 Invariants:
 
 - enqueue transaction atomically creates idempotency marker, event and audit;
 - same key + same hash returns the original event;
 - same key + different hash is rejected;
-- claim uses conditional lease ownership;
+- pg-boss transports claimed outbox work, but business retry/dead-letter truth remains in OutboxEvent and JobRun;
+- queue payload carries `schemaVersion`, `occurredAt`, correlation and claimed event metadata;
 - only lease owner completes/fails;
 - retry uses bounded exponential backoff;
 - permanent/exhausted failures become dead-letter;
-- payload/audit/error fields never contain secrets or raw PII;
-- `RetentionRun` is not added until a concrete retention policy exists.
+- retention removes only old processed/dead-letter outbox detail;
+- payload/audit/error fields never contain secrets or raw PII.
 
 ## Delete и retention
 

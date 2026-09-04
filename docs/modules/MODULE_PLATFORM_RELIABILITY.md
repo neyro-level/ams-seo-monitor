@@ -33,11 +33,15 @@ Unique `(scope, organizationScope, key)`, request hash, status, response marker,
 
 ### OutboxEvent
 
-Topic, JSON payload, status, attempts, availableAt, lease owner/time, safe error, correlation ID и processedAt.
+Topic, JSON payload, `schemaVersion`, `occurredAt`, status, attempts, availableAt, lease owner/time, safe error, correlation ID and processedAt.
 
 ### JobRun
 
-Одна попытка обработки outbox event: unique `(outboxEventId, attempt)`, worker, status, timing и safe error code.
+One row per attempt, unique `(outboxEventId, attempt)`, worker, status, timing and safe error code.
+
+### RetentionRun
+
+Retention marker for processed/dead-letter cleanup with deleted row counts.
 
 ## Команды
 
@@ -62,16 +66,22 @@ Topic, JSON payload, status, attempts, availableAt, lease owner/time, safe error
 - создаёт RUNNING JobRun;
 - concurrent claimant без ownership получает null.
 
-### complete
+### dispatch
 
-Lease owner одной transaction переводит event в PROCESSED и JobRun в SUCCESS.
+- публикует claimed event в pg-boss queue `outbox.dispatch`;
+- queue payload включает `schemaVersion`, `occurredAt`, correlation и claimed metadata;
+- runtime pg-boss не делает schema DDL и использует отдельный pool budget.
 
-### fail
+### complete / fail
 
-Lease owner одной transaction завершает JobRun FAILED и:
+- lease owner одной transaction переводит event в PROCESSED либо PENDING/DEAD_LETTER и завершает JobRun;
+- pg-boss job transport завершается отдельно и не заменяет application truth по retry/dead-letter.
 
-- retryable + attempts available → PENDING с exponential backoff;
-- permanent/attempts exhausted → DEAD_LETTER.
+### retention
+
+- удаляет только старые PROCESSED и DEAD_LETTER outbox rows;
+- каскадно очищает historical JobRun detail;
+- пишет `RetentionRun`.
 
 ### health
 
@@ -104,7 +114,9 @@ Audit payload содержит только safe markers. Token, password, sessi
 
 - `PrismaReliabilityRepository` — persistence/transaction owner;
 - `ReliabilityService` — validation/hash/time policy;
-- `drainOutbox` — registered handlers and bounded batch;
+- `pg-boss` — transport queue subsystem in separate schema/pool;
+- `drainOutbox` — publish + process bounded batch;
+- `runReliabilityRetention` — cleanup marker and delete policy;
 - `seo-monitor-outbox.service/timer` — five-minute oneshot schedule;
 - deploy/rollback устанавливает или удаляет units вместе с compatible release.
 

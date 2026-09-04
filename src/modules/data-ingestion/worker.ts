@@ -10,6 +10,8 @@ export interface SyncProjectToDatabaseArgs {
   env?: NodeJS.ProcessEnv;
   collectors?: SiteSourceCollectors;
   now?: () => string;
+  correlationId?: string;
+  expectedOrganizationId?: string | null;
 }
 
 export interface SyncProjectPeriodResult {
@@ -40,5 +42,7 @@ export async function syncProjectToDatabase(
     trigger: args.trigger ?? "manual",
     collectors: args.collectors ?? createLiveSiteCollectors(args.env),
     now: args.now,
+    correlationId: args.correlationId,
+    expectedOrganizationId: args.expectedOrganizationId,
   });
 }

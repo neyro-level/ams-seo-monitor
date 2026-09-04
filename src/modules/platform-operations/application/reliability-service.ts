@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import type {
@@ -7,6 +8,10 @@ import type {
   OutboxHealth,
   ReliabilityRepository,
 } from "./ports/reliability-repository.ts";
+import {
+  OUTBOX_DELIVERY_SCHEMA,
+  OUTBOX_MAX_PAYLOAD_BYTES,
+} from "../domain/pg-boss.ts";
 
 const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
   z.union([
@@ -21,6 +26,7 @@ const jsonValueSchema: z.ZodType<unknown> = z.lazy(() =>
 
 const identifierSchema = z.string().trim().regex(/^[a-zA-Z0-9][a-zA-Z0-9:._-]{1,127}$/);
 const correlationIdSchema = z.string().uuid();
+const schemaVersionSchema = z.number().int().positive();
 
 const enqueueEventSchema = z.object({
   organizationId: z.string().min(1).nullable(),
@@ -36,6 +42,8 @@ const enqueueEventSchema = z.object({
   entityId: z.string().min(1).nullable(),
   source: identifierSchema,
   correlationId: correlationIdSchema,
+  schemaVersion: schemaVersionSchema.default(OUTBOX_DELIVERY_SCHEMA),
+  occurredAt: z.string().datetime().optional(),
   expiresInSeconds: z.number().int().min(60).max(604_800).default(86_400),
 }).superRefine((value, context) => {
   const expectedScope = value.organizationId ?? "platform";
@@ -51,6 +59,14 @@ const enqueueEventSchema = z.object({
       code: "custom",
       path: ["actorId"],
       message: "User actor requires actorId",
+    });
+  }
+  const payloadBytes = Buffer.byteLength(JSON.stringify(value.payload), "utf8");
+  if (payloadBytes > OUTBOX_MAX_PAYLOAD_BYTES) {
+    context.addIssue({
+      code: "custom",
+      path: ["payload"],
+      message: `Outbox payload exceeds ${OUTBOX_MAX_PAYLOAD_BYTES} bytes`,
     });
   }
 });
@@ -100,6 +116,8 @@ export class ReliabilityService {
       entityId: input.entityId,
       source: input.source,
       correlationId: input.correlationId,
+      schemaVersion: input.schemaVersion,
+      occurredAt: input.occurredAt ?? now.toISOString(),
       availableAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + input.expiresInSeconds * 1000).toISOString(),
     });
@@ -110,6 +128,15 @@ export class ReliabilityService {
       workerId: workerSchema.parse(workerId),
       now: this.now().toISOString(),
       leaseTimeoutMs: z.number().int().min(1_000).max(3_600_000).parse(leaseTimeoutMs),
+    });
+  }
+
+  takeOver(event: ClaimedReliabilityEvent, workerId: string): Promise<ClaimedReliabilityEvent | null> {
+    return this.repository.takeOverEvent({
+      outboxEventId: event.outboxEventId,
+      jobRunId: event.jobRunId,
+      workerId: workerSchema.parse(workerId),
+      now: this.now().toISOString(),
     });
   }
 

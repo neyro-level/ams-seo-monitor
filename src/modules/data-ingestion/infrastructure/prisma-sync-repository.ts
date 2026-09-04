@@ -188,9 +188,12 @@ export class PrismaSyncRepository implements SyncRepository {
     const syncRun = await getPrismaClient().syncRun.create({
       data: {
         organizationId: input.organizationId,
+        projectId: input.projectId,
+        projectSlug: input.projectSlug,
         trigger: PRISMA_TRIGGER_BY_APP_TRIGGER[input.trigger],
         status: SyncRunStatus.RUNNING,
         startedAt: toDateTime(input.startedAt),
+        correlationId: input.correlationId,
       },
       select: { id: true },
     });
@@ -203,14 +206,16 @@ export class PrismaSyncRepository implements SyncRepository {
     const prisma = getPrismaClient();
     const syncRun = await prisma.syncRun.findUniqueOrThrow({
       where: { id: input.syncRunId },
-      select: { organizationId: true },
+      select: { organizationId: true, projectId: true },
     });
-    if (syncRun.organizationId && syncRun.organizationId !== organizationId) {
+    if (syncRun.organizationId !== organizationId || syncRun.projectId !== input.projectId) {
       throw new Error("SYNC_RUN_CROSS_TENANT_SOURCE");
     }
     const sourceRun = await prisma.sourceRun.create({
       data: {
         organizationId,
+        projectId: input.projectId,
+        correlationId: input.correlationId,
         syncRunId: input.syncRunId,
         siteId: input.siteId,
         provider: input.provider,
@@ -218,10 +223,6 @@ export class PrismaSyncRepository implements SyncRepository {
         startedAt: toDateTime(input.startedAt),
       },
       select: { id: true },
-    });
-    await prisma.syncRun.update({
-      where: { id: input.syncRunId },
-      data: { organizationId },
     });
 
     return { sourceRunId: sourceRun.id };
@@ -248,6 +249,9 @@ export class PrismaSyncRepository implements SyncRepository {
         status: PRISMA_STATUS_BY_APP_STATUS[input.status],
         finishedAt: toDateTime(input.finishedAt),
         sitesProcessed: input.sitesProcessed,
+        sitesSucceeded: input.sitesSucceeded,
+        sitesPartial: input.sitesPartial,
+        sitesFailed: input.sitesFailed,
         safeError: input.safeError,
       },
     });

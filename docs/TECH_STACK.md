@@ -53,7 +53,7 @@
 - current runtime uses React Hook Form, TanStack Table and `nuqs` in private admin surfaces;
 - Refine removed in Workstream 5; Platform Admin now relies on typed route composition and shared primitives instead of a resource framework;
 - TanStack Table and `nuqs` are the canonical private list patterns after the Project reference slice and Platform Admin rewrite;
-- pg-boss enters only with its schema/pool/runbook contract;
+- pg-boss `12.30.0` entered in Workstream 6 with reviewed schema/pool/runbook contract;
 - pino enters only with redaction/correlation callsites;
 - Sentry enters only after SECURITY compliance decision and real connection prerequisites;
 - production Docker assets enter only with the reviewed topology workstream.

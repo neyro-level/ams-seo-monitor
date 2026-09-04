@@ -1,8 +1,11 @@
-import { AuditActorType,
-IdempotencyStatus,
-JobRunStatus,
-OutboxStatus,
-Prisma, } from "../../../generated/prisma/client.ts"
+import {
+  AuditActorType,
+  IdempotencyStatus,
+  JobRunStatus,
+  OutboxStatus,
+  Prisma,
+} from "../../../generated/prisma/client.ts";
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 import type {
   ClaimReliabilityEventInput,
   ClaimedReliabilityEvent,
@@ -13,8 +16,8 @@ import type {
   FailReliabilityEventResult,
   OutboxHealth,
   ReliabilityRepository,
+  TakeOverReliabilityEventInput,
 } from "../application/ports/reliability-repository.ts";
-import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 
 function reliabilityError(code: string, message: string) {
   return Object.assign(new Error(message), { code });
@@ -22,6 +25,30 @@ function reliabilityError(code: string, message: string) {
 
 function isUniqueConstraintError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
+function toClaimedEvent(event: {
+  id: string;
+  organizationId: string | null;
+  topic: string;
+  payload: Prisma.JsonValue;
+  attempts: number;
+  correlationId: string;
+  schemaVersion: number;
+  occurredAt: Date;
+}, jobRunId: string, workerId: string): ClaimedReliabilityEvent {
+  return {
+    outboxEventId: event.id,
+    jobRunId,
+    workerId,
+    organizationId: event.organizationId,
+    topic: event.topic,
+    payload: event.payload as Record<string, unknown>,
+    attempt: event.attempts,
+    correlationId: event.correlationId,
+    schemaVersion: event.schemaVersion,
+    occurredAt: event.occurredAt.toISOString(),
+  };
 }
 
 export class PrismaReliabilityRepository implements ReliabilityRepository {
@@ -74,6 +101,8 @@ export class PrismaReliabilityRepository implements ReliabilityRepository {
             topic: input.topic,
             payload: input.payload as Prisma.InputJsonValue,
             correlationId: input.correlationId,
+            schemaVersion: input.schemaVersion,
+            occurredAt: new Date(input.occurredAt),
             availableAt: new Date(input.availableAt),
           },
           select: { id: true },
@@ -148,6 +177,8 @@ export class PrismaReliabilityRepository implements ReliabilityRepository {
           payload: true,
           attempts: true,
           correlationId: true,
+          schemaVersion: true,
+          occurredAt: true,
         },
       });
       if (!candidate) {
@@ -182,16 +213,66 @@ export class PrismaReliabilityRepository implements ReliabilityRepository {
         select: { id: true },
       });
 
-      return {
-        outboxEventId: candidate.id,
-        jobRunId: jobRun.id,
-        workerId: input.workerId,
-        organizationId: candidate.organizationId,
-        topic: candidate.topic,
-        payload: candidate.payload as Record<string, unknown>,
-        attempt,
-        correlationId: candidate.correlationId,
-      };
+      return toClaimedEvent(
+        {
+          ...candidate,
+          attempts: attempt,
+        },
+        jobRun.id,
+        input.workerId,
+      );
+    });
+  }
+
+  async takeOverEvent(
+    input: TakeOverReliabilityEventInput,
+  ): Promise<ClaimedReliabilityEvent | null> {
+    const now = new Date(input.now);
+    return getPrismaClient().$transaction(async (transaction) => {
+      const event = await transaction.outboxEvent.findFirst({
+        where: {
+          id: input.outboxEventId,
+          status: OutboxStatus.PROCESSING,
+        },
+        select: {
+          id: true,
+          organizationId: true,
+          topic: true,
+          payload: true,
+          attempts: true,
+          correlationId: true,
+          schemaVersion: true,
+          occurredAt: true,
+        },
+      });
+      if (!event) {
+        return null;
+      }
+      const updatedEvent = await transaction.outboxEvent.updateMany({
+        where: {
+          id: input.outboxEventId,
+          status: OutboxStatus.PROCESSING,
+        },
+        data: {
+          lockedAt: now,
+          lockedBy: input.workerId,
+        },
+      });
+      const updatedJob = await transaction.jobRun.updateMany({
+        where: {
+          id: input.jobRunId,
+          outboxEventId: input.outboxEventId,
+          status: JobRunStatus.RUNNING,
+        },
+        data: {
+          workerId: input.workerId,
+          startedAt: now,
+        },
+      });
+      if (updatedEvent.count !== 1 || updatedJob.count !== 1) {
+        return null;
+      }
+      return toClaimedEvent(event, input.jobRunId, input.workerId);
     });
   }
 

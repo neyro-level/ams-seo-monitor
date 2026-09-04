@@ -13,6 +13,8 @@ export interface EnqueueReliabilityEventInput {
   entityId: string | null;
   source: string;
   correlationId: string;
+  schemaVersion: number;
+  occurredAt: string;
   availableAt: string;
   expiresAt: string;
 }
@@ -37,6 +39,8 @@ export interface ClaimedReliabilityEvent {
   payload: Record<string, unknown>;
   attempt: number;
   correlationId: string;
+  schemaVersion: number;
+  occurredAt: string;
 }
 
 export interface CompleteReliabilityEventInput {
@@ -57,6 +61,13 @@ export interface FailReliabilityEventResult {
   availableAt: string | null;
 }
 
+export interface TakeOverReliabilityEventInput {
+  outboxEventId: string;
+  jobRunId: string;
+  workerId: string;
+  now: string;
+}
+
 export interface OutboxHealth {
   pending: number;
   processing: number;
@@ -66,6 +77,7 @@ export interface OutboxHealth {
 export interface ReliabilityRepository {
   enqueueEvent(input: EnqueueReliabilityEventInput): Promise<EnqueueReliabilityEventResult>;
   claimNextEvent(input: ClaimReliabilityEventInput): Promise<ClaimedReliabilityEvent | null>;
+  takeOverEvent(input: TakeOverReliabilityEventInput): Promise<ClaimedReliabilityEvent | null>;
   completeEvent(input: CompleteReliabilityEventInput): Promise<void>;
   failEvent(input: FailReliabilityEventInput): Promise<FailReliabilityEventResult>;
   getOutboxHealth(): Promise<OutboxHealth>;

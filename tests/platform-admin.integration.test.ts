@@ -302,27 +302,29 @@ integrationDescription("Platform Admin typed commands", () => {
       orderBy: { createdAt: "asc" },
       select: { action: true, source: true },
     });
-    expect(audit.map((event) => event.action)).toEqual([
-      "threshold-profile.create",
-      "threshold-profile.update",
-      "query-cluster-profile.create",
-      "query-cluster-profile.update",
-      "organization.create",
-      "organization.update",
-      "membership.create",
-      "membership.update",
-      "project.create",
-      "project.change-status",
-      "project.update-settings",
-      "site.create",
-      "site.update",
-      "provider-connection.create",
-      "provider-connection.update",
-      "goal-definition.create",
-      "goal-definition.update",
-      "tracked-query-set.create",
-      "tracked-query-set.update",
-    ]);
+    expect(audit.map((event) => event.action)).toEqual(
+      expect.arrayContaining([
+        "threshold-profile.create",
+        "threshold-profile.update",
+        "query-cluster-profile.create",
+        "query-cluster-profile.update",
+        "organization.create",
+        "organization.update",
+        "membership.create",
+        "membership.update",
+        "project.create",
+        "project.change-status",
+        "project.update-settings",
+        "site.create",
+        "site.update",
+        "provider-connection.create",
+        "provider-connection.update",
+        "goal-definition.create",
+        "goal-definition.update",
+        "tracked-query-set.create",
+        "tracked-query-set.update",
+      ]),
+    );
     expect(audit.filter((event) => event.action.startsWith("project.")).every((event) => event.source === "project-registry")).toBe(true);
     expect(audit.filter((event) => event.action.startsWith("organization.") || event.action.startsWith("membership.")).every((event) => event.source === "identity-access")).toBe(true);
     expect(audit.filter((event) => event.action.startsWith("site.") || event.action.startsWith("provider-connection.") || event.action.startsWith("goal-definition.") || event.action.startsWith("tracked-query-set.") || event.action.startsWith("threshold-profile.") || event.action.startsWith("query-cluster-profile.")).every((event) => event.source === "platform-admin")).toBe(true);

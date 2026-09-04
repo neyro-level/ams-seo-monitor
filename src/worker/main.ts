@@ -1,5 +1,8 @@
 import type { CreateSyncRunInput } from "../modules/data-ingestion/index.ts";
-import { drainOutbox } from "../modules/platform-operations/worker.ts";
+import {
+  drainOutbox,
+  runReliabilityRetention,
+} from "../modules/platform-operations/worker.ts";
 import { syncProjectToDatabase } from "../modules/data-ingestion/worker.ts";
 
 const command = process.argv[2] ?? null;
@@ -22,9 +25,15 @@ async function main() {
     return;
   }
 
+  if (command === "outbox-retention") {
+    const result = await runReliabilityRetention();
+    process.stdout.write(`${JSON.stringify({ event: "outbox_retention_finished", ...result })}\n`);
+    return;
+  }
+
   if (command !== "project-sync" || !argument) {
     throw new Error(
-      "Usage: worker project-sync <project-slug> [trigger] | outbox-drain [worker-id]",
+      "Usage: worker project-sync <project-slug> [trigger] | outbox-drain [worker-id] | outbox-retention",
     );
   }
   if (!allowedTriggers.includes(requestedTrigger as CreateSyncRunInput["trigger"])) {

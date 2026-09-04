@@ -29,10 +29,11 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
+    "pgboss:migrate": "node --env-file-if-exists=.env.local scripts/pgboss-migrate.mjs",
     "dev:db:start": "docker compose --env-file .env.local -f docker-compose.dev.yml up -d --wait postgres",
     "dev:db:stop": "docker compose --env-file .env.local -f docker-compose.dev.yml stop postgres",
     "dev:db:status": "docker compose --env-file .env.local -f docker-compose.dev.yml ps postgres",
-    "dev:db:migrate": "node --env-file=.env.local node_modules/prisma/build/index.js migrate deploy",
+    "dev:db:migrate": "node --env-file=.env.local node_modules/prisma/build/index.js migrate deploy && node --env-file=.env.local scripts/pgboss-migrate.mjs",
     "dev:db:seed": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/seed-database.ts",
     "user:create": "tsx scripts/auth-admin.ts create",
     "user:disable": "tsx scripts/auth-admin.ts disable",
@@ -51,7 +52,8 @@
     "collector:sync:REDACTED_CLIENT_DATA": "pnpm build:collector && node dist-collector/collector/main.js client-sync REDACTED_CLIENT_DATA",
     "worker:sync:project": "pnpm build:collector && node dist-collector/src/worker/main.js project-sync",
     "worker:sync:REDACTED_CLIENT_DATA": "pnpm build:collector && node dist-collector/src/worker/main.js project-sync REDACTED_CLIENT_DATA",
-    "worker:outbox:drain": "pnpm build:collector && node dist-collector/src/worker/main.js outbox-drain"
+    "worker:outbox:drain": "pnpm build:collector && node dist-collector/src/worker/main.js outbox-drain",
+    "worker:outbox:retention": "pnpm build:collector && node dist-collector/src/worker/main.js outbox-retention"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.7.2",
@@ -66,6 +68,7 @@
     "next": "16.3.3",
     "nuqs": "2.10.1",
     "pg": "8.23.0",
+    "pg-boss": "12.30.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "7.87.0",
