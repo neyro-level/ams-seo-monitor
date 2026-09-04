@@ -59,7 +59,13 @@ describe("platform HTTP contracts", () => {
         dependencies: {
           postgresql: "ready",
           auth: "configured",
-          outbox: { pending: 0, processing: 0, deadLetter: 0 },
+          outbox: { status: "healthy", pending: 0, processing: 0, deadLetter: 0 },
+          worker: { status: "healthy", lastHeartbeatAt: "2026-09-03T00:00:00.000Z" },
+          integrationFreshness: {
+            status: "fresh",
+            latestSyncFinishedAt: "2026-09-03T00:00:00.000Z",
+            latestSyncStatus: "success",
+          },
         },
       }),
     ).toMatchObject({ releaseSha: "a".repeat(40) });

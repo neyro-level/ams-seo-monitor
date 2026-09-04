@@ -2,15 +2,20 @@ import type { ReportPeriodKey, SiteReportSnapshot } from "../../../../shared/sch
 
 export interface CreateSyncRunInput {
   organizationId: string;
+  projectId: string;
+  projectSlug: string;
   trigger: "daily" | "manual" | "preflight" | "backfill";
   startedAt: string;
+  correlationId: string;
 }
 
 export interface CreateSourceRunInput {
   syncRunId: string;
+  projectId: string;
   siteId: string;
   provider: "YANDEX_WEBMASTER" | "YANDEX_METRIKA" | "TOPVISOR";
   startedAt: string;
+  correlationId: string;
 }
 
 export interface FinishSourceRunInput {
@@ -35,6 +40,9 @@ export interface FinishSyncRunInput {
   status: "running" | "success" | "partial" | "failed";
   finishedAt: string;
   sitesProcessed: number;
+  sitesSucceeded: number;
+  sitesPartial: number;
+  sitesFailed: number;
   safeError: string | null;
 }
 

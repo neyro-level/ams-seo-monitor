@@ -10,5 +10,6 @@ ignoredBuiltDependencies:
 minimumReleaseAgeExclude:
   - zod@4.5.4
   - tsx@4.23.13
+  - pg-boss@12.30.0
 overrides:
   deepmerge-ts: 8.0.0

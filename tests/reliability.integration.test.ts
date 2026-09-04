@@ -6,6 +6,7 @@ import { ReliabilityService } from "../src/modules/platform-operations/index.ts"
 import { PrismaReliabilityRepository } from "../src/modules/platform-operations/server.ts";
 import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
 import { drainOutbox } from "../src/modules/platform-operations/worker.ts";
+import { runReliabilityRetention } from "../src/modules/platform-operations/infrastructure/retention-runtime.ts";
 
 const integrationEnabled = Boolean(
   process.env.TEST_DATABASE_HOST &&
@@ -84,6 +85,12 @@ integrationDescription("reliability foundation", () => {
     expect(duplicate).toEqual({ outboxEventId: first.outboxEventId, duplicate: true });
     expect(await prisma.auditEvent.count()).toBe(1);
     expect(await prisma.idempotencyKey.count()).toBe(1);
+    const outboxEvent = await prisma.outboxEvent.findUniqueOrThrow({
+      where: { id: first.outboxEventId },
+      select: { schemaVersion: true, occurredAt: true },
+    });
+    expect(outboxEvent.schemaVersion).toBe(1);
+    expect(outboxEvent.occurredAt.toISOString()).toBe("2026-09-03T00:00:00.000Z");
     expect(await prisma.outboxEvent.count()).toBe(1);
     await expect(
       service.enqueue({ ...command, payload: { projectSlug: "other", trigger: "manual" } }),
@@ -134,5 +141,85 @@ integrationDescription("reliability foundation", () => {
     const result = await drainOutbox({ workerId: "integration-worker", maxEvents: 1 });
     expect(result).toEqual({ claimed: 1, completed: 0, failed: 1 });
     expect(await service.getHealth()).toEqual({ pending: 0, processing: 0, deadLetter: 1 });
+  });
+
+  it("retains only old processed and dead-letter outbox history", async () => {
+    const processed = await prisma.outboxEvent.create({
+      data: {
+        organizationId,
+        topic: "retention.processed",
+        payload: { value: "processed" },
+        schemaVersion: 1,
+        occurredAt: new Date("2026-07-01T00:00:00.000Z"),
+        status: "PROCESSED",
+        correlationId,
+        processedAt: new Date("2026-07-01T00:00:00.000Z"),
+        createdAt: new Date("2026-07-01T00:00:00.000Z"),
+      },
+      select: { id: true },
+    });
+    await prisma.jobRun.create({
+      data: {
+        organizationId,
+        outboxEventId: processed.id,
+        jobType: "retention.processed",
+        status: "SUCCESS",
+        attempt: 1,
+        workerId: "retention-worker",
+        startedAt: new Date("2026-07-01T00:00:00.000Z"),
+        finishedAt: new Date("2026-07-01T00:00:01.000Z"),
+        correlationId,
+      },
+    });
+    const deadLetter = await prisma.outboxEvent.create({
+      data: {
+        organizationId,
+        topic: "retention.dead-letter",
+        payload: { value: "dead-letter" },
+        schemaVersion: 1,
+        occurredAt: new Date("2026-06-01T00:00:00.000Z"),
+        status: "DEAD_LETTER",
+        correlationId,
+        lastErrorCode: "UNKNOWN_OUTBOX_TOPIC",
+        createdAt: new Date("2026-06-01T00:00:00.000Z"),
+      },
+      select: { id: true },
+    });
+    await prisma.jobRun.create({
+      data: {
+        organizationId,
+        outboxEventId: deadLetter.id,
+        jobType: "retention.dead-letter",
+        status: "FAILED",
+        attempt: 1,
+        workerId: "retention-worker",
+        startedAt: new Date("2026-06-01T00:00:00.000Z"),
+        finishedAt: new Date("2026-06-01T00:00:01.000Z"),
+        safeErrorCode: "UNKNOWN_OUTBOX_TOPIC",
+        correlationId,
+      },
+    });
+    const recent = await prisma.outboxEvent.create({
+      data: {
+        organizationId,
+        topic: "retention.recent",
+        payload: { value: "recent" },
+        schemaVersion: 1,
+        occurredAt: new Date("2026-09-02T00:00:00.000Z"),
+        status: "PROCESSED",
+        correlationId,
+        processedAt: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-02T00:00:00.000Z"),
+      },
+      select: { id: true },
+    });
+
+    const result = await runReliabilityRetention(new Date("2026-09-04T00:00:00.000Z"));
+    expect(result.deletedOutboxEvents).toBe(2);
+    expect(result.deletedJobRuns).toBe(2);
+    expect(await prisma.outboxEvent.findUnique({ where: { id: processed.id } })).toBeNull();
+    expect(await prisma.outboxEvent.findUnique({ where: { id: deadLetter.id } })).toBeNull();
+    expect(await prisma.outboxEvent.findUnique({ where: { id: recent.id } })).not.toBeNull();
+    expect(await prisma.retentionRun.findUnique({ where: { id: result.retentionRunId } })).not.toBeNull();
   });
 });

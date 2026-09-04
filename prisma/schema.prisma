@@ -44,6 +44,12 @@ enum JobRunStatus {
   SUCCESS
   FAILED
 }
+enum RetentionRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 
 enum ProjectStatus {
   ACTIVE
@@ -460,47 +466,57 @@ model TrackedQuery {
 model SyncRun {
   id             String        @id @default(cuid())
   organizationId String
+  projectId      String
+  projectSlug    String
   trigger        SyncTrigger
   status         SyncRunStatus
   startedAt      DateTime
   finishedAt     DateTime?
   sitesProcessed Int           @default(0)
+  sitesSucceeded Int           @default(0)
+  sitesPartial   Int           @default(0)
+  sitesFailed    Int           @default(0)
   safeError      String?
+  correlationId  String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   sourceRuns     SourceRun[]
 
   @@index([startedAt])
+  @@index([projectId, startedAt])
   @@unique([organizationId, id])
 }
 
 model SourceRun {
-  id             String        @id @default(cuid())
-  organizationId String
-  syncRunId      String
-  siteId         String
-  provider       Provider
-  status         SourceStatus
-  startedAt      DateTime
-  finishedAt     DateTime?
-  durationMs     Int?
-  rowsReceived   Int?
-  safeErrorCode  String?
-  notes          String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  syncRun        SyncRun       @relation(fields: [syncRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  site           Site          @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  webmasterDailyMetrics WebmasterDailyMetric[]
+  id                         String                  @id @default(cuid())
+  organizationId             String
+  projectId                  String
+  correlationId              String
+  syncRunId                  String
+  siteId                     String
+  provider                   Provider
+  status                     SourceStatus
+  startedAt                  DateTime
+  finishedAt                 DateTime?
+  durationMs                 Int?
+  rowsReceived               Int?
+  safeErrorCode              String?
+  notes                      String?
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  syncRun                    SyncRun                 @relation(fields: [syncRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  site                       Site                    @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  webmasterDailyMetrics      WebmasterDailyMetric[]
   webmasterQueryDailyMetrics WebmasterQueryDailyMetric[]
-  metricaDailyMetrics MetrikaDailyMetric[]
-  landingPageDailyMetrics LandingPageDailyMetric[]
-  metricaDeviceDailyMetrics MetrikaDeviceDailyMetric[]
-  metricaGoalDailyMetrics MetrikaGoalDailyMetric[]
-  rankingCaptures RankingCapture[]
-  technicalSnapshots TechnicalSnapshot[]
+  metricaDailyMetrics        MetrikaDailyMetric[]
+  landingPageDailyMetrics    LandingPageDailyMetric[]
+  metricaDeviceDailyMetrics  MetrikaDeviceDailyMetric[]
+  metricaGoalDailyMetrics    MetrikaGoalDailyMetric[]
+  rankingCaptures            RankingCapture[]
+  technicalSnapshots         TechnicalSnapshot[]
 
   @@index([siteId, provider, startedAt])
+  @@index([projectId, provider, startedAt])
   @@unique([organizationId, id])
   @@index([syncRunId])
 }
@@ -741,20 +757,22 @@ model IdempotencyKey {
 }
 
 model OutboxEvent {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String?
   topic          String
   payload        Json
-  status         OutboxStatus @default(PENDING)
-  attempts       Int          @default(0)
-  availableAt    DateTime     @default(now())
+  schemaVersion  Int           @default(1)
+  occurredAt     DateTime      @default(now())
+  status         OutboxStatus  @default(PENDING)
+  attempts       Int           @default(0)
+  availableAt    DateTime      @default(now())
   lockedAt       DateTime?
   lockedBy       String?
   lastErrorCode  String?
   correlationId  String
   processedAt    DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   idempotencyKey IdempotencyKey?
   jobRuns        JobRun[]
@@ -765,7 +783,7 @@ model OutboxEvent {
 }
 
 model JobRun {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String?
   outboxEventId  String
   jobType        String
@@ -776,11 +794,24 @@ model JobRun {
   finishedAt     DateTime?
   safeErrorCode  String?
   correlationId  String
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime      @default(now())
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   outboxEvent    OutboxEvent   @relation(fields: [outboxEventId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([outboxEventId, attempt])
   @@index([status, startedAt])
   @@index([organizationId, jobType, startedAt])
+}
+
+model RetentionRun {
+  id                 String             @id @default(cuid())
+  status             RetentionRunStatus
+  startedAt          DateTime
+  finishedAt         DateTime?
+  deletedOutboxEvents Int               @default(0)
+  deletedJobRuns     Int                @default(0)
+  safeErrorCode      String?
+  createdAt          DateTime           @default(now())
+
+  @@index([status, startedAt])
 }

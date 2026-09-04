@@ -56,10 +56,15 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - web environment не содержит provider tokens;
 - worker environment не содержит Better Auth secret;
 - provider calls только read-only и только к exact allowlisted HTTPS origins;
+- pg-boss uses the same database with a separate schema and bounded pool, but worker runtime starts with `migrate:false/createSchema:false`;
 - logs содержат IDs, timestamps, counts, duration, status и safe error code, но не token/header/raw body/PII;
 - outbox worker dispatches only registered topics and bounded JSON payloads;
 - lease ownership prevents one worker from completing another worker's job;
 - safe error codes replace raw exception/response bodies.
+
+### Sentry
+
+Current state: explicitly disabled. No DSN, token, scrub policy confirmation or controlled event proof are configured in this repository. Until those prerequisites exist, observability relies on redacted pino JSON logs, health endpoints and deterministic tests; no fake `connected` status is claimed.
 
 ### AMS Leads API
 
@@ -187,7 +192,7 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - Platform Admin использует только typed Server Actions и owner commands; resource mutation и safe AuditEvent атомарны;
 - provider settings из browser принимают только плоский nonsecret JSON и отклоняют sensitive key names;
 - tracked query replacement сохраняет records/history и меняет lifecycle через `enabled`;
-- outbox payload, audit markers and JobRun errors exclude secrets/raw PII;
+- outbox payload, pg-boss transport data, audit markers and JobRun errors exclude secrets/raw PII;
 - retries are bounded; permanent failures become visible dead-letter;
 - release health SHA поступает из root-owned deploy-generated env;
 - concurrent full worker sync blocked by PostgreSQL advisory lock;

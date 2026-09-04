@@ -97,9 +97,9 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 
 ### Platform Operations — `src/modules/platform-operations`
 
-- application: idempotent enqueue, audit/outbox и job lifecycle;
-- infrastructure: reliability transaction repository и bounded topic dispatcher;
-- worker entrypoint экспортируется отдельно от framework-neutral API.
+- application: idempotent enqueue, payload validation, retry policy, pino-backed observability hooks and queue-aware job lifecycle;
+- infrastructure: Prisma reliability repository, pg-boss runtime client, readiness probe, retention runner and bounded topic dispatcher;
+- worker entrypoint экспортируется отдельно от framework-neutral API, использует JobPrincipal for async handlers and emits redacted pino JSON logs.
 
 ### Platform Admin — `src/modules/platform-admin`, `src/app/admin`
 

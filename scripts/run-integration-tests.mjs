@@ -38,6 +38,7 @@ function runNodeScript(relativePath, args = []) {
 
 runNodeScript("node_modules/prisma/build/index.js", ["generate"]);
 runNodeScript("node_modules/prisma/build/index.js", ["migrate", "deploy"]);
+runNodeScript("scripts/pgboss-migrate.mjs");
 runNodeScript("node_modules/tsx/dist/cli.mjs", ["scripts/seed-database.ts"]);
 runNodeScript("node_modules/vitest/vitest.mjs", [
   "run",

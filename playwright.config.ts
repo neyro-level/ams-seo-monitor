@@ -16,7 +16,7 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: "node --env-file=.env.local node_modules/prisma/build/index.js migrate deploy && node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/seed-e2e-admin.ts --confirm-local-e2e && node --env-file=.env.local .next/standalone/server.js",
+    command: "node --env-file-if-exists=.env.local node_modules/prisma/build/index.js migrate deploy && node --env-file-if-exists=.env.local scripts/pgboss-migrate.mjs && node --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs scripts/seed-e2e-admin.ts --confirm-local-e2e && node --env-file-if-exists=.env.local .next/standalone/server.js",
     url: `${baseURL}/api/health/live`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

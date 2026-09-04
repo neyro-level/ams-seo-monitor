@@ -63,7 +63,7 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
         slug: "REDACTED_CLIENT_DATA",
         project: { slug: "REDACTED_CLIENT_DATA" },
       },
-      select: { id: true, organizationId: true },
+      select: { id: true, organizationId: true, projectId: true },
     });
     if (!site.organizationId) throw new Error("Seeded site ownership is missing");
 
@@ -77,14 +77,19 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
 
     const syncRun = await repository.createSyncRun({
       organizationId: site.organizationId,
+      projectId: site.projectId,
+      projectSlug: "REDACTED_CLIENT_DATA",
       trigger: "manual",
       startedAt: "2026-08-30T00:00:00+03:00",
+      correlationId: "00000000-0000-4000-8000-000000000020",
     });
     const sourceRun = await repository.createSourceRun({
       syncRunId: syncRun.syncRunId,
+      projectId: site.projectId,
       siteId: site.id,
       provider: "YANDEX_WEBMASTER",
       startedAt: "2026-08-30T00:00:00+03:00",
+      correlationId: "00000000-0000-4000-8000-000000000020",
     });
 
     const snapshot = siteReportSnapshotSchema.parse({
@@ -152,16 +157,33 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
       status: "partial",
       finishedAt: "2026-08-30T00:05:00+03:00",
       sitesProcessed: 1,
+      sitesSucceeded: 0,
+      sitesPartial: 1,
+      sitesFailed: 0,
       safeError: "UNAUTHORIZED",
     });
 
     const storedSyncRun = await prisma!.syncRun.findUniqueOrThrow({
       where: { id: syncRun.syncRunId },
-      select: { status: true, sitesProcessed: true, organizationId: true },
+      select: {
+        status: true,
+        sitesProcessed: true,
+        sitesPartial: true,
+        projectId: true,
+        projectSlug: true,
+        correlationId: true,
+        organizationId: true,
+      },
     });
     const storedSourceRun = await prisma!.sourceRun.findUniqueOrThrow({
       where: { id: sourceRun.sourceRunId },
-      select: { status: true, safeErrorCode: true, organizationId: true },
+      select: {
+        status: true,
+        safeErrorCode: true,
+        projectId: true,
+        correlationId: true,
+        organizationId: true,
+      },
     });
     const storedReport = await prisma!.reportSnapshot.findFirstOrThrow({
       where: {
@@ -174,9 +196,15 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
 
     expect(storedSyncRun.status).toBe("PARTIAL");
     expect(storedSyncRun.sitesProcessed).toBe(1);
+    expect(storedSyncRun.sitesPartial).toBe(1);
+    expect(storedSyncRun.projectId).toBe(site.projectId);
+    expect(storedSyncRun.projectSlug).toBe("REDACTED_CLIENT_DATA");
+    expect(storedSyncRun.correlationId).toBe("00000000-0000-4000-8000-000000000020");
     expect(storedSyncRun.organizationId).toBe(site.organizationId);
     expect(storedSourceRun.status).toBe("PARTIAL");
     expect(storedSourceRun.safeErrorCode).toBe("UNAUTHORIZED");
+    expect(storedSourceRun.projectId).toBe(site.projectId);
+    expect(storedSourceRun.correlationId).toBe("00000000-0000-4000-8000-000000000020");
     expect(storedSourceRun.organizationId).toBe(site.organizationId);
     expect(storedReport.freshness).toBe("PARTIAL");
     expect(storedReport.schemaVersion).toBe(1);

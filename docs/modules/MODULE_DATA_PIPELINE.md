@@ -20,7 +20,7 @@
 ```text
 worker oneshot
 → advisory full-sync lock
-→ SyncRun/SourceRuns
+→ SyncRun/SourceRuns with project/correlation fields
 → Webmaster/Metrika/Topvisor read-only collectors
 → normalized DTOs
 → four equal-period snapshots
@@ -46,21 +46,13 @@ worker oneshot
 
 ## Persistence semantics
 
+- `SyncRun` stores organization, project, projectSlug, correlationId and per-status site counters;
+- `SourceRun` stores organization, project, provider and correlationId for each provider attempt;
 - daily metrics upsert by natural site/date keys;
 - period detail upsert by site/period/date/dimension keys;
 - ranking captures upsert by query/capture/source;
 - technical and report snapshots append history;
-- latest report выбирается repository по site/period/generatedAt.
-
-## Checks
-
-- provider error mapping;
-- period alignment;
-- report compiler contracts;
-- goal conversion filtering;
-- DB integration counts and constraints;
-- run finalization/timestamps;
-- advisory lock overlap;
-- compiled worker smoke.
+- latest report выбирается repository по site/period/generatedAt;
+- async project sync requests travel through OutboxEvent → pg-boss → JobPrincipal worker handler.
 
 DB-backed checks требуют isolated `TEST_DATABASE_*`.
