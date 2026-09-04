@@ -14,6 +14,8 @@ export class PrismaMonitoringRepository implements MonitoringRepository {
     const project = await getPrismaClient().project.findUnique({
       where: { slug: projectSlug },
       select: {
+        id: true,
+        organizationId: true,
         slug: true,
         name: true,
         status: true,
@@ -105,6 +107,8 @@ export class PrismaMonitoringRepository implements MonitoringRepository {
     }
 
     return {
+      projectId: project.id,
+      organizationId: project.organizationId,
       projectSlug: project.slug,
       name: project.name,
       enabled: project.status !== "DISABLED",

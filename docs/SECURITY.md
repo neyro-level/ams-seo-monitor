@@ -43,6 +43,9 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - runtime source of truth;
 - production listener — loopback/local only;
 - app и migrator roles разделены;
+- every tenant-owned registry, configuration, run, metric and report record has a required `organizationId`;
+- direct ownership and composite parent foreign keys reject cross-tenant relations independently of application authorization;
+- `pnpm verify:tenant-ownership` is a read-only count-only preflight; production migration stops if any ownership check is nonzero;
 - web/worker используют только необходимые runtime privileges;
 - migration и restore не выполняются через browser;
 - backup/restore обязательны.
@@ -167,7 +170,7 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - `mustChangePassword` is server-owned and completion records AuditEvent;
 - production Platform Admin requires 2FA; session revocation follows Better Auth password change;
 - disabled user denied;
-- foreign tenant read denied server-side;
+- foreign tenant read/write denied server-side and a mismatched owner-parent relation is rejected by PostgreSQL;
 - browser-to-provider calls prohibited;
 - Prisma/SQL in UI prohibited;
 - web process has no provider tokens;

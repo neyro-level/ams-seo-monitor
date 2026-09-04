@@ -606,6 +606,7 @@ export class SyncService {
 
     const collectors = args.collectors;
     const syncRun = await this.createSyncRun({
+      organizationId: projectContext.organizationId,
       trigger: args.trigger,
       startedAt: generatedAt,
     });

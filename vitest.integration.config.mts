@@ -22,6 +22,8 @@ export default defineConfig({
       "tests/reliability.integration.test.ts",
       "tests/prisma-sync-repository.test.ts",
       "tests/worker.sync-project.test.ts",
+      "tests/tenant-ownership.integration.test.ts",
+      "tests/tenant-constraints.integration.test.ts",
     ],
   },
 });

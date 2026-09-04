@@ -63,8 +63,9 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
         slug: "REDACTED_CLIENT_DATA",
         project: { slug: "REDACTED_CLIENT_DATA" },
       },
-      select: { id: true },
+      select: { id: true, organizationId: true },
     });
+    if (!site.organizationId) throw new Error("Seeded site ownership is missing");
 
     await prisma!.reportSnapshot.deleteMany({
       where: {
@@ -75,6 +76,7 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
     });
 
     const syncRun = await repository.createSyncRun({
+      organizationId: site.organizationId,
       trigger: "manual",
       startedAt: "2026-08-30T00:00:00+03:00",
     });
@@ -155,11 +157,11 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
 
     const storedSyncRun = await prisma!.syncRun.findUniqueOrThrow({
       where: { id: syncRun.syncRunId },
-      select: { status: true, sitesProcessed: true },
+      select: { status: true, sitesProcessed: true, organizationId: true },
     });
     const storedSourceRun = await prisma!.sourceRun.findUniqueOrThrow({
       where: { id: sourceRun.sourceRunId },
-      select: { status: true, safeErrorCode: true },
+      select: { status: true, safeErrorCode: true, organizationId: true },
     });
     const storedReport = await prisma!.reportSnapshot.findFirstOrThrow({
       where: {
@@ -167,14 +169,17 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
         periodKey: "WEEK",
         generatedAt: new Date("2026-08-30T00:00:00+03:00"),
       },
-      select: { freshness: true, schemaVersion: true },
+      select: { freshness: true, schemaVersion: true, organizationId: true },
     });
 
     expect(storedSyncRun.status).toBe("PARTIAL");
     expect(storedSyncRun.sitesProcessed).toBe(1);
+    expect(storedSyncRun.organizationId).toBe(site.organizationId);
     expect(storedSourceRun.status).toBe("PARTIAL");
     expect(storedSourceRun.safeErrorCode).toBe("UNAUTHORIZED");
+    expect(storedSourceRun.organizationId).toBe(site.organizationId);
     expect(storedReport.freshness).toBe("PARTIAL");
     expect(storedReport.schemaVersion).toBe(1);
+    expect(storedReport.organizationId).toBe(site.organizationId);
   });
 });

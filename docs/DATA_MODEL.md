@@ -1,6 +1,6 @@
 # DATA MODEL
 
-> Migration status: this document describes the current database. Additive tenant ownership, scopedDb and composite constraints are planned in `MASTER_PLAN.md`; no legacy field/table is removed in the first Standard 3.0 release train.
+> Migration status: `20260903180000_expand_tenant_ownership` backfills nullable ownership fields; `20260903183000_contract_tenant_ownership` validates every ownership chain, makes those fields `NOT NULL` and adds composite tenant foreign keys. The contract migration deliberately stops on any unknown or cross-tenant row. No legacy field/table is removed in the first Standard 3.0 release train.
 
 ## Источники истины
 
@@ -69,11 +69,21 @@ Not a database record. A server factory creates a discriminated principal from f
 - status: `ACTIVE`, `PLANNED`, `DISABLED`;
 - physical delete production project не является обычной операцией.
 
+### Tenant ownership
+
+`Project` is the ownership root. Every registry, configuration, query, run, metric and report record stores its own required `organizationId`; it is not inferred from a browser route or a mutable session field.
+
+- direct `organizationId → Organization` foreign keys preserve a valid owner;
+- composite foreign keys make the owner agree with every parent relation: Site→Project, configuration/query records→their parent, SourceRun→SyncRun/Site, metrics/technical snapshots→Site/SourceRun, RankingCapture→TrackedQuery/optional SourceRun and ReportSnapshot→Site;
+- `SyncRun` has an explicit owner even before a SourceRun exists;
+- `pnpm verify:tenant-ownership` is a read-only preflight that emits only check names and counts. Its every count must be zero before the contract migration reaches production.
+
 ### Site
 
-Принадлежит Project.
+Принадлежит одному Project и той же Organization.
 
 - `(projectId, slug)` уникален;
+- `(organizationId, projectId)` must reference the same Project ownership;
 - хранит display name, URL, timezone и `enabled`;
 - владеет provider connections, tracked queries, runs, metrics и reports;
 - отключение не удаляет историю.

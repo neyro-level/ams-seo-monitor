@@ -46,7 +46,7 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 - `src/platform/database/prisma` owns the singleton/Pool/adapter and transaction primitive;
 - `src/platform/commands/define-command.ts` owns the reusable business transaction boundary; product adoption begins with the Project slice;
 - `src/platform/actions/define-action.ts` is a transport-only adapter primitive;
-- `src/platform/database/tenant-owned-models.ts` is the canonical registry; schema enforcement begins in Workstream 3;
+- `src/platform/database/tenant-owned-models.ts` is the canonical registry; `scoped-db.ts` carries the explicit tenant scope inside a transaction, while PostgreSQL composite foreign keys independently reject cross-tenant relations;
 - static architecture guards reject legacy Prisma package imports, unsafe raw SQL and the removed database path.
 
 ### Presentation — `src/app`, `src/components`
@@ -187,7 +187,7 @@ PostgreSQL хранит:
 - ranking captures и technical snapshots;
 - materialized `ReportSnapshot` payloads.
 
-`config/*` хранит reviewed nonsecret seed/input. `prisma/schema.prisma` и immutable migrations владеют DB shape. `src/shared/schemas` владеет runtime validation DTO.
+`config/*` хранит reviewed nonsecret seed/input. `prisma/schema.prisma` и immutable migrations владеют DB shape. Every tenant-owned record carries `organizationId`; composite foreign keys bind it to the owner of its parent relation. `src/shared/schemas` владеет runtime validation DTO.
 
 ## Authorization flow
 

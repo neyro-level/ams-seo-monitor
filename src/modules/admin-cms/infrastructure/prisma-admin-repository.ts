@@ -426,6 +426,7 @@ export class PrismaAdminRepository implements AdminRepository {
           throw new Error("SITE_PROJECT_IMMUTABLE");
         }
         const data = {
+          organizationId: project.organizationId,
           projectId: input.projectId,
           slug: input.slug,
           name: input.name,
@@ -455,8 +456,20 @@ export class PrismaAdminRepository implements AdminRepository {
       const site = await tx.site.findUniqueOrThrow({ where: { id: input.siteId }, include: { project: { select: { organizationId: true } } } });
       const record = await tx.providerConnection.upsert({
         where: { siteId_provider: { siteId: input.siteId, provider: input.provider } },
-        update: { externalId: input.externalId, enabled: input.enabled, settingsJson: input.settings ?? Prisma.JsonNull },
-        create: { siteId: input.siteId, provider: input.provider, externalId: input.externalId, enabled: input.enabled, settingsJson: input.settings ?? Prisma.JsonNull },
+        update: {
+          organizationId: site.project.organizationId,
+          externalId: input.externalId,
+          enabled: input.enabled,
+          settingsJson: input.settings ?? Prisma.JsonNull,
+        },
+        create: {
+          organizationId: site.project.organizationId,
+          siteId: input.siteId,
+          provider: input.provider,
+          externalId: input.externalId,
+          enabled: input.enabled,
+          settingsJson: input.settings ?? Prisma.JsonNull,
+        },
       });
       return { id: record.id, organizationId: site.project.organizationId, beforeMarker: { connection: "existing-or-new" }, afterMarker: { provider: record.provider, enabled: record.enabled, externalId: record.externalId ?? "" } };
     });
@@ -467,8 +480,14 @@ export class PrismaAdminRepository implements AdminRepository {
       const project = await tx.project.findUniqueOrThrow({ where: { id: input.projectId }, select: { organizationId: true } });
       const record = await tx.goalDefinition.upsert({
         where: { projectId_externalGoalId: { projectId: input.projectId, externalGoalId: input.externalGoalId } },
-        update: { label: input.label, category: input.category, direction: input.direction, includeInSeoConversion: input.includeInSeoConversion },
-        create: input,
+        update: {
+          organizationId: project.organizationId,
+          label: input.label,
+          category: input.category,
+          direction: input.direction,
+          includeInSeoConversion: input.includeInSeoConversion,
+        },
+        create: { ...input, organizationId: project.organizationId },
       });
       return { id: record.id, organizationId: project.organizationId, beforeMarker: { goal: "existing-or-new" }, afterMarker: { externalGoalId: record.externalGoalId, label: record.label, includeInSeoConversion: record.includeInSeoConversion } };
     });
@@ -494,15 +513,18 @@ export class PrismaAdminRepository implements AdminRepository {
             source: input.source,
             baselineLabel: input.baselineLabel,
             expectedCount: input.queries.length,
+            organizationId: site.project.organizationId,
           },
           create: {
             siteId: input.siteId,
             source: input.source,
             baselineLabel: input.baselineLabel,
             expectedCount: input.queries.length,
+            organizationId: site.project.organizationId,
           },
         });
         const queries = input.queries.map((query) => ({
+          organizationId: site.project.organizationId,
           trackedQuerySetId: set.id,
           query,
           normalizedQuery: query.toLocaleLowerCase("ru").replace(/\s+/g, " ").trim(),
@@ -510,7 +532,7 @@ export class PrismaAdminRepository implements AdminRepository {
         }));
         await tx.trackedQuery.updateMany({
           where: { trackedQuerySetId: set.id, enabled: true },
-          data: { enabled: false },
+          data: { enabled: false, organizationId: site.project.organizationId },
         });
         await tx.trackedQuery.createMany({ data: queries, skipDuplicates: true });
         await tx.trackedQuery.updateMany({
@@ -518,7 +540,7 @@ export class PrismaAdminRepository implements AdminRepository {
             trackedQuerySetId: set.id,
             normalizedQuery: { in: queries.map((query) => query.normalizedQuery) },
           },
-          data: { enabled: true },
+          data: { enabled: true, organizationId: site.project.organizationId },
         });
         return {
           id: set.id,

@@ -334,12 +334,14 @@ model Project {
   goalDefinitions    GoalDefinition[]
 
   @@index([organizationId])
+  @@unique([organizationId, id])
   @@index([thresholdProfileId])
   @@index([clusterProfileId])
 }
 
 model Site {
   id                String               @id @default(cuid())
+  organizationId     String
   projectId         String
   slug              String
   name              String
@@ -363,11 +365,13 @@ model Site {
   reportSnapshots   ReportSnapshot[]
 
   @@unique([projectId, slug])
+  @@unique([organizationId, id])
   @@index([projectId])
 }
 
 model ProviderConnection {
   id          String    @id @default(cuid())
+  organizationId String
   siteId      String
   provider    Provider
   externalId  String?
@@ -383,6 +387,7 @@ model ProviderConnection {
 
 model GoalDefinition {
   id                    String              @id @default(cuid())
+  organizationId          String
   projectId             String
   externalGoalId        String
   label                 String
@@ -395,10 +400,12 @@ model GoalDefinition {
   siteScopes            GoalDefinitionSite[]
 
   @@unique([projectId, externalGoalId])
+  @@unique([organizationId, id])
   @@index([projectId])
 }
 
 model GoalDefinitionSite {
+  organizationId   String
   goalDefinitionId String
   siteId           String
   goalDefinition   GoalDefinition @relation(fields: [goalDefinitionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -410,6 +417,7 @@ model GoalDefinitionSite {
 
 model TrackedQuerySet {
   id            String         @id @default(cuid())
+  organizationId String
   siteId        String         @unique
   source        RankingSource
   baselineLabel String
@@ -417,11 +425,13 @@ model TrackedQuerySet {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   site          Site           @relation(fields: [siteId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  @@unique([organizationId, id])
   queries       TrackedQuery[]
 }
 
 model TrackedQuery {
   id                       String          @id @default(cuid())
+  organizationId          String
   trackedQuerySetId        String
   query                    String
   normalizedQuery          String
@@ -434,11 +444,13 @@ model TrackedQuery {
   rankingCaptures          RankingCapture[]
 
   @@unique([trackedQuerySetId, normalizedQuery])
+  @@unique([organizationId, id])
   @@index([trackedQuerySetId])
 }
 
 model SyncRun {
   id             String        @id @default(cuid())
+  organizationId String
   trigger        SyncTrigger
   status         SyncRunStatus
   startedAt      DateTime
@@ -450,10 +462,12 @@ model SyncRun {
   sourceRuns     SourceRun[]
 
   @@index([startedAt])
+  @@unique([organizationId, id])
 }
 
 model SourceRun {
   id             String        @id @default(cuid())
+  organizationId String
   syncRunId      String
   siteId         String
   provider       Provider
@@ -478,11 +492,13 @@ model SourceRun {
   technicalSnapshots TechnicalSnapshot[]
 
   @@index([siteId, provider, startedAt])
+  @@unique([organizationId, id])
   @@index([syncRunId])
 }
 
 model WebmasterDailyMetric {
   id              String     @id @default(cuid())
+  organizationId     String
   siteId          String
   date            DateTime
   shows           Int
@@ -501,6 +517,7 @@ model WebmasterDailyMetric {
 
 model WebmasterQueryDailyMetric {
   id                   String                @id @default(cuid())
+  organizationId        String
   siteId               String
   periodKey            ReportPeriodKey
   date                 DateTime
@@ -527,6 +544,7 @@ model WebmasterQueryDailyMetric {
 
 model MetrikaDailyMetric {
   id                          String    @id @default(cuid())
+  organizationId                String
   siteId                      String
   date                        DateTime
   visits                      Int
@@ -552,6 +570,7 @@ model MetrikaDailyMetric {
 
 model LandingPageDailyMetric {
   id                          String        @id @default(cuid())
+  organizationId                String
   siteId                      String
   periodKey                   ReportPeriodKey
   date                        DateTime
@@ -577,6 +596,7 @@ model LandingPageDailyMetric {
 
 model MetrikaDeviceDailyMetric {
   id             String        @id @default(cuid())
+  organizationId     String
   siteId         String
   periodKey      ReportPeriodKey
   date           DateTime
@@ -597,6 +617,7 @@ model MetrikaDeviceDailyMetric {
 
 model MetrikaGoalDailyMetric {
   id             String        @id @default(cuid())
+  organizationId     String
   siteId         String
   periodKey      ReportPeriodKey
   date           DateTime
@@ -620,6 +641,7 @@ model MetrikaGoalDailyMetric {
 
 model RankingCapture {
   id             String        @id @default(cuid())
+  organizationId String
   trackedQueryId String
   capturedAt     DateTime
   position       Int?
@@ -636,6 +658,7 @@ model RankingCapture {
 
 model TechnicalSnapshot {
   id           String                @id @default(cuid())
+  organizationId String
   siteId       String
   capturedAt   DateTime
   sourceRunId  String
@@ -652,6 +675,7 @@ model TechnicalSnapshot {
 
 model ReportSnapshot {
   id               String         @id @default(cuid())
+  organizationId    String
   siteId           String
   periodKey        ReportPeriodKey
   schemaVersion    Int

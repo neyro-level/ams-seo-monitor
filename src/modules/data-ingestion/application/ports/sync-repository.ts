@@ -1,6 +1,7 @@
 import type { ReportPeriodKey, SiteReportSnapshot } from "../../../../shared/schemas/report.ts";
 
 export interface CreateSyncRunInput {
+  organizationId: string;
   trigger: "daily" | "manual" | "preflight" | "backfill";
   startedAt: string;
 }
