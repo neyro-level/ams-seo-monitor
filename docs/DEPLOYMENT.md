@@ -47,9 +47,9 @@ systemd timer
 4. Linux target rejects a pre-existing release directory for the same SHA.
 5. Target loads the immutable image; it does not run install or build.
 6. Compose config resolves exact image tag from root-owned `shared/release.env`.
-7. `migrate` container runs Prisma migrations and pg-boss schema migration.
-8. `seed` runs from the same immutable image.
-9. Backup upload + HEAD confirmation and restore smoke pass.
+7. Pre-migration backup upload + HEAD confirmation and restore smoke pass.
+8. `migrate` container runs Prisma migrations and pg-boss schema migration.
+9. `seed` runs from the same immutable image.
 10. Nginx/systemd assets are installed and validated.
 11. `current` symlink switches atomically.
 12. Deploy atomically materializes root-owned `shared/release.env` with SHA and image metadata.

@@ -41,14 +41,14 @@ Deploy script:
 5. loads the OCI image with Docker on target;
 6. verifies loaded image digest against the manifest;
 7. validates compose config;
-8. runs `migrate` container with Prisma + pg-boss schema migration;
-9. runs `seed` from the same immutable image;
-10. installs backup/restore scripts;
-11. requires offsite backup upload + HEAD confirmation;
-12. runs restore smoke via ephemeral PostgreSQL container;
+8. installs backup/restore scripts;
+9. requires a pre-migration offsite backup upload + HEAD confirmation;
+10. restores that backup in an ephemeral PostgreSQL container;
+11. runs `migrate` container with Prisma + pg-boss schema migration;
+12. runs `seed` from the same immutable image;
 13. installs reviewed Nginx/systemd assets.
 
-Any failure before symlink switch leaves current runtime untouched.
+Any failure before symlink switch leaves the current code runtime untouched. The mandatory backup and restore smoke run before migration because code rollback does not reverse database changes.
 
 ## Cutover
 
