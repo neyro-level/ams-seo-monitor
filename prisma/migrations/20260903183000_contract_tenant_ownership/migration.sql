@@ -70,6 +70,15 @@ ALTER TABLE "RankingCapture" ALTER COLUMN "organizationId" SET NOT NULL;
 ALTER TABLE "TechnicalSnapshot" ALTER COLUMN "organizationId" SET NOT NULL;
 ALTER TABLE "ReportSnapshot" ALTER COLUMN "organizationId" SET NOT NULL;
 
+-- PostgreSQL requires an exact unique key on every composite FK target.
+CREATE UNIQUE INDEX "Project_organizationId_id_key" ON "Project"("organizationId", "id");
+CREATE UNIQUE INDEX "Site_organizationId_id_key" ON "Site"("organizationId", "id");
+CREATE UNIQUE INDEX "GoalDefinition_organizationId_id_key" ON "GoalDefinition"("organizationId", "id");
+CREATE UNIQUE INDEX "TrackedQuerySet_organizationId_id_key" ON "TrackedQuerySet"("organizationId", "id");
+CREATE UNIQUE INDEX "TrackedQuery_organizationId_id_key" ON "TrackedQuery"("organizationId", "id");
+CREATE UNIQUE INDEX "SyncRun_organizationId_id_key" ON "SyncRun"("organizationId", "id");
+CREATE UNIQUE INDEX "SourceRun_organizationId_id_key" ON "SourceRun"("organizationId", "id");
+
 ALTER TABLE "Site" ADD CONSTRAINT "Site_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "ProviderConnection" ADD CONSTRAINT "ProviderConnection_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "GoalDefinition" ADD CONSTRAINT "GoalDefinition_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
