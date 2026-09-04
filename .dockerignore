@@ -1,0 +1,13 @@
+.git
+.gitignore
+.next
+.local
+.release-artifacts
+dist-collector
+node_modules
+test-results
+playwright-report
+coverage
+pnpm-store
+.env.local
+*.log

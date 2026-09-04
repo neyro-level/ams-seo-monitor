@@ -412,6 +412,8 @@ Done:
 Branch: `work/v3-docker-production`
 Base: Workstream 7 HEAD
 Gate: HEAVY — infrastructure/release/migrations
+Status: implemented and verified in the local worktree; checkpoint, push and PR are the remaining delivery steps.
+
 
 Prerequisites requiring factual proof:
 

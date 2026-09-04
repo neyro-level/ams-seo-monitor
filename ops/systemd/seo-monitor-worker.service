@@ -1,21 +1,13 @@
 [Unit]
-Description=AMS SEO Monitor database worker
-After=network-online.target postgresql@18-main.service
+Description=AMS SEO Monitor scheduled sync
+After=docker.service network-online.target
 Wants=network-online.target
-Requires=postgresql@18-main.service
+Requires=docker.service
 
 [Service]
 Type=oneshot
-User=seo-monitor-worker
-Group=www-data
 WorkingDirectory=/opt/ams-platform/ams-seo-monitor/current
-Environment=NODE_ENV=production
-EnvironmentFile=/etc/ams-platform/ams-seo-monitor-worker.env
-ExecStart=/opt/ams-platform/ams-seo-monitor/shared/runtime/current/bin/node /opt/ams-platform/ams-seo-monitor/current/dist-collector/src/worker/main.js project-sync REDACTED_CLIENT_DATA daily
-TimeoutStartSec=30min
-UMask=0007
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectHome=true
-ProtectSystem=strict
-ReadWritePaths=/opt/ams-platform/ams-seo-monitor/shared
+Environment=COMPOSE_PROJECT_NAME=ams-seo-monitor
+EnvironmentFile=-/opt/ams-platform/ams-seo-monitor/shared/release.env
+ExecStart=/usr/bin/docker compose -f /opt/ams-platform/ams-seo-monitor/current/docker-compose.production.yml run --rm --no-deps maintenance project-sync REDACTED_CLIENT_DATA daily
+TimeoutStartSec=45min

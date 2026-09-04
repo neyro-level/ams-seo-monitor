@@ -2,6 +2,7 @@
 set -euo pipefail
 
 DB_NAME="${DB_NAME:-seo_monitor_prod}"
+DATABASE_URL="${DATABASE_URL:-}"
 BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/ams-seo-monitor-postgres}"
 KEEP_DAILY="${KEEP_DAILY:-7}"
 KEEP_WEEKLY="${KEEP_WEEKLY:-8}"
@@ -21,6 +22,7 @@ LATEST_PATH="${BACKUP_ROOT}/latest.dump"
 LATEST_SHA_PATH="${BACKUP_ROOT}/latest.dump.sha256"
 DAY_OF_WEEK="$(date -u +%u)"
 DAY_OF_MONTH="$(date -u +%d)"
+DUMP_TARGET="${DATABASE_URL:-${DB_NAME}}"
 
 if [ "${REQUIRE_OFFSITE}" != "true" ]; then
   echo "offsite_backup_policy_invalid=true" >&2
@@ -43,7 +45,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-pg_dump --format=custom --file "${TMP_PATH}" "${DB_NAME}"
+pg_dump --format=custom --file "${TMP_PATH}" "${DUMP_TARGET}"
 mv "${TMP_PATH}" "${DAILY_PATH}"
 sha256sum "${DAILY_PATH}" > "${DAILY_PATH}.sha256"
 sha256sum -c "${DAILY_PATH}.sha256" >/dev/null
@@ -79,12 +81,10 @@ aws s3 cp "${DAILY_PATH}.sha256" "s3://${S3_BUCKET}/daily/${FILENAME}.sha256" --
 aws s3api head-object --bucket "${S3_BUCKET}" --key "daily/${FILENAME}" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}" >/dev/null
 aws s3api head-object --bucket "${S3_BUCKET}" --key "daily/${FILENAME}.sha256" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}" >/dev/null
 
-# Retention starts only after the new required copy has been verified.
 prune_group "${DAILY_DIR}" "${KEEP_DAILY}"
 prune_group "${WEEKLY_DIR}" "${KEEP_WEEKLY}"
 prune_group "${MONTHLY_DIR}" "${KEEP_MONTHLY}"
 
 echo "backup_status=local+offsite"
-
 echo "backup_file=${DAILY_PATH}"
 echo "backup_sha256_file=${DAILY_PATH}.sha256"

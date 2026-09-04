@@ -1,17 +1,16 @@
 # DEPLOY RUNBOOK
 
-> Legacy operational baseline. Do not use this procedure for a new Standard 3.0 release until Workstream 8 replaces host install/build with immutable OCI image + Docker Compose and proves rollback. Current production remains unchanged.
+> Standard 3.0 production baseline. Release is an immutable OCI image plus Docker Compose on the host. Merge, image build and deploy remain separate owner-gated steps.
 
 ## Scope
 
-Manual production deploy of reviewed canonical `main`. Merge, artifact build and deploy are separate gates. Этот runbook не разрешает выполнять deploy без owner-команды.
+Manual production deploy of reviewed canonical `main`. This runbook does not authorize deploy without an owner command.
 
 ## Preconditions
 
 - current branch = clean local `main` fast-forwarded to `origin/main`;
 - exact commit SHA reviewed and Merge Gate green;
-- Node runtime satisfies `scripts/verify-release-runtime.mjs`;
-- lockfile matches `package.json`;
+- Docker Engine + Compose available on the target;
 - required web/worker/migrator/backup env files exist on target;
 - no secret value is printed;
 - rollback target and current symlink readable.
@@ -22,35 +21,32 @@ Manual production deploy of reviewed canonical `main`. Merge, artifact build and
 pnpm release:build
 ```
 
-Artifact contains reviewed source, config seed, Prisma schema/migrations, public assets, scripts and ops files plus `release-manifest.json`. It does not package local node_modules, Windows standalone output, DB data or secrets.
+Artifact contains:
 
-Reviewed runtime assets include `seo-monitor-web`, sync worker, outbox worker and backup service/timer units.
+- `docker-image.tar` built outside production host;
+- `docker-compose.production.yml`;
+- reviewed `ops/` assets;
+- `release-manifest.json` with exact SHA, image tag, image digest and lock checksum.
 
-Manifest binds:
-
-- exact commit SHA;
-- dependency lock checksum;
-- target runtime/architecture;
-- creation timestamp.
+Artifact does not require host install/build and does not include local DB data or secrets.
 
 ## Target preparation
 
 Deploy script:
 
 1. uploads artifact/checksum;
-2. verifies SHA/checksum/manifest;
+2. verifies checksum and manifest SHA;
 3. rejects an existing target release directory and in-place rebuild;
 4. verifies all protected env files;
-5. installs exact pnpm and frozen dependencies;
-6. validates DB, Better Auth and exact public Leads environment through the shared Zod contracts;
-7. runs `pnpm build` and `pnpm build:collector` on Linux;
-8. confirms standalone public/static asset assembly;
-9. applies `prisma migrate deploy` with migrator role;
-10. restores runtime grants/default privileges;
-11. runs reviewed seed;
-12. installs backup scripts;
-13. requires offsite backup upload + HEAD confirmation;
-14. runs isolated restore smoke.
+5. loads the OCI image with Docker on target;
+6. verifies loaded image digest against the manifest;
+7. validates compose config;
+8. runs `migrate` container with Prisma + pg-boss schema migration;
+9. runs `seed` from the same immutable image;
+10. installs backup/restore scripts;
+11. requires offsite backup upload + HEAD confirmation;
+12. runs restore smoke via ephemeral PostgreSQL container;
+13. installs reviewed Nginx/systemd assets.
 
 Any failure before symlink switch leaves current runtime untouched.
 
@@ -58,36 +54,33 @@ Any failure before symlink switch leaves current runtime untouched.
 
 After successful preparation:
 
-1. install reviewed Nginx/systemd assets;
-2. arm post-switch rollback trap;
-3. atomically switch `current` symlink;
-4. atomically write root-owned `shared/release.env` with exact target SHA;
-5. `systemctl daemon-reload`;
-6. validate and reload Nginx;
-7. restart web;
-8. run worker once;
-9. enable sync-worker, outbox and backup timers;
-10. verify services/timers;
-11. require loopback live/ready DTOs to report exact target SHA, ready DB/auth and typed outbox counts;
-12. verify standalone server, worker and Prisma schema files;
-13. record previous release and deployed SHA;
-14. remove uploaded temp artifact/checksum.
+1. arm post-switch rollback trap;
+2. atomically switch `current` symlink;
+3. atomically write root-owned `shared/release.env` with exact SHA, image tag and image digest;
+4. `systemctl daemon-reload`;
+5. validate and reload Nginx;
+6. restart compose stack through `seo-monitor-web.service`;
+7. run scheduled sync once;
+8. enable sync, outbox-retention and backup timers;
+9. verify web and worker containers use the exact image digest from manifest;
+10. require loopback live/ready DTOs to report exact target SHA, ready DB/auth, typed outbox counts, worker heartbeat and integration freshness;
+11. record previous release and deployed SHA;
+12. remove uploaded temp artifact/checksum.
 
 ## Post-deploy smoke
 
 Required:
 
 - public `/` = 200 and canonical metadata;
-- `/ams-favicon.svg` and representative `/_next/static/*` = 200;
 - `/api/health/live` = 200, valid correlation ID and exact deployed SHA;
-- loopback `/api/health/ready` = 200, same SHA, PostgreSQL ready, auth configured and typed outbox counts;
+- loopback `/api/health/ready` = 200, same SHA, PostgreSQL ready, auth configured, queue status, worker heartbeat and freshness DTOs;
 - external `/api/health/ready` = 403;
 - unauthenticated `/analyst/` redirects to `/?login=1`;
 - analyst sign-in and report read work;
 - client cannot read foreign project/site/report;
-- worker run finishes and DB timestamps/status are credible;
-- outbox drain service is idle-success or processes only registered events;
-- sync-worker, outbox and backup timers active;
+- web and worker containers use the same image digest;
+- scheduled sync succeeds and DB timestamps/status are credible;
+- retention timer and backup timer active;
 - latest backup has confirmed offsite object.
 
 Do not paste response bodies containing user/report data into public logs.
@@ -98,11 +91,10 @@ Any post-switch command error triggers:
 
 - restore previous `current` symlink;
 - restore previous compatible Nginx/systemd assets;
-- reload/restart previous services;
-- restore `shared/release.env` to previous release SHA;
-- re-enable previous timer topology where applicable.
+- restart previous compose/service topology;
+- restore `shared/release.env` to previous release SHA + image digest.
 
-Rollback does not reverse PostgreSQL migrations/data. A migration must be backward-compatible with the previous release or carry an explicit data recovery decision.
+Rollback does not reverse PostgreSQL migrations/data. Migrations must stay backward-compatible or have an explicit recovery decision.
 
 ## Production proof
 
@@ -110,10 +102,9 @@ Record outside source docs:
 
 - deployed SHA;
 - artifact checksum;
+- image tag + digest;
 - service/timer states;
 - health/auth/isolation smoke results;
 - migration state;
 - backup/restore result;
 - rollback target.
-
-Canonical source docs never guess current deployed SHA.
