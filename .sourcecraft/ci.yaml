@@ -68,6 +68,12 @@ workflows:
       - name: exact-head-heavy-gate
         env:
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+          TEST_DATABASE_HOST: 127.0.0.1
+          TEST_DATABASE_PORT: "5432"
+          TEST_DATABASE_USER: seo_monitor_test
+          TEST_DATABASE_PASSWORD: seo_monitor_test
+          TEST_DATABASE_NAME: seo_monitor_ci_test
+          TEST_DATABASE_SSLMODE: disable
         cubes:
           - name: verify
             image: docker.io/library/node:24.20.0-bookworm
@@ -76,5 +82,6 @@ workflows:
               - corepack prepare pnpm@11.5.1 --activate
               - node scripts/verify-release-runtime.mjs
               - pnpm install --frozen-lockfile
+              - bash scripts/ci/prepare-heavy-environment.sh
               - node scripts/ci/verify-exact-head.mjs
               - pnpm verify:heavy
