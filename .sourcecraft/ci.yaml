@@ -74,6 +74,8 @@ workflows:
           TEST_DATABASE_PASSWORD: seo_monitor_test
           TEST_DATABASE_NAME: seo_monitor_ci_test
           TEST_DATABASE_SSLMODE: disable
+          BETTER_AUTH_SECRET: ci-only-secret-not-for-production-1234567890
+          BETTER_AUTH_URL: http://127.0.0.1:3100
         cubes:
           - name: verify
             image: docker.io/library/node:24.20.0-bookworm
