@@ -74,6 +74,12 @@ workflows:
           TEST_DATABASE_PASSWORD: seo_monitor_test
           TEST_DATABASE_NAME: seo_monitor_ci_test
           TEST_DATABASE_SSLMODE: disable
+          DATABASE_HOST: 127.0.0.1
+          DATABASE_PORT: "5432"
+          DATABASE_USER: seo_monitor_test
+          DATABASE_PASSWORD: seo_monitor_test
+          DATABASE_NAME: seo_monitor_ci_test
+          DATABASE_SSLMODE: disable
           BETTER_AUTH_SECRET: ci-only-secret-not-for-production-1234567890
           BETTER_AUTH_URL: http://127.0.0.1:3100
         cubes:
