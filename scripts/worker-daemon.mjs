@@ -20,10 +20,14 @@ const logger = pino({
   },
 }).child({ runtime: "worker", mode: "outbox-daemon", workerId });
 let stopping = false;
+let activeChild = null;
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
     stopping = true;
+    if (activeChild && !activeChild.killed) {
+      activeChild.kill(signal);
+    }
   });
 }
 
@@ -34,8 +38,13 @@ function runDrain() {
       stdio: "inherit",
       env: process.env,
     });
-    child.on("error", reject);
+    activeChild = child;
+    child.on("error", (error) => {
+      activeChild = null;
+      reject(error);
+    });
     child.on("exit", (code, signal) => {
+      activeChild = null;
       if (signal) {
         reject(new Error(`outbox drain exited by signal ${signal}`));
         return;

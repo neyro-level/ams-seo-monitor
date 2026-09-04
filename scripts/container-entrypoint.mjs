@@ -10,8 +10,26 @@ function run(command, argv) {
       stdio: "inherit",
       env: process.env,
     });
-    child.on("error", reject);
+    const forwardSignal = (signal) => {
+      if (!child.killed) {
+        child.kill(signal);
+      }
+    };
+    const forwardSigterm = () => forwardSignal("SIGTERM");
+    const forwardSigint = () => forwardSignal("SIGINT");
+    const cleanupSignalHandlers = () => {
+      process.off("SIGTERM", forwardSigterm);
+      process.off("SIGINT", forwardSigint);
+    };
+
+    process.once("SIGTERM", forwardSigterm);
+    process.once("SIGINT", forwardSigint);
+    child.on("error", (error) => {
+      cleanupSignalHandlers();
+      reject(error);
+    });
     child.on("exit", (code, signal) => {
+      cleanupSignalHandlers();
       if (signal) {
         reject(new Error(`${command} exited by signal ${signal}`));
         return;
