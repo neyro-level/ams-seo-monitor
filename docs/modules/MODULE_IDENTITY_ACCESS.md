@@ -37,7 +37,7 @@
 ## Commands
 
 - `auth.complete-password-onboarding` clears server-owned onboarding state and appends AuditEvent after Better Auth password change;
-- future user/membership commands must use `defineAction → defineCommand`, not direct CLI/UI CRUD.
+- Platform Admin organization/membership commands use `defineAction → defineCommand` with optimistic `version`, explicit target organization and no direct CLI/UI CRUD.
 
 ## Queries
 

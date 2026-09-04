@@ -1,6 +1,6 @@
 # TECH STACK
 
-> Migration status: the version table below is the current runtime, not full Standard 3.0 conformance. Refine is scheduled for removal; TanStack Table, nuqs, pg-boss, pino and Docker enter only in their named workstreams.
+> Migration status: the version table below is the current runtime, not full Standard 3.0 conformance. Refine removed in Workstream 5; pg-boss, pino and Docker enter only in their named workstreams.
 
 ## Source of truth
 
@@ -50,9 +50,9 @@
 
 ## Standard 3.0 dependency migration
 
-- current baseline already contains Refine Core, shadcn-style source primitives and React Hook Form;
-- Refine is removed in Workstream 5 because Standard 3.0 forbids it without ADR and current usage adds no justified capability;
-- TanStack Table and nuqs enter with the Project reference slice;
+- current runtime uses React Hook Form, TanStack Table and `nuqs` in private admin surfaces;
+- Refine removed in Workstream 5; Platform Admin now relies on typed route composition and shared primitives instead of a resource framework;
+- TanStack Table and `nuqs` are the canonical private list patterns after the Project reference slice and Platform Admin rewrite;
 - pg-boss enters only with its schema/pool/runbook contract;
 - pino enters only with redaction/correlation callsites;
 - Sentry enters only after SECURITY compliance decision and real connection prerequisites;

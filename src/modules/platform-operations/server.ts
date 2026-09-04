@@ -1,1 +1,5 @@
 export { PrismaReliabilityRepository } from "./infrastructure/prisma-reliability-repository.ts";
+export {
+  listOperations,
+  requestProjectSync,
+} from "./infrastructure/platform-admin-runtime.ts";

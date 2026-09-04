@@ -1,4 +1,4 @@
-export const ADMIN_RESOURCE_KEYS = [
+export const PLATFORM_ADMIN_RESOURCE_KEYS = [
   "organizations",
   "memberships",
   "projects",
@@ -10,16 +10,16 @@ export const ADMIN_RESOURCE_KEYS = [
   "operations",
 ] as const;
 
-export type AdminResourceKey = (typeof ADMIN_RESOURCE_KEYS)[number];
+export type PlatformAdminResourceKey = (typeof PLATFORM_ADMIN_RESOURCE_KEYS)[number];
 
-export interface AdminResourceDefinition {
-  key: AdminResourceKey;
+export interface PlatformAdminResourceDefinition {
+  key: PlatformAdminResourceKey;
   label: string;
   description: string;
   href: string;
 }
 
-export const ADMIN_RESOURCES: readonly AdminResourceDefinition[] = [
+export const PLATFORM_ADMIN_RESOURCES: readonly PlatformAdminResourceDefinition[] = [
   {
     key: "organizations",
     label: "Организации",
@@ -28,7 +28,7 @@ export const ADMIN_RESOURCES: readonly AdminResourceDefinition[] = [
   },
   {
     key: "memberships",
-    label: "Доступ пользователей",
+    label: "Участники и доступ",
     description: "Memberships и tenant scope пользователей.",
     href: "/admin/memberships/",
   },
@@ -64,26 +64,32 @@ export const ADMIN_RESOURCES: readonly AdminResourceDefinition[] = [
   },
   {
     key: "profiles",
-    label: "Пороги и кластеры",
-    description: "Версионируемые профили аналитических правил.",
+    label: "Профили",
+    description: "Пороговые и кластерные профили аналитических правил.",
     href: "/admin/profiles/",
   },
   {
     key: "operations",
-    label: "Синхронизация и задания",
-    description: "Sync runs, outbox и безопасный запуск синхронизации.",
+    label: "Операции",
+    description: "Синхронизация, очередь и служебные задания.",
     href: "/admin/operations/",
   },
 ];
 
-export function isAdminResourceKey(value: string): value is AdminResourceKey {
-  return ADMIN_RESOURCE_KEYS.some((key) => key === value);
+export const NON_PROJECT_PLATFORM_ADMIN_RESOURCES = PLATFORM_ADMIN_RESOURCES.filter(
+  (resource) => resource.key !== "projects",
+);
+
+export function isPlatformAdminResourceKey(value: string): value is PlatformAdminResourceKey {
+  return PLATFORM_ADMIN_RESOURCE_KEYS.some((key) => key === value);
 }
 
-export function getAdminResourceDefinition(key: AdminResourceKey): AdminResourceDefinition {
-  const resource = ADMIN_RESOURCES.find((candidate) => candidate.key === key);
+export function getPlatformAdminResourceDefinition(
+  key: PlatformAdminResourceKey,
+): PlatformAdminResourceDefinition {
+  const resource = PLATFORM_ADMIN_RESOURCES.find((candidate) => candidate.key === key);
   if (!resource) {
-    throw new Error(`Unknown admin resource: ${key}`);
+    throw new Error(`Unknown platform admin resource: ${key}`);
   }
   return resource;
 }
