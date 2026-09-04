@@ -1,137 +1,114 @@
 # AUTH
 
-> Legacy runtime contract: Better Auth Organization Plugin and `ActorContext` remain factual `origin/main` behavior only until Workstream 2. New auth/tenant code must target AMS-owned Membership and discriminated PrincipalContext from `MASTER_PLAN.md`.
+## Статус
 
-## Модель
+Wave 2 implements the Standard 3.0 identity foundation. The current application still exposes legacy `ActorContext` to unrevised reporting/project services as a temporary compatibility adapter. New auth, onboarding and authorization code uses `PrincipalContext`.
 
-Better Auth `1.7.2` с Prisma adapter, username plugin и organization plugin — authentication boundary. Application authorization использует server-generated `ActorContext` и versioned capabilities.
+## Ownership
 
-- public signup выключен;
-- accounts создаёт только operator CLI;
-- private routes читают fresh User + memberships на каждый request;
-- disabled user не получает ActorContext;
-- Nginx и client navigation не заменяют authorization.
+Better Auth `1.7.2` owns:
 
-## System roles
+- identity, credential password and session lifecycle;
+- username sign-in;
+- TOTP two-factor authentication and backup codes.
 
-### PLATFORM_ADMIN
+AMS owns:
 
-Внутренний operator АМС. Получает platform/project/report/sync/settings capabilities. Будущие browser mutations остаются запрещены до AuditEvent/command foundation.
+- Organization;
+- Membership and tenant role;
+- business permissions;
+- resource visibility;
+- onboarding state;
+- audit of AMS business state.
 
-### SEO_ANALYST
+Better Auth Organization Plugin is removed from runtime. Existing `Session.activeOrganizationId`, `Member.role` and plugin-compatible tables remain only through the compatibility release period. They are never accepted without a fresh AMS Membership check.
 
-Global project/report read и sync read/run. Не управляет memberships или platform settings.
-
-### CLIENT_VIEWER
-
-Только organization-scoped project/report read по текущим memberships.
-
-`PLATFORM_ADMIN` добавлен additive migration `20260903090000_add_platform_admin_role`. Existing users не меняются автоматически.
-
-## ActorContext
+## PrincipalContext
 
 ```text
-userId
-email
-name
-systemRole
-activeOrganizationId
-memberships[]
-permissions[]
-correlationId
+platform-admin    → PLATFORM_ADMIN, no organizationId
+a platform-analyst → SEO_ANALYST, no fake tenant context
+tenant-user       → userId + membershipId + organizationId + ORG_OWNER|ORG_MEMBER|VIEWER
+job               → jobName + explicit organizationId
+api-client        → reserved until external /api/v1 exists
 ```
 
-Source: `src/modules/identity-access/domain/actor-context.ts`.
-
-Контекст создаётся только на сервере:
+Factories are server-only:
 
 ```text
-request headers
-→ Better Auth session
-→ fresh User + Member records
-→ disabledAt check
-→ validate activeOrganizationId against memberships
-→ role capability map
-→ server correlation ID
-→ ActorContext
+getPrincipalStateByUserId()
+getCurrentPrincipalState()
+requirePlatformAdmin()
+requirePlatformAnalyst()
+requireTenantUser()
+createJobPrincipal()
 ```
 
-Client role, organization ID, permissions и correlation ID не считаются доказательством доступа.
+Browser values never construct a principal. The only compatibility input is `Session.activeOrganizationId` read from the server-side session record and validated against current AMS Membership.
 
-## Capabilities
+## Roles and permissions
 
-```text
-platform:manage
-membership:manage:any
-project:read:any
-project:read:organization
-project:manage:any
-report:read:any
-report:read:organization
-sync:read:any
-sync:run:any
-settings:manage:any
-```
+- `PLATFORM_ADMIN` is an internal non-tenant principal. Cross-tenant action must name a target organization and record audit.
+- `SEO_ANALYST` is project-specific `platform-analyst`: global project/report/sync read, not Platform Admin.
+- client users become `tenant-user` through `Member.tenantRole`:
+  - `ORG_OWNER`;
+  - `ORG_MEMBER`;
+  - `VIEWER`.
 
-ProjectService строит repository scope из capabilities + ActorContext memberships. ReportService отдельно требует report-read capability. Platform admin и analyst global access больше не зависит от scattered `systemRole === ...` checks.
+Permission answers whether an action class is permitted. Module resource authorization answers whether the principal may act on the particular project/site/report. Both are required in migrated modules.
 
-## Sign-in
+## First password and 2FA
 
-- immutable lowercase username;
-- username: `a-z`, digits, `_`, length 3–30;
-- public signup disabled;
-- operator password contract: ровно 8 цифр;
-- password передаётся bounded stdin, не argv;
-- login modal расположен на `/`; `?login=1` открывает его после redirect.
+`user:create` creates `mustChangePassword=true`.
 
-## Admin commands
+Until password onboarding completes, private cabinet routes redirect to `/onboarding/password/`. Password change uses Better Auth; a server-owned `defineCommand` then clears the onboarding flag, revokes other sessions through Better Auth and writes `AuditEvent`.
+
+`PLATFORM_ADMIN` has TOTP enrollment at `/onboarding/two-factor/`. The production policy requires 2FA before cabinet access. `AMS_E2E_TEST=true` is local Playwright-only test isolation and must never be set in production runtime.
+
+Two-factor plugin schema:
+
+- `User.twoFactorEnabled`;
+- `TwoFactor.secret`;
+- encrypted `backupCodes`;
+- verification and account-lockout state.
+
+## Provisioning commands
 
 ```bash
 <secret-provider> | pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN
 pnpm user:disable -- --username <name>
 pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
-pnpm user:add-to-organization -- --username <name> --organization <slug>
+pnpm user:add-to-organization -- --username <name> --organization <slug> --tenant-role VIEWER
 pnpm user:remove-from-organization -- --username <name> --organization <slug>
 ```
 
-`parseSystemRole` принимает только versioned roles. Role/membership browser mutations появятся только после Phase 3 audit/idempotency foundation.
+Passwords use bounded stdin, never argv. `--tenant-role` accepts `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`; legacy `--role` remains compatibility-only.
 
-## Environment
+## Migration contract
 
-`src/platform/config/server-environment.ts` валидирует:
+Migration `20260903164000_add_principal_auth_foundation` is additive:
 
-- complete DB URL или complete DB component set;
-- DB port/protocol;
-- Better Auth secret minimum length;
-- complete Better Auth pair;
-- HTTPS auth URL outside loopback.
+- adds `MembershipRole` and `Member.tenantRole` default `VIEWER`;
+- adds `User.mustChangePassword` default `false` so existing production users are not silently locked out;
+- adds Better Auth 2FA fields/model;
+- does not delete plugin-compatible fields/tables.
 
-`/api/health/ready` требует DB reachability и configured auth.
-
-## Errors и correlation
-
-- каждый auth request получает `X-Correlation-ID`;
-- auth unavailable использует standard public error envelope;
-- stack, SQL, session token и secret не возвращаются;
-- ActorContext correlation ID предназначен для будущих logs/audit/Sentry.
+Future Workstream 3 backfills tenant ownership. Legacy contract removal is a separate post-stabilization release.
 
 ## Entry points
 
-- `src/modules/identity-access/index.ts` — ActorContext и capability contract;
-- `src/modules/identity-access/server.ts` — auth/session/authorization adapters;
-- `src/modules/identity-access/client.ts` — login presentation;
-- `src/app/api/auth/[...all]/route.ts`;
-- `scripts/auth-admin.ts`.
+- `src/platform/auth/auth.ts` — Better Auth server adapter;
+- `src/platform/auth/client.ts` — Better Auth client adapter;
+- `src/platform/auth/principal-session.ts` — current session → PrincipalContext;
+- `src/platform/authorization/principal.ts` — discriminated types and permissions;
+- `src/platform/authorization/principal-factories.ts` — server factories;
+- `src/platform/auth/complete-password-onboarding.ts` — audited onboarding command;
+- `src/app/onboarding/*` — first-password and TOTP surfaces;
+- `src/modules/identity-access/*` — temporary legacy ActorContext facade for unrevised modules.
 
-## Проверки
+## Proof
 
-- role → capability matrix;
-- platform admin/analyst global reads;
-- client membership scope;
-- active organization validation;
-- disabled user denial;
-- foreign project/site/report denial;
-- report capability denial;
-- correlation ID contract;
-- invalid role/env/error envelope rejection;
-- unauthenticated E2E redirect/login dialog.
+- unit: principal kind/permission/type guards;
+- integration: migrations, platform/analyst/tenant/no-membership principal factories;
+- E2E: login, first-password redirect/completion and private cabinet access at 375/768/1280/1440;
+- required before production: real TOTP controlled enrollment/login proof with a provisioned test Platform Admin.

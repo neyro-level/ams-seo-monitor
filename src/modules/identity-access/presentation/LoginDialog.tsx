@@ -4,7 +4,7 @@ import { LockKeyhole, LogIn, UserRound, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { authClient } from "../infrastructure/auth-client.ts";
+import { authClient } from "../../../platform/auth/client.ts";
 
 type LoginDialogProps = {
   initialOpen?: boolean;

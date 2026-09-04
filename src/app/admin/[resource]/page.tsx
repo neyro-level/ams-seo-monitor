@@ -20,7 +20,10 @@ import {
   getAdminForms,
 } from "../../../modules/admin-cms/presentation.ts";
 import { hasPermission } from "../../../modules/identity-access/index.ts";
-import { getCurrentActorContext } from "../../../modules/identity-access/server.ts";
+import {
+  getCurrentActorContext,
+  getCurrentCabinetRedirect,
+} from "../../../modules/identity-access/server.ts";
 import { AdminCommandForm } from "../_components/AdminCommandForm.tsx";
 import { AdminResourceNav } from "../_components/AdminResourceNav.tsx";
 
@@ -53,6 +56,8 @@ function pageHref(resource: string, query: AdminListQuery, page: number) {
 }
 
 export default async function AdminResourcePageRoute({ params, searchParams }: AdminResourcePageProps) {
+  const onboardingRedirect = await getCurrentCabinetRedirect();
+  if (onboardingRedirect) redirect(onboardingRedirect);
   const actor = await getCurrentActorContext();
   if (!actor) redirect("/?login=1");
   if (!hasPermission(actor, "platform:manage")) redirect("/dashboard/");

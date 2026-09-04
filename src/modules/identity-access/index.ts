@@ -1,4 +1,19 @@
 export {
+  getPrincipalPermissions,
+  hasPermission as hasPrincipalPermission,
+  isTenantPrincipal,
+  PERMISSIONS as PRINCIPAL_PERMISSIONS,
+} from "../../platform/authorization/principal.ts";
+export type {
+  ApiClientPrincipal,
+  JobPrincipal,
+  PlatformAdminPrincipal,
+  PlatformAnalystPrincipal,
+  PrincipalContext,
+  TenantRole,
+  TenantUserPrincipal,
+} from "../../platform/authorization/principal.ts";
+export {
   getActorOrganizationIds,
   getPermissionsForRole,
   hasPermission,

@@ -1,4 +1,15 @@
-export { auth, hasAuthConfiguration } from "./infrastructure/auth.ts";
+export { auth, hasAuthConfiguration } from "../../platform/auth/auth.ts";
+export {
+  getCurrentCabinetRedirect,
+  getCurrentPrincipalState,
+} from "../../platform/auth/principal-session.ts";
+export {
+  createJobPrincipal,
+  getPrincipalStateByUserId,
+  requirePlatformAdmin,
+  requirePlatformAnalyst,
+  requireTenantUser,
+} from "../../platform/authorization/principal-factories.ts";
 export {
   getActorContextByUserId,
   getAuthorizedProjectAccess,

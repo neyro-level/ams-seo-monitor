@@ -8,7 +8,10 @@ import {
   getProjectService,
   getReliabilityService,
 } from "../../infrastructure/service-container.ts";
-import { getCurrentActorContext } from "../../modules/identity-access/server.ts";
+import {
+  getCurrentActorContext,
+  getCurrentCabinetRedirect,
+} from "../../modules/identity-access/server.ts";
 import { hasPermission } from "../../modules/identity-access/index.ts";
 import type { AdminCommandName } from "../../modules/admin-cms/index.ts";
 
@@ -125,6 +128,8 @@ const clusterSchema = z.object({
 const syncSchema = z.object({ projectSlug: slug, idempotencyKey: identifier });
 
 async function requireAdmin() {
+  const onboardingRedirect = await getCurrentCabinetRedirect();
+  if (onboardingRedirect) redirect(onboardingRedirect);
   const actor = await getCurrentActorContext();
   if (!actor) redirect("/?login=1");
   if (!hasPermission(actor, "platform:manage")) redirect("/dashboard/");

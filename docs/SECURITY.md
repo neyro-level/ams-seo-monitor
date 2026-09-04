@@ -27,14 +27,16 @@ Security boundary состоит из public browser surface, Next.js applicatio
 
 ### Next.js application
 
-- Better Auth проверяет session;
-- `getCurrentActorContext()` повторно читает User + Member records и отклоняет `disabledAt`;
-- active organization принимается только если входит в fresh memberships;
-- private pages/services проверяют capability и tenant scope до чтения project/report;
-- каждый private ActorContext получает server-generated correlation ID;
-- public signup выключен;
-- presentation не обращается к Prisma напрямую;
-- readiness не возвращает connection details и закрыта Nginx для внешнего доступа.
+- Better Auth validates identity/session/2FA challenge only;
+- `getCurrentPrincipalState()` re-reads User + AMS Membership and rejects `disabledAt`;
+- platform principals do not receive fake tenant scopes;
+- compatibility `Session.activeOrganizationId` is accepted only after fresh Membership validation;
+- first-password onboarding blocks cabinet routes until `mustChangePassword=false`;
+- production Platform Admin requires verified 2FA; `AMS_E2E_TEST` bypass is test-only and forbidden in deployment env;
+- private pages/services require permission + resource authorization while routes transition from legacy ActorContext;
+- public signup is disabled;
+- presentation does not import Prisma;
+- readiness exposes no connection details and Nginx restricts it externally.
 
 ### PostgreSQL
 
@@ -79,24 +81,24 @@ Public contact form отправляет имя, телефон, source/UTM и a
 
 ### PLATFORM_ADMIN
 
-Internal global platform capabilities. `/admin/*` и каждый Admin command требуют fresh `ActorContext` + `platform:manage`; UI visibility не считается authorization.
+Internal non-tenant principal. Production cabinet access requires verified Better Auth TOTP. Cross-tenant operation must have explicit target tenant and audit; UI visibility is never authorization.
 
-### SEO_ANALYST
+### PLATFORM_ANALYST
 
-Global project/report/sync read capabilities без platform/membership management.
+Project-specific non-tenant read/sync principal derived from current `SEO_ANALYST`. It cannot manage Platform Admin or tenant memberships.
 
-### CLIENT_VIEWER
+### Tenant user
 
-Только organization-scoped project/report capabilities по fresh memberships. Знание `clientSlug`, `siteSlug` или report URL не даёт доступ.
+Client access derives from fresh AMS Membership role `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`. Knowledge of `clientSlug`, `siteSlug` or report URL does not grant scope.
 
 Authorization flow:
 
 ```text
 Better Auth session
-→ fresh non-disabled User + memberships
-→ code-versioned capabilities
-→ validated active organization
-→ scoped project/site query
+→ fresh User + Member.tenantRole read
+→ PrincipalContext
+→ permission
+→ module resource authorization
 → explicit DTO + correlation ID
 ```
 
@@ -147,11 +149,12 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - test fixtures не используют production PII;
 - raw error bodies не сохраняются в `SourceRun`;
 - retention/erasure auth data требует отдельной owner-approved operation.
+- TOTP secret, backup codes and failed-verification state are auth-only; they never enter DTO, browser logs, audit markers or error response.
 
 ## Security headers и indexing
 
 - public landing/legal routes indexable;
-- private `/dashboard`, `/analyst`, `/c`, `/demo` имеют noindex metadata;
+- private `/dashboard`, `/analyst`, `/admin`, `/onboarding`, `/c`, `/demo` have noindex metadata;
 - readiness external access denied;
 - Nginx задаёт HSTS, `nosniff`, `DENY`, referrer policy, permissions policy и `frame-ancestors 'none'`;
 - static hashed assets cacheable; private dynamic data не должна попадать в shared public cache.
@@ -159,6 +162,10 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 ## Security invariants
 
 - public signup off;
+- `PrincipalContext`, not browser organization values or legacy ActorContext, is the target authorization input;
+- Better Auth Organization Plugin is removed from runtime; plugin-compatible records are migration-only;
+- `mustChangePassword` is server-owned and completion records AuditEvent;
+- production Platform Admin requires 2FA; session revocation follows Better Auth password change;
 - disabled user denied;
 - foreign tenant read denied server-side;
 - browser-to-provider calls prohibited;

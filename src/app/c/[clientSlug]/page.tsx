@@ -7,7 +7,10 @@ import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../../components/dashboard/SectionCard.tsx";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner.tsx";
-import { getCurrentActorContext } from "../../../modules/identity-access/server.ts";
+import {
+  getCurrentActorContext,
+  getCurrentCabinetRedirect,
+} from "../../../modules/identity-access/server.ts";
 import { buildClientOverview } from "../../../modules/project-registry/presentation.ts";
 
 type ClientOverviewPageProps = {
@@ -17,10 +20,10 @@ type ClientOverviewPageProps = {
 };
 
 export default async function ClientOverviewPage({ params }: ClientOverviewPageProps) {
+  const onboardingRedirect = await getCurrentCabinetRedirect();
+  if (onboardingRedirect) redirect(onboardingRedirect);
   const user = await getCurrentActorContext();
-  if (!user) {
-    redirect("/?login=1");
-  }
+  if (!user) redirect("/?login=1");
 
   const { clientSlug } = await params;
   const overview = await buildClientOverview(user, clientSlug);

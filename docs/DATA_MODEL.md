@@ -16,36 +16,48 @@ PostgreSQL — единственный runtime source of truth.
 
 ### User
 
-Better Auth user с `systemRole`, optional immutable `username` и `disabledAt`.
+Better Auth identity with legacy `systemRole`, immutable optional `username`, `disabledAt`, `mustChangePassword` and `twoFactorEnabled`.
 
-- `username` и `email` уникальны;
-- `PLATFORM_ADMIN` — internal global platform capabilities;
-- `SEO_ANALYST` — global project/report/sync read capabilities;
-- `CLIENT_VIEWER` получает organization scope только через `Member`;
-- disabled user не проходит authorization;
-- additive enum migration не меняет роли existing users автоматически.
+- `username` and `email` are unique;
+- `PLATFORM_ADMIN` maps to non-tenant `platform-admin`;
+- `SEO_ANALYST` maps to non-tenant project-specific `platform-analyst`;
+- client access is created only through `Member.tenantRole`;
+- `mustChangePassword=true` blocks cabinet access until audited completion;
+- `disabledAt` blocks principal creation;
+- additive migration does not change existing system roles or lock existing users.
+
+### TwoFactor
+
+Better Auth 2FA record, unique by `userId`. Stores the plugin-managed secret, encrypted backup codes, verification state and lockout counters. These fields never enter DTO, logs, AuditEvent markers or browser payload.
 
 ### Session, Account, Verification
 
-Better Auth-owned authentication state. Session хранит token и request metadata. Эти записи не являются browser DTO и не публикуются в report payload.
+Better Auth-owned authentication state. Session token, IP and user-agent are not DTO. `Session.activeOrganizationId` remains compatibility data only; server validates it against fresh AMS Membership before principal creation.
 
-### Organization и Member
+### Organization and Member
 
 ```text
-User ← Member → Organization → Project
+User/Auth Identity
+      ↓
+Member (tenantRole)
+      ↓
+Organization
+      ↓
+Project
 ```
 
-- membership уникален по `(organizationId, userId)`;
-- client access вычисляется из memberships на сервере;
-- удаление membership немедленно убирает tenant scope при следующем authorization read.
+- membership is unique by `(organizationId, userId)`;
+- `tenantRole` is `ORG_OWNER | ORG_MEMBER | VIEWER`, default `VIEWER`;
+- legacy `Member.role` remains through the compatibility period and is not a business permission source;
+- membership removal removes tenant principal scope on the next authorization read.
 
 ### Invitation
 
-Schema совместимости Better Auth organization plugin. Public signup и self-service invitation flow не являются активным product scope.
+Legacy Better Auth Organization Plugin compatibility schema. It is not used by new tenancy behavior and receives no new product flow.
 
-### ActorContext
+### PrincipalContext
 
-Не хранится как DB record. На каждый private request собирается из fresh User, memberships, active organization, code-versioned permissions и server correlation ID. Session/client values не заменяют DB membership check.
+Not a database record. A server factory creates a discriminated principal from fresh User, Membership, validated compatibility selection and server correlation ID. Platform principals never receive fake `organizationId`. Legacy `ActorContext` is a temporary facade for unrevised modules only.
 
 ## Project registry
 

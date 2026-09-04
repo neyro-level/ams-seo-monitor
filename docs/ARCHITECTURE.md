@@ -60,12 +60,13 @@ Next.js не является static export. PostgreSQL — runtime source of tr
 - не импортирует Prisma, SQL и provider clients;
 - не вычисляет ranking/conversion/provider semantics.
 
-### Identity and Access — `src/modules/identity-access`
+### Wave 2 identity and authorization foundation
 
-- domain: `ActorContext`, permissions, capabilities и tenant scope;
-- infrastructure: Better Auth, session и server-side authorization;
-- presentation: login dialog;
-- Better Auth остаётся adapter, а не cross-module domain API.
+- `src/platform/auth` owns Better Auth server/client adapters, session-to-principal factory, first-password command and 2FA policy;
+- `src/platform/authorization` owns discriminated PrincipalContext, permission mapping and exact-principal guards;
+- Better Auth Organization Plugin is removed; `Organization`/`Member.tenantRole` are AMS tenancy data;
+- `/onboarding/password` and `/onboarding/two-factor` block cabinet routes before their security state is complete;
+- `src/modules/identity-access` remains a legacy ActorContext facade only until Project/Reporting queries migrate in later workstreams.
 
 ### Project Registry — `src/modules/project-registry`
 

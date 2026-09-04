@@ -3,9 +3,13 @@ import { hashPassword } from "better-auth/crypto";
 import { createLocalAccountIssuer } from "better-auth/db";
 import { getPrismaClient } from "../src/platform/database/prisma/client.ts";
 
-const E2E_USERNAME = "e2e.platform.admin";
-const E2E_EMAIL = "e2e-platform-admin@example.invalid";
 const E2E_PASSWORD = "E2e-local-only-2026!";
+const ONBOARDING_USERNAMES = [
+  "e2e.onboarding.mobile",
+  "e2e.onboarding.tablet",
+  "e2e.onboarding.desktop1280",
+  "e2e.onboarding.desktop1440",
+] as const;
 const localHosts = new Set(["127.0.0.1", "localhost", "::1"]);
 
 async function main() {
@@ -13,54 +17,101 @@ async function main() {
     throw new Error("Explicit local E2E confirmation is required");
   }
   if (!process.env.DATABASE_HOST || !localHosts.has(process.env.DATABASE_HOST)) {
-    throw new Error("E2E admin seed is restricted to a loopback PostgreSQL host");
+    throw new Error("E2E identity seed is restricted to a loopback PostgreSQL host");
   }
 
   const prisma = getPrismaClient();
   try {
-    const existing = await prisma.user.findUnique({
-      where: { email: E2E_EMAIL },
-      select: { id: true },
-    });
-    const userId = existing?.id ?? randomUUID();
-    await prisma.user.upsert({
-      where: { email: E2E_EMAIL },
-      update: {
-        name: "E2E Platform Admin",
-        username: E2E_USERNAME,
-        systemRole: "PLATFORM_ADMIN",
-        disabledAt: null,
-      },
-      create: {
-        id: userId,
-        email: E2E_EMAIL,
-        username: E2E_USERNAME,
-        name: "E2E Platform Admin",
-        systemRole: "PLATFORM_ADMIN",
-        emailVerified: false,
-      },
-    });
     const issuer = createLocalAccountIssuer("credential");
     const passwordHash = await hashPassword(E2E_PASSWORD);
-    await prisma.account.upsert({
-      where: { issuer_accountId: { issuer, accountId: userId } },
-      update: { userId, providerId: "credential", password: passwordHash },
-      create: {
-        id: randomUUID(),
-        userId,
-        providerId: "credential",
-        issuer,
-        accountId: userId,
-        password: passwordHash,
-      },
+    const provisionUser = async (input: {
+      username: string;
+      email: string;
+      name: string;
+      systemRole: "PLATFORM_ADMIN" | "CLIENT_VIEWER";
+      mustChangePassword: boolean;
+    }) => {
+      const existing = await prisma.user.findUnique({
+        where: { email: input.email },
+        select: { id: true },
+      });
+      const userId = existing?.id ?? randomUUID();
+      await prisma.user.upsert({
+        where: { email: input.email },
+        update: {
+          name: input.name,
+          username: input.username,
+          systemRole: input.systemRole,
+          mustChangePassword: input.mustChangePassword,
+          disabledAt: null,
+          twoFactorEnabled: false,
+        },
+        create: {
+          id: userId,
+          email: input.email,
+          username: input.username,
+          name: input.name,
+          systemRole: input.systemRole,
+          mustChangePassword: input.mustChangePassword,
+          twoFactorEnabled: false,
+          emailVerified: false,
+        },
+      });
+      await prisma.account.upsert({
+        where: { issuer_accountId: { issuer, accountId: userId } },
+        update: { userId, providerId: "credential", password: passwordHash },
+        create: {
+          id: randomUUID(),
+          userId,
+          providerId: "credential",
+          issuer,
+          accountId: userId,
+          password: passwordHash,
+        },
+      });
+      return userId;
+    };
+
+    await provisionUser({
+      username: "e2e.platform.admin",
+      email: "e2e-platform-admin@example.invalid",
+      name: "E2E Platform Admin",
+      systemRole: "PLATFORM_ADMIN",
+      mustChangePassword: false,
     });
-    console.log(JSON.stringify({ seeded: true, username: E2E_USERNAME }));
+
+    const organization = await prisma.organization.findUniqueOrThrow({
+      where: { slug: "REDACTED_CLIENT_DATA" },
+      select: { id: true },
+    });
+    for (const username of ONBOARDING_USERNAMES) {
+      const userId = await provisionUser({
+        username,
+        email: `${username}@example.invalid`,
+        name: `E2E ${username}`,
+        systemRole: "CLIENT_VIEWER",
+        mustChangePassword: true,
+      });
+      await prisma.member.upsert({
+        where: {
+          organizationId_userId: { organizationId: organization.id, userId },
+        },
+        update: { role: "client_viewer", tenantRole: "VIEWER" },
+        create: {
+          organizationId: organization.id,
+          userId,
+          role: "client_viewer",
+          tenantRole: "VIEWER",
+        },
+      });
+    }
+    console.log(JSON.stringify({ seeded: true, identityCount: 1 + ONBOARDING_USERNAMES.length }));
   } finally {
     await prisma.$disconnect();
   }
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : "E2E admin seed failed");
+  console.error(error instanceof Error ? error.message : "E2E identity seed failed");
   process.exitCode = 1;
 });
