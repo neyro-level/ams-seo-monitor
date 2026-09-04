@@ -6,4 +6,4 @@
 - `2026-09-02/DATA_MODEL_V2.md` — target relational model до завершения Prisma cutover.
 - `2026-09-02/METRICA_INTEGRATION_PLAN.md` — выполненный план первичной Metrika integration.
 
-Текущий канон: `README.md`, `AGENTS.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `SECURITY.md`, `docs/MASTER_PLAN.md` и зарегистрированные профильные документы.
+Текущий канон: `README.md`, `AGENTS.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md`, `docs/SECURITY.md`, `docs/MASTER_PLAN.md`, `docs/RUNBOOK_DEPLOY.md` и зарегистрированные профильные документы.

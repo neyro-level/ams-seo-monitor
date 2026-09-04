@@ -1,5 +1,7 @@
 # PRODUCT
 
+> Product behavior remains authoritative during Standard 3.0 migration. Technical names `ActorContext`/`Admin CMS` and current role storage are legacy implementation details; target PrincipalContext and Platform Admin mapping are defined in `MASTER_PLAN.md`.
+
 ## Назначение
 
 AMS IMPULSE объединяет две связанные поверхности:

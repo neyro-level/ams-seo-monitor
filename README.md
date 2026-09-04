@@ -2,6 +2,8 @@
 
 AMS IMPULSE — публичная страница SEO-продукта АМС и приватный кабинет SEO-отчётности по нескольким проектам и сайтам.
 
+> Standard 3.0 migration: current runtime remains the production baseline. Target architecture and stacked workstreams are defined in `docs/MASTER_PLAN.md`; the evidence-backed gap map is `docs/PLATFORM_CONFORMANCE.md`.
+
 ## Что делает система
 
 - публично представляет предложение по SEO-продвижению и принимает заявки через отдельный AMS Leads API;
@@ -75,14 +77,22 @@ systemd timer
 
 Фактические версии закреплены в `package.json` и `pnpm-lock.yaml`:
 
-- Node.js engine `>=24.20.0 <25` (release `24.20.0`), pnpm `11.5.1`;
-- Next.js `16.3.3`, React `19.2.8`;
-- TypeScript `6.0.3`, Zod `4.5.4`;
-- Prisma `7.10.0`, PostgreSQL `18.x`;
-- Better Auth `1.7.2`;
-- Tailwind CSS `4.3.3`, Recharts `3.10.1`;
-- Refine Core `5.0.12`, React Hook Form `7.87.0`, shadcn-style source primitives;
-- Vitest, Playwright и Dependency Cruiser.
+| Runtime | Current exact version | Standard 3.0 status |
+|---|---:|---|
+| Node.js | `24.20.0` release; engine `>=24.20.0 <25` | canonical Node 24 |
+| pnpm | `11.5.1` | exact |
+| Next.js | `16.3.3` | canonical 16.x |
+| React / React DOM | `19.2.8` | exact project runtime |
+| TypeScript | `6.0.3` | strict |
+| Prisma | `7.10.0` | canonical 7.x |
+| `@prisma/client` | `7.10.0` | must match Prisma |
+| Better Auth | `1.7.2` | preserve identity adapter; tenancy plugin scheduled for removal |
+| pg-boss | not installed | Workstream 6 |
+| PostgreSQL | `18.x`; local/test `18.6` | canonical 18 |
+| Tailwind CSS | `4.3.3` | preserve |
+| Zod | `4.5.4` | preserve |
+
+Current additional UI/runtime packages: Recharts `3.10.1`, React Hook Form `7.87.0`, Refine Core `5.0.12`. Refine is scheduled for removal; TanStack Table, nuqs, pino and Docker assets are not installed yet.
 
 ## Локальная подготовка
 
@@ -149,7 +159,7 @@ pnpm worker:outbox:drain
 
 Release собирается только из clean reviewed canonical `main`. Linux target устанавливает зависимости из lockfile, строит standalone web и worker, применяет reviewed Prisma migrations, выполняет seed, обязательный backup/restore smoke и только затем переключает immutable release.
 
-Merge и production deploy выполняются только отдельной командой владельца. Подробности: [`docs/ops/DEPLOY_RUNBOOK.md`](docs/ops/DEPLOY_RUNBOOK.md).
+Merge и production deploy выполняются только отдельной командой владельца. Current baseline и target migration описаны в [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md).
 
 ## Документация
 
@@ -160,7 +170,7 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/PRODUCT.md`](docs/PRODUCT.md);
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md);
-- [`SECURITY.md`](SECURITY.md);
+- [`docs/SECURITY.md`](docs/SECURITY.md);
 - [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md);
 - [`docs/PLATFORM_CONFORMANCE.md`](docs/PLATFORM_CONFORMANCE.md) — project mapping универсального platform standard.
 
@@ -171,11 +181,13 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/AUTH.md`](docs/AUTH.md);
 - [`docs/WORKER.md`](docs/WORKER.md);
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md);
+- [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md);
 - [`docs/SITE_REPORT_IA.md`](docs/SITE_REPORT_IA.md);
 - [`docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`](docs/EXTERNAL_SITE_DESIGN_SYSTEM.md);
 - [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);
-- [`docs/adr/ADR-001-adopt-application-platform-standard.md`](docs/adr/ADR-001-adopt-application-platform-standard.md);
-- [`docs/adr/ADR-002-actor-context-and-capabilities.md`](docs/adr/ADR-002-actor-context-and-capabilities.md);
+- [`docs/adr/ADR-003-adopt-core-standard-v3.md`](docs/adr/ADR-003-adopt-core-standard-v3.md) — active target architecture decision;
+- [`docs/adr/ADR-001-adopt-application-platform-standard.md`](docs/adr/ADR-001-adopt-application-platform-standard.md) — superseded implementation history;
+- [`docs/adr/ADR-002-actor-context-and-capabilities.md`](docs/adr/ADR-002-actor-context-and-capabilities.md) — superseded implementation history;
 - [`docs/modules/MODULE_PLATFORM_RELIABILITY.md`](docs/modules/MODULE_PLATFORM_RELIABILITY.md);
 - [`docs/modules/MODULE_IDENTITY_ACCESS.md`](docs/modules/MODULE_IDENTITY_ACCESS.md);
 - [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md);

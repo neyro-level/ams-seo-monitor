@@ -1,5 +1,7 @@
 # TECH STACK
 
+> Migration status: the version table below is the current runtime, not full Standard 3.0 conformance. Refine is scheduled for removal; TanStack Table, nuqs, pg-boss, pino and Docker enter only in their named workstreams.
+
 ## Source of truth
 
 `package.json` и `pnpm-lock.yaml` определяют фактические package versions. Floating versions запрещены.
@@ -43,13 +45,18 @@
 - compatibility is proven by typecheck, lint, tests, build and affected runtime smoke;
 - production Node version must satisfy `scripts/verify-release-runtime.mjs`.
 
-## Planned, not installed yet
+## Standard 3.0 dependency migration
 
-- Refine Core, shadcn/ui и React Hook Form — добавляются вместе с первым рабочим Admin CMS resource;
-- Sentry — добавляется в observability phase с PII scrubbing и release markers.
+- current baseline already contains Refine Core, shadcn-style source primitives and React Hook Form;
+- Refine is removed in Workstream 5 because Standard 3.0 forbids it without ADR and current usage adds no justified capability;
+- TanStack Table and nuqs enter with the Project reference slice;
+- pg-boss enters only with its schema/pool/runbook contract;
+- pino enters only with redaction/correlation callsites;
+- Sentry enters only after SECURITY compliance decision and real connection prerequisites;
+- production Docker assets enter only with the reviewed topology workstream.
 
 Пустые platform dependencies без callsites запрещены.
 
 ## Deliberate exclusions
 
-Текущему продукту не нужны второй ORM/backend/auth, Redis, queue broker, ClickHouse, TimescaleDB или Kubernetes. Новая dependency добавляется только для доказанного contract gap.
+Текущему продукту не нужны второй ORM/backend/auth, Redis, ClickHouse, TimescaleDB или Kubernetes. pg-boss, pino, TanStack Table, nuqs и Docker добавляются только в named Standard 3.0 workstreams; остальные dependencies требуют доказанного contract gap или ADR.

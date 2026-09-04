@@ -1,248 +1,483 @@
 # MASTER PLAN
 
-## Назначение
+## Статус и основание
 
-Текущий verified state и последовательный roadmap превращения AMS IMPULSE в надёжную code-first платформу для обслуживания до 50 клиентских организаций. Universal requirements mapped in `docs/PLATFORM_CONFORMANCE.md`; architecture decision — `docs/adr/ADR-001-adopt-application-platform-standard.md`.
+Этот документ — активный roadmap приведения AMS IMPULSE к `AMS Application Platform Core Standard 3.0` от 2026-09-03.
 
-## Стабильный baseline
+План адаптирован к действующему продукту. Он не переносит в AMS IMPULSE CRM, contacts, pipeline, kanban, billing, public signup, files, realtime или универсальный CMS-конструктор.
 
-Реализовано и работает:
+Исходный reviewed baseline:
 
-- публичный AMS IMPULSE landing и legal routes;
-- Next.js standalone behind Nginx;
-- Prisma/PostgreSQL runtime source of truth;
-- Better Auth username/session/organization foundation;
-- server-side analyst/client tenant isolation;
-- read-only Webmaster/Metrika/Topvisor adapters;
-- DB-backed worker, historical metrics и `SiteReportSnapshot`;
-- structured sync logs, health routes, advisory sync lock;
-- immutable exact-main release;
-- local + mandatory offsite PostgreSQL backup и restore smoke.
+- canonical repository: SourceCraft `origin/main`;
+- baseline SHA: `a1898c1c13f84ca0e92bd4505f17a9910bf9d0b3`;
+- runtime: Node 24, Next.js 16, React 19, TypeScript strict, Prisma 7, PostgreSQL 18, Better Auth;
+- публичный AMS IMPULSE landing и директорский SEO-отчёт работают и сохраняются;
+- предыдущий незавершённый observability workstream удалён без переноса в новый план;
+- production не изменяется до отдельного общего Merge Gate и release intent владельца.
 
-External UI является сохраняемым project asset. Его composition, typography, CTA и public `ch-*` tokens не меняются в platformization scope.
+Фактическое состояние определяют код, migrations, runtime config и проверяемый production. Этот план определяет только последовательность изменений.
 
-## Phase 1 — Platform guardrails
+## Что сохраняется
 
-Статус: implemented; local HEAVY proof green.
+Без продуктового redesign сохраняются:
 
-Цель: сделать архитектурные и test-инварианты исполняемыми до module/CMS migration.
+- публичный landing, legal routes, lead/login dialogs и `ch-*` visual language;
+- URL contract `/c/{clientSlug}/{siteSlug}` и четыре report periods;
+- `SiteReportSnapshot` как единственный browser-safe report DTO;
+- read-only Yandex Webmaster, Yandex Metrika и optional Topvisor semantics;
+- PostgreSQL как единственный runtime source of truth;
+- modular monolith и существующие бизнес-модули;
+- server-first Next.js и отдельный worker process из одного codebase;
+- audit, idempotency, outbox, JobRun, real PostgreSQL tests и Playwright baseline;
+- CUID как заранее утверждённый opaque ID для существующих business records — массового re-key не будет;
+- `SyncRun`/`SourceRun` как проектный эквивалент import lifecycle; generic CRM `ImportRun` не добавляется.
 
-Scope:
+## Принципиальные изменения Standard 3.0
 
-1. exact Node version file;
-2. Dependency Cruiser и current/target boundary rules;
-3. отдельные unit/integration test entrypoints;
-4. isolated Docker PostgreSQL contract для Windows local/test;
-5. safe test DB preflight;
-6. Playwright production-like golden paths для public UI, auth redirect, favicon и responsive overflow;
-7. canonical `architecture:check`, `verify:fast`, `verify:heavy` scripts;
-8. SourceCraft gates используют те же commands без скрытых skipped integration guarantees.
+### Identity и tenancy
+
+Текущий `ActorContext` заменяется discriminated `PrincipalContext`.
+
+Project mapping:
+
+- `platform-admin` — внутренний `PLATFORM_ADMIN`, без фиктивного `organizationId`;
+- `platform-analyst` — project-specific principal для текущего `SEO_ANALYST`, с явными read/sync permissions и без tenant impersonation;
+- `tenant-user` — клиентский пользователь с одной server-validated active Membership и tenant role `ORG_OWNER | ORG_MEMBER | VIEWER`;
+- `job` — worker principal с обязательным `organizationId`;
+- `api-client` не создаётся, пока у продукта нет внешнего `/api/v1` contract.
+
+Better Auth отвечает только за identity/password/session/2FA. Better Auth Organization Plugin удаляется из runtime. `Organization`, `Membership`, tenant roles, permissions и resource visibility принадлежат AMS.
+
+До нового production обязательны:
+
+- `mustChangePassword` onboarding flow;
+- отзыв остальных sessions после смены временного пароля;
+- audit смены onboarding state;
+- 2FA для `PLATFORM_ADMIN`;
+- отсутствие Better Auth cookie cache.
+
+### Tenant data
+
+Текущего application-фильтра по memberships недостаточно. Требуются независимые барьеры:
+
+1. tenant-owned models registry;
+2. `scopedDb`/transaction-bound database context;
+3. module-owned resource loaders;
+4. `organizationId` на tenant-owned сущностях;
+5. composite tenant foreign keys;
+6. запрет nested tenant writes;
+7. cross-tenant integration matrix.
+
+Tenant-owned минимум:
+
+- Project, Site;
+- ProviderConnection;
+- GoalDefinition и site scope;
+- TrackedQuerySet, TrackedQuery, RankingCapture;
+- SyncRun, SourceRun;
+- Webmaster/Metrika historical metrics;
+- TechnicalSnapshot, ReportSnapshot;
+- tenant-scoped AuditEvent, IdempotencyKey, OutboxEvent и JobRun.
+
+Threshold/cluster profiles остаются platform-owned только если ими управляет `platform-admin` и их reuse между tenants является явным контрактом. Иначе они мигрируют в tenant ownership.
+
+### Mutations
+
+Текущие service methods и единый `executeAdminCommand` не являются canonical command path.
+
+Новый единственный путь:
+
+```text
+Form / API / worker adapter
+→ defineAction или typed job adapter
+→ PrincipalContext
+→ defineCommand
+→ canonical Zod input
+→ permission + resource authorization
+→ business transaction
+→ transaction-bound repositories
+→ business data + AuditEvent + optional OutboxEvent
+→ typed result
+```
+
+Transport не открывает transaction и не содержит business rules. Каждая значимая mutable entity получает explicit concurrency policy (`version`, expected state или `updatedAt` precondition). Silent overwrite запрещён.
+
+### UI
+
+Private platform UI переходит на канонические patterns:
+
+- shadcn/ui primitives;
+- TanStack Table + shadcn Data Table;
+- nuqs для page/sort/filter/search state;
+- React Hook Form для complex forms;
+- Zod на client UX и повторно на server command boundary;
+- loading/empty/error/forbidden/stale states.
+
+Refine удаляется: Standard 3.0 запрещает его без ADR, а текущее использование не оправдывает отдельный framework. `Admin CMS` переименовывается в `Platform Admin`/`Admin Console`; это защищённая product surface, не generic CMS.
+
+### Jobs и integrations
+
+Текущий direct outbox dispatcher заменяется canonical flow:
+
+```text
+business transaction + OutboxEvent
+→ outbox drain
+→ pg-boss
+→ idempotent job handler
+→ external/provider side effect
+```
+
+pg-boss получает отдельные pool, schema lifecycle и migration step. Runtime worker не выполняет auto-DDL. Outbox payload получает `schemaVersion`, `occurredAt`, size limit и Zod contract.
+
+`SyncRun`/`SourceRun` расширяются обязательными organization/project ownership, correlation и проверяемой статистикой. Provider contracts и report semantics не переписываются.
+
+### Observability и production
+
+- logs: pino JSON, единая redaction policy;
+- correlation ID проходит request → principal → command → audit/outbox/job → provider call;
+- Sentry включается только после compliance-решения, DSN/token provisioning и подтверждённого controlled event;
+- health включает liveness, readiness, DB, worker heartbeat, queue failure и integration freshness;
+- production artifact меняется со сборки на host на immutable OCI image;
+- один image запускает web, worker, migration и maintenance commands;
+- production topology: host Nginx → Docker Compose web/worker → private Timeweb Managed PostgreSQL;
+- production host не выполняет `pnpm install`, dependency resolution или build.
+
+## Ограничение миграции
+
+Все PR можно подготовить заранее и слить одной управляемой серией, но несовместимый database contract нельзя безопасно «схлопнуть» в destructive one-shot migration.
+
+Поэтому текущая программа содержит только compatibility-first expand/backfill/validate/cutover. Legacy columns/tables не удаляются в общем release. Contract/drop выполняется отдельным будущим release после production stabilization и доказанного rollback/forward-fix path.
+
+## Stacked Git workflow до общего Merge Gate
+
+Последовательные workstreams образуют stack:
+
+1. первый branch создаётся от актуального `origin/main`;
+2. после завершения workstream выполняются scoped checks, commit, push и PR;
+3. PR не merge-ится;
+4. следующий branch создаётся от HEAD предыдущего branch;
+5. его PR target — предыдущий branch, поэтому каждый PR показывает только собственный diff;
+6. в description фиксируется `Depends on PR #...`;
+7. после подготовки всего stack разработка останавливается для общего owner review.
+
+Общий вывод в `main` выполняется отдельной командой владельца:
+
+1. freeze stack и проверить отсутствие drift;
+2. начать с нижнего PR;
+3. выполнить соответствующий FAST/HEAVY Gate;
+4. merge нижний PR в `main`;
+5. retarget следующий PR на обновлённый `main`;
+6. подтвердить, что diff содержит только его scope;
+7. повторить gate и merge последовательно;
+8. после последнего merge выполнить final HEAVY на exact `main` SHA;
+9. production остаётся отдельной командой после green final gate.
+
+Force-push, merge старых stale branches и параллельное изменение одного migration chain запрещены.
+
+## Workstream 0 — Canonical adoption
+
+Branch: `work/core-standard-v3-plan`
+Base: `origin/main`
+Gate: docs review + `git diff --check`
+
+Deliverables:
+
+- заменить старый completed roadmap этим активным plan;
+- обновить project `AGENTS.md` hard rules и stacked workflow;
+- заменить v1 conformance map на Standard 3.0 gap register;
+- зафиксировать ADR-003 о Standard 3.0, PrincipalContext, CUID policy, pg-boss, Refine removal и Docker topology;
+- нормализовать canonical docs без дублей: один SECURITY source и один deploy runbook;
+- зафиксировать exact version table в README.
 
 Done:
 
-- обычный unit run не содержит DB skips;
-- integration command fail-closed без безопасной test DB;
-- local DB config не содержит credentials в Git;
-- architecture violations блокируются;
-- public UI проходит 375/768/1280/1440 browser checks;
-- production code behavior не меняется.
+- active canon не утверждает соответствие v1;
+- hard rules видимы до любой правки;
+- CRM/template backlog удалён из platform rewrite;
+- branch/PR stack contract однозначен.
 
-Verified proof:
+## Workstream 1 — Runtime and architecture foundation
 
-- `verify:fast` blocks config/type/lint/import/unit failures;
-- 63 unit tests pass without skipped DB suites;
-- isolated PostgreSQL `18.6` starts on loopback and dev migrations/seed pass;
-- 14 integration tests pass after automatic test migrations/seed;
-- Dependency Cruiser checks 105 modules / 212 dependencies with zero violations;
-- production-like Next build passes;
-- 8 Playwright golden paths pass at 375, 768, 1280 and 1440;
-- local pinned Node 24.20/PostgreSQL 18.6 integration image/harness pass;
-- SourceCraft devcontainer build оказался нестабильным на cloud worker и удалён; exact-head cloud gate оставлен deterministic Node-only, а real DB/E2E являются обязательным operator evidence;
-- `verify:heavy` passes end-to-end.
+Branch: `work/v3-runtime-foundation`
+Base: Workstream 0 HEAD
+Gate: HEAVY — dependencies/runtime/architecture
 
-## Phase 2 — Platform request and access context
+Scope:
 
-Статус: implemented; local HEAVY proof green.
+- canonical `src/platform/{auth,authorization,commands,actions,database,jobs,observability,security,config}` boundaries;
+- Prisma 7 `prisma-client` generator, explicit generated output и ESM-compatible imports;
+- global Prisma access только внутри `platform/database` и explicit infrastructure composition;
+- `server-only` на privileged dependency roots;
+- `defineCommand` и `defineAction` foundation без product commands;
+- tenant-owned models registry + static guard;
+- guards для unsafe raw SQL, deep imports, global Prisma imports и server/client leakage;
+- удалить `$queryRawUnsafe("select 1")`;
+- exact package versions и README version table.
 
-Реализовано:
+Non-goals:
 
-- `PLATFORM_ADMIN` additive enum migration без изменения existing users;
-- `ActorContext`: fresh user, memberships, validated active organization, permissions, correlation ID;
-- code-versioned capability matrix для platform/project/report/sync/settings;
-- ProjectService tenant scope больше не делает скрытый membership lookup;
-- ReportService отдельно требует report-read capability;
-- analyst/navigation/dashboard используют capability, не role equality;
-- central DB/Auth/Leads/release environment validation;
-- standard public error envelope;
-- correlation headers для auth/health;
-- release-aware live/ready DTO с exact SHA;
-- deploy-generated root-owned `shared/release.env` и rollback SHA synchronization;
-- production web env preflight до build.
+- tenant schema migration;
+- auth behavior cutover;
+- UI redesign;
+- pg-boss runtime.
 
-Verified proof:
+Done:
 
-- migration clean path: 4 migrations applied to isolated PostgreSQL 18.6;
-- 76 unit tests pass;
-- 18 real-PostgreSQL integration tests pass;
-- 8 responsive Playwright E2E pass;
-- Dependency Cruiser: 111 modules / 232 dependencies, zero violations;
-- `verify:fast` and `verify:heavy` pass;
-- deploy remote shell syntax passes;
-- public AMS IMPULSE composition remains unchanged.
+- existing public/report behavior unchanged;
+- build fails on illegal server/client or Prisma boundary;
+- platform primitives имеют unit/architecture tests, но не являются generic meta-framework.
 
-Остаётся для следующих phases:
+## Workstream 2 — Principal and Better Auth cutover
 
-- Sentry и correlation propagation в full structured logs;
-- authenticated Admin CMS E2E;
-- production release SHA contract проверяется только после отдельного reviewed deploy.
+Branch: `work/v3-principal-auth`
+Base: Workstream 1 HEAD
+Gate: HEAVY — auth/permissions/schema/E2E
 
-## Phase 3 — Audit, idempotency and jobs foundation
+Scope:
 
-Статус: implemented; local HEAVY proof green.
+- PrincipalContext discriminated union и server-only factories;
+- project-specific `platform-analyst` principal;
+- tenant roles `ORG_OWNER | ORG_MEMBER | VIEWER`;
+- AMS-owned Membership authorization;
+- удалить Better Auth Organization Plugin из runtime;
+- сохранить legacy plugin columns/tables только для compatibility period;
+- server-owned active organization selection;
+- `mustChangePassword` lifecycle;
+- Better Auth 2FA для Platform Admin;
+- login/logout/password-change/session-revocation tests;
+- обновить AUTH/SECURITY/module contract.
 
-Реализовано:
+Done:
 
-- AuditEvent, IdempotencyKey, OutboxEvent and JobRun models;
-- generated migration также устраняет накопленный Prisma schema/index/default drift;
-- atomic enqueue transaction: idempotency + outbox + audit;
-- canonical JSON SHA-256 request binding;
-- same key/same hash duplicate return and different-hash rejection;
-- conditional PostgreSQL lease ownership;
-- JobRun per attempt;
-- retryable bounded exponential backoff;
-- permanent/exhausted dead-letter;
-- registered `project.sync.requested` handler outside transaction;
-- unknown/invalid topic permanent failure;
-- bounded `outbox-drain` worker;
-- five-minute systemd outbox timer with compatible rollback;
-- readiness outbox counts.
+- client payload не создаёт principal;
+- platform principals не получают fake tenant;
+- tenant principal всегда имеет validated Membership;
+- Platform Admin без 2FA не проходит production policy;
+- public signup остаётся выключен.
 
-Proof:
+## Workstream 3 — Tenant schema, scopedDb and constraints
 
-- clean five-migration path on PostgreSQL 18.6;
-- 21 integration tests pass, including atomicity/idempotency/lease/retry/dead-letter;
-- 76 unit tests pass;
-- Dependency Cruiser: 115 modules / 244 dependencies, zero violations;
-- compiled outbox worker idle smoke passes;
-- `verify:heavy` and responsive Playwright pass;
-- outbox systemd units pass `systemd-analyze verify` on the production host without activation;
-- deploy remote shell passes `bash -n`.
+Branch: `work/v3-tenant-database`
+Base: Workstream 2 HEAD
+Gate: HEAVY — additive migrations/tenant isolation
 
-`RetentionRun` intentionally remains absent until Phase 7 defines a real retention policy.
+Migration strategy:
 
-## Phase 4 — Vertical module boundaries — completed
+1. добавить nullable `organizationId`/project ownership и `version` fields;
+2. backfill через deterministic parent relations;
+3. проверить orphan/mismatch counts;
+4. добавить composite unique/FK/indexes;
+5. сделать поля NOT NULL только после proof;
+6. не удалять legacy fields в этом release train.
 
-Clean cutover завершён для шести доменов:
+Scope:
 
-1. Identity and Access;
-2. Project Registry;
-3. Reporting;
-4. Ranking Analytics;
-5. Data Ingestion;
-6. Platform Operations.
+- tenant ownership для registry, configuration, tracked queries, sync, metrics, reports и reliability records;
+- `Membership` application model без competing Better Auth tenancy;
+- scoped database context для tenant-user/job/API paths;
+- separate explicit platform-admin database path;
+- запрет nested tenant writes;
+- transaction-bound repositories;
+- raw analytics boundary с explicit organizationId;
+- production-like migration timing и SQL review.
 
-Каждый domain владеет внутренними `domain/application/infrastructure/presentation` слоями по фактической потребности и публикует root entrypoints. Все callers переведены, старые global implementation paths удалены. Dependency Cruiser запрещает cross-module imports внутренних слоёв.
+Done:
 
-Phase proof:
+- A читает/изменяет A по permission;
+- A не читает/не изменяет B;
+- Job A не изменяет B;
+- user without Membership не создаёт tenant record;
+- cross-tenant relation rejected PostgreSQL constraint;
+- scopedDb работает внутри business transaction.
 
-- typecheck/lint/build and collector build pass;
-- 76 unit tests and 21 real PostgreSQL integration tests pass;
-- Dependency Cruiser: 129 modules / 275 dependencies, zero violations;
-- 8 Playwright checks pass on 375/768/1280/1440;
-- public AMS IMPULSE surface and private login boundary remain unchanged.
+## Workstream 4 — Project Registry reference slice
 
-## Phase 5 — Admin CMS — completed
+Branch: `work/v3-project-slice`
+Base: Workstream 3 HEAD
+Gate: HEAVY — reference business slice
 
-Internal code-first mini CMS реализована для PLATFORM_ADMIN:
+Project становится эталонной entity:
 
-- Refine Core resource registry;
-- local shadcn-style source components;
-- React Hook Form + Zod command forms;
-- protected `/admin/*` route group;
-- organizations, memberships, projects, sites, provider connections, goals, tracked query sets, thresholds/clusters, sync runs and job status;
-- allowlisted search/sort and bounded server pagination;
-- fixed named commands with fresh server authorization;
-- resource mutation + safe AuditEvent in one Prisma transaction;
-- nonsecret provider settings validation and lifecycle-preserving tracked query replacement;
-- idempotent project sync enqueue through existing reliability foundation.
+- domain lifecycle и errors;
+- explicit queries `getProject`, `listProjects`, `getProjectSummary`;
+- commands `createProject`, `changeProjectStatus`, `updateProjectSettings`;
+- module-owned `requireProjectForAction`;
+- permission + resource authorization;
+- optimistic concurrency через `version`;
+- scoped transaction-bound repository;
+- audit и optional outbox;
+- Server Component read path;
+- separate `defineAction` adapters;
+- shadcn Data Table + nuqs URL state;
+- RHF/Zod form и stale conflict UI;
+- integration + E2E tenant matrix.
 
-Public AMS IMPULSE landing не импортирует Refine и визуально не меняется.
+Done:
 
-Phase proof:
+```text
+DB → scoped repository → query/command → action → UI → audit/tests
+```
 
-- typecheck/lint/build and collector build pass;
-- 77 unit tests and 25 real PostgreSQL integration tests pass;
-- Admin integration proves atomic audit, rollback, immutable ownership, membership revocation and query-history preservation;
-- Dependency Cruiser: 149 modules / 325 dependencies, zero violations;
-- 13 Playwright setup/public/auth/Admin checks pass on 375/768/1280/1440.
+проходит end-to-end и становится единственным template для следующих modules.
 
-## Phase 6 — Observability and security hardening
+## Workstream 5 — Platform Admin and remaining application patterns
 
-- Sentry server/client/worker adapters с PII scrubbing и release markers;
-- correlation-aware structured logs;
-- worker sync freshness и failed-job health;
-- public/write rate limits по реальному surface;
-- CSP staged через Report-Only;
-- explicit CORS для external contracts;
-- secret/env startup validation;
-- authenticated E2E tenant matrix;
-- RLS decision после DB-session prototype и integration proof.
+Branch: `work/v3-application-patterns`
+Base: Workstream 4 HEAD
+Gate: HEAVY — mutations/authorization/UI
 
-## Phase 7 — Scale and operations proof
+Scope:
 
-Для 50 организаций:
+- удалить Refine и generic `executeAdminCommand` dispatcher;
+- переименовать Admin CMS в Platform Admin/Admin Console;
+- перенести organizations/memberships/sites/providers/goals/tracked queries/profiles на отдельные commands/actions/queries;
+- immutable/server-owned fields убрать из browser input;
+- module-owned resource loaders для каждой mutation;
+- optimistic concurrency для mutable configuration;
+- TanStack Table, nuqs, shared client-safe list contracts;
+- loading/empty/error/forbidden/stale states;
+- tenant-aware cache policy; persistent PII cache не добавлять;
+- public AMS IMPULSE UI оставить неизменным.
 
-- measured query plans и composite tenant indexes;
-- server pagination/filter/sort allowlists;
-- bounded exports;
-- worker concurrency/backpressure;
-- backup volume/restore timing;
-- retention/privacy rules;
-- load sample на representative data;
-- availability and stale-report monitoring.
+Done:
 
-Redis, separate search engine и separate backend добавляются только при измеренном blocker и отдельном ADR.
+- transport не содержит transaction/business rules;
+- нет arbitrary Prisma CRUD;
+- list filter/sort/page выполняются server-side с allowlists;
+- Admin cross-tenant command всегда получает explicit target organization и AuditEvent.
 
-## Phase 8 — Template readiness
+## Workstream 6 — Data ingestion, outbox and pg-boss
 
-Template repository сейчас не создаётся.
+Branch: `work/v3-integrations-jobs`
+Base: Workstream 5 HEAD
+Gate: HEAVY — integrations/jobs/dependencies/schema
 
-Сначала AMS IMPULSE должен доказать:
+Scope:
 
-- два или более vertical modules с одинаковым public contract pattern;
-- working ActorContext/audit/jobs foundation;
-- repeatable local/CI PostgreSQL;
-- Refine admin resources без project-specific leakage;
-- configurable brand/legal/navigation boundaries;
-- documented extraction list platform vs project code.
+- добавить pg-boss как отдельный database subsystem;
+- отдельный pg-boss pool и connection budget;
+- reviewed install/upgrade step, runtime `migrate:false/createSchema:false`;
+- outbox drain публикует versioned events в pg-boss;
+- job handlers используют JobPrincipal и scopedDb;
+- payload Zod, size limit, timeout, retry classification, idempotency и dead-letter;
+- добавить `schemaVersion` и `occurredAt` в OutboxEvent;
+- привести SyncRun/SourceRun к organization/project/correlation/stats contract;
+- retention policy и `RetentionRun` для completed jobs/outbox detail;
+- provider clients сохраняют current read-only semantics, timeouts, validation и safe errors.
 
-Только после этого reusable core копируется в отдельный repository. AMS IMPULSE landing остаётся project-specific reference asset и переносится в template как opt-in example, а не как обязательный universal theme.
+Done:
 
-## Product work after platform foundation
+- business commit не теряет future job;
+- consumer idempotent under at-least-once delivery;
+- runtime worker не выполняет pg-boss DDL;
+- retry/permanent/duplicate/dead-letter tests green;
+- worker и web собираются из одного codebase.
+
+## Workstream 7 — Observability, testing and CI
+
+Branch: `work/v3-observability-ci`
+Base: Workstream 6 HEAD
+Gate: HEAVY — security/PII/CI
+
+Scope:
+
+- pino JSON для web/worker/integration logs;
+- redaction passwords, cookies, authorization, tokens, DB URL и PII;
+- correlation propagation through principal/command/audit/outbox/job/provider;
+- worker heartbeat, queue failure и critical integration freshness health;
+- Sentry compliance decision в SECURITY;
+- при разрешении Sentry: server/client/worker adapters, scrub, release SHA, controlled event + flush + external confirmation;
+- при запрете/отсутствии prerequisites: Sentry остаётся явно disabled без fake success;
+- complete tenant isolation/scopedDb/command/integration E2E matrices;
+- SourceCraft PR checks с real required profile; skipped DB suites не считаются proof;
+- architecture/custom guards становятся blocking.
+
+Done:
+
+- 81–85 Standard 3.0 contracts покрыты фактическими tests;
+- CI и local canonical scripts совпадают по смыслу;
+- confirmed bug всегда имеет regression test;
+- observability не выводит secrets/PII.
+
+## Workstream 8 — Docker production foundation
+
+Branch: `work/v3-docker-production`
+Base: Workstream 7 HEAD
+Gate: HEAVY — infrastructure/release/migrations
+
+Prerequisites requiring factual proof:
+
+- Timeweb Managed PostgreSQL instance, private network и region;
+- connection capacity and role model;
+- SourceCraft image registry/build capability;
+- pg-boss schema migration permissions;
+- RPO/RTO and backup geography;
+- rollback coexistence with current systemd release.
+
+Scope:
+
+- multi-stage pinned Dockerfile;
+- one immutable image with web/worker/migration/maintenance commands;
+- `docker-compose.production.yml` for web + worker;
+- host Nginx remains TLS reverse proxy;
+- image built/published outside production host;
+- exact SHA + image digest release metadata;
+- separate runtime/migration/pg-boss credentials where provider allows;
+- migration and pg-boss schema steps require explicit release intent;
+- blue/green or equivalent cutover with previous known-good rollback;
+- backup/restore proof and live smoke contract.
+
+Done:
+
+- production host не выполняет install/build;
+- web/worker use exact same image digest;
+- database is private or exception explicitly stopped for owner decision;
+- deploy dry-run and rollback rehearsal green;
+- no production deployment occurs in this workstream PR.
+
+## Final integration and release
+
+Не создаётся заранее как обычный feature PR. Выполняется только по отдельной команде владельца после подготовки Workstreams 0–8.
+
+Merge train:
+
+- sequentially merge stacked PRs into current `main`;
+- after each merge verify exact scope and required gate;
+- final `origin/main` gets one full HEAVY, migration-chain review and image build;
+- no legacy contract/drop migration enters this release;
+- owner separately issues production intent;
+- deploy exact main image digest;
+- prove SHA/digest, liveness, readiness, main route, login/2FA, tenant isolation, report, Platform Admin critical command, worker heartbeat, pg-boss queue, provider freshness, backup and rollback readiness.
+
+## Не входит в rewrite
+
+Без отдельного product trigger и ADR не добавляются:
+
+- CRM Contact, pipeline, kanban, tasks;
+- billing/payments;
+- public signup или public client reports;
+- user files/object storage;
+- realtime;
+- Redis;
+- separate search engine;
+- GraphQL/tRPC;
+- NestJS или отдельный backend;
+- microservices;
+- RLS;
+- external `/api/v1`, ApiClient и OpenAPI;
+- generic template repository;
+- runtime-editable schema/plugins.
+
+RLS остаётся growth trigger: сначала scopedDb + composite constraints + isolation proof. Template extraction не является продуктовой задачей AMS IMPULSE.
+
+## Product work после platform rewrite
+
+Отдельными независимыми streams:
 
 - SZ REDACTED_CLIENT_DATA onboarding;
 - analyst detail views;
 - explicit Topvisor activation;
 - external availability/freshness monitoring;
-- dashboard CRM-token normalization.
+- dashboard token normalization.
 
-Эти задачи выполняются через новые module boundaries по мере их готовности.
-
-## Не внедрять без отдельного product/architecture решения
-
-- CRM contacts, pipeline или kanban;
-- public signup/reports;
-- provider mutations или paid checks;
-- runtime-editable DB schema;
-- plugin marketplace;
-- Redis, NestJS, microservices, second ORM/auth/backend;
-- object storage без user files;
-- RLS без ActorContext transaction contract;
-- отдельный search engine без measured PostgreSQL limit.
-
-## Gates
-
-- Phase 1: dependency/tooling impact, HEAVY.
-- Phases 2–7: auth/data/runtime impact, HEAVY.
-- Public UI preservation: browser proof 375/768/1280/1440.
-- Production deploy всегда отдельная owner-команда после reviewed canonical main.
+Эти задачи не смешиваются с Standard 3.0 migration.

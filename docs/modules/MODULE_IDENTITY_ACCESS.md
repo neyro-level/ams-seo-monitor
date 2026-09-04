@@ -1,5 +1,7 @@
 # Module: Identity and Access
 
+> Legacy implementation contract. Target PrincipalContext, AMS-owned Membership, first-password lifecycle and 2FA are defined by Workstream 2 in `../MASTER_PLAN.md`; new code must not extend Better Auth organization tenancy.
+
 ## Назначение
 
 Создаёт единый server-side ActorContext и capability boundary для пользователей, организаций, проектов, отчётов и будущей Admin CMS.

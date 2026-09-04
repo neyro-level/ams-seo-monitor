@@ -1,5 +1,7 @@
 # SECURITY
 
+> Migration status: this document describes the current `origin/main` security boundary. New work follows Standard 3.0 hard rules from `AGENTS.md`; PrincipalContext, AMS-owned tenancy, 2FA, scopedDb and container production gaps are tracked in `docs/MASTER_PLAN.md`.
+
 ## Модель безопасности
 
 Security boundary состоит из public browser surface, Next.js application, Better Auth, server-side authorization, PostgreSQL, worker/provider adapters, AMS Leads API, Nginx и secret store.
