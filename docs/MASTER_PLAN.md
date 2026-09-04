@@ -295,6 +295,8 @@ Done:
 Branch: `work/v3-project-slice`
 Base: Workstream 3 HEAD
 Gate: HEAVY — reference business slice
+Status: implemented and verified in the local worktree; checkpoint, push and PR are not requested yet.
+
 
 Project становится эталонной entity:
 

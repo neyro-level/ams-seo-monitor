@@ -67,6 +67,9 @@ Not a database record. A server factory creates a discriminated principal from f
 
 - `slug` уникален глобально;
 - status: `ACTIVE`, `PLANNED`, `DISABLED`;
+- `version` — positive optimistic concurrency token, initial value `1`;
+- successful status/settings mutation increments `version` exactly once;
+- stale expected version rejects the mutation and its AuditEvent in the same transaction;
 - physical delete production project не является обычной операцией.
 
 ### Tenant ownership
@@ -121,6 +124,15 @@ Project-level allowlist целей Metrika и optional site scope.
 - содержит source, baseline label и expected count;
 - позиции nullable;
 - `enabled=false` сохраняет историю, но исключает query из активного core.
+
+## Project command lifecycle
+
+- Project create/status/settings use canonical Zod input and `PrincipalContext`;
+- existing Project ownership and requested `organizationId` are checked inside the transaction;
+- Project mutation and safe `AuditEvent` commit atomically;
+- Project `slug` and `organizationId` are immutable after creation in this slice;
+- status/settings changes require the current `version`;
+- no Project command physically deletes a Project or its history.
 
 ## Admin CMS command lifecycle
 

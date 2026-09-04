@@ -102,4 +102,30 @@ test.describe("Admin CMS", () => {
     );
     expect(hasHorizontalOverflow).toBe(false);
   });
+
+  test("renders the Project reference slice with URL-owned filters", async ({ page }) => {
+    await page.goto("/admin/projects/");
+    await expect(page.getByRole("heading", { level: 1, name: "Проекты" })).toBeVisible();
+    await expect(page.getByText("Создать проект")).toBeVisible();
+    await page.getByLabel("Поиск").fill("REDACTED_CLIENT_DATA");
+    await page.getByRole("button", { name: "Применить" }).click();
+    await expect(page).toHaveURL(/search=REDACTED_CLIENT_DATA/);
+
+    if ((page.viewportSize()?.width ?? 0) < 768) {
+      const projectCard = page.locator("article").first();
+      await expect(projectCard).toBeVisible();
+      await expect(projectCard.getByRole("heading", { name: "REDACTED_CLIENT_DATA" })).toBeVisible();
+    } else {
+      const projectTable = page.getByRole("table");
+      await expect(projectTable).toBeVisible();
+      await expect(projectTable.getByText("REDACTED_CLIENT_DATA", { exact: true }).first()).toBeVisible();
+      await projectTable.getByRole("link", { name: "Проект", exact: true }).click();
+      await expect(page).toHaveURL(/sort=name/);
+    }
+
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalOverflow).toBe(false);
+  });
 });
