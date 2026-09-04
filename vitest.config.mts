@@ -14,6 +14,7 @@ export default defineConfig({
     exclude: [
       ...configDefaults.exclude,
       "tests/e2e/**",
+      "tests/**/*.integration.test.ts",
       "tests/auth.authorization.test.ts",
       "tests/health.integration.test.ts",
       "tests/navigation.test.ts",
