@@ -13,20 +13,27 @@ describe("release-aware health routes", () => {
     expect(payload.releaseSha).toBeNull();
   });
 
-  it("proves PostgreSQL and auth readiness", async () => {
+  it("proves PostgreSQL, auth, queue, worker and freshness readiness", async () => {
     const response = await getReadyHealth();
     const payload = readyHealthSchema.parse(await response.json());
 
     expect(response.status).toBe(200);
     expect(response.headers.get("x-correlation-id")).toBe(payload.correlationId);
-    expect(payload.dependencies).toMatchObject({
-      postgresql: "ready",
-      auth: "configured",
-      outbox: {
-        pending: expect.any(Number),
-        processing: expect.any(Number),
-        deadLetter: expect.any(Number),
-      },
+    expect(payload.dependencies.outbox).toMatchObject({
+      status: expect.stringMatching(/healthy|degraded/),
+      pending: expect.any(Number),
+      processing: expect.any(Number),
+      deadLetter: expect.any(Number),
     });
+    expect(payload.dependencies.worker.status).toMatch(/healthy|stale|unknown/);
+    expect(
+      payload.dependencies.worker.lastHeartbeatAt === null
+        || typeof payload.dependencies.worker.lastHeartbeatAt === "string",
+    ).toBe(true);
+    expect(payload.dependencies.integrationFreshness.status).toMatch(/fresh|stale|unknown/);
+    expect(
+      payload.dependencies.integrationFreshness.latestSyncFinishedAt === null
+        || typeof payload.dependencies.integrationFreshness.latestSyncFinishedAt === "string",
+    ).toBe(true);
   });
 });

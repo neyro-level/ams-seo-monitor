@@ -1,8 +1,6 @@
 on:
   pull_request:
     - workflows: [pr-check]
-      filter:
-        target_branches: ["main"]
 
   push:
     - workflows: [pr-check]
@@ -29,18 +27,18 @@ workflows:
               - pnpm verify:fast
               - pnpm build
 
-  merge-heavy:
+  merge-fast:
     inputs:
       expected_commit_sha:
         type: string
         required: true
-        description: "Full reviewed PR head SHA"
+        description: "Reviewed PR head SHA"
     checkout:
       fetch_depth: 0
     settings:
       max_cube_duration: 45m
     tasks:
-      - name: exact-head-heavy-gate
+      - name: exact-head-fast-gate
         env:
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
         cubes:
@@ -54,5 +52,29 @@ workflows:
               - node scripts/ci/verify-exact-head.mjs
               - pnpm verify:snapshots
               - pnpm verify:fast
-              - pnpm build:collector
               - pnpm build
+
+  merge-heavy:
+    inputs:
+      expected_commit_sha:
+        type: string
+        required: true
+        description: "Full reviewed PR head SHA"
+    checkout:
+      fetch_depth: 0
+    settings:
+      max_cube_duration: 90m
+    tasks:
+      - name: exact-head-heavy-gate
+        env:
+          EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+        cubes:
+          - name: verify
+            image: docker.io/library/node:24.20.0-bookworm
+            script:
+              - corepack enable
+              - corepack prepare pnpm@11.5.1 --activate
+              - node scripts/verify-release-runtime.mjs
+              - pnpm install --frozen-lockfile
+              - node scripts/ci/verify-exact-head.mjs
+              - pnpm verify:heavy

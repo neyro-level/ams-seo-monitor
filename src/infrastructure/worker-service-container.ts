@@ -1,6 +1,6 @@
 import { SyncService } from "../modules/data-ingestion/index.ts";
 import {
-  JsonLineSyncLogger,
+  PinoSyncLogger,
   PrismaSyncRepository,
 } from "../modules/data-ingestion/server.ts";
 import { ReliabilityService } from "../modules/platform-operations/index.ts";
@@ -31,7 +31,7 @@ const syncService = new SyncService({
   projectService,
   reportService,
   syncRepository,
-  logger: new JsonLineSyncLogger(),
+  logger: new PinoSyncLogger(),
 });
 
 export function getWorkerSyncService() {

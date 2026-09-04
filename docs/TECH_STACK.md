@@ -54,8 +54,8 @@
 - Refine removed in Workstream 5; Platform Admin now relies on typed route composition and shared primitives instead of a resource framework;
 - TanStack Table and `nuqs` are the canonical private list patterns after the Project reference slice and Platform Admin rewrite;
 - pg-boss `12.30.0` entered in Workstream 6 with reviewed schema/pool/runbook contract;
-- pino enters only with redaction/correlation callsites;
-- Sentry enters only after SECURITY compliance decision and real connection prerequisites;
+- pino `10.3.1` entered in Workstream 7 with redaction and correlation callsites;
+- Sentry remains disabled until SECURITY records a compliant DSN/proof path;
 - production Docker assets enter only with the reviewed topology workstream.
 
 Пустые platform dependencies без callsites запрещены.

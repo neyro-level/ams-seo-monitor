@@ -81,13 +81,13 @@ AMS IMPULSE — публичный SEO landing + приватная multi-tenant
 | Forms | RHF/Zod + typed Server Actions on Project and Platform Admin routes | RHF UX + server canonical Zod | KEEP/MIGRATE | extend to remaining modules without generic dispatcher |
 | Refine | removed from runtime in Workstream 5 | forbidden without ADR | REMOVE | no justified value |
 | Public UI | project-specific AMS IMPULSE design | product design not universal platform | KEEP | freeze composition/CTA/tokens |
-| Logs | custom JSON/sync logger | pino JSON + redaction | MIGRATE | pino in observability workstream |
-| Correlation | auth/health/audit partial | boundary-to-provider propagation | ADD | principal/command/job/provider propagation |
-| Sentry | absent | conditional on compliance | VERIFY | decide in SECURITY; no fake connected state |
-| Health | live/ready + DB/auth/outbox | heartbeat/queue/integration freshness | ADD | extend after pg-boss |
-| Unit/integration/E2E | Vitest, real PG, responsive Playwright | same + wider matrices | KEEP/ADD | add principal/scopedDb/concurrency/first-password golden paths |
+| Logs | redacted pino JSON for worker/web error paths | pino JSON + redaction | PROVEN | keep expanding callsites, no plaintext secrets |
+| Correlation | auth/health/audit/outbox/job partial propagation | boundary-to-provider propagation | PARTIAL | finish provider-call edge and wider tests |
+| Sentry | explicitly disabled without DSN/proof | conditional on compliance | VERIFIED_DISABLED | no fake connected state |
+| Health | live/ready + DB/auth/outbox/worker/freshness | heartbeat/queue/integration freshness | PROVEN | preserve public-safe DTO |
+| Unit/integration/E2E | Vitest, real PG, responsive Playwright | same + wider matrices | KEEP/ADD | add observability regression tests |
 | Architecture QA | Dependency Cruiser boundaries | cruiser + static guards | ADD | unsafe raw/global Prisma/tenant registry/server-client guards |
-| CI | SourceCraft Node gate; DB/E2E operator evidence | PR checks include risk-required tests | MIGRATE | establish reproducible integration service/profile |
+| CI | PR check + merge-fast/merge-heavy exact-head workflows | PR checks include risk-required tests | PARTIAL | CI profile defined; live SourceCraft run still owner-verified |
 | Production artifact | source archive built on target host | immutable OCI image built outside host | MIGRATE | multi-stage Dockerfile + registry digest |
 | Production processes | systemd web/oneshot workers | Compose web + worker from one image | MIGRATE | host Nginx remains, worker becomes long-running queue runtime where required |
 | Database network | documented local/private, exact live topology not canonical | private Timeweb Managed PostgreSQL | VERIFY | inspect provider/network before infra implementation |

@@ -62,6 +62,10 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - lease ownership prevents one worker from completing another worker's job;
 - safe error codes replace raw exception/response bodies.
 
+### Sentry
+
+Current state: explicitly disabled. No DSN, token, scrub policy confirmation or controlled event proof are configured in this repository. Until those prerequisites exist, observability relies on redacted pino JSON logs, health endpoints and deterministic tests; no fake `connected` status is claimed.
+
 ### AMS Leads API
 
 Public contact form отправляет имя, телефон, source/UTM и anti-spam metadata в отдельный allowlisted сервис.

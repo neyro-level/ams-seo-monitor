@@ -384,6 +384,8 @@ Done:
 Branch: `work/v3-observability-ci`
 Base: Workstream 6 HEAD
 Gate: HEAVY — security/PII/CI
+Status: implemented and verified in the local worktree; checkpoint, push and PR are the remaining delivery steps.
+
 
 Scope:
 

@@ -3,3 +3,4 @@ export {
   listOperations,
   requestProjectSync,
 } from "./infrastructure/platform-admin-runtime.ts";
+export { getOperationalReadiness } from "./infrastructure/readiness-runtime.ts";

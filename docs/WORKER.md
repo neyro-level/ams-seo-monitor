@@ -70,7 +70,7 @@ Worker writes:
 - append-only `ReportSnapshot`;
 - retention markers in `RetentionRun`.
 
-Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; run `finishedAt` is captured at actual completion.
+Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; run `finishedAt` is captured at actual completion. Worker runtime emits redacted pino JSON logs with correlation-aware fields.
 
 ## Outbox lifecycle
 
@@ -83,7 +83,7 @@ Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; 
 - complete/fail still update `OutboxEvent` and `JobRun`, so retry/dead-letter truth remains in app tables;
 - retry base 30 seconds, exponential, capped at one hour and five attempts;
 - invalid payload/unknown topic goes directly to dead-letter;
-- readiness exposes pending/processing/dead-letter counts.
+- readiness exposes pending/processing/dead-letter counts plus worker heartbeat and integration freshness.
 
 ## Failure behavior
 
