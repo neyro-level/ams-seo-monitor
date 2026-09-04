@@ -65,20 +65,18 @@ WEB_ENV_FILE=/etc/ams-platform/ams-seo-monitor-web.env
 WORKER_ENV_FILE=/etc/ams-platform/ams-seo-monitor-worker.env
 MIGRATOR_ENV_FILE=/etc/ams-platform/ams-seo-monitor-migrator.env
 BACKUP_ENV_FILE=/etc/ams-platform/ams-seo-monitor-backup.env
-RUNTIME_BIN="$ROOT/shared/runtime/current/bin"
-EXPECTED_NODE_VERSION=v24.20.0
+COMPOSE_FILE="$RELEASE/docker-compose.production.yml"
+MANIFEST_FILE="$RELEASE/release-manifest.json"
+IMAGE_TAR="$RELEASE/docker-image.tar"
 
-if [ ! -x "$RUNTIME_BIN/node" ]; then
-  echo "Missing production Node runtime: $RUNTIME_BIN/node" >&2
+if ! command -v docker >/dev/null 2>&1; then
+  echo "docker_missing=true" >&2
   exit 1
 fi
-ACTUAL_NODE_VERSION="$($RUNTIME_BIN/node -v)"
-if [ "$ACTUAL_NODE_VERSION" != "$EXPECTED_NODE_VERSION" ]; then
-  echo "Production Node mismatch: expected $EXPECTED_NODE_VERSION, got $ACTUAL_NODE_VERSION" >&2
+if ! docker compose version >/dev/null 2>&1; then
+  echo "docker_compose_missing=true" >&2
   exit 1
 fi
-export PATH="$RUNTIME_BIN:$PATH"
-
 if [ -n "$PREVIOUS" ] && [ "$PREVIOUS" = "$RELEASE" ]; then
   echo "Target release is already current; refusing in-place rebuild" >&2
   exit 1
@@ -86,7 +84,13 @@ fi
 
 write_release_env() {
   local release_sha="$1"
-  printf 'RELEASE_SHA=%s\n' "$release_sha" > "$ROOT/shared/release.env.next"
+  local image_tag="$2"
+  local image_digest="$3"
+  cat > "$ROOT/shared/release.env.next" <<EOF
+RELEASE_SHA=$release_sha
+AMS_SEO_MONITOR_IMAGE=$image_tag
+AMS_SEO_MONITOR_IMAGE_DIGEST=$image_digest
+EOF
   chown root:www-data "$ROOT/shared/release.env.next"
   chmod 0640 "$ROOT/shared/release.env.next"
   mv -f "$ROOT/shared/release.env.next" "$ROOT/shared/release.env"
@@ -95,52 +99,31 @@ write_release_env() {
 rollback_previous() {
   systemctl stop seo-monitor-worker.service seo-monitor-outbox.service seo-monitor-web.service >/dev/null 2>&1 || true
   systemctl disable --now seo-monitor-worker.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
-
   if [ -n "$PREVIOUS" ]; then
     rm -f "$ROOT/current.rollback"
     ln -s "$PREVIOUS" "$ROOT/current.rollback"
     mv -Tf "$ROOT/current.rollback" "$ROOT/current"
     PREVIOUS_SHA="$(basename "$PREVIOUS")"
-    if [[ "$PREVIOUS_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-      write_release_env "$PREVIOUS_SHA"
+    PREVIOUS_IMAGE="ams-seo-monitor:$PREVIOUS_SHA"
+    PREVIOUS_DIGEST="$(docker image inspect "$PREVIOUS_IMAGE" --format '{{.Id}}' 2>/dev/null || true)"
+    if [[ "$PREVIOUS_SHA" =~ ^[0-9a-f]{40}$ ]] && [ -n "$PREVIOUS_DIGEST" ]; then
+      write_release_env "$PREVIOUS_SHA" "$PREVIOUS_IMAGE" "$PREVIOUS_DIGEST"
     fi
-
     if [ -f "$PREVIOUS/ops/nginx/ams-seo-monitor.conf" ]; then
       install -m 0644 "$PREVIOUS/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
     elif [ -f "$NGINX_BACKUP" ]; then
       cp "$NGINX_BACKUP" "$NGINX_LIVE"
     fi
-
-    if [ -f "$PREVIOUS/ops/systemd/seo-monitor-web.service" ]; then
-      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
-      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service
-      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
-      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-db-backup.service" /etc/systemd/system/seo-monitor-db-backup.service
-      install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/system/seo-monitor-db-backup.timer
-      if [ -f "$PREVIOUS/ops/systemd/seo-monitor-outbox.service" ]; then
-        install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-outbox.service" /etc/systemd/system/seo-monitor-outbox.service
-        install -m 0644 "$PREVIOUS/ops/systemd/seo-monitor-outbox.timer" /etc/systemd/system/seo-monitor-outbox.timer
-      else
-        rm -f /etc/systemd/system/seo-monitor-outbox.service /etc/systemd/system/seo-monitor-outbox.timer
+    for unit in seo-monitor-web.service seo-monitor-worker.service seo-monitor-worker.timer seo-monitor-outbox.service seo-monitor-outbox.timer seo-monitor-db-backup.service seo-monitor-db-backup.timer; do
+      if [ -f "$PREVIOUS/ops/systemd/$unit" ]; then
+        install -m 0644 "$PREVIOUS/ops/systemd/$unit" "/etc/systemd/system/$unit"
       fi
-      systemctl daemon-reload
-      nginx -t
-      systemctl reload nginx
-      systemctl restart seo-monitor-web.service || true
-      systemctl enable --now seo-monitor-worker.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
-      if [ -f "$PREVIOUS/ops/systemd/seo-monitor-outbox.timer" ]; then
-        systemctl enable --now seo-monitor-outbox.timer >/dev/null 2>&1 || true
-      fi
-    elif [ -f "$PREVIOUS/ops/systemd/ams-seo-monitor.service" ]; then
-      install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.service" /etc/systemd/system/ams-seo-monitor.service
-      rm -f /etc/systemd/system/seo-monitor-outbox.service /etc/systemd/system/seo-monitor-outbox.timer
-      install -m 0644 "$PREVIOUS/ops/systemd/ams-seo-monitor.timer" /etc/systemd/system/ams-seo-monitor.timer
-      systemctl daemon-reload
-      nginx -t
-      systemctl reload nginx
-      systemctl restart ams-seo-monitor.service || true
-      systemctl enable --now ams-seo-monitor.timer >/dev/null 2>&1 || true
-    fi
+    done
+    systemctl daemon-reload
+    nginx -t
+    systemctl reload nginx
+    systemctl restart seo-monitor-web.service || true
+    systemctl enable --now seo-monitor-worker.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
   fi
 }
 
@@ -179,7 +162,6 @@ PY
 
 cd /tmp
 sha256sum -c "$ARTIFACT_NAME.sha256"
-
 if [ -e "$RELEASE" ]; then
   echo "Release directory already exists: $RELEASE" >&2
   exit 1
@@ -187,104 +169,67 @@ fi
 mkdir -p "$RELEASE"
 tar -xzf "$ARTIFACT" -C "$RELEASE"
 
-MANIFEST_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commitSha"])' "$RELEASE/release-manifest.json")"
+MANIFEST_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commitSha"])' "$MANIFEST_FILE")"
+IMAGE_TAG="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["imageTag"])' "$MANIFEST_FILE")"
+IMAGE_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["imageDigest"])' "$MANIFEST_FILE")"
 if [ "$MANIFEST_SHA" != "$SHA" ]; then
   echo "Release manifest mismatch" >&2
   exit 1
 fi
+for env_file in "$WEB_ENV_FILE" "$WORKER_ENV_FILE" "$MIGRATOR_ENV_FILE" "$BACKUP_ENV_FILE"; do
+  if [ ! -f "$env_file" ]; then
+    echo "Missing env file: $env_file" >&2
+    exit 1
+  fi
+done
 
-EXPECTED_LOCK="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["dependencyLockSha256"])' "$RELEASE/release-manifest.json")"
-ACTUAL_LOCK="$(sha256sum "$RELEASE/pnpm-lock.yaml" | cut -d ' ' -f1)"
-if [ "$EXPECTED_LOCK" != "$ACTUAL_LOCK" ]; then
-  echo "Dependency lock checksum mismatch" >&2
+LOAD_OUTPUT="$(docker load -i "$IMAGE_TAR")"
+echo "$LOAD_OUTPUT"
+ACTUAL_IMAGE_ID="$(docker image inspect "$IMAGE_TAG" --format '{{.Id}}')"
+if [ "$ACTUAL_IMAGE_ID" != "$IMAGE_DIGEST" ]; then
+  echo "Image digest mismatch: expected $IMAGE_DIGEST, got $ACTUAL_IMAGE_ID" >&2
   exit 1
 fi
+export AMS_SEO_MONITOR_IMAGE="$IMAGE_TAG"
+export AMS_SEO_MONITOR_IMAGE_DIGEST="$IMAGE_DIGEST"
 
-if [ ! -f "$WEB_ENV_FILE" ]; then
-  echo "Missing web env file: $WEB_ENV_FILE" >&2
-  exit 1
-fi
-if [ ! -f "$WORKER_ENV_FILE" ]; then
-  echo "Missing worker env file: $WORKER_ENV_FILE" >&2
-  exit 1
-fi
-if [ ! -f "$MIGRATOR_ENV_FILE" ]; then
-  echo "Missing migrator env file: $MIGRATOR_ENV_FILE" >&2
-  exit 1
-fi
-if [ ! -f "$BACKUP_ENV_FILE" ]; then
-  echo "Missing mandatory offsite backup env file: $BACKUP_ENV_FILE" >&2
-  exit 1
-fi
-
-sha256sum "$ARTIFACT" | cut -d ' ' -f1 > "$RELEASE/artifact.sha256"
-chown root:www-data "$RELEASE"
-find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type d -exec chmod 0755 {} +
-find "$RELEASE" -path "$RELEASE/node_modules" -prune -o -type f -exec chmod 0644 {} +
-chmod 0755 "$RELEASE/ops/postgres/backup.sh" "$RELEASE/ops/postgres/restore-smoke.sh"
-
-rm -rf "$RELEASE/node_modules"
-corepack enable
-corepack prepare pnpm@11.5.1 --activate
-(cd "$RELEASE" && pnpm install --frozen-lockfile)
-chmod 0755 "$RELEASE/node_modules/.bin/prisma" || true
-(
-  cd "$RELEASE"
-  run_with_env_file "$WEB_ENV_FILE" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/verify-web-environment.ts"
-  run_with_env_file "$WEB_ENV_FILE" pnpm build
-  pnpm build:collector
-)
-
-run_with_env_file "$MIGRATOR_ENV_FILE" "$RELEASE/node_modules/.bin/prisma" migrate deploy --config "$RELEASE/prisma.config.ts"
-runuser -u postgres -- psql -d seo_monitor_prod -v ON_ERROR_STOP=1 -c "GRANT USAGE ON SCHEMA public TO seo_monitor_app; GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public TO seo_monitor_app; GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO seo_monitor_app; ALTER DEFAULT PRIVILEGES FOR USER seo_monitor_migrator IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES TO seo_monitor_app; ALTER DEFAULT PRIVILEGES FOR USER seo_monitor_migrator IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO seo_monitor_app;"
-run_with_env_file "$MIGRATOR_ENV_FILE" "$RELEASE/node_modules/tsx/dist/cli.mjs" "$RELEASE/scripts/seed-database.ts"
+run_with_env_file "$WEB_ENV_FILE" docker compose -f "$COMPOSE_FILE" config >/dev/null
+run_with_env_file "$MIGRATOR_ENV_FILE" docker compose -f "$COMPOSE_FILE" run --rm migrate
+run_with_env_file "$MIGRATOR_ENV_FILE" docker compose -f "$COMPOSE_FILE" run --rm migrate seed
 
 install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
-install -d -o postgres -g postgres -m 0750 /var/backups/ams-seo-monitor-postgres /var/backups/ams-seo-monitor-postgres/tmp /var/backups/ams-seo-monitor-postgres/daily /var/backups/ams-seo-monitor-postgres/weekly /var/backups/ams-seo-monitor-postgres/monthly
-chown -R postgres:postgres /var/backups/ams-seo-monitor-postgres
-run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres --preserve-environment -- /usr/bin/env REQUIRE_OFFSITE=true /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
-/usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
+mkdir -p /var/backups/ams-seo-monitor-postgres/{tmp,daily,weekly,monthly}
+run_with_env_file "$BACKUP_ENV_FILE" /usr/bin/env REQUIRE_OFFSITE=true /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+run_with_env_file "$BACKUP_ENV_FILE" /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
 
-if ! id -u seo-monitor-worker >/dev/null 2>&1; then
-  useradd --system --no-create-home --shell /usr/sbin/nologin --gid www-data seo-monitor-worker
-fi
-
-install -m 0644 "$RELEASE/ops/systemd/seo-monitor-web.service" /etc/systemd/system/seo-monitor-web.service
-install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.service" /etc/systemd/system/seo-monitor-worker.service
-install -m 0644 "$RELEASE/ops/systemd/seo-monitor-worker.timer" /etc/systemd/system/seo-monitor-worker.timer
-install -m 0644 "$RELEASE/ops/systemd/seo-monitor-outbox.service" /etc/systemd/system/seo-monitor-outbox.service
-install -m 0644 "$RELEASE/ops/systemd/seo-monitor-outbox.timer" /etc/systemd/system/seo-monitor-outbox.timer
-install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.service" /etc/systemd/system/seo-monitor-db-backup.service
-install -m 0644 "$RELEASE/ops/systemd/seo-monitor-db-backup.timer" /etc/systemd/system/seo-monitor-db-backup.timer
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
+for unit in seo-monitor-web.service seo-monitor-worker.service seo-monitor-worker.timer seo-monitor-outbox.service seo-monitor-outbox.timer seo-monitor-db-backup.service seo-monitor-db-backup.timer; do
+  install -m 0644 "$RELEASE/ops/systemd/$unit" "/etc/systemd/system/$unit"
+done
 
 trap post_switch_rollback ERR
 rm -f "$ROOT/current.next"
 ln -s "$RELEASE" "$ROOT/current.next"
 mv -Tf "$ROOT/current.next" "$ROOT/current"
-write_release_env "$SHA"
+write_release_env "$SHA" "$IMAGE_TAG" "$IMAGE_DIGEST"
 
 systemctl daemon-reload
 nginx -t
 systemctl reload nginx
 systemctl restart seo-monitor-web.service
 systemctl start seo-monitor-worker.service
-systemctl stop ams-seo-monitor.service >/dev/null 2>&1 || true
-systemctl disable --now ams-seo-monitor.timer >/dev/null 2>&1 || true
-systemctl enable --now seo-monitor-worker.timer
-systemctl enable --now seo-monitor-outbox.timer
-systemctl enable --now seo-monitor-db-backup.timer
-systemctl is-active seo-monitor-web.service
-systemctl is-active seo-monitor-worker.timer
-systemctl is-active seo-monitor-outbox.timer
-systemctl is-active seo-monitor-db-backup.timer
+systemctl enable --now seo-monitor-worker.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer
+
+WEB_CONTAINER_ID="$(docker compose -f "$ROOT/current/docker-compose.production.yml" ps -q web)"
+WORKER_CONTAINER_ID="$(docker compose -f "$ROOT/current/docker-compose.production.yml" ps -q worker)"
+[ -n "$WEB_CONTAINER_ID" ]
+[ -n "$WORKER_CONTAINER_ID" ]
+[ "$(docker inspect --format '{{.Image}}' "$WEB_CONTAINER_ID")" = "$IMAGE_DIGEST" ]
+[ "$(docker inspect --format '{{.Image}}' "$WORKER_CONTAINER_ID")" = "$IMAGE_DIGEST" ]
 curl -fsS http://127.0.0.1:3000/api/health/live | python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["releaseSha"] == sys.argv[1]' "$SHA"
-curl -fsS http://127.0.0.1:3000/api/health/ready | python3 -c 'import json,sys; payload=json.load(sys.stdin); deps=payload["dependencies"]; assert payload["releaseSha"] == sys.argv[1]; assert deps["postgresql"] == "ready"; assert deps["auth"] == "configured"; assert isinstance(deps["outbox"]["deadLetter"], int)' "$SHA"
-test -s "$ROOT/current/.next/standalone/server.js"
-test -s "$ROOT/current/dist-collector/src/worker/main.js"
-test -s "$ROOT/current/prisma/schema.prisma"
+curl -fsS http://127.0.0.1:3000/api/health/ready | python3 -c 'import json,sys; payload=json.load(sys.stdin); deps=payload["dependencies"]; assert payload["releaseSha"] == sys.argv[1]; assert deps["postgresql"] == "ready"; assert deps["auth"] == "configured"; assert isinstance(deps["outbox"]["deadLetter"], int); assert deps["worker"]["status"] in ("healthy", "stale", "unknown")' "$SHA"
 rm -f "$ARTIFACT" "$CHECKSUM"
 printf '%s\n' "$PREVIOUS" > "$ROOT/shared/previous-release.txt"
 printf '%s\n' "$SHA" > "$ROOT/shared/deployed-sha.txt"
@@ -301,7 +246,6 @@ const deployResult = spawnSync(
     stdio: ["pipe", "inherit", "inherit"],
   },
 );
-
 if (deployResult.status !== 0) {
   throw new Error(`Production deploy failed with status ${deployResult.status}.`);
 }
@@ -313,6 +257,8 @@ console.log(
       deployedSha: commitSha,
       artifact: artifactName,
       artifactSha256: checksum,
+      imageTag: manifestProbe.imageTag,
+      imageDigest: manifestProbe.imageDigest,
       productionUrl: "https://impulse.ams24.ru",
     },
     null,

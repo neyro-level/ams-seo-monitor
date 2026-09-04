@@ -1,12 +1,12 @@
 [Unit]
 Description=AMS SEO Monitor PostgreSQL backup
-After=postgresql@18-main.service
-Requires=postgresql@18-main.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=postgres
-Group=postgres
+User=root
+Group=root
 Environment=DB_NAME=seo_monitor_prod
 Environment=BACKUP_ROOT=/var/backups/ams-seo-monitor-postgres
 Environment=KEEP_DAILY=7

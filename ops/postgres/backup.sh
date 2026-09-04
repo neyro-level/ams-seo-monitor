@@ -79,12 +79,10 @@ aws s3 cp "${DAILY_PATH}.sha256" "s3://${S3_BUCKET}/daily/${FILENAME}.sha256" --
 aws s3api head-object --bucket "${S3_BUCKET}" --key "daily/${FILENAME}" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}" >/dev/null
 aws s3api head-object --bucket "${S3_BUCKET}" --key "daily/${FILENAME}.sha256" --endpoint-url "${S3_ENDPOINT}" --region "${S3_REGION}" >/dev/null
 
-# Retention starts only after the new required copy has been verified.
 prune_group "${DAILY_DIR}" "${KEEP_DAILY}"
 prune_group "${WEEKLY_DIR}" "${KEEP_WEEKLY}"
 prune_group "${MONTHLY_DIR}" "${KEEP_MONTHLY}"
 
 echo "backup_status=local+offsite"
-
 echo "backup_file=${DAILY_PATH}"
 echo "backup_sha256_file=${DAILY_PATH}.sha256"

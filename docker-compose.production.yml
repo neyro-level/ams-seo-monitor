@@ -1,0 +1,55 @@
+services:
+  web:
+    image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
+    command: ["web"]
+    restart: always
+    env_file:
+      - path: /etc/ams-platform/ams-seo-monitor-web.env
+        required: false
+      - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
+        required: false
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  worker:
+    image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
+    command: ["outbox-worker"]
+    restart: always
+    env_file:
+      - path: /etc/ams-platform/ams-seo-monitor-worker.env
+        required: false
+      - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
+        required: false
+    environment:
+      NODE_ENV: production
+      OUTBOX_WORKER_ID: seo-monitor-outbox
+
+  migrate:
+    image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
+    command: ["migrate"]
+    restart: "no"
+    profiles: ["manual"]
+    env_file:
+      - path: /etc/ams-platform/ams-seo-monitor-migrator.env
+        required: false
+      - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
+        required: false
+    environment:
+      NODE_ENV: production
+
+  maintenance:
+    image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
+    command: ["outbox-retention"]
+    restart: "no"
+    profiles: ["manual"]
+    env_file:
+      - path: /etc/ams-platform/ams-seo-monitor-worker.env
+        required: false
+      - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
+        required: false
+    environment:
+      NODE_ENV: production

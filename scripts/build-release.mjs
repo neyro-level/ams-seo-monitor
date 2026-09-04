@@ -21,11 +21,9 @@ const dirty = execFileSync("git", ["status", "--porcelain"], {
 if (branch !== "main") {
   throw new Error(`Release artifact must be built from main, current branch: ${branch || "detached"}.`);
 }
-
 if (dirty.length > 0) {
   throw new Error("Release artifact requires a clean Git worktree.");
 }
-
 if (!/^[0-9a-f]{40}$/.test(commitSha)) {
   throw new Error(`Invalid commit SHA: ${commitSha}`);
 }
@@ -34,20 +32,26 @@ const artifactsDir = path.join(rootDir, ".release-artifacts");
 const stagingDir = path.join(artifactsDir, "staging", commitSha);
 const artifactName = `ams-seo-monitor-${commitSha}.tar.gz`;
 const artifactPath = path.join(artifactsDir, artifactName);
+const imageTag = `ams-seo-monitor:${commitSha}`;
+const imageTarPath = path.join(stagingDir, "docker-image.tar");
+const imageIidPath = path.join(stagingDir, "image.iid");
 
 await rm(stagingDir, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
 
-for (const directory of ["collector", "config", "ops", "prisma", "public", "scripts", "src"]) {
-  await cp(path.join(rootDir, directory), path.join(stagingDir, directory), {
-    recursive: true,
-  });
+for (const directory of ["ops"]) {
+  await cp(path.join(rootDir, directory), path.join(stagingDir, directory), { recursive: true });
 }
-
-for (const file of ["next-env.d.ts", "next.config.ts", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "postcss.config.mjs", "prisma.config.ts", "tsconfig.collector.json", "tsconfig.json"]) {
+for (const file of [
+  ".dockerignore",
+  "Dockerfile",
+  "docker-compose.production.yml",
+  "package.json",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+]) {
   await cp(path.join(rootDir, file), path.join(stagingDir, file));
 }
-
 for (const relativePath of [
   "ops/nginx/ams-seo-monitor.conf",
   "ops/systemd/seo-monitor-web.service",
@@ -65,18 +69,50 @@ for (const relativePath of [
   await writeFile(targetPath, content.replace(/\r\n/g, "\n"), "utf8");
 }
 
+const buildResult = spawnSync(
+  "docker",
+  [
+    "buildx",
+    "build",
+    "--platform",
+    "linux/amd64",
+    "--tag",
+    imageTag,
+    "--iidfile",
+    imageIidPath,
+    "--load",
+    ".",
+  ],
+  { cwd: rootDir, encoding: "utf8", stdio: "inherit" },
+);
+if (buildResult.status !== 0) {
+  throw new Error(`docker buildx build failed with status ${buildResult.status}.`);
+}
+
+const saveResult = spawnSync("docker", ["save", "--output", imageTarPath, imageTag], {
+  cwd: rootDir,
+  encoding: "utf8",
+  stdio: "inherit",
+});
+if (saveResult.status !== 0) {
+  throw new Error(`docker save failed with status ${saveResult.status}.`);
+}
+
 const lockBytes = await readFile(path.join(rootDir, "pnpm-lock.yaml"));
 const dependencyLockSha256 = createHash("sha256").update(lockBytes).digest("hex");
+const imageDigest = (await readFile(imageIidPath, "utf8")).trim();
 const manifest = {
   application: "ams-seo-monitor",
   repository: "integrator-p/ams-seo-monitor",
   source: "SourceCraft main",
   commitSha,
   createdAt: new Date().toISOString(),
-  runtime: "next-standalone-node-v24.20.0-linux-x64",
+  runtime: "docker-node-v24.20.0-linux-amd64",
   artifactFormat: "tar.gz",
+  imageTag,
+  imageDigest,
   dependencyLockSha256,
-  dependencyStrategy: "install-linux-dependencies-and-build-on-target-before-migrate-and-run",
+  deploymentStrategy: "build-off-host-load-image-and-compose-up",
 };
 
 await writeFile(
@@ -85,12 +121,10 @@ await writeFile(
   "utf8",
 );
 
-const tarResult = spawnSync(
-  "tar",
-  ["-czf", artifactPath, "-C", stagingDir, "."],
-  { cwd: rootDir, encoding: "utf8" },
-);
-
+const tarResult = spawnSync("tar", ["-czf", artifactPath, "-C", stagingDir, "."], {
+  cwd: rootDir,
+  encoding: "utf8",
+});
 if (tarResult.status !== 0) {
   throw new Error(`tar failed: ${tarResult.stderr || tarResult.stdout}`);
 }
@@ -107,6 +141,8 @@ console.log(
       artifactSha256,
       commitSha,
       dependencyLockSha256,
+      imageTag,
+      imageDigest,
     },
     null,
     2,

@@ -1,18 +1,22 @@
 # DEPLOYMENT
 
-> Legacy production baseline: the current release is standalone/systemd and remains operational until Workstream 8. Standard 3.0 target is an immutable OCI image + Docker Compose web/worker + host Nginx + private Managed PostgreSQL; production cutover requires a separate owner command.
+> Standard 3.0 production baseline: immutable OCI image + Docker Compose web/worker + host Nginx + private/managed PostgreSQL. Production cutover still requires a separate owner command.
 
 ## Runtime
 
 ```text
 Internet
 → Nginx TLS/reverse proxy
-→ Next.js standalone on 127.0.0.1:3000
-→ PostgreSQL local/private
+→ Docker Compose web on 127.0.0.1:3000
+→ private/managed PostgreSQL
+
+Docker Compose worker
+→ pg-boss outbox loop
+→ private/managed PostgreSQL
 
 systemd timer
-→ worker oneshot
-→ PostgreSQL
+→ Docker Compose maintenance container
+→ scheduled sync / outbox retention
 
 systemd timer
 → PostgreSQL backup
@@ -21,6 +25,9 @@ systemd timer
 
 ## Assets
 
+- `Dockerfile`;
+- `.dockerignore`;
+- `docker-compose.production.yml`;
 - `ops/nginx/ams-seo-monitor.conf`;
 - `ops/systemd/seo-monitor-web.service`;
 - `ops/systemd/seo-monitor-worker.service`;
@@ -36,20 +43,17 @@ systemd timer
 
 1. Start from clean reviewed canonical `main`.
 2. `scripts/verify-release-runtime.mjs` validates exact Node runtime.
-3. `scripts/build-release.mjs` creates immutable source artifact with commit SHA and lockfile checksum.
+3. `scripts/build-release.mjs` builds Linux image outside production host and packages `docker-image.tar` + manifest.
 4. Linux target rejects a pre-existing release directory for the same SHA.
-5. Target installs pnpm/dependencies from reviewed lockfile.
-6. Web environment проходит central DB/Auth/Leads schema preflight.
-7. Build assembles `public/` и `.next/static/` inside standalone tree.
-8. Worker compiles separately.
-9. Migrator applies reviewed Prisma migrations.
-10. Runtime grants/default privileges are restored for app role.
-11. Reviewed seed updates runtime registry.
-12. Mandatory backup upload + HEAD confirmation and isolated restore smoke pass.
-13. Nginx/systemd assets are installed and validated.
-14. `current` symlink switches atomically.
-15. Deploy атомарно materialize-ит root-owned `shared/release.env`.
-16. Live/ready health обязаны вернуть exact target SHA; failure triggers code rollback.
+5. Target loads the immutable image; it does not run install or build.
+6. Compose config resolves exact image tag from root-owned `shared/release.env`.
+7. `migrate` container runs Prisma migrations and pg-boss schema migration.
+8. `seed` runs from the same immutable image.
+9. Backup upload + HEAD confirmation and restore smoke pass.
+10. Nginx/systemd assets are installed and validated.
+11. `current` symlink switches atomically.
+12. Deploy atomically materializes root-owned `shared/release.env` with SHA and image metadata.
+13. Live/ready health must return exact target SHA; failure triggers code rollback.
 
 Release rollback does not automatically reverse PostgreSQL migration/data.
 
@@ -58,22 +62,22 @@ Release rollback does not automatically reverse PostgreSQL migration/data.
 - web env: DB runtime + Better Auth + public Leads API build values;
 - worker env: DB runtime + provider tokens/mappings;
 - migrator env: schema migration credentials;
-- backup env: restricted offsite credentials with required-offsite mode;
-- release env: deploy-generated `RELEASE_SHA`, mode `0640`, owner `root:www-data`.
+- backup env: restricted DB + offsite credentials with required-offsite mode;
+- release env: deploy-generated `RELEASE_SHA`, `AMS_SEO_MONITOR_IMAGE`, `AMS_SEO_MONITOR_IMAGE_DIGEST`, mode `0640`, owner `root:www-data`.
 
-Secret values remain outside artifact/Git. Deploy reads env as literal values, validates them before build and никогда не принимает release SHA из browser input.
+Secret values remain outside artifact/Git. Deploy reads env as literal values, validates them before compose start and never accepts release SHA from browser input.
 
 ## Health and smoke
 
-- `/api/health/live` — safe liveness, correlation ID и deployed SHA;
-- `/api/health/ready` — DB + auth readiness, outbox counts, correlation ID и тот же SHA; Nginx localhost-only;
+- `/api/health/live` — safe liveness, correlation ID and deployed SHA;
+- `/api/health/ready` — DB + auth readiness, queue health, worker heartbeat, integration freshness, correlation ID and the same SHA; Nginx localhost-only;
 - unauthenticated private route redirects to `/?login=1`;
 - analyst login works;
 - client foreign tenant route denied;
-- favicon/static assets return 200 from standalone assembly;
+- web and worker containers use the same image digest;
 - worker manual start succeeds;
-- backup, sync-worker and outbox timers active;
-- rollback обновляет release env на SHA previous release.
+- sync, outbox-retention and backup timers active;
+- rollback updates release env to the previous SHA + image digest.
 
 ## Domain
 
@@ -81,4 +85,4 @@ Canonical public domain: `https://impulse.ams24.ru`. Legacy `https://seo-monitor
 
 ## Gate
 
-Runtime, migrations, backup, Nginx/systemd/Compose and dependency changes require HEAVY review. SourceCraft exact-head gate and operator evidence remain required. Merge does not deploy. Production follows `docs/RUNBOOK_DEPLOY.md` only after its Docker/Compose rewrite is reviewed.
+Runtime, migrations, backup, Nginx/systemd/Compose, Docker image and dependency changes require HEAVY review. SourceCraft exact-head gate and operator evidence remain required. Merge does not deploy. Production follows `docs/RUNBOOK_DEPLOY.md` only after this Docker/Compose contract is reviewed.
