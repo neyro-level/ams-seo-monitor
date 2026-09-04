@@ -140,11 +140,7 @@ Production web env отдельно проверяется общей Zod bounda
 pnpm verify:web-environment
 ```
 
-Restore smoke production backup выполняется отдельно:
-
-```bash
-pnpm db:restore-smoke
-```
+Production restore smoke выполняется release/deploy pipeline скриптом `ops/postgres/restore-smoke.sh` после подтверждённого offsite backup. Ручной порядок и ограничения описаны в [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md).
 
 Provider preflight и worker sync требуют разрешённого scope и server-side secrets:
 

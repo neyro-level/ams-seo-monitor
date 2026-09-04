@@ -2,7 +2,6 @@
 set -euo pipefail
 
 DB_NAME="${DB_NAME:-seo_monitor_prod}"
-DATABASE_URL="${DATABASE_URL:-}"
 BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/ams-seo-monitor-postgres}"
 KEEP_DAILY="${KEEP_DAILY:-7}"
 KEEP_WEEKLY="${KEEP_WEEKLY:-8}"
@@ -22,7 +21,6 @@ LATEST_PATH="${BACKUP_ROOT}/latest.dump"
 LATEST_SHA_PATH="${BACKUP_ROOT}/latest.dump.sha256"
 DAY_OF_WEEK="$(date -u +%u)"
 DAY_OF_MONTH="$(date -u +%d)"
-DUMP_TARGET="${DATABASE_URL:-${DB_NAME}}"
 
 if [ "${REQUIRE_OFFSITE}" != "true" ]; then
   echo "offsite_backup_policy_invalid=true" >&2
@@ -45,7 +43,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-pg_dump --format=custom --file "${TMP_PATH}" "${DUMP_TARGET}"
+pg_dump --format=custom --file "${TMP_PATH}" "${DB_NAME}"
 mv "${TMP_PATH}" "${DAILY_PATH}"
 sha256sum "${DAILY_PATH}" > "${DAILY_PATH}.sha256"
 sha256sum -c "${DAILY_PATH}.sha256" >/dev/null
