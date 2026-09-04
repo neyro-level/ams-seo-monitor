@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { expect, test as setup } from "@playwright/test";
-import { adminAuthStatePath } from "./auth-state";
+import { adminAuthStatePath } from "./auth-state.ts";
 
 setup("authenticate platform administrator", async ({ page }) => {
   await page.goto("/?login=1");

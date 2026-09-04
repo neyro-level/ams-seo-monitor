@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createMetricaClient, readMetricaEnvironment } from "../collector/sources/yandex-metrica/client";
-import { MetricaSafeError, getMetricaJson } from "../collector/sources/yandex-metrica/http";
+import { createMetricaClient, readMetricaEnvironment } from "../collector/sources/yandex-metrica/client.ts";
+import { MetricaSafeError, getMetricaJson } from "../collector/sources/yandex-metrica/http.ts";
 
 function createJsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

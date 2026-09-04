@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   mergeWebmasterTechnicalData,
   summarizeSourceRun,
-} from "../src/modules/data-ingestion/index";
-import { getClientBySlug } from "../src/modules/project-registry/server";
-import { createWebmasterSourceFixture } from "./helpers/source-dto-fixtures";
+} from "../src/modules/data-ingestion/index.ts";
+import { getClientBySlug } from "../src/modules/project-registry/server.ts";
+import { createWebmasterSourceFixture } from "./helpers/source-dto-fixtures.ts";
 
 function getREDACTED_CLIENT_DATASite() {
   const site = getClientBySlug("REDACTED_CLIENT_DATA")?.sites.find((item) => item.siteSlug === "REDACTED_CLIENT_DATA");

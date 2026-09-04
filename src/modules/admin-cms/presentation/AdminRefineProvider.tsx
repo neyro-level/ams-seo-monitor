@@ -2,7 +2,7 @@
 
 import { Refine } from "@refinedev/core";
 import type { ReactNode } from "react";
-import { ADMIN_RESOURCES } from "../domain/resources";
+import { ADMIN_RESOURCES } from "../domain/resources.ts";
 
 export function AdminRefineProvider({ children }: { children: ReactNode }) {
   return (

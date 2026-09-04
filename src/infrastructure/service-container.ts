@@ -1,21 +1,21 @@
 import "server-only";
 
-import { AdminCmsService } from "../modules/admin-cms";
-import { PrismaAdminRepository } from "../modules/admin-cms/server";
+import { AdminCmsService } from "../modules/admin-cms/index.ts";
+import { PrismaAdminRepository } from "../modules/admin-cms/server.ts";
 import {
   AnalystService,
   MonitoringService,
   ProjectService,
   SiteService,
-} from "../modules/project-registry";
-import { ReliabilityService } from "../modules/platform-operations";
-import { ReportService } from "../modules/reporting";
+} from "../modules/project-registry/index.ts";
+import { ReliabilityService } from "../modules/platform-operations/index.ts";
+import { ReportService } from "../modules/reporting/index.ts";
 import {
   PrismaMonitoringRepository,
   PrismaProjectRepository,
-} from "../modules/project-registry/server";
-import { PrismaReliabilityRepository } from "../modules/platform-operations/server";
-import { PrismaReportRepository } from "../modules/reporting/server";
+} from "../modules/project-registry/server.ts";
+import { PrismaReliabilityRepository } from "../modules/platform-operations/server.ts";
+import { PrismaReportRepository } from "../modules/reporting/server.ts";
 
 const projectRepository = new PrismaProjectRepository();
 const monitoringRepository = new PrismaMonitoringRepository();

@@ -1,6 +1,6 @@
 import luganskQueries from "../config/tracked-queries/bastion-lugansk.json";
 import { describe, expect, it } from "vitest";
-import { trackedQuerySetSchema } from "../src/shared/schemas/tracked-query";
+import { trackedQuerySetSchema } from "../src/shared/schemas/tracked-query.ts";
 
 describe("tracked SEO query core", () => {
   it("keeps the complete owner-provided REDACTED_CLIENT_DATA core", () => {

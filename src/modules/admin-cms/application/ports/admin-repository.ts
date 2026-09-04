@@ -1,4 +1,4 @@
-import type { AdminResourceKey } from "../../domain/resources";
+import type { AdminResourceKey } from "../../domain/resources.ts";
 
 export type AdminSortField = "name" | "status" | "createdAt" | "updatedAt";
 export type AdminSortDirection = "asc" | "desc";

@@ -1,4 +1,4 @@
-import { webmasterSafeErrorCodeSchema, type WebmasterSafeErrorCode } from "../../../src/shared/schemas/webmaster-source";
+import { webmasterSafeErrorCodeSchema, type WebmasterSafeErrorCode } from "../../../src/shared/schemas/webmaster-source.ts";
 
 export class WebmasterSafeError extends Error {
   code: WebmasterSafeErrorCode;

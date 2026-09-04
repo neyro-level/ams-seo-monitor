@@ -4,8 +4,8 @@ import {
   getPermissionsForRole,
   hasPermission,
   parseSystemRole,
-} from "../src/modules/identity-access/index";
-import { createActorContext } from "./helpers/actor-context";
+} from "../src/modules/identity-access/index.ts";
+import { createActorContext } from "./helpers/actor-context.ts";
 
 describe("ActorContext permissions", () => {
   it("keeps platform admin, analyst and client capabilities distinct", () => {

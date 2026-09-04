@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { correlationIdSchema } from "./correlation";
+import { correlationIdSchema } from "./correlation.ts";
 
 const releaseShaSchema = z.string().regex(/^[0-9a-f]{40}$/).nullable();
 

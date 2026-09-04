@@ -11,8 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatInteger, formatPosition } from "../../shared/format/metrics";
-import type { TrendPoint } from "../../shared/schemas/report";
+import { formatInteger, formatPosition } from "../../shared/format/metrics.ts";
+import type { TrendPoint } from "../../shared/schemas/report.ts";
 
 function toDisplayNumber(value: unknown) {
   return typeof value === "number" ? value : null;

@@ -2,8 +2,8 @@
 
 import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { NavigationSection } from "../../modules/project-registry/presentation";
-import { ShellNav } from "./ShellNav";
+import type { NavigationSection } from "../../modules/project-registry/presentation.ts";
+import { ShellNav } from "./ShellNav.tsx";
 
 type MobileDrawerProps = {
   sections: NavigationSection[];

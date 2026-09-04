@@ -15,7 +15,7 @@ import {
   type WebmasterQueryCollection,
   type WebmasterSummary,
   type WebmasterSitemap,
-} from "../../../src/shared/schemas/webmaster-source";
+} from "../../../src/shared/schemas/webmaster-source.ts";
 
 function getRecord(value: unknown) {
   return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : null;

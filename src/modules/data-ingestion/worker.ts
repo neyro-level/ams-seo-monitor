@@ -1,8 +1,8 @@
-import type { SiteSourceCollectors } from "./application/ports/provider-collectors";
-import type { CreateSyncRunInput } from "./application/ports/sync-repository";
-import { createLiveSiteCollectors } from "../../../collector/orchestration/live-collectors";
-import { getWorkerSyncService } from "../../infrastructure/worker-service-container";
-import type { ReportPeriodKey, SiteReportSnapshot } from "../../shared/schemas/report";
+import type { SiteSourceCollectors } from "./application/ports/provider-collectors.ts";
+import type { CreateSyncRunInput } from "./application/ports/sync-repository.ts";
+import { createLiveSiteCollectors } from "../../../collector/orchestration/live-collectors.ts";
+import { getWorkerSyncService } from "../../infrastructure/worker-service-container.ts";
+import type { ReportPeriodKey, SiteReportSnapshot } from "../../shared/schemas/report.ts";
 
 export interface SyncProjectToDatabaseArgs {
   projectSlug: string;

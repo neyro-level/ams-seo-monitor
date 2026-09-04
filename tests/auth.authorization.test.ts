@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, SystemRole } from "@prisma/client";
+import { PrismaClient, SystemRole } from "../src/generated/prisma/client.ts"
 import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
 import { Pool } from "pg";
@@ -9,9 +9,9 @@ import {
   getActorContextByUserId,
   getAuthorizedProjectAccess,
   getAuthorizedSiteAccess,
-} from "../src/modules/identity-access/server";
-import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
-import type { ActorContext } from "../src/modules/identity-access/index";
+} from "../src/modules/identity-access/server.ts";
+import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
+import type { ActorContext } from "../src/modules/identity-access/index.ts";
 
 const authTestDatabaseUrl = process.env.AUTH_TEST_DATABASE_URL ?? null;
 const authTestDatabaseHost =

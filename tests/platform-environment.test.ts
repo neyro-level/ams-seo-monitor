@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { readPublicLeadsEnvironment } from "../src/platform/config/public-environment";
+import { readPublicLeadsEnvironment } from "../src/shared/config/public-leads-environment.ts";
 import {
   hasDatabaseConfiguration,
   readAuthEnvironment,
   readDatabaseEnvironment,
   readReleaseSha,
-} from "../src/platform/config/server-environment";
+} from "../src/platform/config/server-environment.ts";
 
 describe("platform environment contracts", () => {
   it("accepts complete component database configuration", () => {

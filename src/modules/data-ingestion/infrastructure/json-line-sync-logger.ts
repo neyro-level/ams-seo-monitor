@@ -1,4 +1,4 @@
-import type { SyncLogEvent, SyncLogger } from "../application/ports/sync-logger";
+import type { SyncLogEvent, SyncLogger } from "../application/ports/sync-logger.ts";
 
 export class JsonLineSyncLogger implements SyncLogger {
   log(event: SyncLogEvent): void {

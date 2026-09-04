@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { LoginDialog } from "../modules/identity-access/client";
-import { LeadRequestDialog } from "../components/marketing/LeadRequestDialog";
-import { SiteFooter } from "../components/marketing/SiteFooter";
+import { LoginDialog } from "../modules/identity-access/client.ts";
+import { LeadRequestDialog } from "../components/marketing/LeadRequestDialog.tsx";
+import { SiteFooter } from "../components/marketing/SiteFooter.tsx";
 
 type HomePageProps = {
   searchParams: Promise<{ login?: string | string[] }>;

@@ -2,7 +2,7 @@
 
 import { useMenu } from "@refinedev/core";
 import Link from "next/link";
-import { cn } from "../../../shared/lib/cn";
+import { cn } from "../../../shared/lib/cn.ts";
 
 export function AdminResourceNav({ currentPath }: { currentPath: string }) {
   const { menuItems } = useMenu();

@@ -1,5 +1,5 @@
-import { hasPermission, type ActorContext } from "../../identity-access";
-import type { AdminResourceKey } from "../domain/resources";
+import { hasPermission, type ActorContext } from "../../identity-access/index.ts";
+import type { AdminResourceKey } from "../domain/resources.ts";
 import type {
   AdminListQuery,
   AdminRepository,
@@ -14,7 +14,7 @@ import type {
   SaveProviderConnectionInput,
   SaveSiteInput,
   SaveThresholdProfileInput,
-} from "./ports/admin-repository";
+} from "./ports/admin-repository.ts";
 
 function authorizeAdmin(actor: ActorContext): AuditContext {
   if (!hasPermission(actor, "platform:manage")) {

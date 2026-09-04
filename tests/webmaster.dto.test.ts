@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { createWebmasterClient } from "../collector/sources/yandex-webmaster/client";
+import { createWebmasterClient } from "../collector/sources/yandex-webmaster/client.ts";
 
 function fixturePath(name: string) {
   return path.join(process.cwd(), "tests", "fixtures", "yandex-webmaster", name);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createPublicErrorEnvelope } from "../src/platform/http/error-envelope";
-import { liveHealthSchema, readyHealthSchema } from "../src/platform/http/health";
+import { createPublicErrorEnvelope } from "../src/platform/http/error-envelope.ts";
+import { liveHealthSchema, readyHealthSchema } from "../src/platform/http/health.ts";
 
 const correlationId = "00000000-0000-4000-8000-000000000020";
 

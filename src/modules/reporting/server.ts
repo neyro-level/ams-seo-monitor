@@ -1,1 +1,1 @@
-export { PrismaReportRepository } from "./infrastructure/prisma-report-repository";
+export { PrismaReportRepository } from "./infrastructure/prisma-report-repository.ts";

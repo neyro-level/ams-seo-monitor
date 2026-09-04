@@ -1,7 +1,7 @@
-export { buildNavigation } from "./presentation/navigation";
+export { buildNavigation } from "./presentation/navigation.ts";
 export type {
   NavigationChild,
   NavigationItem,
   NavigationSection,
-} from "./presentation/navigation";
-export { buildAnalystOverview, buildClientOverview } from "./presentation/overview";
+} from "./presentation/navigation.ts";
+export { buildAnalystOverview, buildClientOverview } from "./presentation/overview.ts";

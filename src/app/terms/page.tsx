@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { LegalDocument } from "../../components/marketing/LegalDocument";
-import { TermsContent } from "../../components/marketing/legal/LegalContents";
+import { LegalDocument } from "../../components/marketing/LegalDocument.tsx";
+import { TermsContent } from "../../components/marketing/legal/LegalContents.tsx";
 
 export const metadata: Metadata = {
   title: "Общие условия сотрудничества",

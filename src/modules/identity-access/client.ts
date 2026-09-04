@@ -1,1 +1,1 @@
-export { LoginDialog } from "./presentation/LoginDialog";
+export { LoginDialog } from "./presentation/LoginDialog.tsx";

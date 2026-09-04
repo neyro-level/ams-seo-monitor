@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client.ts"
 import { Pool } from "pg";
-import { PrismaSyncRepository } from "../src/modules/data-ingestion/server";
-import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
-import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
+import { PrismaSyncRepository } from "../src/modules/data-ingestion/server.ts";
+import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
+import { siteReportSnapshotSchema } from "../src/shared/schemas/report.ts";
 
 const syncRepositoryTestEnabled = Boolean(
   process.env.TEST_DATABASE_HOST &&

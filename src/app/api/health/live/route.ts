@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { readReleaseSha } from "../../../../platform/config/server-environment";
-import { createCorrelationId } from "../../../../platform/http/correlation";
-import { liveHealthSchema } from "../../../../platform/http/health";
+import { readReleaseSha } from "../../../../platform/config/server-environment.ts";
+import { createCorrelationId } from "../../../../platform/http/correlation.ts";
+import { liveHealthSchema } from "../../../../platform/http/health.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

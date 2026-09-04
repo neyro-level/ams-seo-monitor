@@ -6,8 +6,8 @@ import { organization, username } from "better-auth/plugins";
 import {
   hasDatabaseConfiguration,
   readAuthEnvironment,
-} from "../../../platform/config/server-environment";
-import { getPrismaClient } from "../../../infrastructure/database/prisma/client";
+} from "../../../platform/config/server-environment.ts";
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 
 const authEnvironment = readAuthEnvironment();
 

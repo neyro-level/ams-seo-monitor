@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { syncProjectToDatabase } from "../data-ingestion/worker";
-import { getWorkerReliabilityService } from "../../infrastructure/worker-service-container";
-import type { ClaimedReliabilityEvent } from "./application/ports/reliability-repository";
+import { syncProjectToDatabase } from "../data-ingestion/worker.ts";
+import { getWorkerReliabilityService } from "../../infrastructure/worker-service-container.ts";
+import type { ClaimedReliabilityEvent } from "./application/ports/reliability-repository.ts";
 
 const projectSyncPayloadSchema = z.object({
   projectSlug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),

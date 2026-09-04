@@ -2,13 +2,13 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AppShell } from "../../components/shell/AppShell";
-import { KpiCard } from "../../components/dashboard/KpiCard";
-import { PageHeader } from "../../components/dashboard/PageHeader";
-import { SectionCard } from "../../components/dashboard/SectionCard";
-import { getCurrentActorContext } from "../../modules/identity-access/server";
-import { buildAnalystOverview } from "../../modules/project-registry/presentation";
-import { hasPermission } from "../../modules/identity-access/index";
+import { AppShell } from "../../components/shell/AppShell.tsx";
+import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
+import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
+import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
+import { getCurrentActorContext } from "../../modules/identity-access/server.ts";
+import { buildAnalystOverview } from "../../modules/project-registry/presentation.ts";
+import { hasPermission } from "../../modules/identity-access/index.ts";
 
 export default async function DashboardPage() {
   const user = await getCurrentActorContext();

@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, ReportFreshness, ReportPeriodKey } from "@prisma/client";
+import { PrismaClient, ReportFreshness, ReportPeriodKey } from "../src/generated/prisma/client.ts"
 import { Pool } from "pg";
-import { PrismaProjectRepository } from "../src/modules/project-registry/server";
-import { PrismaReportRepository } from "../src/modules/reporting/server";
-import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
-import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
+import { PrismaProjectRepository } from "../src/modules/project-registry/server.ts";
+import { PrismaReportRepository } from "../src/modules/reporting/server.ts";
+import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
+import { siteReportSnapshotSchema } from "../src/shared/schemas/report.ts";
 
 const repositoryTestEnabled = Boolean(
   process.env.TEST_DATABASE_HOST &&

@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatInteger, formatPercent } from "../../shared/format/metrics";
+import { formatInteger, formatPercent } from "../../shared/format/metrics.ts";
 import type {
   RankingMovement,
   TrackedRankingReport,
-} from "../../shared/schemas/report";
-import { DataTable } from "./DataTable";
+} from "../../shared/schemas/report.ts";
+import { DataTable } from "./DataTable.tsx";
 
 type RankingFilter =
   | "all"

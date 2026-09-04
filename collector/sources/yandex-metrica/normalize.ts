@@ -18,7 +18,7 @@ import {
   type MetricaSampleMeta,
   type MetricaSummary,
   type MetricaTrendPoint,
-} from "../../../src/shared/schemas/metrica-source";
+} from "../../../src/shared/schemas/metrica-source.ts";
 
 function getRecord(value: unknown) {
   return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : null;

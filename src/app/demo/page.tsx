@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { AppShell } from "../../components/shell/AppShell";
-import { SiteReportView } from "../../modules/reporting/presentation";
-import { getDemoSnapshot } from "../../modules/reporting/presentation";
-import { getCurrentActorContext } from "../../modules/identity-access/server";
-import { siteRegistrySchema } from "../../shared/schemas/registry";
+import { AppShell } from "../../components/shell/AppShell.tsx";
+import { SiteReportView } from "../../modules/reporting/presentation.ts";
+import { getDemoSnapshot } from "../../modules/reporting/presentation.ts";
+import { getCurrentActorContext } from "../../modules/identity-access/server.ts";
+import { siteRegistrySchema } from "../../shared/schemas/registry.ts";
 
 const demoSite = siteRegistrySchema.parse({
   siteSlug: "overview",

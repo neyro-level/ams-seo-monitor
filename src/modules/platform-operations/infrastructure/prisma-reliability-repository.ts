@@ -1,10 +1,8 @@
-import {
-  AuditActorType,
-  IdempotencyStatus,
-  JobRunStatus,
-  OutboxStatus,
-  Prisma,
-} from "@prisma/client";
+import { AuditActorType,
+IdempotencyStatus,
+JobRunStatus,
+OutboxStatus,
+Prisma, } from "../../../generated/prisma/client.ts"
 import type {
   ClaimReliabilityEventInput,
   ClaimedReliabilityEvent,
@@ -15,8 +13,8 @@ import type {
   FailReliabilityEventResult,
   OutboxHealth,
   ReliabilityRepository,
-} from "../application/ports/reliability-repository";
-import { getPrismaClient } from "../../../infrastructure/database/prisma/client";
+} from "../application/ports/reliability-repository.ts";
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 
 function reliabilityError(code: string, message: string) {
   return Object.assign(new Error(message), { code });

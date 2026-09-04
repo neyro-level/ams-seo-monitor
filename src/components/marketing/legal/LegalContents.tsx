@@ -1,4 +1,4 @@
-import { consentHtml, cookiesHtml, privacyHtml, termsHtml } from "./legal-html";
+import { consentHtml, cookiesHtml, privacyHtml, termsHtml } from "./legal-html.ts";
 
 type StaticLegalContentProps = {
   html: string;

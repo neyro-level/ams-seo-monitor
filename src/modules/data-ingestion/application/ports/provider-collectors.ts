@@ -1,7 +1,7 @@
-import type { MetricaAllowedGoal, MetricaSiteAudit } from "../../../../shared/schemas/metrica-source";
-import type { TopvisorSiteData } from "../../../../shared/schemas/rank-source";
-import type { SiteRegistry } from "../../../../shared/schemas/registry";
-import type { WebmasterSiteData } from "../../../../shared/schemas/webmaster-source";
+import type { MetricaAllowedGoal, MetricaSiteAudit } from "../../../../shared/schemas/metrica-source.ts";
+import type { TopvisorSiteData } from "../../../../shared/schemas/rank-source.ts";
+import type { SiteRegistry } from "../../../../shared/schemas/registry.ts";
+import type { WebmasterSiteData } from "../../../../shared/schemas/webmaster-source.ts";
 
 export interface WebmasterCollectOptions {
   queryLimit?: number;

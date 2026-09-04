@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, Provider } from "@prisma/client";
+import { PrismaClient, Provider } from "../src/generated/prisma/client.ts"
 import { Pool } from "pg";
-import { syncProjectToDatabase } from "../src/modules/data-ingestion/worker";
-import { topvisorSiteDataSchema } from "../src/shared/schemas/rank-source";
-import type { MetricaSiteAudit } from "../src/shared/schemas/metrica-source";
-import { createPgPoolConfigFromEnvironment } from "../src/infrastructure/database/prisma/pool-config";
+import { syncProjectToDatabase } from "../src/modules/data-ingestion/worker.ts";
+import { topvisorSiteDataSchema } from "../src/shared/schemas/rank-source.ts";
+import type { MetricaSiteAudit } from "../src/shared/schemas/metrica-source.ts";
+import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
 import {
   createMetricaSourceFixture,
   createWebmasterSourceFixture,
-} from "./helpers/source-dto-fixtures";
+} from "./helpers/source-dto-fixtures.ts";
 
 const workerTestEnabled = Boolean(
   process.env.TEST_DATABASE_HOST &&

@@ -1,9 +1,9 @@
 import "server-only";
 
 import { headers } from "next/headers";
-import { auth } from "./auth";
-import { getActorContextByUserId } from "./authorization";
-import type { ActorContext } from "../domain/actor-context";
+import { auth } from "./auth.ts";
+import { getActorContextByUserId } from "./authorization.ts";
+import type { ActorContext } from "../domain/actor-context.ts";
 
 export async function getCurrentActorContext(): Promise<ActorContext | null> {
   if (!auth) {

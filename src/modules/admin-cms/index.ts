@@ -1,16 +1,16 @@
-export { AdminCmsService } from "./application/admin-cms-service";
-export { ADMIN_COMMAND_NAMES } from "./domain/commands";
-export type { AdminCommandName } from "./domain/commands";
+export { AdminCmsService } from "./application/admin-cms-service.ts";
+export { ADMIN_COMMAND_NAMES } from "./domain/commands.ts";
+export type { AdminCommandName } from "./domain/commands.ts";
 export {
   ADMIN_RESOURCES,
   ADMIN_RESOURCE_KEYS,
   getAdminResourceDefinition,
   isAdminResourceKey,
-} from "./domain/resources";
+} from "./domain/resources.ts";
 export type {
   AdminResourceDefinition,
   AdminResourceKey,
-} from "./domain/resources";
+} from "./domain/resources.ts";
 export type {
   AdminDashboardSummary,
   AdminFormOptions,
@@ -31,4 +31,4 @@ export type {
   SaveProviderConnectionInput,
   SaveSiteInput,
   SaveThresholdProfileInput,
-} from "./application/ports/admin-repository";
+} from "./application/ports/admin-repository.ts";

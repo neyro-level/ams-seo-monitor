@@ -1,4 +1,4 @@
-import { readPublicLeadsEnvironment } from "../../platform/config/public-environment";
+import { readPublicLeadsEnvironment } from "../config/public-leads-environment.ts";
 
 export type LeadUtmPayload = {
   utm_source?: string;

@@ -1,6 +1,6 @@
-import type { CreateSyncRunInput } from "../modules/data-ingestion/index";
-import { drainOutbox } from "../modules/platform-operations/worker";
-import { syncProjectToDatabase } from "../modules/data-ingestion/worker";
+import type { CreateSyncRunInput } from "../modules/data-ingestion/index.ts";
+import { drainOutbox } from "../modules/platform-operations/worker.ts";
+import { syncProjectToDatabase } from "../modules/data-ingestion/worker.ts";
 
 const command = process.argv[2] ?? null;
 const argument = process.argv[3] ?? null;

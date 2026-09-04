@@ -1,5 +1,5 @@
-import type { ActorContext } from "../../identity-access/index";
-import { ProjectService } from "./project-service";
+import type { ActorContext } from "../../identity-access/index.ts";
+import { ProjectService } from "./project-service.ts";
 
 export interface ClientOverview {
   client: {

@@ -1,11 +1,11 @@
 import type { PrismaPg } from "@prisma/adapter-pg";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "../../../generated/prisma/client.ts";
 import type { Pool } from "pg";
 import {
   hasDatabaseConfiguration,
   readDatabaseEnvironment,
-} from "../../../platform/config/server-environment";
-import { createPrismaContext } from "./context";
+} from "../../config/server-environment.ts";
+import { createPrismaContext } from "./context.ts";
 
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;

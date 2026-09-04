@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { slugPattern } from "./registry";
+import { slugPattern } from "./registry.ts";
 
 export const trackedQueryPositionSchema = z.object({
   current: z.number().int().min(1).max(250).nullable(),

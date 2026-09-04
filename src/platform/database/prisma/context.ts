@@ -1,8 +1,8 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../../generated/prisma/client.ts";
 import { Pool } from "pg";
-import { createPgPoolConfigFromEnvironment } from "./pool-config";
-import type { DatabaseEnvironment } from "../../../platform/config/server-environment";
+import { createPgPoolConfigFromEnvironment } from "./pool-config.ts";
+import type { DatabaseEnvironment } from "../../config/server-environment.ts";
 
 export function createPrismaContext(environment: DatabaseEnvironment) {
   const pool = new Pool(createPgPoolConfigFromEnvironment(environment));

@@ -1,12 +1,13 @@
+import { Prisma } from "../../../generated/prisma/client.ts";
 import type {
   MonitoringProjectRecord,
   MonitoringRepository,
-} from "../application/ports/monitoring-repository";
-import { getPrismaClient } from "../../../infrastructure/database/prisma/client";
+} from "../application/ports/monitoring-repository.ts";
+import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 
 export class PrismaMonitoringRepository implements MonitoringRepository {
   async ping(): Promise<void> {
-    await getPrismaClient().$queryRawUnsafe("select 1");
+    await getPrismaClient().$queryRaw(Prisma.sql`SELECT 1`);
   }
 
   async findProjectBySlug(projectSlug: string): Promise<MonitoringProjectRecord | null> {

@@ -7,16 +7,16 @@ import {
   type ClusterProfile,
   type GoalProfile,
   type ThresholdsConfig,
-} from "../../../shared/schemas/registry";
+} from "../../../shared/schemas/registry.ts";
 import {
   trackedQuerySetSchema,
   type TrackedQuerySet,
-} from "../../../shared/schemas/tracked-query";
+} from "../../../shared/schemas/tracked-query.ts";
 import type {
   MonitoringProjectRecord,
   MonitoringProviderConnectionRecord,
   MonitoringRepository,
-} from "./ports/monitoring-repository";
+} from "./ports/monitoring-repository.ts";
 
 export interface MonitoringProjectContext {
   client: ClientRegistry;

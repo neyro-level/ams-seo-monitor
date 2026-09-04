@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import {
   getMonitoringService,
   getReliabilityService,
-} from "../../../../infrastructure/service-container";
-import { hasAuthConfiguration } from "../../../../modules/identity-access/server";
-import { readReleaseSha } from "../../../../platform/config/server-environment";
-import { createCorrelationId } from "../../../../platform/http/correlation";
-import { createPublicErrorResponse } from "../../../../platform/http/error-envelope";
-import { readyHealthSchema } from "../../../../platform/http/health";
+} from "../../../../infrastructure/service-container.ts";
+import { hasAuthConfiguration } from "../../../../modules/identity-access/server.ts";
+import { readReleaseSha } from "../../../../platform/config/server-environment.ts";
+import { createCorrelationId } from "../../../../platform/http/correlation.ts";
+import { createPublicErrorResponse } from "../../../../platform/http/error-envelope.ts";
+import { readyHealthSchema } from "../../../../platform/http/health.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

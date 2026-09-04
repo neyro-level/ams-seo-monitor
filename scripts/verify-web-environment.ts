@@ -1,8 +1,8 @@
-import { readPublicLeadsEnvironment } from "../src/platform/config/public-environment";
+import { readPublicLeadsEnvironment } from "../src/shared/config/public-leads-environment.ts";
 import {
   readAuthEnvironment,
   readDatabaseEnvironment,
-} from "../src/platform/config/server-environment";
+} from "../src/platform/config/server-environment.ts";
 
 readDatabaseEnvironment(process.env);
 const authEnvironment = readAuthEnvironment(process.env);

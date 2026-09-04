@@ -14,11 +14,11 @@
 | pnpm | `11.5.1` | reproducible install |
 | Next.js | `16.3.3` | App Router standalone server |
 | React / React DOM | `19.2.8` | UI |
-| TypeScript | `6.0.3` | strict application/worker types |
+| TypeScript | `6.0.3` | strict ESM application/worker types |
 | Zod | `4.5.4` | DTO/config validation |
-| Prisma | `7.10.0` | schema, migrations, repositories |
+| Prisma / `@prisma/client` | `7.10.0` / `7.10.0` | explicit generated client, schema, migrations, repositories |
 | PostgreSQL | `18.x` | runtime source of truth |
-| Better Auth | `1.7.2` | session/auth/organization plugin |
+| Better Auth | `1.7.2` | identity/password/session; Organization Plugin remains legacy until Workstream 2 |
 | pg / Prisma pg adapter | `8.23.0` / `7.10.0` | PostgreSQL transport |
 | Tailwind CSS | `4.3.3` | styles |
 | Recharts | `3.10.1` | report charts |
@@ -34,6 +34,9 @@
 - `pnpm build`: Prisma generate → config verification → Next build → standalone asset assembly;
 - `scripts/prepare-standalone.mjs` copies `public/` and `.next/static/` into `.next/standalone`;
 - `pnpm build:collector`: Prisma generate + `tsconfig.collector.json`;
+- `package.json`: `"type": "module"`; all local TypeScript imports use source `.ts` extensions and collector emit rewrites them to `.js`;
+- Prisma generator: `prisma-client`, explicit `src/generated/prisma` output, ESM and generated `.ts` import extensions;
+- generated Prisma client is ignored and recreated by `pnpm prisma:generate`; it is never edited manually;
 - Linux release installs dependencies strictly from lockfile before build.
 
 ## Version policy

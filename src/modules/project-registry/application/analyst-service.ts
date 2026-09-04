@@ -1,5 +1,5 @@
-import type { ActorContext } from "../../identity-access/index";
-import { ProjectService, type ProjectSummary } from "./project-service";
+import type { ActorContext } from "../../identity-access/index.ts";
+import { ProjectService, type ProjectSummary } from "./project-service.ts";
 
 export interface AnalystOverview {
   totalProjects: number;

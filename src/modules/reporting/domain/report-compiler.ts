@@ -8,20 +8,20 @@ import {
   type WebmasterReport,
   type RankingMovement,
   type TrackedRankingReport,
-} from "../../../shared/schemas/report";
+} from "../../../shared/schemas/report.ts";
 import type {
   ClusterProfile,
   SiteRegistry,
-} from "../../../shared/schemas/registry";
-import type { MetricaSiteAudit } from "../../../shared/schemas/metrica-source";
-import type { WebmasterSiteData } from "../../../shared/schemas/webmaster-source";
-import type { TopvisorSiteData } from "../../../shared/schemas/rank-source";
-import type { TrackedQuerySet } from "../../../shared/schemas/tracked-query";
+} from "../../../shared/schemas/registry.ts";
+import type { MetricaSiteAudit } from "../../../shared/schemas/metrica-source.ts";
+import type { WebmasterSiteData } from "../../../shared/schemas/webmaster-source.ts";
+import type { TopvisorSiteData } from "../../../shared/schemas/rank-source.ts";
+import type { TrackedQuerySet } from "../../../shared/schemas/tracked-query.ts";
 import {
   buildQueryOpportunities,
   mergeWebmasterQueryCollections,
   type MergedWebmasterQuery,
-} from "../../ranking-analytics/index";
+} from "../../ranking-analytics/index.ts";
 
 export type SafeSourceFailure = {
   code: string;

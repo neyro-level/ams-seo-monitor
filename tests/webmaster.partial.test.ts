@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createWebmasterClient } from "../collector/sources/yandex-webmaster/client";
+import { createWebmasterClient } from "../collector/sources/yandex-webmaster/client.ts";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

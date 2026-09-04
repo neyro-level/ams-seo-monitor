@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { ReportService } from "../src/modules/reporting/index";
+import { ReportService } from "../src/modules/reporting/index.ts";
 import type {
   ProjectAccessScope,
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
-} from "../src/modules/project-registry/index";
+} from "../src/modules/project-registry/index.ts";
 import type {
   ReportRepository,
   StoredReportSnapshotRecord,
-} from "../src/modules/reporting/index";
-import { createActorContext } from "./helpers/actor-context";
-import { siteReportSnapshotSchema } from "../src/shared/schemas/report";
+} from "../src/modules/reporting/index.ts";
+import { createActorContext } from "./helpers/actor-context.ts";
+import { siteReportSnapshotSchema } from "../src/shared/schemas/report.ts";
 
 const analystUser = createActorContext({
   userId: "analyst-1",

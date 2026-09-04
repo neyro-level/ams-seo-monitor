@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ProjectService } from "../src/modules/project-registry/index";
+import { ProjectService } from "../src/modules/project-registry/index.ts";
 import type {
   ProjectAccessScope,
   ProjectRepository,
   StoredProjectRecord,
   StoredSiteRecord,
-} from "../src/modules/project-registry/index";
-import { createActorContext } from "./helpers/actor-context";
+} from "../src/modules/project-registry/index.ts";
+import { createActorContext } from "./helpers/actor-context.ts";
 
 const analystUser = createActorContext({
   userId: "analyst-1",

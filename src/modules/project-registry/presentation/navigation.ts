@@ -1,8 +1,8 @@
 import {
   hasPermission,
   type ActorContext,
-} from "../../identity-access/index";
-import { getProjectService } from "../../../infrastructure/service-container";
+} from "../../identity-access/index.ts";
+import { getProjectService } from "../../../infrastructure/service-container.ts";
 
 export type NavigationChild = {
   href: string;

@@ -1,16 +1,14 @@
-import {
-  GoalCategory,
-  GoalDirection,
-  RankingSource,
-  ReportFreshness,
-  ReportPeriodKey,
-  SourceStatus,
-  SyncRunStatus,
-  SyncTrigger,
-  TechnicalSnapshotKind,
-  WebmasterDevice,
-  WebmasterQueryOrderBy,
-} from "@prisma/client";
+import { GoalCategory,
+GoalDirection,
+RankingSource,
+ReportFreshness,
+ReportPeriodKey,
+SourceStatus,
+SyncRunStatus,
+SyncTrigger,
+TechnicalSnapshotKind,
+WebmasterDevice,
+WebmasterQueryOrderBy, } from "../../../generated/prisma/client.ts"
 import type {
   CreateSourceRunInput,
   CreateSyncRunInput,
@@ -30,8 +28,8 @@ import type {
   StoredTrackedQuerySetRecord,
   SyncRepository,
   SyncLockHandle,
-} from "../application/ports/sync-repository";
-import { getPrismaClient, getPrismaPool } from "../../../infrastructure/database/prisma/client";
+} from "../application/ports/sync-repository.ts";
+import { getPrismaClient, getPrismaPool } from "../../../platform/database/prisma/client.ts";
 
 const PRISMA_TRIGGER_BY_APP_TRIGGER = {
   daily: SyncTrigger.DAILY,
