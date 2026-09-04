@@ -3,6 +3,7 @@ import "server-only";
 import { PgBoss } from "pg-boss";
 import { createPgPoolConfigFromEnvironment } from "../../../platform/database/prisma/pool-config.ts";
 import { readDatabaseEnvironment } from "../../../platform/config/server-environment.ts";
+import { getLogger } from "../../../platform/observability/logger.ts";
 import {
   OUTBOX_DELIVERY_QUEUE,
   OUTBOX_EXPIRE_IN_SECONDS,
@@ -11,6 +12,8 @@ import {
   OUTBOX_RETRY_DELAY_MAX_SECONDS,
   OUTBOX_RETRY_DELAY_SECONDS,
 } from "../domain/pg-boss.ts";
+
+const logger = getLogger({ component: "pg-boss" });
 
 let bossPromise: Promise<PgBoss> | null = null;
 
@@ -47,7 +50,9 @@ export async function getPgBoss(): Promise<PgBoss> {
   bossPromise ??= createBoss()
     .start()
     .then(async (boss) => {
-      boss.on("error", () => undefined);
+      boss.on("error", (error) => {
+        logger.error({ err: error }, "pg-boss runtime error");
+      });
       await ensureQueue(boss);
       return boss;
     });
