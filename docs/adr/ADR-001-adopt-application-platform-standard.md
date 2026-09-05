@@ -57,4 +57,4 @@ AMS IMPULSE уже использует Next.js standalone, TypeScript, Prisma/P
 - каждый перенесённый домен удаляет старый путь clean cutover;
 - schema/auth/jobs phases требуют HEAVY Gate и isolated PostgreSQL;
 - внешний UI остаётся стабильным и получает regression coverage;
-- `docs/PLATFORM_CONFORMANCE.md` становится проектной картой соответствия, но не вторым architecture source of truth.
+- Исторический gap register сохранён в `docs/archive/2026-09-03/PLATFORM_CONFORMANCE.md` и не является вторым architecture source of truth.

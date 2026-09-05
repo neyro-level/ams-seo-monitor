@@ -2,7 +2,7 @@
 
 ## Статус
 
-Принято владельцем для нового rewrite plan. Runtime implementation ещё не начата; current production остаётся baseline до общего Merge Gate и отдельного release intent.
+Принято владельцем и реализовано в canonical `main` через Workstreams 0–8 и последовательные PR. Production cutover по-прежнему требует отдельного release intent и operational proof.
 
 ## Контекст
 
@@ -20,7 +20,7 @@ Core Standard 3.0 меняет обязательные contracts:
 - immutable OCI image + Docker Compose + private Managed PostgreSQL;
 - first-password lifecycle и 2FA для Platform Admin.
 
-Текущий код этим contracts полностью не соответствует. Буквальная очистка legacy schema в одном release создаст неприемлемый migration/rollback risk.
+На момент принятия решения код этим contracts полностью не соответствовал. Поэтому миграция выполнялась совместимыми workstreams; destructive очистка legacy schema не входила в общий release train.
 
 ## Решение
 
@@ -80,6 +80,6 @@ Core Standard 3.0 меняет обязательные contracts:
 ## Связанные источники
 
 - `docs/MASTER_PLAN.md`;
-- `docs/PLATFORM_CONFORMANCE.md`;
+- `docs/archive/2026-09-03/PLATFORM_CONFORMANCE.md` — исторический gap register до реализации;
 - `AGENTS.md`;
 - historical ADR-001 и ADR-002.

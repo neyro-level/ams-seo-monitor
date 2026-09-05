@@ -2,9 +2,9 @@
 
 ## Назначение
 
-Project gap register для `AMS Application Platform Core Standard 3.0` от 2026-09-03.
+Исторический project gap register для `AMS Application Platform Core Standard 3.0` от 2026-09-03. Миграция завершена позднее в canonical `main`; актуальный verified state и backlog находятся в `docs/MASTER_PLAN.md`.
 
-Это не второй roadmap. Порядок работ и branch stack находятся в `docs/MASTER_PLAN.md`. Фактическое состояние определяют `package.json`, lockfile, Prisma schema/migrations, runtime code, tests и проверяемый production.
+Этот документ не является active roadmap или текущим conformance status. Он сохраняет исходную карту расхождений и решений для истории реализации.
 
 Статусы:
 

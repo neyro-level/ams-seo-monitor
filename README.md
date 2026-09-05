@@ -2,7 +2,7 @@
 
 AMS IMPULSE — публичная страница SEO-продукта АМС и приватный кабинет SEO-отчётности по нескольким проектам и сайтам.
 
-> Standard 3.0 migration: current runtime remains the production baseline. Target architecture and stacked workstreams are defined in `docs/MASTER_PLAN.md`; the evidence-backed gap map is `docs/PLATFORM_CONFORMANCE.md`.
+Миграция к адаптированному Application Platform Core Standard 3.0 завершена в canonical `main`. Новая работа следует глобальному Application Platform Core 3.1; расхождения с ним фиксируются как отдельный scope, без скрытой архитектурной миграции.
 
 ## Что делает система
 
@@ -24,6 +24,8 @@ AMS IMPULSE — публичная страница SEO-продукта АМС 
 Внутренние `clientSlug` и маршруты `/c/*` остаются действующим URL/data contract.
 
 ## Архитектура
+
+Project Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii` — ограниченные account и operational PII без CRM-хранилища заявок.
 
 ```text
 Browser
@@ -77,7 +79,7 @@ systemd timer
 
 Фактические версии закреплены в `package.json` и `pnpm-lock.yaml`:
 
-| Runtime | Current exact version | Standard 3.0 status |
+| Runtime | Current exact version | Статус |
 |---|---:|---|
 | Node.js | `24.20.0` release; engine `>=24.20.0 <25` | canonical Node 24 |
 | pnpm | `11.5.1` | exact |
@@ -92,7 +94,7 @@ systemd timer
 | Tailwind CSS | `4.3.3` | preserve |
 | Zod | `4.5.4` | preserve |
 
-Current additional UI/runtime packages: Recharts `3.10.1`, React Hook Form `7.87.0`, TanStack Table `8.21.3`, nuqs `2.10.1`, pino `10.3.1` and pg-boss `12.30.0`. Refine has been removed. Docker production assets are implemented in Workstream 8; production cutover remains a separate owner command.
+Дополнительные UI/runtime packages: Recharts `3.10.1`, React Hook Form `7.87.0`, TanStack Table `8.21.3`, nuqs `2.10.1`, pino `10.3.1` и pg-boss `12.30.0`. Refine удалён. Docker production assets реализованы; production cutover остаётся отдельной командой владельца.
 
 ## Локальная подготовка
 
@@ -153,9 +155,9 @@ pnpm worker:outbox:drain
 
 ## Release
 
-Target release собирается из clean reviewed canonical `main` как immutable OCI image вне production host. Один image digest запускает web/worker и explicit migration/maintenance commands; rollout через Docker Compose выполняется после backup/restore proof. До отдельного merge и production intent действующий production baseline не изменяется.
+Release собирается из clean reviewed canonical `main` как immutable OCI image вне production host. Один image digest запускает web/worker и explicit migration/maintenance commands; rollout через Docker Compose выполняется после backup/restore proof. Merge сам по себе не изменяет production.
 
-Merge и production deploy выполняются только отдельной командой владельца. Current baseline и target migration описаны в [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md).
+Merge и production deploy выполняются только отдельной командой владельца. Действующий release contract описан в [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md).
 
 ## Документация
 
@@ -167,8 +169,7 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md);
 - [`docs/SECURITY.md`](docs/SECURITY.md);
-- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md);
-- [`docs/PLATFORM_CONFORMANCE.md`](docs/PLATFORM_CONFORMANCE.md) — project mapping универсального platform standard.
+- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md).
 
 Профильные документы:
 
@@ -181,7 +182,7 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/SITE_REPORT_IA.md`](docs/SITE_REPORT_IA.md);
 - [`docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`](docs/EXTERNAL_SITE_DESIGN_SYSTEM.md);
 - [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);
-- [`docs/adr/ADR-003-adopt-core-standard-v3.md`](docs/adr/ADR-003-adopt-core-standard-v3.md) — active target architecture decision;
+- [`docs/adr/ADR-003-adopt-core-standard-v3.md`](docs/adr/ADR-003-adopt-core-standard-v3.md) — реализованное архитектурное решение Standard 3.0;
 - [`docs/adr/ADR-001-adopt-application-platform-standard.md`](docs/adr/ADR-001-adopt-application-platform-standard.md) — superseded implementation history;
 - [`docs/adr/ADR-002-actor-context-and-capabilities.md`](docs/adr/ADR-002-actor-context-and-capabilities.md) — superseded implementation history;
 - [`docs/modules/MODULE_PLATFORM_RELIABILITY.md`](docs/modules/MODULE_PLATFORM_RELIABILITY.md);

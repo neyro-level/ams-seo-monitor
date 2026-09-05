@@ -1,6 +1,6 @@
 # TECH STACK
 
-> Migration status: the version table below is the current runtime, not full Standard 3.0 conformance. Refine removed in Workstream 5; pg-boss, pino and Docker enter only in their named workstreams.
+Таблица ниже описывает фактический runtime canonical `main`. Адаптированная миграция Standard 3.0 завершена; соответствие новым требованиям Core 3.1 оценивается отдельным scope и не предполагается автоматически.
 
 ## Source of truth
 
@@ -18,7 +18,7 @@
 | Zod | `4.5.4` | DTO/config validation |
 | Prisma / `@prisma/client` | `7.10.0` / `7.10.0` | explicit generated client, schema, migrations, repositories |
 | PostgreSQL | `18.x` | runtime source of truth |
-| Better Auth | `1.7.2` | identity/password/session; Organization Plugin remains legacy until Workstream 2 |
+| Better Auth | `1.7.2` | identity/password/session/2FA; Organization Plugin не зарегистрирован в runtime |
 | pg / Prisma pg adapter | `8.23.0` / `7.10.0` | PostgreSQL transport |
 | Tailwind CSS | `4.3.3` | styles |
 | Recharts | `3.10.1` | report charts |
@@ -48,7 +48,7 @@
 - compatibility is proven by typecheck, lint, tests, build and affected runtime smoke;
 - production Node version must satisfy `scripts/verify-release-runtime.mjs`.
 
-## Standard 3.0 dependency migration
+## Реализованный Standard 3.0 baseline
 
 - current runtime uses React Hook Form, TanStack Table and `nuqs` in private admin surfaces;
 - Refine removed in Workstream 5; Platform Admin now relies on typed route composition and shared primitives instead of a resource framework;
@@ -56,10 +56,10 @@
 - pg-boss `12.30.0` entered in Workstream 6 with reviewed schema/pool/runbook contract;
 - pino `10.3.1` entered in Workstream 7 with redaction and correlation callsites;
 - Sentry remains disabled until SECURITY records a compliant DSN/proof path;
-- production Docker assets enter only with the reviewed topology workstream.
+- production Docker assets реализованы; фактический cutover требует отдельного release intent и operational proof.
 
 Пустые platform dependencies без callsites запрещены.
 
 ## Deliberate exclusions
 
-Текущему продукту не нужны второй ORM/backend/auth, Redis, ClickHouse, TimescaleDB или Kubernetes. pg-boss, pino, TanStack Table, nuqs и Docker добавляются только в named Standard 3.0 workstreams; остальные dependencies требуют доказанного contract gap или ADR.
+Текущему продукту не нужны второй ORM/backend/auth, Redis, ClickHouse, TimescaleDB или Kubernetes. Новые dependencies требуют доказанного contract gap или ADR.

@@ -1,6 +1,6 @@
 # PRODUCT
 
-> Product behavior remains authoritative during Standard 3.0 migration. Legacy `ActorContext` and compatibility role storage remain implementation details; PrincipalContext and Platform Admin mapping are defined in `MASTER_PLAN.md`.
+Адаптированная миграция Standard 3.0 завершена. Product behavior остаётся authoritative; `PrincipalContext` и AMS Membership являются canonical access contract, а legacy `ActorContext` разрешён только для отмеченных compatibility reads.
 
 ## Назначение
 

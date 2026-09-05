@@ -1,6 +1,6 @@
 # SECURITY
 
-> Migration status: this document describes the current `origin/main` security boundary. New work follows Standard 3.0 hard rules from `AGENTS.md`; PrincipalContext, AMS-owned tenancy, 2FA, scopedDb and container production gaps are tracked in `docs/MASTER_PLAN.md`.
+Документ описывает актуальную security boundary canonical `main`. PrincipalContext, AMS-owned tenancy, 2FA, scopedDb и container release contract реализованы; фактический production proof подтверждается только release evidence. Новая работа следует Application Platform Core 3.1.
 
 ## Модель безопасности
 

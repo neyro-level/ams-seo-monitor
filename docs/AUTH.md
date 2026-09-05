@@ -2,7 +2,7 @@
 
 ## Статус
 
-Wave 2 implements the Standard 3.0 identity foundation. The current application still exposes legacy `ActorContext` to unrevised reporting/project services as a temporary compatibility adapter. New auth, onboarding and authorization code uses `PrincipalContext`.
+Standard 3.0 identity foundation реализован. Приложение всё ещё предоставляет legacy `ActorContext` отдельным reporting/project compatibility reads; новый auth, onboarding и authorization code использует `PrincipalContext`.
 
 ## Ownership
 
@@ -93,7 +93,7 @@ Migration `20260903164000_add_principal_auth_foundation` is additive:
 - adds Better Auth 2FA fields/model;
 - does not delete plugin-compatible fields/tables.
 
-Future Workstream 3 backfills tenant ownership. Legacy contract removal is a separate post-stabilization release.
+Tenant ownership backfill и composite constraints реализованы. Удаление оставшихся legacy compatibility fields остаётся отдельным post-stabilization contract release.
 
 ## Entry points
 
