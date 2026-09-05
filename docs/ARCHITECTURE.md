@@ -1,6 +1,8 @@
 # ARCHITECTURE
 
-> Migration status: sections below describe the current runtime baseline. They are not target patterns for new code where `ActorContext`, global Prisma access, direct outbox execution or host-built releases conflict with Standard 3.0. Target cutovers are in `MASTER_PLAN.md`.
+Документ описывает актуальный runtime после завершённой миграции Standard 3.0. Новая работа следует Application Platform Core 3.1; legacy `ActorContext` и transitional `src/infrastructure` не расширяются за пределы отмеченных compatibility paths.
+
+Project Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii` — ограниченные account и operational PII без CRM-хранилища заявок.
 
 ## Runtime model
 

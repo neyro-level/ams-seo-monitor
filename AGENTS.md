@@ -10,9 +10,15 @@
 
 AMS IMPULSE — отдельный продукт АМС: публичный лендинг SEO-продвижения и приватный кабинет отчётности по нескольким проектам и сайтам. Это не модуль Бастиона; нельзя использовать runtime-код, БД или application auth других проектов.
 
-## Hard Rules — AMS Application Platform Core Standard 3.0
+## Hard Rules — AMS Application Platform Core 3.1
 
-Эти правила действуют до любой правки. Existing violations являются migration debt из `docs/MASTER_PLAN.md`, а не разрешённым precedent.
+Адаптированная миграция Standard 3.0 завершена в canonical `main`. Для новой работы действует глобальный Application Platform Core 3.1. Existing compatibility paths являются явным technical debt в профильных документах, а не разрешённым precedent.
+
+Project Profile:
+
+- `TENANCY = multi-tenant`;
+- `ASYNC = outbox-plus-queue`;
+- `DATA = pii` — ограниченные account и operational PII без CRM-хранилища заявок.
 
 ### Security и tenancy
 
@@ -76,7 +82,7 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 2. `package.json`, lockfile, `.node-version`, Prisma schema/migrations и runtime config;
 3. этот `AGENTS.md`;
 4. профильные project docs;
-5. AMS Application Platform Core Standard 3.0;
+5. AMS Application Platform Core 3.1;
 6. global AMS skills как execution workflow;
 7. старые планы, чаты и заметки.
 
@@ -108,7 +114,7 @@ Production drift не узаконивается молча: он устраня
 - report UI — `docs/SITE_REPORT_IA.md` и `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
 - public UI — `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
 - бизнес-модули — `docs/modules/*`;
-- platform conformance/roadmap — `docs/PLATFORM_CONFORMANCE.md` и `docs/MASTER_PLAN.md`;
+- verified state и product roadmap — `docs/MASTER_PLAN.md`; завершённый Standard 3.0 gap register хранится в `docs/archive/2026-09-03/`;
 - local development — `docs/ops/LOCAL_DEVELOPMENT.md`;
 - architecture decisions — `docs/adr/*`.
 
@@ -117,7 +123,7 @@ Production drift не узаконивается молча: он устраня
 ## Product invariants
 
 - hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`;
-- current roles: `PLATFORM_ADMIN`, `SEO_ANALYST`, `CLIENT_VIEWER`; target mapping: platform-admin, platform-analyst и tenant `VIEWER` через PrincipalContext;
+- current identity mapping: `PLATFORM_ADMIN` → platform-admin, `SEO_ANALYST` → platform-analyst, client membership → tenant-user через server-generated `PrincipalContext`; legacy `ActorContext` остаётся только на явно отмеченных compatibility reads;
 - browser-safe report contract: `SiteReportSnapshot`;
 - periods: `week`, `month`, `quarter`, `halfYear`; default — `month`;
 - `partial` ≠ `success`, `stale` ≠ `current`, `null` ≠ `0`;
@@ -130,15 +136,15 @@ Production drift не узаконивается молча: он устраня
 
 - Next.js работает как standalone server application, не static export;
 - PostgreSQL — единственный runtime source of truth;
-- target identity contract — discriminated `PrincipalContext`; новый code не расширяет legacy `ActorContext`;
+- canonical identity contract — discriminated `PrincipalContext`; новый code не расширяет legacy `ActorContext`;
 - `platform-admin`/`platform-analyst` не получают fake organization;
 - tenant principal создаётся server-side только из fresh User + AMS Membership + active organization;
 - permissions и module-owned resource authorization обязательны одновременно;
-- Better Auth владеет только identity/password/session/2FA; organization tenancy из plugin удаляется по migration plan;
+- Better Auth владеет только identity/password/session/2FA; Organization Plugin не зарегистрирован в runtime;
 - authorization проверяется server-side на каждом private read;
 - Nginx отвечает за TLS, reverse proxy и hardening, но не заменяет application auth;
 - worker синхронизирует providers отдельно от web requests;
-- target mutation path: `defineAction/job adapter → defineCommand → transaction-bound repositories → PostgreSQL`;
+- canonical mutation path: `defineAction/job adapter → defineCommand → transaction-bound repositories → PostgreSQL`;
 - Prisma и SQL не импортируются в UI;
 - browser не вызывает Yandex/Topvisor API;
 - web process не получает provider tokens;
@@ -146,7 +152,7 @@ Production drift не узаконивается молча: он устраня
 - `src/modules/reporting/domain/report-compiler.ts` владеет report semantics; второй compiler запрещён;
 - public AMS IMPULSE landing, dialogs, legal routes и `ch-*` visual language сохраняются; Refine/shadcn не переносятся в public UI;
 - vertical modules публикуют только root entrypoints (`index.ts`, а при необходимости `server.ts`, `client.ts`, `worker.ts`); cross-module imports внутренних слоёв запрещены;
-- current `/admin/*` является migration baseline; target — Platform Admin без Refine и generic command dispatcher;
+- `/admin/*` использует typed Platform Admin queries/commands без Refine и generic command dispatcher;
 - каждая migrated mutation владеется `defineCommand`; business data + AuditEvent + optional OutboxEvent атомарны;
 - browser никогда не принимает/показывает provider secrets; settings JSON отклоняет sensitive keys;
 - executable import rules принадлежат `dependency-cruiser.config.cjs`;
@@ -160,14 +166,14 @@ Production drift не узаконивается молча: он устраня
 
 - `src/app` — routes, layouts, metadata, health/auth handlers;
 - `src/components` — presentation и client interaction;
-- `src/modules/identity-access` — legacy ActorContext baseline; target PrincipalContext, AMS Membership и Better Auth-only identity adapter;
+- `src/modules/identity-access` — AMS Membership и Better Auth-only identity adapter; legacy ActorContext facade разрешён только для перечисленных compatibility reads;
 - `src/modules/project-registry` — tenant-scoped projects/sites, monitoring registry и overview;
 - `src/modules/reporting` — report reads, periods, compiler и browser-safe presentation;
 - `src/modules/ranking-analytics` — deterministic ranking/query analytics;
 - `src/modules/data-ingestion` — sync lifecycle, ports, persistence и worker orchestration;
-- `src/modules/platform-operations` — audit/idempotency/outbox/job lifecycle; target queue adapter — pg-boss;
-- `src/modules/admin-cms` — current migration baseline; target Platform Admin commands/queries/presentation;
-- `src/infrastructure` — transitional shared Prisma/composition; target shared runtime boundaries move to `src/platform/*`;
+- `src/modules/platform-operations` — audit/idempotency/outbox/job lifecycle с pg-boss queue adapter;
+- `src/modules/platform-admin` — Platform Admin composition и presentation contracts;
+- `src/infrastructure` — transitional compatibility composition; новые shared runtime boundaries принадлежат `src/platform/*`;
 - `src/worker` — compiled worker entrypoint;
 - `collector/sources` — read-only provider adapters;
 - `src/shared/schemas` — Zod contracts;
@@ -201,10 +207,9 @@ Production drift не узаконивается молча: он устраня
 
 - canonical primary: SourceCraft `origin/main`;
 - один независимый поток = одна branch = один PR;
-- Standard 3.0 rewrite ведётся stacked branches из `docs/MASTER_PLAN.md`;
-- завершённый workstream: scoped checks → commit → push → PR в предыдущий branch;
-- после создания PR merge запрещён; следующий branch создаётся от HEAD предыдущего;
-- весь stack merge-ится в `main` только по отдельной команде владельца, снизу вверх, с retarget и gate каждого PR;
+- каждый новый независимый поток создаётся отдельной branch/worktree от свежего `origin/main`;
+- завершённый поток: scoped checks → commit → push → PR в `main`;
+- перед `main` обязательны review и risk-based exact-head FAST/HEAVY gate;
 - production не следует автоматически за merge train и требует отдельного release intent;
 - deploy target — exact reviewed `main` OCI image digest; host build/install запрещён;
 - до отдельного deploy-scope не менять live Nginx/systemd/Compose, production DB и secrets.
@@ -256,7 +261,7 @@ Integration runner обязан fail-closed без isolated `*_test` database. U
 - stack/dependency policy → `docs/TECH_STACK.md`;
 - DB/backup → `docs/DATABASE.md`;
 - release → `docs/RUNBOOK_DEPLOY.md`; recovery/onboarding → профильный `docs/ops/*`;
-- platform requirement mapping → `docs/PLATFORM_CONFORMANCE.md`;
+- исторический Standard 3.0 gap register → `docs/archive/2026-09-03/PLATFORM_CONFORMANCE.md`;
 - завершённый этап → очистить `docs/MASTER_PLAN.md`, не хранить выполненный план как active backlog.
 
 ## Done

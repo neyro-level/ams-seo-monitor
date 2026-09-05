@@ -63,7 +63,7 @@ Principal does not expose email, session token, password hash, TOTP secret, back
 
 ## Tenant behavior
 
-Client scope is derived from `Member.tenantRole`. Workstream 3 adds scopedDb and database-level tenant relation constraints; this module never trusts browser organization input.
+Client scope derived from `Member.tenantRole` проходит через scopedDb и database-level tenant relation constraints; модуль никогда не доверяет browser organization input.
 
 ## Resource authorization
 

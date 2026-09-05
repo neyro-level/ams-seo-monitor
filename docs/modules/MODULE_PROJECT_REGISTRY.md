@@ -4,7 +4,7 @@
 
 Управляет иерархией `Organization → Project → Site`, provider mappings, profiles и готовностью конфигурации. PostgreSQL — runtime registry; `config/*` — reviewed nonsecret seed/input.
 
-Workstream 4 делает `Project` эталонным вертикальным срезом Standard 3.0. Workstream 5 переносит Site, ProviderConnection, GoalDefinition, TrackedQuerySet, ThresholdProfile и QueryClusterProfile на те же typed Platform Admin patterns. Существующие `ProjectService`/`SiteService` остаются compatibility reads для report и worker paths до их профильной миграции; новые Project mutations через них запрещены.
+`Project` является эталонным вертикальным срезом Standard 3.0. Site, ProviderConnection, GoalDefinition, TrackedQuerySet, ThresholdProfile и QueryClusterProfile используют те же typed Platform Admin patterns. Существующие `ProjectService`/`SiteService` остаются compatibility reads для report и worker paths; новые Project mutations через них запрещены.
 
 ## Ownership
 
