@@ -12,7 +12,7 @@ AMS IMPULSE — отдельный продукт АМС: публичный л�
 
 ## Hard Rules — AMS Application Platform Core 3.1
 
-Адаптированная миграция Standard 3.0 завершена в canonical `main`. Для новой работы действует глобальный Application Platform Core 3.1. Existing compatibility paths являются явным technical debt в профильных документах, а не разрешённым precedent.
+Для проекта действует `AMS Application Platform Core 3.1`. Оставшиеся compatibility paths являются явным technical debt в `docs/MASTER_PLAN.md`, а не разрешённым precedent.
 
 Project Profile:
 
@@ -110,20 +110,18 @@ Production drift не узаконивается молча: он устраня
 - PostgreSQL и backup — `docs/DATABASE.md`;
 - Better Auth и access — `docs/AUTH.md`;
 - worker/data collection — `docs/WORKER.md`;
-- release/runtime — `docs/DEPLOYMENT.md` и `docs/ops/*`;
+- release/runtime — `docs/RUNBOOK_DEPLOY.md` и `docs/ops/*`;
 - report UI — `docs/SITE_REPORT_IA.md` и `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
 - public UI — `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
 - бизнес-модули — `docs/modules/*`;
-- verified state и product roadmap — `docs/MASTER_PLAN.md`; завершённый Standard 3.0 gap register хранится в `docs/archive/2026-09-03/`;
+- verified state и product roadmap — `docs/MASTER_PLAN.md`;
 - local development — `docs/ops/LOCAL_DEVELOPMENT.md`;
 - architecture decisions — `docs/adr/*`.
-
-`docs/archive/*` — история решений, не активный canon.
 
 ## Product invariants
 
 - hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`;
-- current identity mapping: `PLATFORM_ADMIN` → platform-admin, `SEO_ANALYST` → platform-analyst, client membership → tenant-user через server-generated `PrincipalContext`; legacy `ActorContext` остаётся только на явно отмеченных compatibility reads;
+- current identity mapping: `PLATFORM_ADMIN` → platform-admin, `SEO_ANALYST` → platform-analyst, client membership → tenant-user через server-generated `PrincipalContext`; deprecated `ActorContext` остаётся только на явно отмеченных compatibility reads;
 - browser-safe report contract: `SiteReportSnapshot`;
 - periods: `week`, `month`, `quarter`, `halfYear`; default — `month`;
 - `partial` ≠ `success`, `stale` ≠ `current`, `null` ≠ `0`;
@@ -136,7 +134,7 @@ Production drift не узаконивается молча: он устраня
 
 - Next.js работает как standalone server application, не static export;
 - PostgreSQL — единственный runtime source of truth;
-- canonical identity contract — discriminated `PrincipalContext`; новый code не расширяет legacy `ActorContext`;
+- canonical identity contract — discriminated `PrincipalContext`; новый code не расширяет deprecated `ActorContext`;
 - `platform-admin`/`platform-analyst` не получают fake organization;
 - tenant principal создаётся server-side только из fresh User + AMS Membership + active organization;
 - permissions и module-owned resource authorization обязательны одновременно;
@@ -166,7 +164,7 @@ Production drift не узаконивается молча: он устраня
 
 - `src/app` — routes, layouts, metadata, health/auth handlers;
 - `src/components` — presentation и client interaction;
-- `src/modules/identity-access` — AMS Membership и Better Auth-only identity adapter; legacy ActorContext facade разрешён только для перечисленных compatibility reads;
+- `src/modules/identity-access` — AMS Membership и Better Auth-only identity adapter; deprecated ActorContext facade разрешён только для перечисленных compatibility reads;
 - `src/modules/project-registry` — tenant-scoped projects/sites, monitoring registry и overview;
 - `src/modules/reporting` — report reads, periods, compiler и browser-safe presentation;
 - `src/modules/ranking-analytics` — deterministic ranking/query analytics;
@@ -261,9 +259,8 @@ Integration runner обязан fail-closed без isolated `*_test` database. U
 - stack/dependency policy → `docs/TECH_STACK.md`;
 - DB/backup → `docs/DATABASE.md`;
 - release → `docs/RUNBOOK_DEPLOY.md`; recovery/onboarding → профильный `docs/ops/*`;
-- исторический Standard 3.0 gap register → `docs/archive/2026-09-03/PLATFORM_CONFORMANCE.md`;
 - завершённый этап → очистить `docs/MASTER_PLAN.md`, не хранить выполненный план как active backlog.
 
 ## Done
 
-Изменение готово, когда поведение завершено end-to-end, affected callsites и docs синхронизированы, релевантные проверки пройдены, legacy path удалён или архивирован, а production остаётся отдельным явным действием.
+Изменение готово, когда поведение завершено end-to-end, affected callsites и docs синхронизированы, релевантные проверки пройдены, deprecated path удалён, а production остаётся отдельным явным действием.

@@ -2,99 +2,85 @@
 
 ## Назначение
 
-Управляет иерархией `Organization → Project → Site`, provider mappings, profiles и готовностью конфигурации. PostgreSQL — runtime registry; `config/*` — reviewed nonsecret seed/input.
+Управляет `Organization → Project → Site`, provider mappings, goals, tracked queries, profiles и configuration readiness.
 
-`Project` является эталонным вертикальным срезом Standard 3.0. Site, ProviderConnection, GoalDefinition, TrackedQuerySet, ThresholdProfile и QueryClusterProfile используют те же typed Platform Admin patterns. Существующие `ProjectService`/`SiteService` остаются compatibility reads для report и worker paths; новые Project mutations через них запрещены.
+## Не входит в scope
 
-## Ownership
+Provider HTTP, report compilation, credentials storage, physical project deletion и generic CRUD.
 
-- schema: `prisma/schema.prisma` и additive migrations `20260903190000_add_project_version`, `20260903203000_add_platform_admin_versions`;
-- domain contracts: `src/modules/project-registry/domain/project.ts`;
-- queries/commands/resource authorization: `src/modules/project-registry/application/project-*`;
-- transaction-bound mutation repository: `PrismaProjectReferenceRepository`;
-- server query repository: `PrismaProjectQueryRepository`;
-- server composition: `src/modules/project-registry/infrastructure/project-reference-runtime.ts`;
-- browser-safe contracts: `src/modules/project-registry/contracts.ts`;
-- management routes: `/admin/projects`, `/admin/sites`, `/admin/providers`, `/admin/goals`, `/admin/tracked-queries`, `/admin/profiles`;
-- seed inputs: `config/clients`, `config/goals`, `config/clusters`, `config/tracked-queries`, `config/thresholds.json`.
+## Data ownership
 
-## Access
+Organization, Project, Site, ProviderConnection, GoalDefinition, TrackedQuerySet/TrackedQuery, ThresholdProfile и QueryClusterProfile. Prisma schema/migrations own shape; `config/*` is reviewed nonsecret seed input.
 
-- `platform-admin`: global project read and mutation with an explicit target `organizationId`;
-- `platform-analyst`: global project read, no mutation;
-- `tenant-user / ORG_OWNER`: read and mutation only inside the server-validated active Membership organization;
-- `tenant-user / ORG_MEMBER | VIEWER`: organization-scoped read, no mutation;
-- `job` and `api-client`: no Project Registry capability in this slice;
-- anonymous request redirects to login before data loading.
+## Principal types
 
-Navigation visibility is not authorization. Every query derives a scope from `PrincipalContext`; every mutation repeats permission and resource ownership checks inside the business transaction.
+`platform-admin`, `platform-analyst`, `tenant-user`. Job access exists only through explicit worker APIs; api-client is not active.
 
-## Project command lifecycle
+## Roles and permissions
 
-```text
-Server Action
-→ fresh PrincipalContext
-→ defineCommand + canonical Zod input
-→ permission and target organization check
-→ scopedDb
-→ module-owned requireProjectForAction
-→ transaction-bound repository
-→ Project mutation + AuditEvent
-→ typed result
-```
+- platform-admin: global read/write with explicit target organization;
+- platform-analyst: global read;
+- ORG_OWNER: organization read and allowed project management;
+- ORG_MEMBER/VIEWER: organization read only.
 
-- browser input cannot select an existing Project owner or mutate `slug`;
-- create requires an explicit organization and existing platform-owned threshold/cluster profiles;
-- settings update changes only name and profile references;
-- status update changes only `Project.status`;
-- update and status commands require the current positive `version`;
-- every successful update increments `version` exactly once;
-- missing/foreign resources use `PROJECT_NOT_FOUND_OR_FORBIDDEN` without disclosing existence;
-- concurrent update returns `PROJECT_STALE`; no mutation or audit is committed;
-- unique slug and invalid profile references become stable domain errors;
-- Project physical delete is outside the normal application lifecycle.
+## Commands
 
-## Query and UI contract
+Typed create/update/status commands for Project and Platform Admin-owned registry aggregates. New mutations use `defineCommand`, transaction-bound repositories and optimistic `version`.
 
-- `listProjects`, `getProject` and `getProjectSummary` return selected browser-safe DTOs, not Prisma records;
-- search covers only name and slug;
-- status and sort fields use closed allowlists;
-- pagination is bounded to 100 rows, with 20 rows in `/admin/projects`;
-- `nuqs` owns typed server parsing of URL state;
-- TanStack Table renders server-paginated data with `manualPagination`;
-- desktop uses a local-scroll table; mobile uses project cards;
-- create, status and settings forms use React Hook Form with shared Zod schemas;
-- loading, empty, forbidden, error, success and stale-conflict states are explicit.
+## Queries
 
-## Data invariants
+Project/site/navigation/monitoring reads and bounded Platform Admin list/detail/form-option queries with allowlisted filters/sorts.
 
-- Project belongs to one Organization;
-- `slug` is globally unique;
-- `version` is `INTEGER NOT NULL DEFAULT 1` and is the optimistic concurrency token;
-- Site `(projectId, slug)` remains unique;
-- one ProviderConnection per `(siteId, provider)`;
+## DTO
+
+Selected project/site/configuration DTOs only; no Prisma records, credentials or raw provider payloads.
+
+## Invariants
+
+- Project belongs to one Organization; Site belongs to the same tenant;
+- slug/parent uniqueness follows Prisma constraints;
+- enabled site has verified HTTPS URL and approved provider mapping;
 - checked-in config contains no secrets;
-- enabled production site does not use a placeholder URL;
-- runtime navigation and routes read PostgreSQL, not JSON;
-- `clientSlug`/`siteSlug` preserve the URL contract;
-- enabled site is configuration-ready with two or more enabled provider connections; optional Topvisor does not break readiness;
-- foreign tenant filters are applied in database queries;
-- composite tenant constraints independently reject mismatched parent ownership.
+- runtime reads PostgreSQL, not config JSON;
+- `clientSlug/siteSlug` preserve the URL contract;
+- replacement disables tracked queries instead of deleting history.
 
-## Onboarding
+## Tenant behavior
 
-`pnpm project:add` creates only seed files and does not change PostgreSQL, users, memberships or production. After review, `pnpm db:seed` transfers approved input to the runtime registry.
+Every tenant-owned row has organizationId. Repository filters and composite foreign keys independently enforce owner consistency.
 
-## Verification
+## Resource authorization
 
-- Project reference slice plus typed Platform Admin resource tests;
-- platform-admin/analyst/tenant-role permission matrix;
-- own-tenant read and mutation where the module grants tenant scope;
-- cross-tenant and anonymous denial;
-- stale version conflict with no extra audit;
-- successful create/update of site/provider/goal/tracked/profile mutations with one AuditEvent each;
-- tracked query history preservation;
-- PostgreSQL migrations and integration tests;
-- URL search/status/sort/pagination behavior;
-- responsive browser proof at 375, 768, 1280 and 1440 px;
-- typecheck, lint and architecture guards.
+Queries derive scope from PrincipalContext. Mutations load the concrete resource/parent inside the transaction and return not-found-or-forbidden without existence disclosure.
+
+## State lifecycle
+
+Projects: `PLANNED → ACTIVE ↔ DISABLED`; Site/provider/query disable preserves history. Physical deletion is outside ordinary commands.
+
+## Concurrency
+
+Mutable aggregates use positive `version`; stale writes return a stable conflict and commit neither mutation nor audit.
+
+## Idempotency
+
+Seed is repeatable. Deferred project sync uses Platform Operations idempotency + outbox; direct registry mutations rely on explicit version/unique constraints.
+
+## Audit
+
+Every successful registry mutation writes one safe AuditEvent in the same transaction.
+
+## Events / Async policy
+
+Registry writes emit OutboxEvent only when a named command requires deferred work. Provider sync requests use `project.sync.requested`.
+
+## Integrations
+
+No direct provider calls. `pnpm project:add` creates reviewed seed files; DB seed materializes them.
+
+## Failure behavior
+
+Foreign/missing resource → stable denial; stale version → conflict; invalid relation/slug/settings → stable validation/domain error; no partial write.
+
+## Tests
+
+Permission matrix, tenant isolation, stale conflicts, audit atomicity, tracked-query preservation, migrations, URL state and responsive admin UI.

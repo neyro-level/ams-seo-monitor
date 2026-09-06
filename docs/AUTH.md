@@ -2,7 +2,7 @@
 
 ## Статус
 
-Standard 3.0 identity foundation реализован. Приложение всё ещё предоставляет legacy `ActorContext` отдельным reporting/project compatibility reads; новый auth, onboarding и authorization code использует `PrincipalContext`.
+Canonical auth/authorization code использует `PrincipalContext`. `ActorContext` остаётся только на отдельных reporting/project/navigation reads и не расширяется.
 
 ## Ownership
 
@@ -21,7 +21,7 @@ AMS owns:
 - onboarding state;
 - audit of AMS business state.
 
-Better Auth Organization Plugin is removed from runtime. Existing `Session.activeOrganizationId`, `Member.role` and plugin-compatible tables remain only through the compatibility release period. They are never accepted without a fresh AMS Membership check.
+Better Auth Organization Plugin отсутствует в runtime. `Session.activeOrganizationId`, `Member.role` and `Invitation` remain deprecated schema compatibility fields. They do not define permissions and are never accepted without a fresh AMS Membership check.
 
 ## PrincipalContext
 
@@ -82,18 +82,15 @@ pnpm user:add-to-organization -- --username <name> --organization <slug> --tenan
 pnpm user:remove-from-organization -- --username <name> --organization <slug>
 ```
 
-Passwords use bounded stdin, never argv. `--tenant-role` accepts `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`; legacy `--role` remains compatibility-only.
+Passwords use bounded stdin, never argv. `--tenant-role` accepts `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
 
-## Migration contract
+## Current schema contract
 
-Migration `20260903164000_add_principal_auth_foundation` is additive:
-
-- adds `MembershipRole` and `Member.tenantRole` default `VIEWER`;
-- adds `User.mustChangePassword` default `false` so existing production users are not silently locked out;
-- adds Better Auth 2FA fields/model;
-- does not delete plugin-compatible fields/tables.
-
-Tenant ownership backfill и composite constraints реализованы. Удаление оставшихся legacy compatibility fields остаётся отдельным post-stabilization contract release.
+- `Member.tenantRole` is the AMS tenant role;
+- `User.mustChangePassword` owns first-access gating;
+- Better Auth owns `TwoFactor` fields and lifecycle;
+- tenant ownership fields and composite constraints are required;
+- removal of deprecated plugin-compatible fields is a separate compatibility-first migration listed in `docs/MASTER_PLAN.md`.
 
 ## Entry points
 
@@ -104,7 +101,7 @@ Tenant ownership backfill и composite constraints реализованы. Уд�
 - `src/platform/authorization/principal-factories.ts` — server factories;
 - `src/platform/auth/complete-password-onboarding.ts` — audited onboarding command;
 - `src/app/onboarding/*` — first-password and TOTP surfaces;
-- `src/modules/identity-access/*` — temporary legacy ActorContext facade for unrevised modules.
+- `src/modules/identity-access/domain/actor-context.ts` and related server facade — deprecated read compatibility boundary.
 
 ## Proof
 

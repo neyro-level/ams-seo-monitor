@@ -1,6 +1,6 @@
 # PRODUCT
 
-Адаптированная миграция Standard 3.0 завершена. Product behavior остаётся authoritative; `PrincipalContext` и AMS Membership являются canonical access contract, а legacy `ActorContext` разрешён только для отмеченных compatibility reads.
+Product behavior в этом документе authoritative. `PrincipalContext` и AMS Membership являются canonical access contract; `ActorContext` остаётся только на перечисленных в `docs/MASTER_PLAN.md` report/project reads.
 
 ## Назначение
 

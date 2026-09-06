@@ -11,6 +11,7 @@
 /.local
 /.release-artifacts
 /src/generated/prisma
+/graphify-out
 
 
 # tests

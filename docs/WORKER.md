@@ -2,11 +2,12 @@
 
 ## Назначение
 
-Worker — отдельный compiled Node oneshot process для provider sync, нормализации, исторического persistence и report compilation. Он не обслуживает browser requests.
+Worker runtime имеет два режима: постоянный outbox daemon и отдельные compiled oneshot commands для provider sync/retention. Он не обслуживает browser requests.
 
 Entry points:
 
-- source: `src/worker/main.ts`;
+- command source: `src/worker/main.ts`;
+- daemon wrapper: `scripts/worker-daemon.mjs`;
 - orchestration: `src/modules/data-ingestion/worker.ts`, `src/modules/data-ingestion/index.ts`;
 - composition: `src/infrastructure/worker-service-container.ts`;
 - compiled: `dist-collector/src/worker/main.js`.
@@ -14,7 +15,7 @@ Entry points:
 ## Runtime flow
 
 ```text
-systemd timer / operator command
+systemd timer / operator command / outbox handler
 → acquire PostgreSQL advisory full-sync lock
 → load project/site/provider config from PostgreSQL
 → create SyncRun + SourceRuns
@@ -74,12 +75,13 @@ Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; 
 
 ## Outbox lifecycle
 
-- separate `seo-monitor-outbox.timer` runs every five minutes;
+- persistent Compose service `worker` polls outbox через `scripts/worker-daemon.mjs` (default delay 5 seconds);
 - one drain handles at most 25 events;
 - business transaction creates `OutboxEvent` only in PostgreSQL;
 - drain claims a ready event, publishes a versioned payload into pg-boss and then processes queued work;
 - pg-boss runtime starts with `migrate:false` and `createSchema:false`; schema install is a reviewed migration step, not worker behavior;
 - handler recreates JobPrincipal from the queued event and validates expected organization scope before sync;
+- `seo-monitor-outbox.timer` is a daily retention timer, not the outbox drain transport;
 - complete/fail still update `OutboxEvent` and `JobRun`, so retry/dead-letter truth remains in app tables;
 - retry base 30 seconds, exponential, capped at one hour and five attempts;
 - invalid payload/unknown topic goes directly to dead-letter;

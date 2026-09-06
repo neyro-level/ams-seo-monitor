@@ -6,13 +6,14 @@ PostgreSQL — единственный runtime source of truth AMS IMPULSE. Pri
 
 ## Топология
 
-Production contract:
+Current repository release contract:
 
-- PostgreSQL `18.x` на том же private server contour;
-- listener только `127.0.0.1`/Unix socket;
-- public `5432` запрещён;
-- remote operator access — только SSH tunnel;
-- app, test и migration databases/credentials разделены.
+- PostgreSQL `18.x` доступен production processes через Linux host networking;
+- host-local deployment expects loopback/Unix-socket administration and no public `5432`;
+- app, test, migration and backup credentials are separated;
+- exact live host/database/version remain unverified until server proof.
+
+Canonical target is private Timeweb Managed PostgreSQL 18 with TLS. Repository assets do not yet prove that topology; migration is tracked in `docs/MASTER_PLAN.md`.
 
 Фактический host/port/database name берётся из protected environment, не из browser или checked-in config.
 
@@ -40,18 +41,12 @@ Production contract:
 
 ## Connection lifecycle
 
-- `src/infrastructure/database/prisma/client.ts` создаёт один shared Prisma/pg context на process;
+- `src/platform/database/prisma/client.ts` создаёт один shared Prisma/pg context на process;
 - worker advisory lock удерживает выделенное pg connection до завершения full sync;
 - `/api/health/ready` выполняет реальный DB ping;
 - отсутствие DB configuration приводит к явному unavailable/503, а не fallback на filesystem.
 
-Phase 3 migration `20260903061657_add_reliability_foundation`:
-
-- creates audit/idempotency/outbox/job tables and constraints;
-- removes obsolete less-specific metric indexes;
-- removes historical periodKey defaults no longer present in Prisma schema;
-- normalizes generated index names;
-- contains no destructive row deletion or column removal.
+Prisma migrations own application schema history. pg-boss schema lifecycle is separate and runs only through the explicit migration entrypoint.
 
 ## Local and test PostgreSQL
 
@@ -86,7 +81,7 @@ Backup на том же VPS без offsite copy не считается дост
 
 ## Restore smoke
 
-`pnpm db:restore-smoke`/`ops/postgres/restore-smoke.sh`:
+`ops/postgres/restore-smoke.sh`:
 
 - создаёт временную restore database;
 - восстанавливает последний custom-format dump;

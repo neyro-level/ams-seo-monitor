@@ -2,133 +2,81 @@
 
 ## Назначение
 
-Обеспечивает atomic enqueue, idempotency, audit trail, PostgreSQL outbox, job attempts, leases, retry/backoff и dead-letter visibility для Platform Admin commands и внешних side effects.
+Владеет audit, idempotency, transactional outbox, pg-boss transport, JobRun, leases, bounded retry/dead-letter, retention and readiness.
 
 ## Не входит в scope
 
-- произвольная очередь без зарегистрированного topic handler;
-- Redis или отдельный broker;
-- HTTP внутри DB transaction;
-- хранение secrets/raw PII в payload/error/audit;
-- RetentionRun до появления утверждённой retention policy.
+Unregistered arbitrary jobs, Redis/broker, HTTP inside DB transaction, secrets/raw PII in payload/error/audit and infinite retry.
 
-## Роли и права
+## Data ownership
 
-- PLATFORM_ADMIN: typed enqueue/retry через server commands с audit;
-- SEO_ANALYST: sync read/run по существующим capabilities;
-- CLIENT_VIEWER: outbox/job data не доступна;
-- SYSTEM worker: claim/complete/fail только по lease ownership.
+AuditEvent, IdempotencyKey, OutboxEvent, JobRun and RetentionRun.
 
-Browser endpoints пока отсутствуют. Runtime API доступен только server composition roots.
+## Principal types
 
-## Владение данными
+`platform-admin` for typed enqueue/retry, `platform-analyst` for allowed sync actions, `job` for handler execution, internal worker lease identity.
 
-### AuditEvent
+## Roles and permissions
 
-Safe marker значимого действия: organization, actor, action, entity, before/after marker, source, correlation ID и timestamp.
+Platform commands require explicit permission/target organization. Tenant users do not access outbox/job data.
 
-### IdempotencyKey
+## Commands
 
-Unique `(scope, organizationScope, key)`, request hash, status, response marker, outbox link и expiry. Nullable organization не участвует в uniqueness: `organizationScope="platform"` используется явно.
+Enqueue, claim, complete, fail, retention and readiness operations. Enqueue atomically creates idempotency marker + OutboxEvent + AuditEvent.
 
-### OutboxEvent
+## Queries
 
-Topic, JSON payload, `schemaVersion`, `occurredAt`, status, attempts, availableAt, lease owner/time, safe error, correlation ID and processedAt.
+Outbox health counts, worker heartbeat/integration freshness and Platform Admin operation views.
 
-### JobRun
+## DTO
 
-One row per attempt, unique `(outboxEventId, attempt)`, worker, status, timing and safe error code.
+Versioned bounded payload, safe error code, correlationId, timestamps and counts. No secrets, raw provider bodies or PII payloads.
 
-### RetentionRun
+## Invariants
 
-Retention marker for processed/dead-letter cleanup with deleted row counts.
+- same idempotency key + same hash returns original event;
+- same key + different hash is conflict;
+- only lease owner completes/fails;
+- runtime pg-boss does not perform schema DDL;
+- retries are bounded; permanent/exhausted failure becomes DEAD_LETTER;
+- application OutboxEvent/JobRun remain business delivery truth.
 
-## Команды
+## Tenant behavior
 
-### enqueue
+organizationScope is explicit organizationId or `platform`; JobPrincipal organization must match event/target.
 
-В одной PostgreSQL transaction:
+## Resource authorization
 
-1. проверяет idempotency key/hash;
-2. создаёт PROCESSING marker;
-3. создаёт OutboxEvent;
-4. завершает marker с response reference;
-5. создаёт AuditEvent;
-6. commit.
+Calling command proves permission and target resource before enqueue. Worker validates topic payload and tenant scope again.
 
-Повтор с тем же hash возвращает тот же outbox ID. Тот же key с другим hash отклоняется.
+## State lifecycle
 
-### claim
+Outbox: PENDING → PROCESSING → PROCESSED or retry PENDING/DEAD_LETTER. JobRun records every attempt. Retention removes only eligible terminal detail.
 
-- выбирает ready PENDING или stale PROCESSING event;
-- conditional update атомарно получает lease;
-- увеличивает attempt;
-- создаёт RUNNING JobRun;
-- concurrent claimant без ownership получает null.
+## Concurrency
 
-### dispatch
+Conditional claim + lease owner/time prevents double completion. Stale PROCESSING event may be reclaimed under policy.
 
-- публикует claimed event в pg-boss queue `outbox.dispatch`;
-- queue payload включает `schemaVersion`, `occurredAt`, correlation и claimed metadata;
-- runtime pg-boss не делает schema DDL и использует отдельный pool budget.
+## Idempotency
 
-### complete / fail
-
-- lease owner одной transaction переводит event в PROCESSED либо PENDING/DEAD_LETTER и завершает JobRun;
-- pg-boss job transport завершается отдельно и не заменяет application truth по retry/dead-letter.
-
-### retention
-
-- удаляет только старые PROCESSED и DEAD_LETTER outbox rows;
-- каскадно очищает historical JobRun detail;
-- пишет `RetentionRun`.
-
-### health
-
-Возвращает counts `pending`, `processing`, `deadLetter`; readiness показывает их, но dead-letter сам по себе не маскируется под DB outage.
-
-## Topics
-
-Текущий handler:
-
-```text
-project.sync.requested
-```
-
-Payload: `projectSlug`, optional trigger. Invalid payload и unknown topic являются permanent failure.
-
-## Idempotency и retries
-
-- request payload canonicalized with sorted object keys before SHA-256;
-- retry base 30 seconds, exponential, maximum 1 hour;
-- default max attempts 5;
-- lease default 5 minutes;
-- complete/fail требуют matching worker ID;
-- no infinite retries.
+Canonical JSON hashing, unique scope/organizationScope/key and idempotent handlers.
 
 ## Audit
 
-Audit payload содержит только safe markers. Token, password, session cookie, raw provider body и полный PII payload запрещены.
+Enqueue and admin retry write safe markers. Payload and error redaction is mandatory.
 
-## Runtime
+## Events / Async policy
 
-- `PrismaReliabilityRepository` — persistence/transaction owner;
-- `ReliabilityService` — validation/hash/time policy;
-- `pg-boss` — transport queue subsystem in separate schema/pool;
-- `drainOutbox` — publish + process bounded batch;
-- `runReliabilityRetention` — cleanup marker and delete policy;
-- `seo-monitor-outbox.service/timer` — five-minute oneshot schedule;
-- deploy/rollback устанавливает или удаляет units вместе с compatible release.
+Current topic: `project.sync.requested`. Outbox is persisted in business transaction; persistent worker publishes to pg-boss and invokes handler outside transaction.
 
-## Тесты
+## Integrations
 
-- atomic audit/idempotency/outbox counts;
-- same key/same hash duplicate;
-- same key/different hash rejection;
-- lease ownership denial;
-- retry/backoff;
-- second attempt success;
-- unknown topic dead-letter;
-- JobRun attempt history;
-- readiness outbox counts;
-- clean migration path.
+PostgreSQL, pg-boss and pino. pg-boss uses separate pool/schema migration lifecycle.
+
+## Failure behavior
+
+Invalid/unknown topic → permanent dead-letter; retryable error → exponential backoff up to five attempts; readiness exposes degradation without misreporting DB outage.
+
+## Tests
+
+Atomic counts, duplicate/conflict, lease ownership, retry/backoff, dead-letter, JobRun attempts, retention, readiness and clean migration path.

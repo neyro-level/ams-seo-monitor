@@ -1,7 +1,5 @@
 # DATA MODEL
 
-> Migration status: `20260903180000_expand_tenant_ownership` backfills nullable ownership fields; `20260903183000_contract_tenant_ownership` validates every ownership chain, makes those fields `NOT NULL` and adds composite tenant foreign keys. The contract migration deliberately stops on any unknown or cross-tenant row. No legacy field/table is removed in the first Standard 3.0 release train.
-
 ## Источники истины
 
 - `prisma/schema.prisma` — фактическая структура PostgreSQL;
@@ -16,7 +14,7 @@ PostgreSQL — единственный runtime source of truth.
 
 ### User
 
-Better Auth identity with legacy `systemRole`, immutable optional `username`, `disabledAt`, `mustChangePassword` and `twoFactorEnabled`.
+Better Auth identity with project `systemRole`, immutable optional `username`, `disabledAt`, `mustChangePassword` and `twoFactorEnabled`.
 
 - `username` and `email` are unique;
 - `PLATFORM_ADMIN` maps to non-tenant `platform-admin`;
@@ -32,7 +30,7 @@ Better Auth 2FA record, unique by `userId`. Stores the plugin-managed secret, en
 
 ### Session, Account, Verification
 
-Better Auth-owned authentication state. Session token, IP and user-agent are not DTO. `Session.activeOrganizationId` remains compatibility data only; server validates it against fresh AMS Membership before principal creation.
+Better Auth-owned authentication state. Session token, IP and user-agent are not DTO. `Session.activeOrganizationId` is a deprecated server-side preference: it is never trusted directly and is validated against fresh AMS Membership before principal creation.
 
 ### Organization and Member
 
@@ -48,16 +46,16 @@ Project
 
 - membership is unique by `(organizationId, userId)`;
 - `tenantRole` is `ORG_OWNER | ORG_MEMBER | VIEWER`, default `VIEWER`;
-- legacy `Member.role` remains through the compatibility period and is not a business permission source;
+- deprecated `Member.role` remains in schema but is not a business permission source;
 - membership removal removes tenant principal scope on the next authorization read.
 
 ### Invitation
 
-Legacy Better Auth Organization Plugin compatibility schema. It is not used by new tenancy behavior and receives no new product flow.
+Deprecated compatibility schema. Runtime Organization Plugin is not registered; Invitation receives no product flow.
 
 ### PrincipalContext
 
-Not a database record. A server factory creates a discriminated principal from fresh User, Membership, validated compatibility selection and server correlation ID. Platform principals never receive fake `organizationId`. Legacy `ActorContext` is a temporary facade for unrevised modules only.
+Not a database record. A server factory creates a discriminated principal from fresh User, Membership, validated active-organization preference and server correlation ID. Platform principals never receive fake `organizationId`. `ActorContext` remains only on the report/project read callsites named in `docs/MASTER_PLAN.md`.
 
 ## Project registry
 
