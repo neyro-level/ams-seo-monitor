@@ -15,3 +15,22 @@ describe("production backup identity", () => {
     expect(backupUnit).toContain("User=postgres\nGroup=postgres");
   });
 });
+
+describe("production restore readiness", () => {
+  it("waits for the final PostgreSQL server after first-run initialization", () => {
+    const restoreScript = readFileSync(
+      "ops/postgres/restore-smoke.sh",
+      "utf8",
+    );
+    const initComplete = restoreScript.indexOf(
+      "PostgreSQL init process complete; ready for start up.",
+    );
+    const readiness = restoreScript.indexOf("pg_isready", initComplete);
+    const createDatabase = restoreScript.indexOf("createdb", readiness);
+
+    expect(initComplete).toBeGreaterThan(-1);
+    expect(readiness).toBeGreaterThan(initComplete);
+    expect(createDatabase).toBeGreaterThan(readiness);
+    expect(restoreScript).toContain("restore_database_not_ready=true");
+  });
+});

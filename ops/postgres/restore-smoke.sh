@@ -38,12 +38,25 @@ docker run -d --rm \
   -v "${BACKUP_DIR_MOUNT}:/backup:ro" \
   "${POSTGRES_IMAGE}" >/dev/null
 
-for _ in $(seq 1 60); do
-  if docker exec "${RESTORE_CONTAINER}" pg_isready -U "${RESTORE_USER}" -d postgres >/dev/null 2>&1; then
+RESTORE_READY=false
+for _ in $(seq 1 90); do
+  if [ "$(docker inspect --format '{{.State.Running}}' "${RESTORE_CONTAINER}" 2>/dev/null || echo false)" != "true" ]; then
+    echo "restore_container_stopped=true" >&2
+    exit 1
+  fi
+
+  if docker logs "${RESTORE_CONTAINER}" 2>&1 | grep -Fq 'PostgreSQL init process complete; ready for start up.' \
+    && docker exec "${RESTORE_CONTAINER}" pg_isready -U "${RESTORE_USER}" -d postgres >/dev/null 2>&1; then
+    RESTORE_READY=true
     break
   fi
   sleep 1
 done
+
+if [ "${RESTORE_READY}" != "true" ]; then
+  echo "restore_database_not_ready=true" >&2
+  exit 1
+fi
 
 docker exec "${RESTORE_CONTAINER}" createdb -U "${RESTORE_USER}" "${RESTORE_DB}"
 docker exec "${RESTORE_CONTAINER}" pg_restore --clean --if-exists --no-owner --no-privileges -U "${RESTORE_USER}" -d "${RESTORE_DB}" "/backup/${BACKUP_NAME}"
