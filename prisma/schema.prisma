@@ -803,6 +803,19 @@ model JobRun {
   @@index([organizationId, jobType, startedAt])
 }
 
+model RuntimeHeartbeat {
+  id          String   @id @default(cuid())
+  runtime     String
+  workerId    String
+  startedAt   DateTime
+  heartbeatAt DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([runtime, workerId])
+  @@index([runtime, heartbeatAt])
+}
+
 model RetentionRun {
   id                 String             @id @default(cuid())
   status             RetentionRunStatus

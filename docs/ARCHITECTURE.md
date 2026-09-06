@@ -82,7 +82,7 @@ Better Auth владеет identity/password/session/2FA. AMS владеет Org
 
 ### Platform Operations
 
-Владеет AuditEvent, idempotency, transactional outbox, pg-boss transport, JobRun, leases, bounded retry/dead-letter, retention и readiness.
+Владеет AuditEvent, idempotency, transactional outbox, pg-boss transport, JobRun, leases, bounded retry/dead-letter, persistent RuntimeHeartbeat, retention и readiness. Dispatch завершается успешным `pg-boss.send`; обработчик позднее принимает только `job.data.event`, поэтому публикация не связана с произвольным немедленным fetch.
 
 ### Platform Admin
 

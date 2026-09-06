@@ -14,11 +14,28 @@ import {
 import { getPgBoss, stopPgBoss } from "./infrastructure/pg-boss-client.ts";
 import { runReliabilityRetention } from "./infrastructure/retention-runtime.ts";
 import type { ClaimedReliabilityEvent } from "./application/ports/reliability-repository.ts";
+import {
+  OUTBOX_WORKER_RUNTIME,
+  recordRuntimeHeartbeat,
+} from "./infrastructure/runtime-heartbeat.ts";
 
 const projectSyncPayloadSchema = z.object({
   projectSlug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   trigger: z.enum(["daily", "manual", "preflight", "backfill"]).default("manual"),
 });
+
+type ReliabilityWorker = Pick<
+  ReturnType<typeof getWorkerReliabilityService>,
+  "claim" | "takeOver" | "complete" | "fail"
+>;
+type OutboxQueueClient = Pick<PgBoss, "send" | "fetch" | "complete">;
+
+export interface OutboxDrainDependencies {
+  boss: OutboxQueueClient;
+  reliability: ReliabilityWorker;
+  heartbeat: (workerId: string) => Promise<unknown>;
+  handle?: (event: ClaimedReliabilityEvent) => Promise<void>;
+}
 
 function outboxError(code: string, retryable: boolean) {
   return Object.assign(new Error(code), { code, retryable });
@@ -31,20 +48,21 @@ function nextAvailableDelaySeconds(attempt: number) {
   );
 }
 
-async function publishClaimedEvent(boss: PgBoss, event: ClaimedReliabilityEvent) {
-  const jobId = await boss.send(OUTBOX_DELIVERY_QUEUE, {
-    schemaVersion: 1,
-    occurredAt: event.occurredAt,
-    topic: event.topic,
-    event,
-  } satisfies OutboxDispatchJob);
-  if (!jobId) {
-    throw outboxError("OUTBOX_JOB_NOT_CREATED", true);
-  }
-  return jobId;
+export async function publishClaimedEvent(
+  boss: OutboxQueueClient,
+  event: ClaimedReliabilityEvent,
+) {
+  return boss.send(
+    OUTBOX_DELIVERY_QUEUE,
+    {
+      schemaVersion: 1,
+      event,
+    } satisfies OutboxDispatchJob,
+    { singletonKey: event.outboxEventId },
+  );
 }
 
-async function fetchQueuedJob(boss: PgBoss) {
+async function fetchQueuedJob(boss: OutboxQueueClient) {
   const jobs = await boss.fetch<OutboxDispatchJob>(OUTBOX_DELIVERY_QUEUE, {
     batchSize: 1,
     includeMetadata: true,
@@ -91,11 +109,12 @@ async function handleEvent(event: ClaimedReliabilityEvent) {
 }
 
 async function processQueuedJob(
-  boss: PgBoss,
+  boss: OutboxQueueClient,
   job: JobWithMetadata<OutboxDispatchJob>,
   workerId: string,
+  reliability: ReliabilityWorker,
+  eventHandler: (event: ClaimedReliabilityEvent) => Promise<void>,
 ) {
-  const reliability = getWorkerReliabilityService();
   const parsed = outboxDispatchJobSchema.safeParse(job.data);
   if (!parsed.success) {
     await boss.complete(OUTBOX_DELIVERY_QUEUE, job.id, {
@@ -115,7 +134,7 @@ async function processQueuedJob(
   }
 
   try {
-    await handleEvent(event);
+    await eventHandler(event);
     await reliability.complete(event);
     await boss.complete(OUTBOX_DELIVERY_QUEUE, job.id, { status: "success" });
     return { claimed: 1, completed: 1, failed: 0 };
@@ -155,56 +174,70 @@ export interface DrainOutboxResult {
   failed: number;
 }
 
-export async function drainOutbox(options: DrainOutboxOptions): Promise<DrainOutboxResult> {
-  const reliability = getWorkerReliabilityService();
+export async function drainOutboxWithDependencies(
+  options: DrainOutboxOptions,
+  dependencies: OutboxDrainDependencies,
+): Promise<DrainOutboxResult> {
+  const { boss, reliability } = dependencies;
+  const eventHandler = dependencies.handle ?? handleEvent;
   const maxEvents = z.number().int().min(1).max(100).parse(options.maxEvents ?? 25);
   const result: DrainOutboxResult = { claimed: 0, completed: 0, failed: 0 };
-  const boss = await getPgBoss();
 
-  try {
-    for (let index = 0; index < maxEvents; index += 1) {
-      const queued = await fetchQueuedJob(boss);
-      if (queued) {
-        const settled = await processQueuedJob(boss, queued, options.workerId);
-        result.claimed += settled.claimed;
-        result.completed += settled.completed;
-        result.failed += settled.failed;
-        continue;
-      }
+  await dependencies.heartbeat(options.workerId);
 
-      const claimed = await reliability.claim(options.workerId);
-      if (!claimed) {
-        break;
-      }
-
-      try {
-        await publishClaimedEvent(boss, claimed);
-      } catch (error) {
-        const code =
-          error && typeof error === "object" && "code" in error && typeof error.code === "string"
-            ? error.code
-            : "OUTBOX_DISPATCH_FAILED";
-        await reliability.fail(claimed, code, true, OUTBOX_HANDLER_MAX_ATTEMPTS);
-        result.claimed += 1;
-        result.failed += 1;
-        continue;
-      }
-
-      const nextJob = await fetchQueuedJob(boss);
-      if (!nextJob) {
-        await reliability.fail(claimed, "OUTBOX_FETCH_AFTER_DISPATCH_FAILED", true, OUTBOX_HANDLER_MAX_ATTEMPTS);
-        result.claimed += 1;
-        result.failed += 1;
-        continue;
-      }
-
-      const settled = await processQueuedJob(boss, nextJob, options.workerId);
-      result.claimed += settled.claimed;
-      result.completed += settled.completed;
-      result.failed += settled.failed;
+  let handled = 0;
+  while (handled < maxEvents) {
+    const queued = await fetchQueuedJob(boss);
+    if (!queued) {
+      break;
     }
+    const settled = await processQueuedJob(
+      boss,
+      queued,
+      options.workerId,
+      reliability,
+      eventHandler,
+    );
+    result.claimed += settled.claimed;
+    result.completed += settled.completed;
+    result.failed += settled.failed;
+    handled += 1;
+    await dependencies.heartbeat(options.workerId);
+  }
 
-    return result;
+  while (handled < maxEvents) {
+    const claimed = await reliability.claim(options.workerId);
+    if (!claimed) {
+      break;
+    }
+    handled += 1;
+    result.claimed += 1;
+
+    try {
+      await publishClaimedEvent(boss, claimed);
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error && typeof error.code === "string"
+          ? error.code
+          : "OUTBOX_DISPATCH_FAILED";
+      await reliability.fail(claimed, code, true, OUTBOX_HANDLER_MAX_ATTEMPTS);
+      result.failed += 1;
+    }
+    await dependencies.heartbeat(options.workerId);
+  }
+
+  return result;
+}
+
+export async function drainOutbox(options: DrainOutboxOptions): Promise<DrainOutboxResult> {
+  const boss = await getPgBoss();
+  try {
+    return await drainOutboxWithDependencies(options, {
+      boss,
+      reliability: getWorkerReliabilityService(),
+      heartbeat: (workerId) =>
+        recordRuntimeHeartbeat({ runtime: OUTBOX_WORKER_RUNTIME, workerId }),
+    });
   } finally {
     await stopPgBoss();
   }

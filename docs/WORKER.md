@@ -69,6 +69,7 @@ Worker writes:
 - `RankingCapture`;
 - `TechnicalSnapshot`;
 - append-only `ReportSnapshot`;
+- one throttled `RuntimeHeartbeat` row per runtime/worker identity;
 - retention markers in `RetentionRun`.
 
 Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; run `finishedAt` is captured at actual completion. Worker runtime emits redacted pino JSON logs with correlation-aware fields.
@@ -78,13 +79,17 @@ Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; 
 - persistent Compose service `worker` polls outbox через `scripts/worker-daemon.mjs` (default delay 5 seconds);
 - one drain handles at most 25 events;
 - business transaction creates `OutboxEvent` only in PostgreSQL;
-- drain claims a ready event, publishes a versioned payload into pg-boss and then processes queued work;
+- each drain first processes already queued jobs, then claims and publishes new outbox events without an immediate fetch-after-send;
+- a successful `send()` is dispatch success; `null` means an idempotent duplicate and is not a failure;
+- every published job uses `singletonKey = outboxEventId`; handler input comes only from `job.data.event`;
 - pg-boss runtime starts with `migrate:false` and `createSchema:false`; schema install is a reviewed migration step, not worker behavior;
 - handler recreates JobPrincipal from the queued event and validates expected organization scope before sync;
 - `seo-monitor-outbox.timer` is a daily retention timer, not the outbox drain transport;
 - complete/fail still update `OutboxEvent` and `JobRun`, so retry/dead-letter truth remains in app tables;
 - retry base 30 seconds, exponential, capped at one hour and five attempts;
 - invalid payload/unknown topic goes directly to dead-letter;
+- the persistent daemon records its own heartbeat at most once per minute, including idle polls;
+- readiness reads that heartbeat only; sync and retention timestamps do not impersonate worker liveness;
 - readiness exposes pending/processing/dead-letter counts plus worker heartbeat and integration freshness.
 
 ## Failure behavior

@@ -241,6 +241,10 @@ Status `PENDING → PROCESSING → PROCESSED` or `DEAD_LETTER`; stores topic, JS
 
 One row per attempt, unique `(outboxEventId, attempt)`. Stores worker, RUNNING/SUCCESS/FAILED, timing and safe error code.
 
+### RuntimeHeartbeat
+
+One row per unique `(runtime, workerId)`. `startedAt` records the first observed start for that identity; `heartbeatAt` is refreshed at most once per minute and is the only worker-liveness source used by readiness.
+
 ### RetentionRun
 
 Retention execution marker: RUNNING/SUCCESS/FAILED, started/finished timestamps and deleted outbox/job-run counts.
@@ -251,7 +255,8 @@ Invariants:
 - same key + same hash returns the original event;
 - same key + different hash is rejected;
 - pg-boss transports claimed outbox work, but business retry/dead-letter truth remains in OutboxEvent and JobRun;
-- queue payload carries `schemaVersion`, `occurredAt`, correlation and claimed event metadata;
+- queue payload carries a wrapper `schemaVersion` and one authoritative claimed event in `job.data.event`;
+- queue dispatch uses `singletonKey = outboxEventId`; a duplicate/null send is not a business failure;
 - only lease owner completes/fails;
 - retry uses bounded exponential backoff;
 - permanent/exhausted failures become dead-letter;
