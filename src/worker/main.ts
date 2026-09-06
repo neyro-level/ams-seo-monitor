@@ -18,6 +18,11 @@ const allowedTriggers: CreateSyncRunInput["trigger"][] = [
 const logger = getLogger({ runtime: "worker", entrypoint: "main" });
 
 async function main() {
+  if (command === "module-smoke") {
+    logger.info({ event: "worker_module_smoke_ok" }, "worker module smoke passed");
+    return;
+  }
+
   if (command === "outbox-drain") {
     const result = await drainOutbox({ workerId: argument ?? "seo-monitor-worker" });
     logger.info({ event: "outbox_drain_finished", ...result }, "outbox drain finished");

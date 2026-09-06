@@ -1,5 +1,3 @@
-import "server-only";
-
 import { createCorrelationId } from "../http/correlation.ts";
 import { getPrismaClient } from "../database/prisma/client.ts";
 import type {

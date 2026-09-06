@@ -1,5 +1,3 @@
-import "server-only";
-
 import { PgBoss } from "pg-boss";
 import { createPgPoolConfigFromEnvironment } from "../../../platform/database/prisma/pool-config.ts";
 import { readDatabaseEnvironment } from "../../../platform/config/server-environment.ts";

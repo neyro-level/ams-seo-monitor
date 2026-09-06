@@ -251,6 +251,7 @@ Readiness exposes outbox counts without treating dead-letter as PostgreSQL outag
 - `docker-compose.dev.yml` поднимает loopback-only PostgreSQL `18.6` с отдельными dev/test databases;
 - `playwright.config.ts` проверяет public UI и auth redirect на 375/768/1280/1440;
 - `.sourcecraft/ci.yaml` exact-head gate выполняет `verify:fast`, collector/build proof; real PostgreSQL integration и Playwright остаются обязательным operator HEAVY evidence до появления стабильного prebuilt CI image.
+- Worker dependency graph должен загружаться обычным Node.js runtime; shared backend-модули worker не используют Next.js-only runtime markers.
 
 Текущая global-layer структура мигрируется в vertical modules по `docs/MASTER_PLAN.md`; пустые параллельные modules не создаются.
 

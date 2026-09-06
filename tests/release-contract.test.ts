@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 describe("production backup identity", () => {
@@ -50,4 +51,22 @@ describe("production compose networking", () => {
     expect(compose).toContain("HOSTNAME: 127.0.0.1");
     expect(compose).not.toContain('"127.0.0.1:3000:3000"');
   });
+});
+
+describe("production worker module boundary", () => {
+  it(
+    "loads the complete worker dependency graph outside the Next.js runtime",
+    () => {
+      const result = spawnSync(
+        process.execPath,
+        ["node_modules/tsx/dist/cli.mjs", "src/worker/main.ts", "module-smoke"],
+        { encoding: "utf8", timeout: 30_000 },
+      );
+
+      expect(result.stderr).not.toContain("server-only");
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("worker_module_smoke_ok");
+    },
+    30_000,
+  );
 });
