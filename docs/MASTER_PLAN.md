@@ -12,7 +12,6 @@
 
 ### Security и architecture cleanup
 
-- расширить nested Pino redaction и подтвердить Better Auth rate limits фактических endpoint names;
 - разделить Platform Admin forms/actions по bounded resources;
 - удалить пустые модули без создания generic framework.
 

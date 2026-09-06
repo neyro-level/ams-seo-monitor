@@ -9,6 +9,7 @@ import {
 } from "../config/server-environment.ts";
 import { getPrismaClient } from "../database/prisma/client.ts";
 import { userSetupTokenPlugin } from "./setup-token-plugin.ts";
+import { createAuthRateLimitConfig } from "./security-config.ts";
 
 const authEnvironment = readAuthEnvironment();
 
@@ -36,6 +37,7 @@ export const auth =
           minPasswordLength: 8,
           maxPasswordLength: 128,
         },
+        rateLimit: createAuthRateLimitConfig(),
         plugins: [
           userSetupTokenPlugin(),
           username({

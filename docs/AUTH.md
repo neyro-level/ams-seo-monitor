@@ -78,6 +78,8 @@ Two-factor plugin schema:
 
 Better Auth backup codes are the only supported 2FA recovery path. Each code is single-use. Public password reset, public 2FA reset and environment bypass are not configured.
 
+Built-in Better Auth rate limiting is explicitly enabled. The exact installed `1.7.2` login paths `/sign-in/email` and `/sign-in/username` are limited to 5 attempts per 60 seconds; all installed `/two-factor/*` enrollment, verification and recovery paths have stricter per-endpoint rules in `src/platform/auth/security-config.ts`. The existing Better Auth two-factor challenge lockout remains authoritative; no second limiter is implemented.
+
 ## Provisioning commands
 
 ```bash
@@ -108,6 +110,7 @@ The setup token is emitted once to stdout and is never accepted through argv. `-
 - `src/platform/authorization/principal-factories.ts` — server factories;
 - `src/platform/auth/complete-password-onboarding.ts` — audited onboarding command;
 - `src/platform/auth/setup-token-plugin.ts` — server-only Better Auth setup endpoint;
+- `src/platform/auth/security-config.ts` — explicit built-in login/2FA rate-limit rules;
 - `src/app/setup/*` — one-time password setup surface;
 - `src/app/onboarding/*` — first-password and TOTP surfaces;
 - `src/modules/identity-access/domain/system-role.ts` — bounded parser для operator CLI roles, без отдельной permission model.
