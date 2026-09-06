@@ -169,11 +169,11 @@ authTestDescription("authorization matrix", () => {
           userId: alphaViewerId,
         },
       },
-      update: { role: "client_viewer" },
+      update: { tenantRole: "VIEWER" },
       create: {
         organizationId: alphaOrganization.id,
         userId: alphaViewerId,
-        role: "client_viewer",
+        tenantRole: "VIEWER",
       },
     });
 
@@ -184,11 +184,11 @@ authTestDescription("authorization matrix", () => {
           userId: westViewerId,
         },
       },
-      update: { role: "client_viewer" },
+      update: { tenantRole: "VIEWER" },
       create: {
         organizationId: westOrganization.id,
         userId: westViewerId,
-        role: "client_viewer",
+        tenantRole: "VIEWER",
       },
     });
 
@@ -199,7 +199,6 @@ authTestDescription("authorization matrix", () => {
       correlationId: "00000000-0000-4000-8000-000000000011",
     }))?.principal ?? null;
     alphaViewerUser = (await getPrincipalStateByUserId(alphaViewerId, {
-      activeOrganizationId: alphaOrganization.id,
       correlationId: "00000000-0000-4000-8000-000000000012",
     }))?.principal ?? null;
     westViewerUser = (await getPrincipalStateByUserId(westViewerId, {

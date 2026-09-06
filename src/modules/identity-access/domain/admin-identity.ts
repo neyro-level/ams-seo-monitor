@@ -121,16 +121,6 @@ export class IdentityAdminError extends Error {
   }
 }
 
-const LEGACY_ROLE_BY_TENANT_ROLE = {
-  ORG_OWNER: "org_owner",
-  ORG_MEMBER: "org_member",
-  VIEWER: "client_viewer",
-} as const satisfies Record<TenantRole, string>;
-
-export function toLegacyMembershipRole(role: TenantRole): string {
-  return LEGACY_ROLE_BY_TENANT_ROLE[role];
-}
-
 export function nextIdentityVersion(
   version: number,
   staleCode: "ORGANIZATION_STALE" | "MEMBERSHIP_STALE",

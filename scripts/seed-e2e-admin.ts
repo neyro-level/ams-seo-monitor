@@ -96,11 +96,10 @@ async function main() {
         where: {
           organizationId_userId: { organizationId: organization.id, userId },
         },
-        update: { role: "client_viewer", tenantRole: "VIEWER" },
+        update: { tenantRole: "VIEWER" },
         create: {
           organizationId: organization.id,
           userId,
-          role: "client_viewer",
           tenantRole: "VIEWER",
         },
       });

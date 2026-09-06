@@ -13,7 +13,7 @@ PostgreSQL — единственный runtime source of truth.
 
 ## DateTime contract
 
-Audit date: `2026-09-06`. Prisma version: `7.10.0`. В schema найдено 90 полей `DateTime`; migrations подтверждают, что каждое из них сейчас хранится как PostgreSQL `timestamp(3)` (`timestamp without time zone`). Prisma default mapping для PostgreSQL также задаёт `DateTime → timestamp(3)`; явный timezone-aware mapping — `@db.Timestamptz(3)`.
+Audit date: `2026-09-06`. Prisma version: `7.10.0`. В schema найдено 87 полей `DateTime`; migrations подтверждают, что каждое из них сейчас хранится как PostgreSQL `timestamp(3)` (`timestamp without time zone`). Prisma default mapping для PostgreSQL также задаёт `DateTime → timestamp(3)`; явный timezone-aware mapping — `@db.Timestamptz(3)`.
 
 Нормативные источники: [Prisma PostgreSQL type mapping](https://docs.prisma.io/docs/orm/v6/overview/databases/postgresql), [Prisma 7 native database types](https://docs.prisma.io/docs/orm/v7/prisma-migrate/workflows/native-database-types), [PostgreSQL 18 date/time types](https://www.postgresql.org/docs/18/datatype-datetime.html).
 
@@ -37,7 +37,6 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 | `Verification.expiresAt`, `Verification.createdAt`, `Verification.updatedAt` | Better Auth verification lifecycle | Better Auth-owned writer; historical rows не доказаны | не менять; проверить adapter и samples | REQUIRES_CHECK |
 | `Organization.createdAt`, `Organization.updatedAt` | tenant record audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `Member.createdAt`, `Member.updatedAt` | membership audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `Invitation.createdAt`, `Invitation.updatedAt`, `Invitation.expiresAt` | deprecated Better Auth compatibility lifecycle | runtime не владеет flow; provenance старых строк не доказан | не менять в 12B; stage 9 может удалить после zero-use proof | REQUIRES_CHECK |
 | `ThresholdProfile.createdAt`, `ThresholdProfile.updatedAt` | threshold profile audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `QueryClusterProfile.createdAt`, `QueryClusterProfile.updatedAt` | cluster profile audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `QueryClusterGroup.createdAt`, `QueryClusterGroup.updatedAt` | cluster group audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
@@ -72,7 +71,7 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 | `RetentionRun.startedAt`, `RetentionRun.finishedAt` | retention execution boundaries | runtime passes one injected JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
 | `RetentionRun.createdAt` | retention row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 
-Coverage: `20 CANDIDATE_12B + 6 KEEP_TIMESTAMP + 64 REQUIRES_CHECK = 90 DateTime fields`. 12B создаёт migration только для полного списка `CANDIDATE_12B`, только если проверка копии production backup подтверждает stored-value assumption и приемлемый lock/rewrite impact. Остальные поля остаются без schema change.
+Coverage: `20 CANDIDATE_12B + 6 KEEP_TIMESTAMP + 61 REQUIRES_CHECK = 87 DateTime fields`. 12B создаёт migration только для полного списка `CANDIDATE_12B`, только если проверка копии production backup подтверждает stored-value assumption и приемлемый lock/rewrite impact. Остальные поля остаются без schema change.
 
 ## Identity и access
 
@@ -104,7 +103,7 @@ One-time operator-issued first-access capability. The table stores only a 64-cha
 
 ### Session, Account, Verification
 
-Better Auth-owned authentication state. Session token, IP and user-agent are not DTO. `Session.activeOrganizationId` is a deprecated server-side preference: it is never trusted directly and is validated against fresh AMS Membership before principal creation.
+Better Auth-owned authentication state. Session token, IP and user-agent are not DTO. Organization Plugin compatibility state отсутствует.
 
 ### Organization and Member
 
@@ -120,16 +119,11 @@ Project
 
 - membership is unique by `(organizationId, userId)`;
 - `tenantRole` is `ORG_OWNER | ORG_MEMBER | VIEWER`, default `VIEWER`;
-- deprecated `Member.role` remains in schema but is not a business permission source;
 - membership removal removes tenant principal scope on the next authorization read.
-
-### Invitation
-
-Deprecated compatibility schema. Runtime Organization Plugin is not registered; Invitation receives no product flow.
 
 ### PrincipalContext
 
-Not a database record. A server factory creates a discriminated principal from fresh User, Membership, validated active-organization preference and server correlation ID. Platform principals never receive fake `organizationId`; tenant reads use only the selected fresh Membership organization.
+Not a database record. A server factory creates a discriminated principal from fresh User, deterministically selected Membership and server correlation ID. Platform principals never receive fake `organizationId`; tenant reads use only the selected fresh Membership organization.
 
 ## Project registry
 

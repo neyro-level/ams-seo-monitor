@@ -30,7 +30,7 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - Better Auth validates identity/session/2FA challenge only;
 - `getCurrentPrincipalState()` re-reads User + AMS Membership and rejects `disabledAt`;
 - platform principals do not receive fake tenant scopes;
-- deprecated `Session.activeOrganizationId` is accepted only as a server-side preference after fresh Membership validation;
+- tenant scope derives only from a fresh server-side Membership read;
 - first-password onboarding blocks cabinet routes until `mustChangePassword=false`;
 - new users receive a 32-byte setup capability through operator CLI; only SHA-256 is stored and `/setup/#token` keeps the raw value out of HTTP/access-log paths;
 - production Platform Admin requires verified 2FA from the fail-closed `APP_ENV=production` identity; no bypass flag exists;

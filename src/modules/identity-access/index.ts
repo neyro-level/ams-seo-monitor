@@ -20,7 +20,6 @@ export {
   nextIdentityVersion,
   removeMembershipInputSchema,
   tenantRoleSchema,
-  toLegacyMembershipRole,
   updateMembershipInputSchema,
   updateOrganizationInputSchema,
   IdentityAdminError,

@@ -3,7 +3,6 @@ import type { DatabaseTransaction } from "../../../platform/database/transaction
 import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 import {
   IdentityAdminError,
-  toLegacyMembershipRole,
   type CreateMembershipInput,
   type CreateOrganizationInput,
   type IdentityAdminFormOptions,
@@ -258,7 +257,6 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
           organizationId: input.organizationId,
           userId: input.userId,
           tenantRole: input.tenantRole,
-          role: toLegacyMembershipRole(input.tenantRole),
         },
         select: { id: true, version: true },
       });
@@ -289,7 +287,6 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
       },
       data: {
         tenantRole: input.tenantRole,
-        role: toLegacyMembershipRole(input.tenantRole),
         version: { increment: 1 },
       },
     });

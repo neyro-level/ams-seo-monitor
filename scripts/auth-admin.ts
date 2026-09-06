@@ -205,7 +205,6 @@ async function setSystemRole() {
 async function addToOrganization() {
   const username = requireUsername();
   const organizationSlug = requireOption("organization");
-  const legacyRole = options["role"] ?? "client_viewer";
   const tenantRole = parseTenantRole(options["tenant-role"]);
   const user = await findUserByUsername(username);
   const organization = await prisma.organization.findUnique({ where: { slug: organizationSlug } });
@@ -221,11 +220,10 @@ async function addToOrganization() {
         userId: user.id,
       },
     },
-    update: { role: legacyRole, tenantRole },
+    update: { tenantRole },
     create: {
       organizationId: organization.id,
       userId: user.id,
-      role: legacyRole,
       tenantRole,
     },
   });
@@ -243,23 +241,12 @@ async function removeFromOrganization() {
     throw new Error(`Organization not found: ${organizationSlug}`);
   }
 
-  await prisma.$transaction([
-    prisma.member.deleteMany({
-      where: {
-        organizationId: organization.id,
-        userId: user.id,
-      },
-    }),
-    prisma.session.updateMany({
-      where: {
-        userId: user.id,
-        activeOrganizationId: organization.id,
-      },
-      data: {
-        activeOrganizationId: null,
-      },
-    }),
-  ]);
+  await prisma.member.deleteMany({
+    where: {
+      organizationId: organization.id,
+      userId: user.id,
+    },
+  });
 
   console.log(`organization_member_removed=${organizationSlug}:${username}`);
 }

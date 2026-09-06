@@ -7,7 +7,6 @@ import {
   IdentityAdminError,
   nextIdentityVersion,
   removeMembershipInputSchema,
-  toLegacyMembershipRole,
   updateMembershipInputSchema,
   updateOrganizationInputSchema,
 } from "../domain/admin-identity.ts";
@@ -148,7 +147,6 @@ export function createIdentityAdminCommands(
         afterMarker: {
           userId: input.userId,
           tenantRole: input.tenantRole,
-          role: toLegacyMembershipRole(input.tenantRole),
           version: membership.version,
         },
         correlationId: scope.correlationId,
@@ -196,13 +194,11 @@ export function createIdentityAdminCommands(
         beforeMarker: {
           userId: membership.userId,
           tenantRole: membership.tenantRole,
-          role: toLegacyMembershipRole(membership.tenantRole),
           version: membership.version,
         },
         afterMarker: {
           userId: membership.userId,
           tenantRole: input.tenantRole,
-          role: toLegacyMembershipRole(input.tenantRole),
           version,
         },
         correlationId: scope.correlationId,
@@ -253,7 +249,6 @@ export function createIdentityAdminCommands(
         beforeMarker: {
           userId: membership.userId,
           tenantRole: membership.tenantRole,
-          role: toLegacyMembershipRole(membership.tenantRole),
           version: membership.version,
         },
         afterMarker: null,

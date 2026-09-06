@@ -12,7 +12,6 @@ Public signup, self-service invitation/reset, impersonation, RLS, external API c
 
 - Better Auth: User identity, Account, Session, Verification, TwoFactor;
 - AMS: Organization, Member.tenantRole, permissions, onboarding state;
-- deprecated only: Session.activeOrganizationId, Member.role, Invitation.
 
 ## Principal types
 
@@ -48,7 +47,7 @@ Principal and identity DTOs exclude email where unnecessary, session token, pass
 
 ## Tenant behavior
 
-Tenant scope comes only from fresh Membership. Session active organization is a revalidated server-side preference, not authority.
+Tenant scope comes only from fresh Membership. Browser/session organization preferences are not an authority source.
 
 ## Resource authorization
 

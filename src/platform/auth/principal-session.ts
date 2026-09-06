@@ -39,7 +39,6 @@ async function getFreshPrincipalState(): Promise<{
     select: {
       userId: true,
       expiresAt: true,
-      activeOrganizationId: true,
       user: { select: { disabledAt: true } },
     },
   });
@@ -51,10 +50,7 @@ async function getFreshPrincipalState(): Promise<{
     return null;
   }
 
-  const state = await getPrincipalStateByUserId(session.user.id, {
-    // Legacy DB session state is accepted only after fresh AMS Membership validation.
-    activeOrganizationId: persistedSession.activeOrganizationId ?? null,
-  });
+  const state = await getPrincipalStateByUserId(session.user.id);
   return { state, disabled: persistedSession.user.disabledAt !== null };
 }
 

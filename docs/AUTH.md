@@ -21,7 +21,7 @@ AMS owns:
 - onboarding state;
 - audit of AMS business state.
 
-Better Auth Organization Plugin отсутствует в runtime. `Session.activeOrganizationId`, `Member.role` and `Invitation` remain deprecated schema compatibility fields. They do not define permissions and are never accepted without a fresh AMS Membership check.
+Better Auth Organization Plugin отсутствует в runtime и schema. Tenant scope определяется только свежим AMS Membership.
 
 ## PrincipalContext
 
@@ -44,7 +44,7 @@ requireTenantUser()
 createJobPrincipal()
 ```
 
-Browser values never construct a principal. The only compatibility input is `Session.activeOrganizationId` read from the server-side session record and validated against current AMS Membership.
+Browser values never construct a principal. Для tenant user сервер выбирает свежий Membership детерминированно по `organizationId`; смена organization выполняется только через отдельный server-owned flow.
 
 ## Roles and permissions
 
@@ -99,7 +99,7 @@ The setup token is emitted once to stdout and is never accepted through argv. `-
 - `User.mustChangePassword` owns first-access gating;
 - Better Auth owns `TwoFactor` fields and lifecycle;
 - tenant ownership fields and composite constraints are required;
-- removal of deprecated plugin-compatible fields is a separate compatibility-first migration listed in `docs/MASTER_PLAN.md`.
+- Better Auth Organization Plugin compatibility columns and `Invitation` table are absent.
 
 ## Entry points
 

@@ -137,7 +137,7 @@ External HTTP, provider calls, email и storage запрещены внутри 
 - every tenant-owned record carries `organizationId`;
 - composite foreign keys отклоняют cross-tenant parent relations;
 - cacheable tenant read принимает organization scope явно;
-- `Session.activeOrganizationId` используется только как revalidated server-side compatibility preference.
+- tenant scope выбирается только из свежих AMS Membership в детерминированном порядке.
 
 ## Reporting and provider invariants
 

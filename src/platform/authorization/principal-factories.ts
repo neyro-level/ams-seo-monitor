@@ -9,7 +9,6 @@ import type {
 } from "./principal.ts";
 
 export interface PrincipalFactoryOptions {
-  activeOrganizationId?: string | null;
   correlationId?: string;
 }
 
@@ -59,9 +58,7 @@ export async function getPrincipalStateByUserId(
   } else if (user.systemRole === "SEO_ANALYST") {
     principal = { kind: "platform-analyst", userId: user.id, correlationId } satisfies PlatformAnalystPrincipal;
   } else {
-    const selectedMembership = user.members.find(
-      (membership) => membership.organizationId === options.activeOrganizationId,
-    ) ?? user.members[0];
+    const selectedMembership = user.members[0];
     if (!selectedMembership) return null;
     principal = {
       kind: "tenant-user",

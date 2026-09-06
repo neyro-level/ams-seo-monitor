@@ -57,11 +57,11 @@ navigationTestDescription("database-backed navigation isolation", () => {
           userId: clientViewerIdentity.userId,
         },
       },
-      update: { role: "client_viewer" },
+      update: { tenantRole: "VIEWER" },
       create: {
         organizationId: organization.id,
         userId: clientViewerIdentity.userId,
-        role: "client_viewer",
+        tenantRole: "VIEWER",
       },
     });
     clientViewerPrincipal = (await getPrincipalStateByUserId(clientViewerIdentity.userId, {

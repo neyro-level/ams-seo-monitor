@@ -74,7 +74,6 @@ integrationDescription("PrincipalContext factories", () => {
       data: {
         organizationId,
         userId: `${suffix}-viewer`,
-        role: "client_viewer",
         tenantRole: "VIEWER",
       },
     });
@@ -105,7 +104,6 @@ integrationDescription("PrincipalContext factories", () => {
     });
     await expect(
       getPrincipalStateByUserId(`${suffix}-viewer`, {
-        activeOrganizationId: organizationId,
         correlationId,
       }),
     ).resolves.toMatchObject({
