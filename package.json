@@ -57,7 +57,6 @@
     "collector:webmaster:preflight": "pnpm build:collector && node dist-collector/collector/main.js webmaster-preflight",
     "collector:webmaster:audit": "pnpm build:collector && node dist-collector/collector/main.js webmaster-audit",
     "collector:metrica:preflight": "pnpm build:collector && node dist-collector/collector/main.js metrica-preflight",
-    "collector:metrica:audit": "pnpm build:collector && node dist-collector/collector/main.js metrica-audit",
     "worker:sync:project": "pnpm build:collector && node dist-collector/src/worker/main.js project-sync",
     "worker:sync:all": "pnpm build:collector && node dist-collector/src/worker/main.js projects-sync daily",
     "worker:outbox:drain": "pnpm build:collector && node dist-collector/src/worker/main.js outbox-drain",
