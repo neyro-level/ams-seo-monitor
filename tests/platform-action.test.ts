@@ -39,7 +39,9 @@ describe("defineAction", () => {
   it("injects the current admin and revalidates only after success", async () => {
     const { defineAction, dependencies } = boundary();
     const action = defineAction<{ value: string }, { saved: string }>({
-      execute: async ({ principal, input }) => ({ saved: `${principal.userId}:${input.value}` }),
+      execute: async ({ principal, input }) => ({
+        saved: `${principal.kind === "platform-admin" ? principal.userId : "wrong"}:${input.value}`,
+      }),
       revalidate: [{ path: "/admin", type: "layout" }],
     });
 

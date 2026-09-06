@@ -3,7 +3,7 @@
 import { defineAction } from "../../../platform/actions/define-action.ts";
 import { completePasswordOnboarding } from "../../../platform/auth/complete-password-onboarding.ts";
 
-export const completePasswordOnboardingAction = defineAction<void, { next: string }>({
+export const completePasswordOnboardingAction = defineAction<Record<string, never>, { next: string }>({
   access: "password-onboarding",
   execute: async ({ principal }) => {
     await completePasswordOnboarding(principal, {});
