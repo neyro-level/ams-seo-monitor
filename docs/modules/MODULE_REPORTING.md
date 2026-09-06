@@ -14,7 +14,7 @@ ReportSnapshot persistence, report repository port, period semantics and `SiteRe
 
 ## Principal types
 
-`platform-analyst` and `tenant-user`; current report read still accepts the explicit ActorContext compatibility path until planned cutover.
+`platform-analyst` and `tenant-user` through `PrincipalContext` only.
 
 ## Roles and permissions
 

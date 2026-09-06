@@ -10,35 +10,22 @@ import type {
   ReportRepository,
   StoredReportSnapshotRecord,
 } from "../src/modules/reporting/index.ts";
-import { createActorContext } from "./helpers/actor-context.ts";
+import {
+  createDeniedJobPrincipal,
+  createPlatformAnalystPrincipal,
+  createTenantUserPrincipal,
+} from "./helpers/principal.ts";
 import { siteReportSnapshotSchema } from "../src/shared/schemas/report.ts";
 
-const analystUser = createActorContext({
-  userId: "analyst-1",
-  email: "analyst@test.local",
-  name: "Analyst",
-  systemRole: "SEO_ANALYST",
-});
+const analystUser = createPlatformAnalystPrincipal("analyst-1");
 
-const REDACTED_CLIENT_DATAViewer = createActorContext({
+const REDACTED_CLIENT_DATAViewer = createTenantUserPrincipal({
   userId: "viewer-1",
-  email: "viewer@test.local",
-  name: "Viewer",
-  systemRole: "CLIENT_VIEWER",
-  memberships: [
-    {
-      membershipId: "membership-REDACTED_CLIENT_DATA",
-      organizationId: "org-REDACTED_CLIENT_DATA",
-      role: "client_viewer",
-    },
-  ],
+  membershipId: "membership-REDACTED_CLIENT_DATA",
+  organizationId: "org-REDACTED_CLIENT_DATA",
 });
 
-const deniedReportActor = createActorContext({
-  userId: "viewer-denied-report",
-  memberships: REDACTED_CLIENT_DATAViewer.memberships,
-  permissions: ["project:read:organization"],
-});
+const deniedReportPrincipal = createDeniedJobPrincipal("org-REDACTED_CLIENT_DATA");
 
 const sampleSite: StoredSiteRecord = {
   siteId: "site-REDACTED_CLIENT_DATA",
@@ -180,7 +167,7 @@ describe("ReportService", () => {
 
   it("denies report without report-read capability", async () => {
     const deniedReport = await reportService.getSiteReportForUser(
-      deniedReportActor,
+      deniedReportPrincipal,
       "REDACTED_CLIENT_DATA",
       "REDACTED_CLIENT_DATA",
       "month",

@@ -1,7 +1,7 @@
 import {
   hasPermission,
-  type ActorContext,
-} from "../../identity-access/index.ts";
+  type PrincipalContext,
+} from "../../../platform/authorization/principal.ts";
 import { getProjectService } from "../../../infrastructure/service-container.ts";
 
 export type NavigationChild = {
@@ -25,7 +25,7 @@ export type NavigationSection = {
 
 export async function buildNavigation(
   currentPath: string,
-  user: ActorContext,
+  user: PrincipalContext,
 ): Promise<NavigationSection[]> {
   const projectTrees = await getProjectService().listProjectTreesForUser(user);
   const clientPathMatch = currentPath.match(/^\/c\/([^/]+)\//);

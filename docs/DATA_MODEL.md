@@ -55,7 +55,7 @@ Deprecated compatibility schema. Runtime Organization Plugin is not registered; 
 
 ### PrincipalContext
 
-Not a database record. A server factory creates a discriminated principal from fresh User, Membership, validated active-organization preference and server correlation ID. Platform principals never receive fake `organizationId`. `ActorContext` remains only on the report/project read callsites named in `docs/MASTER_PLAN.md`.
+Not a database record. A server factory creates a discriminated principal from fresh User, Membership, validated active-organization preference and server correlation ID. Platform principals never receive fake `organizationId`; tenant reads use only the selected fresh Membership organization.
 
 ## Project registry
 

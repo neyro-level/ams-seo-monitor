@@ -6,7 +6,6 @@ import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { AppShell } from "../../../components/shell/AppShell.tsx";
 import {
-  getCurrentActorContext,
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
 } from "../../../modules/identity-access/server.ts";
@@ -126,13 +125,12 @@ export default async function AdminResourcePageRoute({
   const onboardingRedirect = await getCurrentCabinetRedirect();
   if (onboardingRedirect) redirect(onboardingRedirect);
 
-  const [user, state, routeParams, rawSearchParams] = await Promise.all([
-    getCurrentActorContext(),
+  const [state, routeParams, rawSearchParams] = await Promise.all([
     getCurrentPrincipalState(),
     params,
     searchParams,
   ]);
-  if (!user || !state) redirect("/?login=1");
+  if (!state) redirect("/?login=1");
   if (state.principal.kind !== "platform-admin") redirect("/dashboard/");
 
   const { resource } = routeParams;
@@ -159,7 +157,7 @@ export default async function AdminResourcePageRoute({
     const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
     if (query.page > pageCount) redirect(buildPlatformAdminPageHref(resource, query, { page: pageCount }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -188,7 +186,7 @@ export default async function AdminResourcePageRoute({
     const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
     if (query.page > pageCount) redirect(buildPlatformAdminPageHref(resource, query, { page: pageCount }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -215,7 +213,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -242,7 +240,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -269,7 +267,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -296,7 +294,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -330,7 +328,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -357,7 +355,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} user={user}>
+      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />

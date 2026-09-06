@@ -2,7 +2,7 @@
 
 ## Статус
 
-Canonical auth/authorization code использует `PrincipalContext`. `ActorContext` остаётся только на отдельных reporting/project/navigation reads и не расширяется.
+Canonical auth/authorization code использует только `PrincipalContext`.
 
 ## Ownership
 
@@ -103,7 +103,7 @@ Passwords use bounded stdin, never argv. `--tenant-role` accepts `ORG_OWNER`, `O
 - `src/platform/authorization/principal-factories.ts` — server factories;
 - `src/platform/auth/complete-password-onboarding.ts` — audited onboarding command;
 - `src/app/onboarding/*` — first-password and TOTP surfaces;
-- `src/modules/identity-access/domain/actor-context.ts` and related server facade — deprecated read compatibility boundary.
+- `src/modules/identity-access/domain/system-role.ts` — bounded parser для operator CLI roles, без отдельной permission model.
 
 ## Proof
 

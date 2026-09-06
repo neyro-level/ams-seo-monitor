@@ -4,12 +4,6 @@
 
 ## Platform contract completion
 
-### PrincipalContext clean cutover
-
-- перевести оставшиеся report/project/navigation/layout/demo reads;
-- сохранить текущие permission и tenant semantics;
-- удалить `ActorContext` facade, exports, helpers и tests; запретить новый import механически.
-
 ### Setup token и auth recovery
 
 - заменить основной временный пароль одноразовым setup-token flow;

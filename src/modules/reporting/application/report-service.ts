@@ -1,7 +1,7 @@
 import type { ProjectRepository } from "../../project-registry/index.ts";
 import type { ReportRepository, StoredReportSnapshotRecord } from "./ports/report-repository.ts";
 import type { ReportPeriodKey, SiteReportSnapshot } from "../../../shared/schemas/report.ts";
-import { hasPermission, type ActorContext } from "../../identity-access/index.ts";
+import { hasPermission, type PrincipalContext } from "../../../platform/authorization/principal.ts";
 import { ProjectService } from "../../project-registry/index.ts";
 
 export class ReportService {
@@ -18,7 +18,7 @@ export class ReportService {
   }
 
   async getSiteReportForUser(
-    user: ActorContext,
+    user: PrincipalContext,
     projectSlug: string,
     siteSlug: string,
     periodKey: ReportPeriodKey,

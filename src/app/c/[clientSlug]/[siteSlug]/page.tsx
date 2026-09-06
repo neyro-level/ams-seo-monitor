@@ -5,8 +5,8 @@ import { AppShell } from "../../../../components/shell/AppShell.tsx";
 import { ReportPeriodSelector } from "../../../../components/dashboard/ReportPeriodSelector.tsx";
 import { SiteReportView } from "../../../../modules/reporting/presentation.ts";
 import {
-  getCurrentActorContext,
   getCurrentCabinetRedirect,
+  getCurrentPrincipalState,
 } from "../../../../modules/identity-access/server.ts";
 import {
   getMonitoringService,
@@ -33,8 +33,8 @@ function resolvePeriodKey(period: string | undefined): ReportPeriodKey {
 export default async function SiteReportPage({ params, searchParams }: SiteReportPageProps) {
   const onboardingRedirect = await getCurrentCabinetRedirect();
   if (onboardingRedirect) redirect(onboardingRedirect);
-  const user = await getCurrentActorContext();
-  if (!user) redirect("/?login=1");
+  const state = await getCurrentPrincipalState();
+  if (!state) redirect("/?login=1");
 
   const { clientSlug, siteSlug } = await params;
   const { period } = await searchParams;
@@ -43,14 +43,14 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
   const reportService = getReportService();
   const monitoringService = getMonitoringService();
 
-  const authorizedSite = await projectService.getSiteAccessForUser(user, clientSlug, siteSlug);
+  const authorizedSite = await projectService.getSiteAccessForUser(state.principal, clientSlug, siteSlug);
   if (!authorizedSite) {
     notFound();
   }
 
   const [projectContext, snapshot] = await Promise.all([
     monitoringService.getProjectContext(clientSlug),
-    reportService.getSiteReportForUser(user, clientSlug, siteSlug, periodKey),
+    reportService.getSiteReportForUser(state.principal, clientSlug, siteSlug, periodKey),
   ]);
   const site = projectContext?.client.sites.find((item) => item.siteSlug === siteSlug) ?? null;
 
@@ -59,7 +59,7 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
   }
 
   return (
-    <AppShell currentPath={`/c/${clientSlug}/${siteSlug}/`} user={user}>
+    <AppShell currentPath={`/c/${clientSlug}/${siteSlug}/`} principal={state.principal} displayName={state.displayName}>
       <SiteReportView
         clientName={`Проект ${projectContext.client.name}`}
         site={site}

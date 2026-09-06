@@ -64,7 +64,7 @@ Vertical modules содержат `domain / application / infrastructure / prese
 
 Better Auth владеет identity/password/session/2FA. AMS владеет Organization, Membership, permissions, resource authorization и onboarding state.
 
-Новые и мигрированные paths используют `PrincipalContext`. Оставшиеся `ActorContext` reads существуют только в project/report/navigation paths, перечислены в `docs/MASTER_PLAN.md` и не расширяются.
+Все private reads и mutations используют только `PrincipalContext`; compatibility authorization facade удалён и запрещён статическим guard.
 
 ### Project Registry
 

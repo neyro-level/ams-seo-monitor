@@ -4,10 +4,9 @@ import type {
   StoredSiteRecord,
 } from "./ports/project-repository.ts";
 import {
-  getActorOrganizationIds,
   hasPermission,
-  type ActorContext,
-} from "../../identity-access/index.ts";
+  type PrincipalContext,
+} from "../../../platform/authorization/principal.ts";
 
 export interface ProjectSiteSummary {
   siteId: string;
@@ -82,30 +81,33 @@ function toProjectSummary(project: ProjectTree): ProjectSummary {
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
-  private getAccessScope(actor: ActorContext) {
-    if (hasPermission(actor, "project:read:any")) {
+  private getAccessScope(principal: PrincipalContext) {
+    if (hasPermission(principal, "project:read:any")) {
       return { organizationIds: null };
     }
-    if (hasPermission(actor, "project:read:organization")) {
-      return { organizationIds: getActorOrganizationIds(actor) };
+    if (
+      principal.kind === "tenant-user" &&
+      hasPermission(principal, "project:read:organization")
+    ) {
+      return { organizationIds: [principal.organizationId] };
     }
 
     return { organizationIds: [] };
   }
 
-  async listProjectTreesForUser(user: ActorContext): Promise<ProjectTree[]> {
+  async listProjectTreesForUser(user: PrincipalContext): Promise<ProjectTree[]> {
     const scope = this.getAccessScope(user);
     const projects = await this.projectRepository.listProjects(scope);
     return projects.map(toProjectTree);
   }
 
-  async listProjectsForUser(user: ActorContext): Promise<ProjectSummary[]> {
+  async listProjectsForUser(user: PrincipalContext): Promise<ProjectSummary[]> {
     const projects = await this.listProjectTreesForUser(user);
     return projects.map(toProjectSummary);
   }
 
   async getProjectTreeForUser(
-    user: ActorContext,
+    user: PrincipalContext,
     projectSlug: string,
   ): Promise<ProjectTree | null> {
     const project = await this.getProjectAccessForUser(user, projectSlug);
@@ -113,7 +115,7 @@ export class ProjectService {
   }
 
   async getProjectAccessForUser(
-    user: ActorContext,
+    user: PrincipalContext,
     projectSlug: string,
   ): Promise<StoredProjectRecord | null> {
     const scope = this.getAccessScope(user);
@@ -121,7 +123,7 @@ export class ProjectService {
   }
 
   async getSiteAccessForUser(
-    user: ActorContext,
+    user: PrincipalContext,
     projectSlug: string,
     siteSlug: string,
   ): Promise<StoredSiteRecord | null> {

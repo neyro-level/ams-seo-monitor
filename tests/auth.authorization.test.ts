@@ -5,13 +5,14 @@ import { PrismaClient, SystemRole } from "../src/generated/prisma/client.ts"
 import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
 import { Pool } from "pg";
-import {
-  getActorContextByUserId,
-  getAuthorizedProjectAccess,
-  getAuthorizedSiteAccess,
-} from "../src/modules/identity-access/server.ts";
+import { ProjectService } from "../src/modules/project-registry/index.ts";
+import { PrismaProjectRepository } from "../src/modules/project-registry/server.ts";
+import { getPrincipalStateByUserId } from "../src/platform/authorization/principal-factories.ts";
 import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
-import type { ActorContext } from "../src/modules/identity-access/index.ts";
+import {
+  hasPermission,
+  type PrincipalContext,
+} from "../src/platform/authorization/principal.ts";
 
 const authTestDatabaseUrl = process.env.AUTH_TEST_DATABASE_URL ?? null;
 const authTestDatabaseHost =
@@ -46,11 +47,12 @@ const authTestEmails = {
 
 let prisma: PrismaClient | null = null;
 let pool: Pool | null = null;
-let platformAdminUser: ActorContext | null = null;
-let analystUser: ActorContext | null = null;
-let REDACTED_CLIENT_DATAViewerUser: ActorContext | null = null;
-let REDACTED_CLIENT_DATAViewerUser: ActorContext | null = null;
+let platformAdminUser: PrincipalContext | null = null;
+let analystUser: PrincipalContext | null = null;
+let REDACTED_CLIENT_DATAViewerUser: PrincipalContext | null = null;
+let REDACTED_CLIENT_DATAViewerUser: PrincipalContext | null = null;
 let disabledViewerId: string | null = null;
+const projectService = new ProjectService(new PrismaProjectRepository());
 
 async function ensureCredentialUser(email: string, name: string, systemRole: SystemRole) {
   if (!prisma) {
@@ -190,19 +192,19 @@ authTestDescription("authorization matrix", () => {
       },
     });
 
-    platformAdminUser = await getActorContextByUserId(platformAdminUserId, {
+    platformAdminUser = (await getPrincipalStateByUserId(platformAdminUserId, {
       correlationId: "00000000-0000-4000-8000-000000000010",
-    });
-    analystUser = await getActorContextByUserId(analystUserId, {
+    }))?.principal ?? null;
+    analystUser = (await getPrincipalStateByUserId(analystUserId, {
       correlationId: "00000000-0000-4000-8000-000000000011",
-    });
-    REDACTED_CLIENT_DATAViewerUser = await getActorContextByUserId(REDACTED_CLIENT_DATAViewerId, {
+    }))?.principal ?? null;
+    REDACTED_CLIENT_DATAViewerUser = (await getPrincipalStateByUserId(REDACTED_CLIENT_DATAViewerId, {
       activeOrganizationId: REDACTED_CLIENT_DATAOrganization.id,
       correlationId: "00000000-0000-4000-8000-000000000012",
-    });
-    REDACTED_CLIENT_DATAViewerUser = await getActorContextByUserId(REDACTED_CLIENT_DATAViewerId, {
+    }))?.principal ?? null;
+    REDACTED_CLIENT_DATAViewerUser = (await getPrincipalStateByUserId(REDACTED_CLIENT_DATAViewerId, {
       correlationId: "00000000-0000-4000-8000-000000000013",
-    });
+    }))?.principal ?? null;
   });
 
   afterAll(async () => {
@@ -216,45 +218,44 @@ authTestDescription("authorization matrix", () => {
 
   it("returns null for disabled users", async () => {
     expect(disabledViewerId).not.toBeNull();
-    expect(await getActorContextByUserId(disabledViewerId!)).toBeNull();
+    expect(await getPrincipalStateByUserId(disabledViewerId!)).toBeNull();
   });
 
   it("builds platform admin permissions and global access", async () => {
     expect(platformAdminUser).toMatchObject({
-      systemRole: "PLATFORM_ADMIN",
+      kind: "platform-admin",
       correlationId: "00000000-0000-4000-8000-000000000010",
     });
-    expect(platformAdminUser?.permissions).toContain("platform:manage");
-    expect(await getAuthorizedProjectAccess(platformAdminUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
-    expect(await getAuthorizedProjectAccess(platformAdminUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(hasPermission(platformAdminUser!, "platform:manage")).toBe(true);
+    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
   });
 
   it("allows analyst to read every project", async () => {
     expect(analystUser).not.toBeNull();
-    expect(await getAuthorizedProjectAccess(analystUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
-    expect(await getAuthorizedProjectAccess(analystUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(analystUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(analystUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
   });
 
   it("loads current memberships and validates active organization", () => {
-    expect(REDACTED_CLIENT_DATAViewerUser?.memberships).toHaveLength(1);
-    expect(REDACTED_CLIENT_DATAViewerUser?.activeOrganizationId).toBe(
-      REDACTED_CLIENT_DATAViewerUser?.memberships[0]?.organizationId,
-    );
-    expect(REDACTED_CLIENT_DATAViewerUser?.permissions).toEqual([
-      "project:read:organization",
-      "report:read:organization",
-    ]);
+    expect(REDACTED_CLIENT_DATAViewerUser).toMatchObject({
+      kind: "tenant-user",
+      organizationId: expect.any(String),
+      role: "VIEWER",
+    });
+    expect(hasPermission(REDACTED_CLIENT_DATAViewerUser!, "project:read:organization")).toBe(true);
+    expect(hasPermission(REDACTED_CLIENT_DATAViewerUser!, "report:read:organization")).toBe(true);
   });
 
   it("allows client viewer only inside own organization project", async () => {
     expect(REDACTED_CLIENT_DATAViewerUser).not.toBeNull();
-    expect(await getAuthorizedProjectAccess(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
-    expect(await getAuthorizedProjectAccess(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA")).toBeNull();
+    expect(await projectService.getProjectAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA")).toBeNull();
   });
 
   it("denies foreign site access for another client viewer", async () => {
     expect(REDACTED_CLIENT_DATAViewerUser).not.toBeNull();
-    expect(await getAuthorizedSiteAccess(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA")).toBeNull();
-    expect(await getAuthorizedSiteAccess(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(await projectService.getSiteAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA")).toBeNull();
+    expect(await projectService.getSiteAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA")).not.toBeNull();
   });
 });

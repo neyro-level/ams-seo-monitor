@@ -1,6 +1,6 @@
 # PRODUCT
 
-Product behavior в этом документе authoritative. `PrincipalContext` и AMS Membership являются canonical access contract; `ActorContext` остаётся только на перечисленных в `docs/MASTER_PLAN.md` report/project reads.
+Product behavior в этом документе authoritative. `PrincipalContext` и AMS Membership являются единственным access contract кабинета.
 
 ## Назначение
 
