@@ -9,7 +9,8 @@ import {
 } from "../src/platform/auth/setup-token.ts";
 
 const testPassword = "setup-test-password-2026";
-const testPrefix = "setup-token-test-";
+const testUsernamePrefix = "setup_test_";
+const testEmailPrefix = "setup-token-test-";
 
 function decodeBase32(value: string): Buffer {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -54,8 +55,8 @@ async function provisionSetupUser(options?: { expired?: boolean; revoked?: boole
   await prisma.user.create({
     data: {
       id: userId,
-      username: `${testPrefix}${suffix}`.slice(0, 30),
-      email: `${testPrefix}${suffix}@example.invalid`,
+      username: `${testUsernamePrefix}${suffix.replaceAll("-", "")}`.slice(0, 30),
+      email: `${testEmailPrefix}${suffix}@example.invalid`,
       name: "Setup Token Test",
       mustChangePassword: true,
       setupTokens: {
@@ -81,7 +82,7 @@ describe("setup-token onboarding and 2FA recovery", () => {
   afterAll(async () => {
     const prisma = getPrismaClient();
     await prisma.user.deleteMany({
-      where: { email: { startsWith: testPrefix } },
+      where: { email: { startsWith: testEmailPrefix } },
     });
   });
 
@@ -124,6 +125,22 @@ describe("setup-token onboarding and 2FA recovery", () => {
       }),
     ).rejects.toMatchObject({ status: "UNAUTHORIZED" });
     expect(await prisma.account.count({ where: { userId: setup.userId } })).toBe(0);
+  });
+
+  it("allows only one concurrent setup completion", async () => {
+    const prisma = getPrismaClient();
+    const setup = await provisionSetupUser();
+    const attempts = await Promise.allSettled([
+      auth!.api.completeUserSetup({
+        body: { token: setup.token, newPassword: testPassword, correlationId: randomUUID() },
+      }),
+      auth!.api.completeUserSetup({
+        body: { token: setup.token, newPassword: testPassword, correlationId: randomUUID() },
+      }),
+    ]);
+    expect(attempts.filter((attempt) => attempt.status === "fulfilled")).toHaveLength(1);
+    expect(attempts.filter((attempt) => attempt.status === "rejected")).toHaveLength(1);
+    expect(await prisma.account.count({ where: { userId: setup.userId, providerId: "credential" } })).toBe(1);
   });
 
   it("enrolls TOTP and consumes a Better Auth backup code only once", async () => {

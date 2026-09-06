@@ -39,7 +39,7 @@ Application runtime accepts one explicit URL or the complete component set. Pris
 | `NEXT_PUBLIC_LEADS_SITE_KEY` | public lead form | build/browser | no | public anti-abuse site key, not read credential; rebuild |
 | `NODE_ENV` | runtime | web/worker | no | compose/runtime; redeploy |
 
-`AMS_E2E_TEST` is runner-owned local E2E isolation only and is forbidden in production.
+E2E uses the explicit `APP_ENV=test` identity. Production 2FA has no environment bypass flag.
 
 ## Worker and providers
 

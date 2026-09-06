@@ -33,7 +33,7 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - deprecated `Session.activeOrganizationId` is accepted only as a server-side preference after fresh Membership validation;
 - first-password onboarding blocks cabinet routes until `mustChangePassword=false`;
 - new users receive a 32-byte setup capability through operator CLI; only SHA-256 is stored and `/setup/#token` keeps the raw value out of HTTP/access-log paths;
-- production Platform Admin requires verified 2FA; `AMS_E2E_TEST` bypass is test-only and forbidden in deployment env;
+- production Platform Admin requires verified 2FA from the fail-closed `APP_ENV=production` identity; no bypass flag exists;
 - every private page/service requires `PrincipalContext` permission + resource authorization;
 - public signup is disabled;
 - presentation does not import Prisma;

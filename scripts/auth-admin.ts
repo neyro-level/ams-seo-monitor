@@ -71,6 +71,14 @@ function requireUsername() {
   return normalizeUsername(requireOption("username"));
 }
 
+function requireCreatorId() {
+  const value = requireOption("created-by").trim();
+  if (!/^[a-zA-Z0-9_.:@-]{2,120}$/.test(value)) {
+    throw new Error("--created-by must be a 2-120 character nonsecret operator identifier");
+  }
+  return value;
+}
+
 async function findUserByUsername(username: string) {
   const user = await prisma.user.findUnique({ where: { username } });
   if (!user) {
@@ -90,7 +98,7 @@ async function createUser() {
   const username = requireUsername();
   const email = (options.email ?? `${username}@users.impulse.invalid`).toLowerCase();
   const name = requireOption("name");
-  const createdBy = requireOption("created-by");
+  const createdBy = requireCreatorId();
   if (options.password !== undefined) {
     throw new Error("--password is forbidden; user:create issues a one-time setup token");
   }
@@ -159,6 +167,10 @@ async function disableUser() {
 
   await prisma.$transaction([
     prisma.session.deleteMany({ where: { userId: user.id } }),
+    prisma.userSetupToken.updateMany({
+      where: { userId: user.id, usedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
     prisma.account.updateMany({
       where: {
         userId: user.id,

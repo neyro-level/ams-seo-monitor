@@ -5,6 +5,7 @@ import { APIError, createAuthEndpoint } from "better-auth/api";
 import { createLocalAccountIssuer } from "better-auth/db";
 import type { BetterAuthPlugin } from "better-auth";
 import { z } from "zod";
+import { getPrismaClient } from "../database/prisma/client.ts";
 import { runInDatabaseTransaction } from "../database/transaction.ts";
 import { hashUserSetupToken } from "./setup-token.ts";
 
@@ -47,8 +48,27 @@ export function userSetupTokenPlugin() {
           }
 
           const tokenHash = hashUserSetupToken(token);
-          const passwordHash = await context.context.password.hash(newPassword);
           const now = new Date();
+          const candidate = await getPrismaClient().userSetupToken.findUnique({
+            where: { tokenHash },
+            select: {
+              expiresAt: true,
+              usedAt: true,
+              revokedAt: true,
+              user: { select: { disabledAt: true, mustChangePassword: true } },
+            },
+          });
+          if (
+            !candidate ||
+            candidate.usedAt ||
+            candidate.revokedAt ||
+            candidate.expiresAt <= now ||
+            candidate.user.disabledAt ||
+            !candidate.user.mustChangePassword
+          ) {
+            invalidSetupToken();
+          }
+          const passwordHash = await context.context.password.hash(newPassword);
 
           await runInDatabaseTransaction(async (transaction) => {
             const setupToken = await transaction.userSetupToken.findUnique({

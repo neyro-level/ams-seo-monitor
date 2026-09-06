@@ -26,7 +26,7 @@ export default defineConfig({
       NODE_ENV: "production",
       BETTER_AUTH_SECRET: "e2e-only-secret-at-least-thirty-two-characters",
       BETTER_AUTH_URL: baseURL,
-      AMS_E2E_TEST: "true",
+      APP_ENV: "test",
     },
   },
   projects: [
