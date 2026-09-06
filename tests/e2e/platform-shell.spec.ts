@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { adminAuthStatePath } from "./auth-state.ts";
 
+const syntheticAlphaProjectName = "Synthetic Alpha Organization";
+
 test("preserves the public AMS IMPULSE surface", async ({ page, request }) => {
   await page.goto("/");
 
@@ -112,11 +114,15 @@ test.describe("Platform Admin", () => {
     if ((page.viewportSize()?.width ?? 0) < 768) {
       const projectCard = page.locator("article").first();
       await expect(projectCard).toBeVisible();
-      await expect(projectCard.getByRole("heading", { name: "Альфа" })).toBeVisible();
+      await expect(
+        projectCard.getByRole("heading", { name: syntheticAlphaProjectName }),
+      ).toBeVisible();
     } else {
       const projectTable = page.getByRole("table");
       await expect(projectTable).toBeVisible();
-      await expect(projectTable.getByText("Альфа", { exact: true }).first()).toBeVisible();
+      await expect(
+        projectTable.getByText(syntheticAlphaProjectName, { exact: true }).first(),
+      ).toBeVisible();
       await projectTable.getByRole("link", { name: "Проект", exact: true }).click();
       await expect(page).toHaveURL(/sort=name/);
     }
