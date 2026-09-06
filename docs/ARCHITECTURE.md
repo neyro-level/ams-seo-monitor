@@ -105,12 +105,13 @@ Mutation:
 
 ```text
 form / Server Action
-→ fresh PrincipalContext
+→ defineAction: fresh session + PrincipalContext + safe error envelope
 → defineCommand
 → permission + resource authorization
 → transaction-bound repositories
 → business mutation + AuditEvent + optional OutboxEvent
 → typed result
+→ defineAction revalidation after success
 ```
 
 Worker:

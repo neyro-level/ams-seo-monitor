@@ -1,10 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { z } from "zod";
 import { defineAction } from "../../../platform/actions/define-action.ts";
-import { getCurrentPrincipalState } from "../../../platform/auth/principal-session.ts";
 import { ProjectError } from "../../../modules/project-registry/index.ts";
 import {
   changeProjectStatus,
@@ -17,28 +13,7 @@ import type {
   UpdateProjectSettingsInput,
 } from "../../../modules/project-registry/contracts.ts";
 
-async function currentPrincipal() {
-  const state = await getCurrentPrincipalState();
-  if (!state) redirect("/?login=1");
-  return state.principal;
-}
-
-function failure(error: unknown, correlationId: string) {
-  if (error instanceof z.ZodError) {
-    const fieldErrors: Record<string, string[]> = {};
-    for (const issue of error.issues) {
-      const field = String(issue.path[0] ?? "form");
-      fieldErrors[field] = [...(fieldErrors[field] ?? []), issue.message];
-    }
-    return {
-      ok: false as const,
-      code: "PROJECT_INPUT_INVALID",
-      message: "Проверьте заполненные поля.",
-      correlationId,
-      fieldErrors,
-    };
-  }
-
+function mapProjectError(error: unknown) {
   const code = error instanceof ProjectError ? error.code : "PROJECT_ACTION_FAILED";
   const messages: Record<string, string> = {
     PROJECT_ACCESS_DENIED: "Недостаточно прав для изменения проекта.",
@@ -47,48 +22,23 @@ function failure(error: unknown, correlationId: string) {
     PROJECT_SLUG_CONFLICT: "Проект с таким slug уже существует.",
     PROJECT_REFERENCE_INVALID: "Выбранная организация или профиль недоступны.",
   };
-  return {
-    ok: false as const,
-    code,
-    message: messages[code] ?? "Не удалось сохранить проект.",
-    correlationId,
-    fieldErrors: {},
-  };
+  return { code, message: messages[code] ?? "Не удалось сохранить проект." };
 }
 
-export const createProjectAction = defineAction(async (input: CreateProjectInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await createProject(principal, input);
-    revalidatePath("/admin/projects");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
+function projectAction<TInput, TResult>(
+  execute: (principal: Parameters<typeof createProject>[0], input: TInput) => Promise<TResult>,
+) {
+  return defineAction<TInput, TResult>({
+    execute: ({ principal, input }) => execute(principal, input),
+    mapError: mapProjectError,
+    inputError: {
+      code: "PROJECT_INPUT_INVALID",
+      message: "Проверьте заполненные поля.",
+    },
+    revalidate: [{ path: "/admin/projects" }],
+  });
+}
 
-export const changeProjectStatusAction = defineAction(
-  async (input: ChangeProjectStatusInput) => {
-    const principal = await currentPrincipal();
-    try {
-      const data = await changeProjectStatus(principal, input);
-      revalidatePath("/admin/projects");
-      return { ok: true as const, data };
-    } catch (error) {
-      return failure(error, principal.correlationId);
-    }
-  },
-);
-
-export const updateProjectSettingsAction = defineAction(
-  async (input: UpdateProjectSettingsInput) => {
-    const principal = await currentPrincipal();
-    try {
-      const data = await updateProjectSettings(principal, input);
-      revalidatePath("/admin/projects");
-      return { ok: true as const, data };
-    } catch (error) {
-      return failure(error, principal.correlationId);
-    }
-  },
-);
+export const createProjectAction = projectAction<CreateProjectInput, Awaited<ReturnType<typeof createProject>>>(createProject);
+export const changeProjectStatusAction = projectAction<ChangeProjectStatusInput, Awaited<ReturnType<typeof changeProjectStatus>>>(changeProjectStatus);
+export const updateProjectSettingsAction = projectAction<UpdateProjectSettingsInput, Awaited<ReturnType<typeof updateProjectSettings>>>(updateProjectSettings);

@@ -1,10 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { z } from "zod";
 import { defineAction } from "../../platform/actions/define-action.ts";
-import { getCurrentPrincipalState } from "../../modules/identity-access/server.ts";
+import type { PrincipalContext } from "../../platform/authorization/principal.ts";
 import { IdentityAdminError } from "../../modules/identity-access/contracts.ts";
 import {
   createMembership,
@@ -49,28 +46,7 @@ import type {
   UpdateOrganizationInput,
 } from "../../modules/identity-access/contracts.ts";
 
-async function currentPrincipal() {
-  const state = await getCurrentPrincipalState();
-  if (!state) redirect("/?login=1");
-  return state.principal;
-}
-
-function failure(error: unknown, correlationId: string) {
-  if (error instanceof z.ZodError) {
-    const fieldErrors: Record<string, string[]> = {};
-    for (const issue of error.issues) {
-      const field = String(issue.path[0] ?? "form");
-      fieldErrors[field] = [...(fieldErrors[field] ?? []), issue.message];
-    }
-    return {
-      ok: false as const,
-      code: "PLATFORM_ADMIN_INPUT_INVALID",
-      message: "Проверьте заполненные поля.",
-      correlationId,
-      fieldErrors,
-    };
-  }
-
+function mapError(error: unknown) {
   const code =
     error instanceof IdentityAdminError
       ? error.code
@@ -120,213 +96,44 @@ function failure(error: unknown, correlationId: string) {
   };
 
   return {
-    ok: false as const,
     code,
     message: messages[code] ?? "Не удалось сохранить изменения.",
-    correlationId,
-    fieldErrors: {},
   };
 }
 
-function revalidateAdmin(resource: string) {
-  revalidatePath("/admin", "layout");
-  revalidatePath(`/admin/${resource}`);
+function platformAdminAction<TInput, TResult>(
+  resource: string,
+  execute: (principal: PrincipalContext, input: TInput) => Promise<TResult>,
+) {
+  return defineAction<TInput, TResult>({
+    execute: ({ principal, input }) => execute(principal, input),
+    mapError,
+    inputError: {
+      code: "PLATFORM_ADMIN_INPUT_INVALID",
+      message: "Проверьте заполненные поля.",
+    },
+    revalidate: [
+      { path: "/admin", type: "layout" },
+      { path: `/admin/${resource}` },
+    ],
+  });
 }
 
-export const createOrganizationAction = defineAction(async (input: CreateOrganizationInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await createOrganization(principal, input);
-    revalidateAdmin("organizations");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateOrganizationAction = defineAction(async (input: UpdateOrganizationInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await updateOrganization(principal, input);
-    revalidateAdmin("organizations");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const createMembershipAction = defineAction(async (input: CreateMembershipInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await createMembership(principal, input);
-    revalidateAdmin("memberships");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateMembershipAction = defineAction(async (input: UpdateMembershipInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await updateMembership(principal, input);
-    revalidateAdmin("memberships");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const removeMembershipAction = defineAction(async (input: RemoveMembershipInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await removeMembership(principal, input);
-    revalidateAdmin("memberships");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const createSiteAction = defineAction(async (input: CreateSiteInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveSite(principal, input);
-    revalidateAdmin("sites");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateSiteAction = defineAction(async (input: UpdateSiteInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveSite(principal, input);
-    revalidateAdmin("sites");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const createProviderConnectionAction = defineAction(async (input: CreateProviderConnectionInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveProviderConnection(principal, input);
-    revalidateAdmin("providers");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateProviderConnectionAction = defineAction(async (input: UpdateProviderConnectionInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveProviderConnection(principal, input);
-    revalidateAdmin("providers");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const createGoalDefinitionAction = defineAction(async (input: CreateGoalDefinitionInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveGoalDefinition(principal, input);
-    revalidateAdmin("goals");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateGoalDefinitionAction = defineAction(async (input: UpdateGoalDefinitionInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveGoalDefinition(principal, input);
-    revalidateAdmin("goals");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const createTrackedQuerySetAction = defineAction(async (input: CreateTrackedQuerySetInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveTrackedQuerySet(principal, input);
-    revalidateAdmin("tracked-queries");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateTrackedQuerySetAction = defineAction(async (input: UpdateTrackedQuerySetInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveTrackedQuerySet(principal, input);
-    revalidateAdmin("tracked-queries");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const createThresholdProfileAction = defineAction(async (input: CreateThresholdProfileInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveThresholdProfile(principal, input);
-    revalidateAdmin("profiles");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateThresholdProfileAction = defineAction(async (input: UpdateThresholdProfileInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveThresholdProfile(principal, input);
-    revalidateAdmin("profiles");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const createQueryClusterProfileAction = defineAction(async (input: CreateQueryClusterProfileInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveQueryClusterProfile(principal, input);
-    revalidateAdmin("profiles");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const updateQueryClusterProfileAction = defineAction(async (input: UpdateQueryClusterProfileInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await saveQueryClusterProfile(principal, input);
-    revalidateAdmin("profiles");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
-
-export const requestProjectSyncAction = defineAction(async (input: RequestProjectSyncInput) => {
-  const principal = await currentPrincipal();
-  try {
-    const data = await requestProjectSync(principal, input);
-    revalidateAdmin("operations");
-    return { ok: true as const, data };
-  } catch (error) {
-    return failure(error, principal.correlationId);
-  }
-});
+export const createOrganizationAction = platformAdminAction<CreateOrganizationInput, Awaited<ReturnType<typeof createOrganization>>>("organizations", createOrganization);
+export const updateOrganizationAction = platformAdminAction<UpdateOrganizationInput, Awaited<ReturnType<typeof updateOrganization>>>("organizations", updateOrganization);
+export const createMembershipAction = platformAdminAction<CreateMembershipInput, Awaited<ReturnType<typeof createMembership>>>("memberships", createMembership);
+export const updateMembershipAction = platformAdminAction<UpdateMembershipInput, Awaited<ReturnType<typeof updateMembership>>>("memberships", updateMembership);
+export const removeMembershipAction = platformAdminAction<RemoveMembershipInput, Awaited<ReturnType<typeof removeMembership>>>("memberships", removeMembership);
+export const createSiteAction = platformAdminAction<CreateSiteInput, Awaited<ReturnType<typeof saveSite>>>("sites", saveSite);
+export const updateSiteAction = platformAdminAction<UpdateSiteInput, Awaited<ReturnType<typeof saveSite>>>("sites", saveSite);
+export const createProviderConnectionAction = platformAdminAction<CreateProviderConnectionInput, Awaited<ReturnType<typeof saveProviderConnection>>>("providers", saveProviderConnection);
+export const updateProviderConnectionAction = platformAdminAction<UpdateProviderConnectionInput, Awaited<ReturnType<typeof saveProviderConnection>>>("providers", saveProviderConnection);
+export const createGoalDefinitionAction = platformAdminAction<CreateGoalDefinitionInput, Awaited<ReturnType<typeof saveGoalDefinition>>>("goals", saveGoalDefinition);
+export const updateGoalDefinitionAction = platformAdminAction<UpdateGoalDefinitionInput, Awaited<ReturnType<typeof saveGoalDefinition>>>("goals", saveGoalDefinition);
+export const createTrackedQuerySetAction = platformAdminAction<CreateTrackedQuerySetInput, Awaited<ReturnType<typeof saveTrackedQuerySet>>>("tracked-queries", saveTrackedQuerySet);
+export const updateTrackedQuerySetAction = platformAdminAction<UpdateTrackedQuerySetInput, Awaited<ReturnType<typeof saveTrackedQuerySet>>>("tracked-queries", saveTrackedQuerySet);
+export const createThresholdProfileAction = platformAdminAction<CreateThresholdProfileInput, Awaited<ReturnType<typeof saveThresholdProfile>>>("profiles", saveThresholdProfile);
+export const updateThresholdProfileAction = platformAdminAction<UpdateThresholdProfileInput, Awaited<ReturnType<typeof saveThresholdProfile>>>("profiles", saveThresholdProfile);
+export const createQueryClusterProfileAction = platformAdminAction<CreateQueryClusterProfileInput, Awaited<ReturnType<typeof saveQueryClusterProfile>>>("profiles", saveQueryClusterProfile);
+export const updateQueryClusterProfileAction = platformAdminAction<UpdateQueryClusterProfileInput, Awaited<ReturnType<typeof saveQueryClusterProfile>>>("profiles", saveQueryClusterProfile);
+export const requestProjectSyncAction = platformAdminAction<RequestProjectSyncInput, Awaited<ReturnType<typeof requestProjectSync>>>("operations", requestProjectSync);

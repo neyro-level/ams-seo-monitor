@@ -190,6 +190,7 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - idempotency key is tenant-scoped and payload-hash bound;
 - audit/outbox/idempotency enqueue is one transaction;
 - Platform Admin использует только typed Server Actions и owner commands; resource mutation и safe AuditEvent атомарны;
+- `defineAction` централизованно требует fresh non-cached Better Auth session, active user, completed password onboarding и production 2FA для Platform Admin; direct action call не обходит boundary;
 - provider settings из browser принимают только плоский nonsecret JSON и отклоняют sensitive key names;
 - tracked query replacement сохраняет records/history и меняет lifecycle через `enabled`;
 - outbox payload, pg-boss transport data, audit markers and JobRun errors exclude secrets/raw PII;
