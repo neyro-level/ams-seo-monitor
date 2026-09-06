@@ -86,7 +86,7 @@ describe("outbox worker dispatch boundary", () => {
     const job = {
       id: "queue-job-1",
       data: { schemaVersion: 1, event: queuedEvent },
-    } as JobWithMetadata<OutboxDispatchJob>;
+    } as unknown as JobWithMetadata<OutboxDispatchJob>;
     const reliability = createReliability();
     reliability.takeOver.mockResolvedValue(queuedEvent);
     const boss = createBoss({ jobs: [job] });
