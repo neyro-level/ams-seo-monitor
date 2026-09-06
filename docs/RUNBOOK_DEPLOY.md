@@ -12,6 +12,7 @@ Manual production deploy of reviewed canonical `main`. This runbook does not aut
 - exact commit SHA reviewed and Merge Gate green;
 - Docker Engine + Compose available on the target;
 - required web/worker/migrator/backup env files exist on target;
+- Docker runs on Linux with host networking so loopback-only PostgreSQL remains reachable from application containers;
 - no secret value is printed;
 - rollback target and current symlink readable.
 

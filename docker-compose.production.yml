@@ -3,22 +3,22 @@ services:
     image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
     command: ["web"]
     restart: always
+    network_mode: host
     env_file:
       - path: /etc/ams-platform/ams-seo-monitor-web.env
         required: false
       - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
         required: false
     environment:
-      HOSTNAME: 0.0.0.0
+      HOSTNAME: 127.0.0.1
       PORT: 3000
       NODE_ENV: production
-    ports:
-      - "127.0.0.1:3000:3000"
 
   worker:
     image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
     command: ["outbox-worker"]
     restart: always
+    network_mode: host
     env_file:
       - path: /etc/ams-platform/ams-seo-monitor-worker.env
         required: false
@@ -32,6 +32,7 @@ services:
     image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
     command: ["migrate"]
     restart: "no"
+    network_mode: host
     profiles: ["manual"]
     env_file:
       - path: /etc/ams-platform/ams-seo-monitor-migrator.env
@@ -45,6 +46,7 @@ services:
     image: ${AMS_SEO_MONITOR_IMAGE:?Set AMS_SEO_MONITOR_IMAGE}
     command: ["outbox-retention"]
     restart: "no"
+    network_mode: host
     profiles: ["manual"]
     env_file:
       - path: /etc/ams-platform/ams-seo-monitor-worker.env

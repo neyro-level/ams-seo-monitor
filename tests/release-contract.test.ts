@@ -41,3 +41,13 @@ describe("production restore readiness", () => {
     expect(restoreScript).not.toContain("BACKUP_DIR_MOUNT");
   });
 });
+
+describe("production compose networking", () => {
+  it("keeps host-local PostgreSQL and web loopback reachable without bridge exposure", () => {
+    const compose = readFileSync("docker-compose.production.yml", "utf8");
+
+    expect(compose.match(/network_mode: host/g)).toHaveLength(4);
+    expect(compose).toContain("HOSTNAME: 127.0.0.1");
+    expect(compose).not.toContain('"127.0.0.1:3000:3000"');
+  });
+});

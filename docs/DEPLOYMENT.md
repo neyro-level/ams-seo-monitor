@@ -7,7 +7,7 @@
 ```text
 Internet
 → Nginx TLS/reverse proxy
-→ Docker Compose web on 127.0.0.1:3000
+→ Docker Compose services use Linux host networking for host-local PostgreSQL; web binds only to 127.0.0.1:3000
 → private/managed PostgreSQL
 
 Docker Compose worker
