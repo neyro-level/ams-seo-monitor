@@ -43,7 +43,7 @@ Deploy script:
 7. validates compose config;
 8. installs backup/restore scripts;
 9. runs the pre-migration backup as the `postgres` OS user, then requires offsite upload + HEAD confirmation;
-10. waits for first-run PostgreSQL initialization to finish, then restores that backup in an ephemeral PostgreSQL container;
+10. resolves the immutable backup file behind `latest.dump`, mounts that exact file read-only, waits for first-run PostgreSQL initialization to finish, then restores it in an ephemeral PostgreSQL container;
 11. runs `migrate` container with Prisma + pg-boss schema migration;
 12. runs `seed` from the same immutable image;
 13. installs reviewed Nginx/systemd assets.

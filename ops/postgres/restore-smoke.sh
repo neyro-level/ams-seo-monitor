@@ -12,11 +12,15 @@ RESTORE_CONTAINER="seo-monitor-restore-smoke"
 POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:18.6-bookworm}"
 RESTORE_USER="restore"
 RESTORE_PASSWORD="restore-local-only"
-BACKUP_DIR_MOUNT="$(dirname "${BACKUP_FILE}")"
-BACKUP_NAME="$(basename "${BACKUP_FILE}")"
+CONTAINER_BACKUP_FILE="/source.dump"
 
 if [ ! -f "${BACKUP_FILE}" ]; then
   echo "missing_backup=${BACKUP_FILE}" >&2
+  exit 1
+fi
+BACKUP_FILE_RESOLVED="$(readlink -f -- "${BACKUP_FILE}")"
+if [ -z "${BACKUP_FILE_RESOLVED}" ] || [ ! -f "${BACKUP_FILE_RESOLVED}" ]; then
+  echo "invalid_backup_target=true" >&2
   exit 1
 fi
 if ! command -v docker >/dev/null 2>&1; then
@@ -35,7 +39,7 @@ docker run -d --rm \
   -e POSTGRES_USER="${RESTORE_USER}" \
   -e POSTGRES_PASSWORD="${RESTORE_PASSWORD}" \
   -e POSTGRES_DB=postgres \
-  -v "${BACKUP_DIR_MOUNT}:/backup:ro" \
+  -v "${BACKUP_FILE_RESOLVED}:${CONTAINER_BACKUP_FILE}:ro" \
   "${POSTGRES_IMAGE}" >/dev/null
 
 RESTORE_READY=false
@@ -59,7 +63,7 @@ if [ "${RESTORE_READY}" != "true" ]; then
 fi
 
 docker exec "${RESTORE_CONTAINER}" createdb -U "${RESTORE_USER}" "${RESTORE_DB}"
-docker exec "${RESTORE_CONTAINER}" pg_restore --clean --if-exists --no-owner --no-privileges -U "${RESTORE_USER}" -d "${RESTORE_DB}" "/backup/${BACKUP_NAME}"
+docker exec "${RESTORE_CONTAINER}" pg_restore --clean --if-exists --no-owner --no-privileges -U "${RESTORE_USER}" -d "${RESTORE_DB}" "${CONTAINER_BACKUP_FILE}"
 
 MIGRATION_COUNT="$(docker exec "${RESTORE_CONTAINER}" psql -U "${RESTORE_USER}" -At -d "${RESTORE_DB}" -c 'select count(*) from "_prisma_migrations"' 2>/dev/null || echo 0)"
 PROJECT_TABLE="$(docker exec "${RESTORE_CONTAINER}" psql -U "${RESTORE_USER}" -At -d "${RESTORE_DB}" -c "select to_regclass('public.\"Project\"') is not null")"

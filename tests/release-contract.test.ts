@@ -32,5 +32,12 @@ describe("production restore readiness", () => {
     expect(readiness).toBeGreaterThan(initComplete);
     expect(createDatabase).toBeGreaterThan(readiness);
     expect(restoreScript).toContain("restore_database_not_ready=true");
+    expect(restoreScript).toContain(
+      'BACKUP_FILE_RESOLVED="$(readlink -f -- "${BACKUP_FILE}")"',
+    );
+    expect(restoreScript).toContain(
+      '-v "${BACKUP_FILE_RESOLVED}:${CONTAINER_BACKUP_FILE}:ro"',
+    );
+    expect(restoreScript).not.toContain("BACKUP_DIR_MOUNT");
   });
 });

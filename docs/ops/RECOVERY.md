@@ -37,7 +37,7 @@ Production backup contract:
 Restore procedure:
 
 1. выбрать проверенный dump/checksum;
-2. дождаться завершения init-фазы временного PostgreSQL и восстановить dump во временную database;
+2. разрешить `latest.dump` в точный файл, подключить только этот файл read-only, дождаться завершения init-фазы временного PostgreSQL и восстановить dump во временную database;
 3. проверить owner, migrations и key row counts;
 4. проверить application compatibility;
 5. только после отдельного owner decision планировать production restore;
