@@ -41,6 +41,7 @@ describe("platform environment contracts", () => {
   it("enforces isolated database names and identities", () => {
     const testTarget = inspectDatabaseTarget({
       APP_ENV: "test",
+      NODE_ENV: "production",
       DATABASE_URL: "postgresql://seo_monitor_test:secret@127.0.0.1:55432/seo_monitor_test",
     });
     expect(formatDatabaseTargetSummary(testTarget)).toBe(

@@ -39,6 +39,7 @@ workflows:
     tasks:
       - name: exact-head-risky
         env:
+          APP_ENV: test
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
           TEST_DATABASE_HOST: 127.0.0.1
           TEST_DATABASE_PORT: "5432"
@@ -75,6 +76,7 @@ workflows:
     tasks:
       - name: nightly-main
         env:
+          APP_ENV: test
           EXPECTED_COMMIT_SHA: ""
           TEST_DATABASE_HOST: 127.0.0.1
           TEST_DATABASE_PORT: "5432"
@@ -115,6 +117,7 @@ workflows:
     tasks:
       - name: exact-head-release
         env:
+          APP_ENV: test
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
           TEST_DATABASE_HOST: 127.0.0.1
           TEST_DATABASE_PORT: "5432"
