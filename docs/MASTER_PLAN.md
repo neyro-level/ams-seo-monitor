@@ -10,10 +10,6 @@
 - удалить прежние client paths и content signatures из всего достижимого object graph;
 - подтвердить exact-SHA equality очищенных mirrors; до этого GitHub остаётся private.
 
-### DateTime contract
-
-- менять на `timestamptz` только доказанные UTC-поля отдельной migration;
-
 ## Product backlog
 
 ### New tenant onboarding

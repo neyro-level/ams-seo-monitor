@@ -13,7 +13,7 @@ PostgreSQL — единственный runtime source of truth.
 
 ## DateTime contract
 
-Audit date: `2026-09-06`. Prisma version: `7.10.0`. В schema найдено 87 полей `DateTime`; migrations подтверждают, что каждое из них сейчас хранится как PostgreSQL `timestamp(3)` (`timestamp without time zone`). Prisma default mapping для PostgreSQL также задаёт `DateTime → timestamp(3)`; явный timezone-aware mapping — `@db.Timestamptz(3)`.
+Audit date: `2026-09-06`. Prisma version: `7.10.0`. В schema найдено 87 полей `DateTime`: 20 доказанных UTC instant полей используют PostgreSQL `timestamptz(3)`, остальные 67 остаются `timestamp(3)` (`timestamp without time zone`). Prisma default mapping для PostgreSQL задаёт `DateTime → timestamp(3)`; timezone-aware mapping задан явно через `@db.Timestamptz(3)`.
 
 Нормативные источники: [Prisma PostgreSQL type mapping](https://docs.prisma.io/docs/orm/v6/overview/databases/postgresql), [Prisma 7 native database types](https://docs.prisma.io/docs/orm/v7/prisma-migrate/workflows/native-database-types), [PostgreSQL 18 date/time types](https://www.postgresql.org/docs/18/datatype-datetime.html).
 
@@ -21,15 +21,15 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 
 Статусы:
 
-- `CANDIDATE_12B` — все известные writers передают JS `Date` либо ISO/RFC3339 instant с `Z`/offset; после проверки копии production backup поле можно отдельно перевести в `@db.Timestamptz(3)` с явным `AT TIME ZONE 'UTC'`;
+- `TIMESTAMPTZ_UTC` — writers передают JS `Date` либо ISO/RFC3339 instant с `Z`/offset; conversion на копии production backup сохранил epoch и null-shape;
 - `KEEP_TIMESTAMP` — значение является civil date, а не instant; timezone задаёт provider/site contract, поэтому автоматический переход на `timestamptz` изменит смысл;
 - `REQUIRES_CHECK` — старые production-значения или все writers не доказаны; migration запрещена до read-only проверки database/session timezone и выборки данных.
 
 | Model.fields | Бизнес-смысл | Источник timezone / UTC proof | Стратегия | Статус |
 |---|---|---|---|---|
-| `User.disabledAt` | момент административной блокировки | admin CLI передаёт `new Date()` | explicit UTC conversion в 12B после backup-copy proof | CANDIDATE_12B |
+| `User.disabledAt` | момент административной блокировки | admin CLI передаёт `new Date()` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `User.createdAt`, `User.updatedAt` | создание/последнее изменение identity | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять; проверить production timezone и samples | REQUIRES_CHECK |
-| `UserSetupToken.expiresAt`, `UserSetupToken.usedAt`, `UserSetupToken.revokedAt` | expiry/consumption/revocation одноразовой capability | CLI/setup flow использует JS `Date` и UTC duration arithmetic | explicit UTC conversion в 12B после backup-copy proof | CANDIDATE_12B |
+| `UserSetupToken.expiresAt`, `UserSetupToken.usedAt`, `UserSetupToken.revokedAt` | expiry/consumption/revocation одноразовой capability | CLI/setup flow использует JS `Date` и UTC duration arithmetic | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `UserSetupToken.createdAt`, `UserSetupToken.updatedAt` | создание/изменение token record | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `Session.expiresAt`, `Session.createdAt`, `Session.updatedAt` | Better Auth session lifecycle | Better Auth-owned writer; historical adapter/session timezone не доказан | не менять; сверить production rows и Better Auth adapter | REQUIRES_CHECK |
 | `Account.accessTokenExpiresAt`, `Account.refreshTokenExpiresAt`, `Account.createdAt`, `Account.updatedAt` | Better Auth account/token lifecycle | Better Auth-owned writer; provider offsets и historical rows не доказаны | не менять; сверить provider/adapter writers | REQUIRES_CHECK |
@@ -46,32 +46,32 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 | `GoalDefinition.createdAt`, `GoalDefinition.updatedAt` | goal configuration audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `TrackedQuerySet.createdAt`, `TrackedQuerySet.updatedAt` | query-set audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `TrackedQuery.createdAt`, `TrackedQuery.updatedAt` | tracked-query audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `SyncRun.startedAt`, `SyncRun.finishedAt` | фактические границы полного sync | worker injects `new Date().toISOString()`; repository constructs JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `SyncRun.startedAt`, `SyncRun.finishedAt` | фактические границы полного sync | worker injects `new Date().toISOString()`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `SyncRun.createdAt`, `SyncRun.updatedAt` | sync record audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `SourceRun.startedAt`, `SourceRun.finishedAt` | фактические границы provider execution | worker ISO instant with `Z`; repository constructs JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `SourceRun.startedAt`, `SourceRun.finishedAt` | фактические границы provider execution | worker ISO instant with `Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `SourceRun.createdAt`, `SourceRun.updatedAt` | source-run audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `WebmasterDailyMetric.date`, `WebmasterQueryDailyMetric.date`, `MetrikaDailyMetric.date`, `LandingPageDailyMetric.date`, `MetrikaDeviceDailyMetric.date`, `MetrikaGoalDailyMetric.date` | provider civil day / period key | provider date plus site/provider timezone; persisted as `YYYY-MM-DDT00:00:00.000Z` solely for stable storage | сохранить `timestamp(3)`; `timestamptz` запрещён без отдельного semantic redesign | KEEP_TIMESTAMP |
 | `WebmasterDailyMetric.createdAt`, `WebmasterQueryDailyMetric.createdAt`, `MetrikaDailyMetric.createdAt`, `LandingPageDailyMetric.createdAt`, `MetrikaDeviceDailyMetric.createdAt`, `MetrikaGoalDailyMetric.createdAt` | ingestion row audit time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `RankingCapture.capturedAt` | instant получения/владельческого снимка позиции | provider RFC3339 instant или explicit `T00:00:00.000Z`; repository constructs JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `RankingCapture.capturedAt` | instant получения/владельческого снимка позиции | provider RFC3339 instant или explicit `T00:00:00.000Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `RankingCapture.createdAt` | capture row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `TechnicalSnapshot.capturedAt` | instant provider fetch represented by snapshot | validated provider `fetchedAt` with offset; repository constructs JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `TechnicalSnapshot.capturedAt` | instant provider fetch represented by snapshot | validated provider `fetchedAt` with offset; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `TechnicalSnapshot.createdAt` | snapshot row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `ReportSnapshot.generatedAt` | report compilation instant | worker-generated ISO instant with `Z`; repository constructs JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `ReportSnapshot.generatedAt` | report compilation instant | worker-generated ISO instant with `Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `ReportSnapshot.createdAt` | report row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `AuditEvent.createdAt` | audit marker creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `IdempotencyKey.expiresAt` | idempotency retention deadline | reliability service derives ISO instant from injected JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `IdempotencyKey.expiresAt` | idempotency retention deadline | reliability service derives ISO instant from injected JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `IdempotencyKey.createdAt`, `IdempotencyKey.updatedAt` | idempotency record audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `OutboxEvent.lockedAt`, `OutboxEvent.processedAt` | lease acquisition and terminal processing instants | repository uses injected ISO instant converted to JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `OutboxEvent.lockedAt`, `OutboxEvent.processedAt` | lease acquisition and terminal processing instants | repository uses injected ISO instant converted to JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `OutboxEvent.occurredAt`, `OutboxEvent.availableAt` | business occurrence / earliest dispatch instant | application normally supplies UTC ISO, but DB defaults and migration backfill remain valid writers | не менять до production default/backfill proof | REQUIRES_CHECK |
 | `OutboxEvent.createdAt`, `OutboxEvent.updatedAt` | outbox row audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `JobRun.startedAt`, `JobRun.finishedAt` | queue attempt boundaries | repository uses injected UTC ISO/JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `JobRun.startedAt`, `JobRun.finishedAt` | queue attempt boundaries | repository uses injected UTC ISO/JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `JobRun.createdAt` | attempt row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `RuntimeHeartbeat.startedAt`, `RuntimeHeartbeat.heartbeatAt` | worker identity start and latest heartbeat instants | runtime passes JS `Date`; all arithmetic uses epoch milliseconds | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `RuntimeHeartbeat.startedAt`, `RuntimeHeartbeat.heartbeatAt` | worker identity start and latest heartbeat instants | runtime passes JS `Date`; all arithmetic uses epoch milliseconds | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `RuntimeHeartbeat.createdAt`, `RuntimeHeartbeat.updatedAt` | heartbeat row audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `RetentionRun.startedAt`, `RetentionRun.finishedAt` | retention execution boundaries | runtime passes one injected JS `Date` | explicit UTC conversion in 12B after backup-copy proof | CANDIDATE_12B |
+| `RetentionRun.startedAt`, `RetentionRun.finishedAt` | retention execution boundaries | runtime passes one injected JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `RetentionRun.createdAt` | retention row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 
-Coverage: `20 CANDIDATE_12B + 6 KEEP_TIMESTAMP + 61 REQUIRES_CHECK = 87 DateTime fields`. 12B создаёт migration только для полного списка `CANDIDATE_12B`, только если проверка копии production backup подтверждает stored-value assumption и приемлемый lock/rewrite impact. Остальные поля остаются без schema change.
+Coverage: `20 TIMESTAMPTZ_UTC + 6 KEEP_TIMESTAMP + 61 REQUIRES_CHECK = 87 DateTime fields`. Backup-copy proof подтвердил сохранение epoch/null-shape для всех 20 полей при production timezone `Etc/UTC`; migration заняла 541 ms на затронутых таблицах общим размером менее 15 MB. Остальные поля остаются без schema change.
 
 ## Identity и access
 
@@ -96,7 +96,7 @@ Better Auth 2FA record, unique by `userId`. Stores the plugin-managed secret, en
 One-time operator-issued first-access capability. The table stores only a 64-character SHA-256 `tokenHash`, owner `userId`, expiry, optional used/revoked timestamps and nonsecret `createdBy` operator identity.
 
 - raw token is 32 random bytes and never enters PostgreSQL, logs, audit or documentation;
-- `expiresAt`, `usedAt`, `revokedAt`, `createdAt` and `updatedAt` are application/database UTC instants currently mapped to PostgreSQL `timestamp(3)` consistently with the existing schema; native-type conversion remains governed by the project-wide DateTime audit;
+- `expiresAt`, `usedAt`, `revokedAt` используют `timestamptz(3)`; `createdAt` и `updatedAt` остаются `timestamp(3)` до отдельного proof;
 - successful setup creates the Better Auth credential account, consumes the token, clears `mustChangePassword` and creates a safe AuditEvent atomically;
 - expiry, revocation, replay, disabled user or an existing credential leave business state unchanged;
 - deleting a User cascades its setup tokens; normal operations revoke or expire tokens rather than physically deleting them.

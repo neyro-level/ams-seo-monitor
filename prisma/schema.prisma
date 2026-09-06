@@ -155,7 +155,7 @@ model User {
   emailVerified Boolean     @default(false)
   image         String?
   systemRole        SystemRole  @default(CLIENT_VIEWER)
-  disabledAt        DateTime?
+  disabledAt        DateTime?   @db.Timestamptz(3)
   mustChangePassword Boolean    @default(false)
   twoFactorEnabled  Boolean?    @default(false)
   createdAt         DateTime    @default(now())
@@ -171,9 +171,9 @@ model UserSetupToken {
   id          String    @id @default(cuid())
   tokenHash   String    @unique @db.VarChar(64)
   userId      String
-  expiresAt   DateTime
-  usedAt      DateTime?
-  revokedAt   DateTime?
+  expiresAt   DateTime  @db.Timestamptz(3)
+  usedAt      DateTime? @db.Timestamptz(3)
+  revokedAt   DateTime? @db.Timestamptz(3)
   createdBy   String    @db.VarChar(120)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -464,8 +464,8 @@ model SyncRun {
   projectSlug    String
   trigger        SyncTrigger
   status         SyncRunStatus
-  startedAt      DateTime
-  finishedAt     DateTime?
+  startedAt      DateTime  @db.Timestamptz(3)
+  finishedAt     DateTime? @db.Timestamptz(3)
   sitesProcessed Int           @default(0)
   sitesSucceeded Int           @default(0)
   sitesPartial   Int           @default(0)
@@ -490,8 +490,8 @@ model SourceRun {
   siteId                     String
   provider                   Provider
   status                     SourceStatus
-  startedAt                  DateTime
-  finishedAt                 DateTime?
+  startedAt                  DateTime  @db.Timestamptz(3)
+  finishedAt                 DateTime? @db.Timestamptz(3)
   durationMs                 Int?
   rowsReceived               Int?
   safeErrorCode              String?
@@ -662,7 +662,7 @@ model RankingCapture {
   id             String        @id @default(cuid())
   organizationId String
   trackedQueryId String
-  capturedAt     DateTime
+  capturedAt     DateTime @db.Timestamptz(3)
   position       Int?
   source         RankingSource
   sourceRunId    String?
@@ -679,7 +679,7 @@ model TechnicalSnapshot {
   id           String                @id @default(cuid())
   organizationId String
   siteId       String
-  capturedAt   DateTime
+  capturedAt   DateTime @db.Timestamptz(3)
   sourceRunId  String
   kind         TechnicalSnapshotKind
   payload      Json
@@ -698,7 +698,7 @@ model ReportSnapshot {
   siteId           String
   periodKey        ReportPeriodKey
   schemaVersion    Int
-  generatedAt      DateTime
+  generatedAt      DateTime @db.Timestamptz(3)
   freshness        ReportFreshness
   payload          Json
   sourceRunSetJson Json?
@@ -739,7 +739,7 @@ model IdempotencyKey {
   response           Json?
   errorCode         String?
   outboxEventId     String?            @unique
-  expiresAt         DateTime
+  expiresAt         DateTime @db.Timestamptz(3)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   organization      Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -760,11 +760,11 @@ model OutboxEvent {
   status         OutboxStatus  @default(PENDING)
   attempts       Int           @default(0)
   availableAt    DateTime      @default(now())
-  lockedAt       DateTime?
+  lockedAt       DateTime? @db.Timestamptz(3)
   lockedBy       String?
   lastErrorCode  String?
   correlationId  String
-  processedAt    DateTime?
+  processedAt    DateTime? @db.Timestamptz(3)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -784,8 +784,8 @@ model JobRun {
   status         JobRunStatus
   attempt        Int
   workerId       String
-  startedAt      DateTime
-  finishedAt     DateTime?
+  startedAt      DateTime  @db.Timestamptz(3)
+  finishedAt     DateTime? @db.Timestamptz(3)
   safeErrorCode  String?
   correlationId  String
   createdAt      DateTime      @default(now())
@@ -801,8 +801,8 @@ model RuntimeHeartbeat {
   id          String   @id @default(cuid())
   runtime     String
   workerId    String
-  startedAt   DateTime
-  heartbeatAt DateTime
+  startedAt   DateTime @db.Timestamptz(3)
+  heartbeatAt DateTime @db.Timestamptz(3)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -813,8 +813,8 @@ model RuntimeHeartbeat {
 model RetentionRun {
   id                 String             @id @default(cuid())
   status             RetentionRunStatus
-  startedAt          DateTime
-  finishedAt         DateTime?
+  startedAt          DateTime  @db.Timestamptz(3)
+  finishedAt         DateTime? @db.Timestamptz(3)
   deletedOutboxEvents Int               @default(0)
   deletedJobRuns     Int                @default(0)
   safeErrorCode      String?
