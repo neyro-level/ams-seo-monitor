@@ -23,7 +23,7 @@
 pnpm dev:db:start
 pnpm dev:db:status
 pnpm dev:db:migrate
-pnpm dev:db:seed
+pnpm dev:db:bootstrap
 pnpm dev:db:stop
 ```
 
@@ -59,7 +59,7 @@ Runner:
 2. требует полный `TEST_DATABASE_*` contract;
 3. отклоняет database без suffix `_test`;
 4. применяет immutable migrations только к test DB;
-5. выполняет reviewed seed;
+5. выполняет synthetic test bootstrap;
 6. запускает пять real-PostgreSQL suites.
 
 Production DB name отклоняется до соединения.

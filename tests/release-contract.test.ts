@@ -17,6 +17,19 @@ describe("production backup identity", () => {
   });
 });
 
+describe("production configuration boundary", () => {
+  it("deploys migrations without importing operator configuration", () => {
+    const deployScript = readFileSync("scripts/deploy-production.mjs", "utf8");
+    const integrationRunner = readFileSync("scripts/run-integration-tests.mjs", "utf8");
+
+    expect(deployScript).toContain('run --rm migrate');
+    expect(deployScript).not.toContain('run --rm migrate seed');
+    expect(deployScript).not.toContain("config-sync");
+    expect(integrationRunner).toContain("scripts/seed-test-database.mjs");
+    expect(integrationRunner).not.toContain("config/clients");
+  });
+});
+
 describe("production restore readiness", () => {
   it("waits for the final PostgreSQL server after first-run initialization", () => {
     const restoreScript = readFileSync(

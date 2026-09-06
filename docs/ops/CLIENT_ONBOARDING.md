@@ -18,13 +18,13 @@
 
 Не переносить credentials/provider IDs между проектами по аналогии.
 
-## Seed preparation
+## Private configuration preparation
 
 ```bash
-pnpm project:add
+pnpm project:add -- --source <private-path>
 ```
 
-Wizard создаёт checked-in nonsecret seed files и не:
+Wizard создаёт nonsecret operator files в подготовленном private working directory и не:
 
 - принимает token/password/client secret;
 - пишет PostgreSQL;
@@ -35,7 +35,7 @@ Wizard создаёт checked-in nonsecret seed files и не:
 Dry run:
 
 ```bash
-pnpm project:add -- --project-name "Новый проект" --project-slug new-project --site-name "Основной сайт" --site-slug main --site-url https://example.ru --dry-run --yes
+pnpm project:add -- --source <private-path> --project-name "Новый проект" --project-slug new-project --site-name "Основной сайт" --site-slug main --site-url https://example.ru --dry-run --yes
 ```
 
 После создания дополнить goals, cluster/tracked query и provider mapping только подтверждёнными значениями.
@@ -43,10 +43,10 @@ pnpm project:add -- --project-name "Новый проект" --project-slug new-
 ## Review и DB onboarding
 
 1. `pnpm verify:config`;
-2. проверить diff на secrets/placeholders/route collisions;
+2. проверить private config на secrets/placeholders/route collisions;
 3. provider preflight read-only;
-4. review seed behavior;
-5. применить migrations/seed только в безопасном environment;
+4. выполнить `config:sync --source <private-path>` и проверить dry-run;
+5. отдельно подтвердить `config:sync --source <private-path> --apply` в безопасном environment;
 6. проверить Project/Site/ProviderConnection/Goal/TrackedQuery records;
 7. создать user через bounded-stdin admin CLI;
 8. добавить membership;
@@ -57,7 +57,7 @@ pnpm project:add -- --project-name "Новый проект" --project-slug new-
 ## Acceptance
 
 - config schema valid;
-- seed idempotent;
+- bootstrap idempotent, config sync не удаляет business records физически;
 - enabled site не использует placeholder;
 - web/worker provider configuration совпадает;
 - только goals с `includeInSeoConversion=true` входят в unique SEO conversion;

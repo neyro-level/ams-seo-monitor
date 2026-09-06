@@ -102,7 +102,7 @@ CMS управляет только разрешёнными полями и к�
 1. Оператор подтверждает URL, timezone и provider access.
 2. Через protected Platform Admin создаёт organization, membership, project, site и nonsecret provider mapping.
 3. Настраивает goals, tracked query set, thresholds и clusters через typed audited commands.
-4. Reviewed checked-in config остаётся seed/input для repeatable bootstrap, но не runtime database.
+4. Repeatable bootstrap создаёт только default/reference records; operator configuration импортируется отдельно из private path и не входит в deployment.
 5. Production credentials настраиваются отдельным operator step вне browser и Git.
 
 ## Директорский отчёт

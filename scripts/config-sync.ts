@@ -1,6 +1,5 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { GoalCategory,
 GoalDirection,
 ProjectStatus,
@@ -11,12 +10,27 @@ import {
   clusterProfileSchema,
   goalProfileSchema,
   thresholdsSchema,
+  type ClusterProfile,
   type ClientRegistry,
+  type GoalProfile,
+  type ThresholdsConfig,
 } from "../src/shared/schemas/registry.ts";
 import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
-import { trackedQuerySetSchema } from "../src/shared/schemas/tracked-query.ts";
+import {
+  trackedQuerySetSchema,
+  type TrackedQuerySet,
+} from "../src/shared/schemas/tracked-query.ts";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const args = process.argv.slice(2);
+const sourceIndex = args.indexOf("--source");
+const sourceArg = sourceIndex >= 0 ? args[sourceIndex + 1] : undefined;
+const applyChanges = args.includes("--apply");
+
+if (!sourceArg || sourceArg.startsWith("--")) {
+  throw new Error("Usage: config:sync --source <private-path> [--apply]");
+}
+
+const sourceRoot = path.resolve(process.cwd(), sourceArg);
 const database = createPrismaContext({
   DATABASE_URL: process.env.DATABASE_URL,
   DATABASE_HOST: process.env.DATABASE_HOST,
@@ -27,6 +41,17 @@ const database = createPrismaContext({
   DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
 });
 const { prisma } = database;
+
+type ChangeKind = "CREATE" | "UPDATE" | "DELETE_OR_DISABLE" | "UNCHANGED";
+type ChangeSummary = Record<ChangeKind, string[]>;
+
+function createChangeSummary(): ChangeSummary {
+  return { CREATE: [], UPDATE: [], DELETE_OR_DISABLE: [], UNCHANGED: [] };
+}
+
+function sameJson(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
 
 function projectStatusForClient(client: ClientRegistry) {
   if (!client.enabled) return ProjectStatus.DISABLED;
@@ -59,7 +84,7 @@ function normalizeTrackedQuery(query: string) {
 }
 
 async function readJsonDirectory<T>(relativeDir: string, schema: { parse: (value: unknown) => T }) {
-  const fullDir = path.join(rootDir, relativeDir);
+  const fullDir = path.join(sourceRoot, relativeDir);
   const names = (await readdir(fullDir)).filter((name) => name.endsWith(".json")).sort();
   const items: T[] = [];
   for (const name of names) {
@@ -69,14 +94,183 @@ async function readJsonDirectory<T>(relativeDir: string, schema: { parse: (value
   return items;
 }
 
+async function buildChangeSummary(input: {
+  thresholds: ThresholdsConfig;
+  clusterProfiles: ClusterProfile[];
+  clientConfigs: ClientRegistry[];
+  goalProfiles: GoalProfile[];
+  trackedQuerySets: TrackedQuerySet[];
+}) {
+  const summary = createChangeSummary();
+  const threshold = await prisma.thresholdProfile.findUnique({ where: { slug: "default" } });
+  const desiredThreshold = {
+    minimumShows: input.thresholds.queryOpportunity.minimumShows,
+    maximumCtrPercent: input.thresholds.queryOpportunity.maximumCtrPercent,
+    maximumAveragePosition: input.thresholds.queryOpportunity.maximumAveragePosition,
+    showsDropPercent: input.thresholds.trendAlerts.showsDropPercent,
+    clicksDropPercent: input.thresholds.trendAlerts.clicksDropPercent,
+    positionWorsenedDelta: input.thresholds.trendAlerts.positionWorsenedDelta,
+    pagesInSearchDropPercent: input.thresholds.trendAlerts.pagesInSearchDropPercent,
+    organicVisitsDropPercent: input.thresholds.trendAlerts.organicVisitsDropPercent,
+    goalConversionDropPercent: input.thresholds.trendAlerts.goalConversionDropPercent,
+  };
+  if (!threshold) {
+    summary.CREATE.push("threshold-profile:default");
+  } else {
+    const currentThreshold = {
+      minimumShows: threshold.minimumShows,
+      maximumCtrPercent: Number(threshold.maximumCtrPercent),
+      maximumAveragePosition: Number(threshold.maximumAveragePosition),
+      showsDropPercent: Number(threshold.showsDropPercent),
+      clicksDropPercent: Number(threshold.clicksDropPercent),
+      positionWorsenedDelta: Number(threshold.positionWorsenedDelta),
+      pagesInSearchDropPercent: Number(threshold.pagesInSearchDropPercent),
+      organicVisitsDropPercent: Number(threshold.organicVisitsDropPercent),
+      goalConversionDropPercent: Number(threshold.goalConversionDropPercent),
+    };
+    summary[sameJson(currentThreshold, desiredThreshold) ? "UNCHANGED" : "UPDATE"].push(
+      "threshold-profile:default",
+    );
+  }
+
+  for (const profile of input.clusterProfiles) {
+    const current = await prisma.queryClusterProfile.findUnique({
+      where: { slug: profile.profileSlug },
+      include: { groups: { orderBy: { order: "asc" } } },
+    });
+    if (!current) {
+      summary.CREATE.push(`query-cluster-profile:${profile.profileSlug}`);
+      continue;
+    }
+    const desired = {
+      name: profile.name,
+      groups: profile.groups.map((group, order) => ({
+        slug: group.slug,
+        label: group.label,
+        order,
+        brandTermsJson: profile.brandTerms,
+        termsJson: group.terms,
+      })),
+    };
+    const actual = {
+      name: current.name,
+      groups: current.groups.map((group) => ({
+        slug: group.slug,
+        label: group.label,
+        order: group.order,
+        brandTermsJson: group.brandTermsJson,
+        termsJson: group.termsJson,
+      })),
+    };
+    summary[sameJson(actual, desired) ? "UNCHANGED" : "UPDATE"].push(
+      `query-cluster-profile:${profile.profileSlug}`,
+    );
+    const desiredSlugs = new Set(profile.groups.map((group) => group.slug));
+    for (const group of current.groups) {
+      if (!desiredSlugs.has(group.slug)) {
+        summary.DELETE_OR_DISABLE.push(
+          `query-cluster-group:${profile.profileSlug}/${group.slug}:leave-as-is`,
+        );
+      }
+    }
+  }
+
+  for (const client of input.clientConfigs) {
+    const current = await prisma.project.findUnique({
+      where: { slug: client.clientSlug },
+      include: {
+        organization: true,
+        sites: {
+          include: {
+            providerConnections: true,
+            trackedQuerySet: { include: { queries: true } },
+          },
+        },
+        goalDefinitions: { include: { siteScopes: { include: { site: true } } } },
+      },
+    });
+    if (!current) {
+      summary.CREATE.push(`project:${client.clientSlug}`);
+      continue;
+    }
+
+    const desiredSiteSlugs = new Set(client.sites.map((site) => site.siteSlug));
+    const changed =
+      current.name !== client.name ||
+      current.organization.name !== client.name ||
+      current.status !== projectStatusForClient(client) ||
+      current.sites.some((site) => !desiredSiteSlugs.has(site.slug)) ||
+      client.sites.some((site) => {
+        const row = current.sites.find((candidate) => candidate.slug === site.siteSlug);
+        return (
+          !row ||
+          row.name !== site.name ||
+          row.url !== site.siteUrl ||
+          row.timezone !== site.timezone ||
+          row.enabled !== site.enabled
+        );
+      });
+    summary[changed ? "UPDATE" : "UNCHANGED"].push(`project:${client.clientSlug}`);
+
+    for (const site of current.sites) {
+      if (!desiredSiteSlugs.has(site.slug) && site.enabled) {
+        summary.DELETE_OR_DISABLE.push(`site:${client.clientSlug}/${site.slug}:disable`);
+      }
+    }
+
+    const desiredGoals = input.goalProfiles.find((profile) => profile.clientSlug === client.clientSlug);
+    if (desiredGoals) {
+      const goalIds = new Set(desiredGoals.goals.map((goal) => goal.goalId));
+      for (const goal of current.goalDefinitions) {
+        if (!goalIds.has(goal.externalGoalId)) {
+          summary.DELETE_OR_DISABLE.push(
+            `goal-definition:${client.clientSlug}/${goal.externalGoalId}:leave-as-is`,
+          );
+        }
+      }
+    }
+
+    for (const desiredSet of input.trackedQuerySets.filter(
+      (set) => set.clientSlug === client.clientSlug,
+    )) {
+      const site = current.sites.find((candidate) => candidate.slug === desiredSet.siteSlug);
+      const existingQueries = site?.trackedQuerySet?.queries ?? [];
+      const desiredQueries = new Set(
+        desiredSet.queries.map((query) => normalizeTrackedQuery(query.query)),
+      );
+      for (const query of existingQueries) {
+        if (!desiredQueries.has(query.normalizedQuery) && query.enabled) {
+          summary.DELETE_OR_DISABLE.push(
+            `tracked-query:${client.clientSlug}/${desiredSet.siteSlug}/${query.id}:disable`,
+          );
+        }
+      }
+    }
+  }
+
+  return summary;
+}
+
 async function main() {
   const thresholds = thresholdsSchema.parse(
-    JSON.parse(await readFile(path.join(rootDir, "config", "thresholds.json"), "utf8")),
+    JSON.parse(await readFile(path.join(sourceRoot, "thresholds.json"), "utf8")),
   );
-  const clusterProfiles = await readJsonDirectory("config/clusters", clusterProfileSchema);
-  const clientConfigs = await readJsonDirectory("config/clients", clientRegistrySchema);
-  const goalProfiles = await readJsonDirectory("config/goals", goalProfileSchema);
-  const trackedQuerySets = await readJsonDirectory("config/tracked-queries", trackedQuerySetSchema);
+  const clusterProfiles = await readJsonDirectory("clusters", clusterProfileSchema);
+  const clientConfigs = await readJsonDirectory("clients", clientRegistrySchema);
+  const goalProfiles = await readJsonDirectory("goals", goalProfileSchema);
+  const trackedQuerySets = await readJsonDirectory("tracked-queries", trackedQuerySetSchema);
+  const changes = await buildChangeSummary({
+    thresholds,
+    clusterProfiles,
+    clientConfigs,
+    goalProfiles,
+    trackedQuerySets,
+  });
+
+  if (!applyChanges) {
+    console.log(JSON.stringify({ mode: "dry-run", source: path.basename(sourceRoot), changes }, null, 2));
+    return;
+  }
 
   const thresholdProfile = await prisma.thresholdProfile.upsert({
     where: { slug: "default" },
@@ -112,14 +306,6 @@ async function main() {
       create: {
         slug: profile.profileSlug,
         name: profile.name,
-      },
-    });
-
-    const incomingSlugs = profile.groups.map((group) => group.slug);
-    await prisma.queryClusterGroup.deleteMany({
-      where: {
-        profileId: clusterProfile.id,
-        slug: { notIn: incomingSlugs },
       },
     });
 
@@ -184,6 +370,22 @@ async function main() {
     });
 
     const siteIdsBySlug: Record<string, string> = {};
+    const incomingSiteSlugs = client.sites.map((site) => site.siteSlug);
+    const sitesToDisable = await prisma.site.findMany({
+      where: { projectId: project.id, slug: { notIn: incomingSiteSlugs }, enabled: true },
+      select: { id: true },
+    });
+    if (sitesToDisable.length > 0) {
+      const siteIds = sitesToDisable.map((site) => site.id);
+      await prisma.providerConnection.updateMany({
+        where: { siteId: { in: siteIds }, enabled: true },
+        data: { enabled: false },
+      });
+      await prisma.site.updateMany({
+        where: { id: { in: siteIds } },
+        data: { enabled: false },
+      });
+    }
 
     for (const site of client.sites) {
       const siteRecord = await prisma.site.upsert({
@@ -261,14 +463,6 @@ async function main() {
     }
 
     if (goalProfile) {
-      const incomingGoalIds = goalProfile.goals.map((goal) => goal.goalId);
-      await prisma.goalDefinition.deleteMany({
-        where: {
-          projectId: project.id,
-          externalGoalId: { notIn: incomingGoalIds },
-        },
-      });
-
       for (const goal of goalProfile.goals) {
         const goalRecord = await prisma.goalDefinition.upsert({
           where: {
@@ -295,17 +489,20 @@ async function main() {
           },
         });
 
-        await prisma.goalDefinitionSite.deleteMany({
-          where: { goalDefinitionId: goalRecord.id },
-        });
-
         for (const siteSlug of goal.siteSlugs) {
           const siteId = siteIdsBySlug[siteSlug];
           if (!siteId) {
             throw new Error(`Unknown site slug in goal scope: ${client.clientSlug}/${siteSlug}`);
           }
-          await prisma.goalDefinitionSite.create({
-            data: {
+          await prisma.goalDefinitionSite.upsert({
+            where: {
+              goalDefinitionId_siteId: {
+                goalDefinitionId: goalRecord.id,
+                siteId,
+              },
+            },
+            update: {},
+            create: {
               goalDefinitionId: goalRecord.id,
               siteId,
               organizationId: organization.id,
@@ -343,11 +540,13 @@ async function main() {
       });
 
       const incomingQueries = trackedQuerySet.queries.map((query) => normalizeTrackedQuery(query.query));
-      await prisma.trackedQuery.deleteMany({
+      await prisma.trackedQuery.updateMany({
         where: {
           trackedQuerySetId: trackedSetRecord.id,
           normalizedQuery: { notIn: incomingQueries },
+          enabled: true,
         },
+        data: { enabled: false },
       });
 
       for (const query of trackedQuerySet.queries) {
@@ -383,7 +582,20 @@ async function main() {
   const projectCount = await prisma.project.count();
   const siteCount = await prisma.site.count();
   const trackedQueryCount = await prisma.trackedQuery.count();
-  console.log(JSON.stringify({ projectCount, siteCount, trackedQueryCount }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        mode: "apply",
+        source: path.basename(sourceRoot),
+        changes,
+        projectCount,
+        siteCount,
+        trackedQueryCount,
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 main()
@@ -391,6 +603,6 @@ main()
     await database.close();
   })
   .catch((error) => {
-    console.error(error);
+    console.error(error instanceof Error ? error.message : "Configuration sync failed");
     process.exit(1);
   });

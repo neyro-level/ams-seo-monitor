@@ -13,7 +13,7 @@ const tempDirs: string[] = [];
 async function createProjectRoot() {
   const rootDir = await mkdtemp(path.join(os.tmpdir(), "ams-seo-project-"));
   tempDirs.push(rootDir);
-  const clustersDir = path.join(rootDir, "config", "clusters");
+  const clustersDir = path.join(rootDir, "clusters");
   await mkdir(clustersDir, { recursive: true });
   await writeFile(
     path.join(clustersDir, "default.json"),
@@ -115,7 +115,7 @@ describe("project config builder", () => {
 
   it("rejects a site URL that already belongs to another project", async () => {
     const rootDir = await createProjectRoot();
-    const clientsDir = path.join(rootDir, "config", "clients");
+    const clientsDir = path.join(rootDir, "clients");
     await mkdir(clientsDir, { recursive: true });
     await writeFile(
       path.join(clientsDir, "existing.json"),

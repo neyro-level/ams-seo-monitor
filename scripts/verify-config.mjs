@@ -3,7 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const sourceIndex = process.argv.indexOf("--source");
+const sourceArg = sourceIndex >= 0 ? process.argv[sourceIndex + 1] : undefined;
+const configRoot = sourceArg ? path.resolve(process.cwd(), sourceArg) : path.join(projectRoot, "config");
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const timezonePattern = /^[+-](0\d|1[0-4]):[0-5]\d$/;
 const placeholderHost = "todo.invalid";
@@ -134,7 +137,7 @@ function isPlaceholderUrl(value) {
 }
 
 async function readJsonDirectory(relativeDir) {
-  const absoluteDir = path.join(rootDir, relativeDir);
+  const absoluteDir = path.join(configRoot, relativeDir);
   const entries = (await readdir(absoluteDir)).filter((entry) => entry.endsWith(".json")).sort();
   return Promise.all(
     entries.map(async (entry) => {
@@ -152,13 +155,13 @@ function assert(condition, message) {
 }
 
 try {
-  const clients = (await readJsonDirectory("config/clients")).map((item) => clientSchema.parse(item));
-  const clusters = (await readJsonDirectory("config/clusters")).map((item) => clusterSchema.parse(item));
-  const goalProfiles = (await readJsonDirectory("config/goals")).map((item) => goalProfileSchema.parse(item));
-  const trackedQuerySets = (await readJsonDirectory("config/tracked-queries"))
+  const clients = (await readJsonDirectory("clients")).map((item) => clientSchema.parse(item));
+  const clusters = (await readJsonDirectory("clusters")).map((item) => clusterSchema.parse(item));
+  const goalProfiles = (await readJsonDirectory("goals")).map((item) => goalProfileSchema.parse(item));
+  const trackedQuerySets = (await readJsonDirectory("tracked-queries"))
     .map((item) => trackedQuerySetSchema.parse(item));
   const thresholds = thresholdsSchema.parse(
-    JSON.parse(await readFile(path.join(rootDir, "config/thresholds.json"), "utf8")),
+    JSON.parse(await readFile(path.join(configRoot, "thresholds.json"), "utf8")),
   );
 
   const clusterSlugs = new Set(clusters.map((item) => item.profileSlug));
