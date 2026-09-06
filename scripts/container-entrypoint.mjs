@@ -60,6 +60,13 @@ switch (mode) {
   case "outbox-retention":
     await run(process.execPath, ["dist-collector/src/worker/main.js", "outbox-retention"]);
     break;
+  case "projects-sync":
+    await run(process.execPath, [
+      "dist-collector/src/worker/main.js",
+      "projects-sync",
+      args[0] ?? "daily",
+    ]);
+    break;
   case "project-sync": {
     if (!args[0]) {
       throw new Error("Usage: container-entrypoint project-sync <project-slug> [trigger]");

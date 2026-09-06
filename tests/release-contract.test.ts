@@ -92,9 +92,15 @@ describe("production compose networking", () => {
 describe("production worker module boundary", () => {
   it("schedules every active database project instead of a hardcoded client", () => {
     const workerUnit = readFileSync("ops/systemd/seo-monitor-worker.service", "utf8");
+    const containerEntrypoint = readFileSync(
+      "scripts/container-entrypoint.mjs",
+      "utf8",
+    );
 
     expect(workerUnit).toContain("maintenance projects-sync daily");
     expect(workerUnit).not.toContain("project-sync alpha");
+    expect(containerEntrypoint).toContain('case "projects-sync":');
+    expect(containerEntrypoint).toContain('args[0] ?? "daily"');
   });
 
   it(
