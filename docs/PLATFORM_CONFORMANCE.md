@@ -15,7 +15,7 @@ Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform A
 | Managed PostgreSQL | NOT_APPLICABLE | no migration target or backlog |
 | TypeScript 6.0.3 | APPROVED_PROJECT_EXCEPTION | exact lockfile version retained in ADR-001 |
 | Authentication and production Platform Admin 2FA | PARTIAL | fresh cabinet boundary implemented; setup-token/recovery work remains |
-| PrincipalContext authorization | PARTIAL | canonical actions implemented; remaining read compatibility cutover pending |
+| PrincipalContext authorization | IMPLEMENTED | all private reads/actions use the discriminated principal; legacy facade is statically forbidden |
 | Multi-tenant ownership and DB constraints | IMPLEMENTED | tenant registry, scoped repositories, composite constraints and isolation tests |
 | `defineAction → defineCommand` mutations | IMPLEMENTED | centralized action boundary and transaction-owned commands |
 | Async outbox + pg-boss | IMPLEMENTED | deterministic dispatch, idempotency, leases, bounded retry/dead-letter |

@@ -8,8 +8,8 @@ import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../../components/dashboard/SectionCard.tsx";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner.tsx";
 import {
-  getCurrentActorContext,
   getCurrentCabinetRedirect,
+  getCurrentPrincipalState,
 } from "../../../modules/identity-access/server.ts";
 import { buildClientOverview } from "../../../modules/project-registry/presentation.ts";
 
@@ -22,11 +22,11 @@ type ClientOverviewPageProps = {
 export default async function ClientOverviewPage({ params }: ClientOverviewPageProps) {
   const onboardingRedirect = await getCurrentCabinetRedirect();
   if (onboardingRedirect) redirect(onboardingRedirect);
-  const user = await getCurrentActorContext();
-  if (!user) redirect("/?login=1");
+  const state = await getCurrentPrincipalState();
+  if (!state) redirect("/?login=1");
 
   const { clientSlug } = await params;
-  const overview = await buildClientOverview(user, clientSlug);
+  const overview = await buildClientOverview(state.principal, clientSlug);
 
   if (!overview) {
     notFound();
@@ -39,7 +39,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
   const projectReady = connectedSites > 0 && readySites === connectedSites;
 
   return (
-    <AppShell currentPath={`/c/${overview.client.clientSlug}/`} user={user}>
+    <AppShell currentPath={`/c/${overview.client.clientSlug}/`} principal={state.principal} displayName={state.displayName}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Проект"

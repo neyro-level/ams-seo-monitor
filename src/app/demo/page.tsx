@@ -5,8 +5,8 @@ import { AppShell } from "../../components/shell/AppShell.tsx";
 import { SiteReportView } from "../../modules/reporting/presentation.ts";
 import { getDemoSnapshot } from "../../modules/reporting/presentation.ts";
 import {
-  getCurrentActorContext,
   getCurrentCabinetRedirect,
+  getCurrentPrincipalState,
 } from "../../modules/identity-access/server.ts";
 import { siteRegistrySchema } from "../../shared/schemas/registry.ts";
 
@@ -30,11 +30,11 @@ const demoSite = siteRegistrySchema.parse({
 export default async function DemoPage() {
   const onboardingRedirect = await getCurrentCabinetRedirect();
   if (onboardingRedirect) redirect(onboardingRedirect);
-  const user = await getCurrentActorContext();
-  if (!user) redirect("/?login=1");
+  const state = await getCurrentPrincipalState();
+  if (!state) redirect("/?login=1");
 
   return (
-    <AppShell currentPath="/demo/" user={user}>
+    <AppShell currentPath="/demo/" principal={state.principal} displayName={state.displayName}>
       <SiteReportView
         clientName="Demo"
         site={demoSite}

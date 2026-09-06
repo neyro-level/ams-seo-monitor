@@ -1,4 +1,4 @@
-import type { ActorContext } from "../../identity-access/index.ts";
+import type { PrincipalContext } from "../../../platform/authorization/principal.ts";
 import { ProjectService, type ProjectSummary } from "./project-service.ts";
 
 export interface AnalystOverview {
@@ -13,7 +13,7 @@ export interface AnalystOverview {
 export class AnalystService {
   constructor(private readonly projectService: ProjectService) {}
 
-  async getDashboardForUser(user: ActorContext): Promise<AnalystOverview> {
+  async getDashboardForUser(user: PrincipalContext): Promise<AnalystOverview> {
     const projectCards = await this.projectService.listProjectsForUser(user);
     const totalSites = projectCards.reduce((count, project) => count + project.totalSites, 0);
     const connectedSites = projectCards.reduce(

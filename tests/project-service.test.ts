@@ -6,40 +6,24 @@ import type {
   StoredProjectRecord,
   StoredSiteRecord,
 } from "../src/modules/project-registry/index.ts";
-import { createActorContext } from "./helpers/actor-context.ts";
+import {
+  createDeniedJobPrincipal,
+  createPlatformAdminPrincipal,
+  createPlatformAnalystPrincipal,
+  createTenantUserPrincipal,
+} from "./helpers/principal.ts";
 
-const analystUser = createActorContext({
-  userId: "analyst-1",
-  email: "analyst@test.local",
-  name: "Analyst",
-  systemRole: "SEO_ANALYST",
-});
+const analystUser = createPlatformAnalystPrincipal("analyst-1");
 
-const REDACTED_CLIENT_DATAViewer = createActorContext({
+const REDACTED_CLIENT_DATAViewer = createTenantUserPrincipal({
   userId: "viewer-1",
-  email: "viewer@test.local",
-  name: "Viewer",
-  systemRole: "CLIENT_VIEWER",
-  memberships: [
-    {
-      membershipId: "membership-REDACTED_CLIENT_DATA",
-      organizationId: "org-REDACTED_CLIENT_DATA",
-      role: "client_viewer",
-    },
-  ],
+  membershipId: "membership-REDACTED_CLIENT_DATA",
+  organizationId: "org-REDACTED_CLIENT_DATA",
 });
 
-const platformAdmin = createActorContext({
-  userId: "platform-admin-1",
-  systemRole: "PLATFORM_ADMIN",
-});
+const platformAdmin = createPlatformAdminPrincipal();
 
-const deniedActor = createActorContext({
-  userId: "denied-1",
-  systemRole: "CLIENT_VIEWER",
-  memberships: REDACTED_CLIENT_DATAViewer.memberships,
-  permissions: [],
-});
+const deniedPrincipal = createDeniedJobPrincipal("org-REDACTED_CLIENT_DATA");
 
 const projects: StoredProjectRecord[] = [
   {
@@ -141,8 +125,8 @@ describe("ProjectService", () => {
     expect(visibleProjects[0]?.projectSlug).toBe("REDACTED_CLIENT_DATA");
   });
 
-  it("denies an actor without project read capability", async () => {
-    expect(await projectService.listProjectsForUser(deniedActor)).toEqual([]);
+  it("denies a principal without project read capability", async () => {
+    expect(await projectService.listProjectsForUser(deniedPrincipal)).toEqual([]);
   });
 
   it("returns site access only inside allowed organization", async () => {

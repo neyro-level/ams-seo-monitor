@@ -47,7 +47,7 @@ systemd timer
 Главные инварианты:
 
 - `SiteReportSnapshot` — единственный browser-safe DTO отчёта;
-- Better Auth создаёт session; server-generated `PrincipalContext`, permissions и fresh memberships защищают новые и мигрированные приватные пути; оставшиеся report/project reads на `ActorContext` перечислены как technical debt в активном плане;
+- Better Auth создаёт session; server-generated `PrincipalContext`, permissions и fresh memberships защищают все приватные reads и mutations;
 - browser не обращается к provider APIs и не получает provider credentials;
 - UI не импортирует Prisma и не рассчитывает provider semantics;
 - PostgreSQL — runtime source of truth; operator config импортируется только явной командой из private path;

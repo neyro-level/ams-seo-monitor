@@ -7,25 +7,25 @@ import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
 import {
-  getCurrentActorContext,
   getCurrentCabinetRedirect,
+  getCurrentPrincipalState,
 } from "../../modules/identity-access/server.ts";
 import { buildAnalystOverview } from "../../modules/project-registry/presentation.ts";
-import { hasPermission } from "../../modules/identity-access/index.ts";
+import { hasPermission } from "../../platform/authorization/principal.ts";
 
 export default async function AllProjectsPage() {
   const onboardingRedirect = await getCurrentCabinetRedirect();
   if (onboardingRedirect) redirect(onboardingRedirect);
-  const user = await getCurrentActorContext();
-  if (!user) redirect("/?login=1");
-  if (!hasPermission(user, "project:read:any")) {
+  const state = await getCurrentPrincipalState();
+  if (!state) redirect("/?login=1");
+  if (!hasPermission(state.principal, "project:read:any")) {
     redirect("/dashboard/");
   }
 
-  const overview = await buildAnalystOverview(user);
+  const overview = await buildAnalystOverview(state.principal);
 
   return (
-    <AppShell currentPath="/analyst/" user={user}>
+    <AppShell currentPath="/analyst/" principal={state.principal} displayName={state.displayName}>
       <div className="space-y-6">
         <PageHeader
           title="Все проекты"

@@ -10,12 +10,6 @@ export {
   requirePlatformAnalyst,
   requireTenantUser,
 } from "../../platform/authorization/principal-factories.ts";
-export {
-  getActorContextByUserId,
-  getAuthorizedProjectAccess,
-  getAuthorizedSiteAccess,
-} from "./infrastructure/authorization.ts";
-export { getCurrentActorContext } from "./infrastructure/session.ts";
 export { PrismaIdentityAdminRepository } from "./infrastructure/prisma-identity-admin-repository.ts";
 export {
   createMembership,

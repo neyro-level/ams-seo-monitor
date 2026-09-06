@@ -18,6 +18,7 @@ import {
   requirePlatformAnalyst,
   requireTenantUser,
 } from "../src/platform/authorization/principal-factories.ts";
+import { parseSystemRole } from "../src/modules/identity-access/index.ts";
 
 const correlationId = "00000000-0000-4000-8000-000000000070";
 const admin: PlatformAdminPrincipal = {
@@ -89,27 +90,32 @@ describe("PrincipalContext", () => {
   it("enforces completed password onboarding and production admin 2FA", () => {
     expect(() =>
       requireCabinetPrincipalFromState(
-        { principal: admin, mustChangePassword: true, twoFactorEnabled: false },
+        { principal: admin, displayName: "Admin", mustChangePassword: true, twoFactorEnabled: false },
         { NODE_ENV: "production" },
       ),
     ).toThrow(new CabinetPrincipalError("PASSWORD_ONBOARDING_REQUIRED"));
     expect(() =>
       requireCabinetPrincipalFromState(
-        { principal: admin, mustChangePassword: false, twoFactorEnabled: false },
+        { principal: admin, displayName: "Admin", mustChangePassword: false, twoFactorEnabled: false },
         { NODE_ENV: "production" },
       ),
     ).toThrow(new CabinetPrincipalError("TWO_FACTOR_REQUIRED"));
     expect(
       requireCabinetPrincipalFromState(
-        { principal: admin, mustChangePassword: false, twoFactorEnabled: true },
+        { principal: admin, displayName: "Admin", mustChangePassword: false, twoFactorEnabled: true },
         { NODE_ENV: "production" },
       ),
     ).toBe(admin);
     expect(
       requireCabinetPrincipalFromState(
-        { principal: viewer, mustChangePassword: false, twoFactorEnabled: false },
+        { principal: viewer, displayName: "Viewer", mustChangePassword: false, twoFactorEnabled: false },
         { NODE_ENV: "production" },
       ),
     ).toBe(viewer);
+  });
+
+  it("validates operator system roles independently from principal permissions", () => {
+    expect(parseSystemRole("PLATFORM_ADMIN")).toBe("PLATFORM_ADMIN");
+    expect(() => parseSystemRole("SUPERUSER")).toThrow("Unsupported system role");
   });
 });

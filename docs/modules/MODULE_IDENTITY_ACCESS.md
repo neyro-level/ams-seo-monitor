@@ -44,7 +44,7 @@ Principal and identity DTOs exclude email where unnecessary, session token, pass
 - tenant principal requires fresh active Membership;
 - Better Auth Organization Plugin is absent from runtime;
 - public signup is disabled;
-- `ActorContext` is a deprecated read-only compatibility boundary.
+- one `PrincipalContext` permission model owns all private reads and mutations;
 
 ## Tenant behavior
 

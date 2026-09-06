@@ -7,29 +7,29 @@ import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
 import {
-  getCurrentActorContext,
   getCurrentCabinetRedirect,
+  getCurrentPrincipalState,
 } from "../../modules/identity-access/server.ts";
 import { buildAnalystOverview } from "../../modules/project-registry/presentation.ts";
-import { hasPermission } from "../../modules/identity-access/index.ts";
+import { hasPermission } from "../../platform/authorization/principal.ts";
 
 export default async function DashboardPage() {
   const onboardingRedirect = await getCurrentCabinetRedirect();
   if (onboardingRedirect) redirect(onboardingRedirect);
-  const user = await getCurrentActorContext();
-  if (!user) redirect("/?login=1");
+  const state = await getCurrentPrincipalState();
+  if (!state) redirect("/?login=1");
 
-  const overview = await buildAnalystOverview(user);
+  const overview = await buildAnalystOverview(state.principal);
 
   return (
-    <AppShell currentPath="/dashboard/" user={user}>
+    <AppShell currentPath="/dashboard/" principal={state.principal} displayName={state.displayName}>
       <div className="space-y-6">
         <PageHeader
           eyebrow="АМС"
           title="AMS IMPULSE"
           description="Приватный SEO-кабинет: проекты, сайты, Яндекс.Вебмастер, Метрика и управленческие отчёты."
           actions={
-            hasPermission(user, "project:read:any") ? (
+            hasPermission(state.principal, "project:read:any") ? (
               <Link
                 href="/analyst/"
                 className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"

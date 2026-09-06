@@ -1,4 +1,4 @@
-import type { ActorContext } from "../../identity-access/index.ts";
+import type { PrincipalContext } from "../../../platform/authorization/principal.ts";
 import { ProjectService } from "./project-service.ts";
 
 export interface ClientOverview {
@@ -20,7 +20,7 @@ export class SiteService {
   constructor(private readonly projectService: ProjectService) {}
 
   async getProjectOverviewForUser(
-    user: ActorContext,
+    user: PrincipalContext,
     clientSlug: string,
   ): Promise<ClientOverview | null> {
     const project = await this.projectService.getProjectTreeForUser(user, clientSlug);

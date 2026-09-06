@@ -48,6 +48,9 @@ for (const filePath of await collectFiles(sourceDir)) {
   if (source.includes("infrastructure/database/prisma")) {
     failures.push(`Legacy database boundary import: ${relativePath}`);
   }
+  if (source.includes("ActorContext")) {
+    failures.push(`Legacy authorization context: ${relativePath}`);
+  }
 }
 
 if (failures.length > 0) {

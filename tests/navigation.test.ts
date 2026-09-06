@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
 import { buildNavigation } from "../src/modules/project-registry/presentation.ts";
-import { getActorContextByUserId } from "../src/modules/identity-access/server.ts";
-import type { ActorContext } from "../src/modules/identity-access/index.ts";
-import { createActorContext } from "./helpers/actor-context.ts";
+import { getPrincipalStateByUserId } from "../src/platform/authorization/principal-factories.ts";
+import type { PrincipalContext } from "../src/platform/authorization/principal.ts";
+import { createPlatformAnalystPrincipal } from "./helpers/principal.ts";
 
 const navigationTestEnabled = Boolean(
   process.env.DATABASE_HOST &&
@@ -13,12 +13,7 @@ const navigationTestEnabled = Boolean(
 );
 const navigationTestDescription = navigationTestEnabled ? describe : describe.skip;
 
-const analystActor = createActorContext({
-  userId: "analyst-1",
-  email: "analyst@test.local",
-  name: "Analyst",
-  systemRole: "SEO_ANALYST",
-});
+const analystPrincipal = createPlatformAnalystPrincipal("analyst-1");
 
 const clientViewerIdentity = {
   userId: "navigation-viewer-1",
@@ -28,7 +23,7 @@ const clientViewerIdentity = {
 
 navigationTestDescription("database-backed navigation isolation", () => {
   let database: ReturnType<typeof createPrismaContext> | null = null;
-  let clientViewerActor: ActorContext | null = null;
+  let clientViewerPrincipal: PrincipalContext | null = null;
 
   beforeAll(async () => {
     database = createPrismaContext({
@@ -69,10 +64,10 @@ navigationTestDescription("database-backed navigation isolation", () => {
         role: "client_viewer",
       },
     });
-    clientViewerActor = await getActorContextByUserId(clientViewerIdentity.userId, {
+    clientViewerPrincipal = (await getPrincipalStateByUserId(clientViewerIdentity.userId, {
       correlationId: "00000000-0000-4000-8000-000000000002",
-    });
-    if (!clientViewerActor) throw new Error("Missing client viewer ActorContext");
+    }))?.principal ?? null;
+    if (!clientViewerPrincipal) throw new Error("Missing client viewer PrincipalContext");
   });
 
   afterAll(async () => {
@@ -82,7 +77,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
     await database.close();
   });
   it("renders only the current client subtree on a client route", async () => {
-    const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/", clientViewerActor!);
+    const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/", clientViewerPrincipal!);
     const items = sections.flatMap((section) => section.items);
 
     expect(sections).toHaveLength(2);
@@ -100,7 +95,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
   });
 
   it("renders all projects directly on the analyst root", async () => {
-    const sections = await buildNavigation("/analyst/", analystActor);
+    const sections = await buildNavigation("/analyst/", analystPrincipal);
     const serialized = JSON.stringify(sections);
     const mainItems = sections[0]?.items ?? [];
     const projectItems = sections[1]?.items ?? [];

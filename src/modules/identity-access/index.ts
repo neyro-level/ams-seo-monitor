@@ -39,18 +39,5 @@ export type {
   UpdateMembershipInput,
   UpdateOrganizationInput,
 } from "./domain/admin-identity.ts";
-export {
-  getActorOrganizationIds,
-  getPermissionsForRole,
-  hasPermission,
-  parseSystemRole,
-  PERMISSIONS,
-} from "./domain/actor-context.ts";
-export type {
-  ActorContext,
-  AuthorizedProjectAccess,
-  AuthorizedSiteAccess,
-  MembershipScope,
-  Permission,
-  SystemRole,
-} from "./domain/actor-context.ts";
+export { parseSystemRole } from "./domain/system-role.ts";
+export type { SystemRole } from "./domain/system-role.ts";
