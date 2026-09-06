@@ -105,18 +105,18 @@ test.describe("Platform Admin", () => {
     await page.goto("/admin/projects/");
     await expect(page.getByRole("heading", { level: 1, name: "Проекты" })).toBeVisible();
     await expect(page.getByText("Создать проект")).toBeVisible();
-    await page.getByLabel("Поиск").fill("REDACTED_CLIENT_DATA");
+    await page.getByLabel("Поиск").fill("alpha");
     await page.getByRole("button", { name: "Применить" }).click();
-    await expect(page).toHaveURL(/search=REDACTED_CLIENT_DATA/);
+    await expect(page).toHaveURL(/search=alpha/);
 
     if ((page.viewportSize()?.width ?? 0) < 768) {
       const projectCard = page.locator("article").first();
       await expect(projectCard).toBeVisible();
-      await expect(projectCard.getByRole("heading", { name: "REDACTED_CLIENT_DATA" })).toBeVisible();
+      await expect(projectCard.getByRole("heading", { name: "Альфа" })).toBeVisible();
     } else {
       const projectTable = page.getByRole("table");
       await expect(projectTable).toBeVisible();
-      await expect(projectTable.getByText("REDACTED_CLIENT_DATA", { exact: true }).first()).toBeVisible();
+      await expect(projectTable.getByText("Альфа", { exact: true }).first()).toBeVisible();
       await projectTable.getByRole("link", { name: "Проект", exact: true }).click();
       await expect(page).toHaveURL(/sort=name/);
     }

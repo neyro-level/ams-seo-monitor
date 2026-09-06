@@ -79,5 +79,6 @@ export interface MonitoringProjectRecord {
 
 export interface MonitoringRepository {
   ping(): Promise<void>;
+  listActiveProjectSlugs(): Promise<string[]>;
   findProjectBySlug(projectSlug: string): Promise<MonitoringProjectRecord | null>;
 }

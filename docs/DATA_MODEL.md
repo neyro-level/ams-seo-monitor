@@ -6,7 +6,8 @@
 - `prisma/migrations/*` — immutable история изменений schema;
 - `src/shared/schemas/*` — runtime DTO validation;
 - этот документ — назначение, связи, lifecycle и invariants;
-- operator configuration — private external input для explicit `config:sync`, не production runtime store; checked-in legacy config удаляется отдельным sanitation-этапом.
+- operator configuration — private external input для explicit `config:sync`, не production runtime store;
+- `config/examples/**` и test fixtures содержат только synthetic data; verifier запрещает private operator paths и известные client signatures в tracked tree.
 
 PostgreSQL — единственный runtime source of truth.
 

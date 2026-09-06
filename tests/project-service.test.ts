@@ -15,44 +15,44 @@ import {
 
 const analystUser = createPlatformAnalystPrincipal("analyst-1");
 
-const REDACTED_CLIENT_DATAViewer = createTenantUserPrincipal({
+const alphaViewer = createTenantUserPrincipal({
   userId: "viewer-1",
-  membershipId: "membership-REDACTED_CLIENT_DATA",
-  organizationId: "org-REDACTED_CLIENT_DATA",
+  membershipId: "membership-alpha",
+  organizationId: "org-alpha",
 });
 
 const platformAdmin = createPlatformAdminPrincipal();
 
-const deniedPrincipal = createDeniedJobPrincipal("org-REDACTED_CLIENT_DATA");
+const deniedPrincipal = createDeniedJobPrincipal("org-alpha");
 
 const projects: StoredProjectRecord[] = [
   {
-    projectId: "project-REDACTED_CLIENT_DATA",
-    organizationId: "org-REDACTED_CLIENT_DATA",
-    projectSlug: "REDACTED_CLIENT_DATA",
-    name: "REDACTED_CLIENT_DATA",
+    projectId: "project-alpha",
+    organizationId: "org-alpha",
+    projectSlug: "alpha",
+    name: "Альфа",
     status: "ACTIVE",
     sites: [
       {
-        siteId: "site-REDACTED_CLIENT_DATA",
-        projectId: "project-REDACTED_CLIENT_DATA",
-        organizationId: "org-REDACTED_CLIENT_DATA",
-        projectSlug: "REDACTED_CLIENT_DATA",
-        siteSlug: "REDACTED_CLIENT_DATA",
-        name: "REDACTED_CLIENT_DATA",
-        url: "https://REDACTED_CLIENT_DATA",
+        siteId: "site-north",
+        projectId: "project-alpha",
+        organizationId: "org-alpha",
+        projectSlug: "alpha",
+        siteSlug: "north",
+        name: "Север",
+        url: "https://alpha.example.test",
         timezone: "+03:00",
         enabled: true,
         enabledSourceCount: 2,
       },
       {
-        siteId: "site-REDACTED_CLIENT_DATA",
-        projectId: "project-REDACTED_CLIENT_DATA",
-        organizationId: "org-REDACTED_CLIENT_DATA",
-        projectSlug: "REDACTED_CLIENT_DATA",
-        siteSlug: "REDACTED_CLIENT_DATA",
-        name: "REDACTED_CLIENT_DATA",
-        url: "https://REDACTED_CLIENT_DATA",
+        siteId: "site-east",
+        projectId: "project-alpha",
+        organizationId: "org-alpha",
+        projectSlug: "alpha",
+        siteSlug: "east",
+        name: "Восток",
+        url: "https://east.example.test",
         timezone: "+03:00",
         enabled: true,
         enabledSourceCount: 2,
@@ -60,20 +60,20 @@ const projects: StoredProjectRecord[] = [
     ],
   },
   {
-    projectId: "project-REDACTED_CLIENT_DATA",
-    organizationId: "org-REDACTED_CLIENT_DATA",
-    projectSlug: "REDACTED_CLIENT_DATA",
-    name: "Союз застройщиков",
+    projectId: "project-west",
+    organizationId: "org-west",
+    projectSlug: "beta",
+    name: "Бета",
     status: "PLANNED",
     sites: [
       {
-        siteId: "site-REDACTED_CLIENT_DATA",
-        projectId: "project-REDACTED_CLIENT_DATA",
-        organizationId: "org-REDACTED_CLIENT_DATA",
-        projectSlug: "REDACTED_CLIENT_DATA",
-        siteSlug: "REDACTED_CLIENT_DATA",
-        name: "Ростов-на-Дону",
-        url: "https://todo.invalid/REDACTED_CLIENT_DATA",
+        siteId: "site-west",
+        projectId: "project-west",
+        organizationId: "org-west",
+        projectSlug: "beta",
+        siteSlug: "west",
+        name: "Запад-на-Дону",
+        url: "https://todo.invalid/west",
         timezone: "+03:00",
         enabled: false,
         enabledSourceCount: 0,
@@ -120,9 +120,9 @@ describe("ProjectService", () => {
   });
 
   it("limits client viewer to own organization", async () => {
-    const visibleProjects = await projectService.listProjectsForUser(REDACTED_CLIENT_DATAViewer);
+    const visibleProjects = await projectService.listProjectsForUser(alphaViewer);
     expect(visibleProjects).toHaveLength(1);
-    expect(visibleProjects[0]?.projectSlug).toBe("REDACTED_CLIENT_DATA");
+    expect(visibleProjects[0]?.projectSlug).toBe("alpha");
   });
 
   it("denies a principal without project read capability", async () => {
@@ -131,10 +131,10 @@ describe("ProjectService", () => {
 
   it("returns site access only inside allowed organization", async () => {
     expect(
-      await projectService.getSiteAccessForUser(REDACTED_CLIENT_DATAViewer, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA"),
+      await projectService.getSiteAccessForUser(alphaViewer, "alpha", "north"),
     ).not.toBeNull();
     expect(
-      await projectService.getSiteAccessForUser(REDACTED_CLIENT_DATAViewer, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA"),
+      await projectService.getSiteAccessForUser(alphaViewer, "beta", "west"),
     ).toBeNull();
   });
 });

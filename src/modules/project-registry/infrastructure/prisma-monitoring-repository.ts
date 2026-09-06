@@ -10,6 +10,15 @@ export class PrismaMonitoringRepository implements MonitoringRepository {
     await getPrismaClient().$queryRaw(Prisma.sql`SELECT 1`);
   }
 
+  async listActiveProjectSlugs(): Promise<string[]> {
+    const projects = await getPrismaClient().project.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { slug: "asc" },
+      select: { slug: true },
+    });
+    return projects.map((project) => project.slug);
+  }
+
   async findProjectBySlug(projectSlug: string): Promise<MonitoringProjectRecord | null> {
     const project = await getPrismaClient().project.findUnique({
       where: { slug: projectSlug },

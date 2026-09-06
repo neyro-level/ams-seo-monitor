@@ -81,7 +81,7 @@ async function main() {
     });
 
     const organization = await prisma.organization.findUniqueOrThrow({
-      where: { slug: "REDACTED_CLIENT_DATA" },
+      where: { slug: "alpha" },
       select: { id: true },
     });
     for (const username of ONBOARDING_USERNAMES) {

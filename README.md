@@ -122,7 +122,7 @@ pnpm user:revoke-setup-token -- --token-id <id>
 pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
 ```
 
-Passwords остаются bounded-stdin only.
+Команда создаёт одноразовую setup-ссылку: raw token показывается оператору один раз, а PostgreSQL хранит только SHA-256 hash. Пароль задаёт сам пользователь через setup route; CLI пароль не принимает и не выводит.
 
 ## Проверки
 
@@ -154,7 +154,7 @@ Provider preflight и worker sync требуют разрешённого scope 
 ```bash
 pnpm collector:webmaster:preflight
 pnpm collector:metrica:preflight
-pnpm worker:sync:REDACTED_CLIENT_DATA
+pnpm worker:sync:all
 pnpm worker:outbox:drain
 ```
 

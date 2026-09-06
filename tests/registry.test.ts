@@ -3,7 +3,7 @@ import {
   getApprovedRoutes,
   getGoalProfileForClient,
   getRegistryBundle,
-} from "../src/modules/project-registry/server.ts";
+} from "./helpers/example-registry.ts";
 
 describe("registry bundle", () => {
   it("loads clients, clusters and thresholds", () => {
@@ -19,16 +19,16 @@ describe("registry bundle", () => {
 
     expect(routes).toContain("/analyst/");
 
-    expect(routes).toContain("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");
-    expect(routes).toContain("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");
-    expect(routes).toContain("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/");
+    expect(routes).toContain("/c/alpha/east/");
+    expect(routes).toContain("/c/alpha/south/");
+    expect(routes).toContain("/c/beta/west/");
   });
 
-  it("wires all three REDACTED_CLIENT_DATA cities to exact Webmaster and Metrica sources", () => {
-    const REDACTED_CLIENT_DATA = getRegistryBundle().clients.find((client) => client.clientSlug === "REDACTED_CLIENT_DATA");
+  it("wires all three Alpha cities to exact Webmaster and Metrica sources", () => {
+    const alpha = getRegistryBundle().clients.find((client) => client.clientSlug === "alpha");
 
     expect(
-      REDACTED_CLIENT_DATA?.sites.map((site) => ({
+      alpha?.sites.map((site) => ({
         slug: site.siteSlug,
         enabled: site.enabled,
         webmaster: site.webmaster.enabled,
@@ -37,35 +37,35 @@ describe("registry bundle", () => {
       })),
     ).toEqual([
       {
-        slug: "REDACTED_CLIENT_DATA",
+        slug: "north",
         enabled: true,
         webmaster: true,
         metrica: true,
-        counterId: "REDACTED_CLIENT_DATA",
+        counterId: "700001",
       },
       {
-        slug: "REDACTED_CLIENT_DATA",
+        slug: "east",
         enabled: true,
         webmaster: true,
         metrica: true,
-        counterId: "REDACTED_CLIENT_DATA",
+        counterId: "700002",
       },
       {
-        slug: "REDACTED_CLIENT_DATA",
+        slug: "south",
         enabled: true,
         webmaster: true,
         metrica: true,
-        counterId: "REDACTED_CLIENT_DATA",
+        counterId: "700003",
       },
     ]);
   });
 
-  it("keeps a separate conversion allowlist for every REDACTED_CLIENT_DATA site", () => {
-    const profile = getGoalProfileForClient("REDACTED_CLIENT_DATA");
+  it("keeps a separate conversion allowlist for every Alpha site", () => {
+    const profile = getGoalProfileForClient("alpha");
     const siteSlugs = new Set(profile?.goals.flatMap((goal) => goal.siteSlugs) ?? []);
 
-    expect(siteSlugs).toEqual(new Set(["REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA"]));
-    expect(profile?.goals.filter((goal) => goal.siteSlugs.includes("REDACTED_CLIENT_DATA"))).toHaveLength(4);
-    expect(profile?.goals.filter((goal) => goal.siteSlugs.includes("REDACTED_CLIENT_DATA"))).toHaveLength(4);
+    expect(siteSlugs).toEqual(new Set(["north", "east", "south"]));
+    expect(profile?.goals.filter((goal) => goal.siteSlugs.includes("east"))).toHaveLength(4);
+    expect(profile?.goals.filter((goal) => goal.siteSlugs.includes("south"))).toHaveLength(4);
   });
 });

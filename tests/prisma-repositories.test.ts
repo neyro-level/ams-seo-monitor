@@ -34,8 +34,8 @@ repositoryTestDescription("Prisma repositories", () => {
 
     const site = await prisma.site.findFirstOrThrow({
       where: {
-        slug: "REDACTED_CLIENT_DATA",
-        project: { slug: "REDACTED_CLIENT_DATA" },
+        slug: "north",
+        project: { slug: "alpha" },
       },
       select: { id: true, organizationId: true },
     });
@@ -49,9 +49,9 @@ repositoryTestDescription("Prisma repositories", () => {
 
     const payload = siteReportSnapshotSchema.parse({
       schemaVersion: 1,
-      clientSlug: "REDACTED_CLIENT_DATA",
-      siteSlug: "REDACTED_CLIENT_DATA",
-      siteUrl: "https://REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
+      siteSlug: "north",
+      siteUrl: "https://alpha.example.test",
       generatedAt: "2026-08-30T00:00:00+03:00",
       freshness: "fresh",
       periodKey: "month",
@@ -118,30 +118,30 @@ repositoryTestDescription("Prisma repositories", () => {
   it("loads project summaries from PostgreSQL", async () => {
     const repository = new PrismaProjectRepository();
     const projects = await repository.listProjects({ organizationIds: null });
-    const REDACTED_CLIENT_DATA = projects.find((project) => project.projectSlug === "REDACTED_CLIENT_DATA");
+    const alpha = projects.find((project) => project.projectSlug === "alpha");
 
     expect(projects.length).toBeGreaterThanOrEqual(2);
-    expect(REDACTED_CLIENT_DATA?.sites).toHaveLength(3);
-    expect(REDACTED_CLIENT_DATA?.sites[0]?.enabledSourceCount).toBeGreaterThanOrEqual(0);
+    expect(alpha?.sites).toHaveLength(3);
+    expect(alpha?.sites[0]?.enabledSourceCount).toBeGreaterThanOrEqual(0);
   });
 
   it("applies organization scope inside Prisma queries", async () => {
     const repository = new PrismaProjectRepository();
-    const REDACTED_CLIENT_DATA = await prisma!.organization.findUniqueOrThrow({
-      where: { slug: "REDACTED_CLIENT_DATA" },
+    const alpha = await prisma!.organization.findUniqueOrThrow({
+      where: { slug: "alpha" },
       select: { id: true },
     });
     const scopedProjects = await repository.listProjects({
-      organizationIds: [REDACTED_CLIENT_DATA.id],
+      organizationIds: [alpha.id],
     });
-    const foreignProject = await repository.findProjectBySlug("REDACTED_CLIENT_DATA", {
-      organizationIds: [REDACTED_CLIENT_DATA.id],
+    const foreignProject = await repository.findProjectBySlug("beta", {
+      organizationIds: [alpha.id],
     });
-    const foreignSite = await repository.findSiteBySlugs("REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", {
-      organizationIds: [REDACTED_CLIENT_DATA.id],
+    const foreignSite = await repository.findSiteBySlugs("beta", "west", {
+      organizationIds: [alpha.id],
     });
 
-    expect(scopedProjects.map((project) => project.projectSlug)).toEqual(["REDACTED_CLIENT_DATA"]);
+    expect(scopedProjects.map((project) => project.projectSlug)).toEqual(["alpha"]);
     expect(foreignProject).toBeNull();
     expect(foreignSite).toBeNull();
   });
@@ -149,14 +149,14 @@ repositoryTestDescription("Prisma repositories", () => {
   it("loads latest report snapshot from PostgreSQL", async () => {
     const projectRepository = new PrismaProjectRepository();
     const reportRepository = new PrismaReportRepository();
-    const site = await projectRepository.findSiteBySlugs("REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", {
+    const site = await projectRepository.findSiteBySlugs("alpha", "north", {
       organizationIds: null,
     });
 
     expect(site).not.toBeNull();
 
     const report = await reportRepository.findLatestReportSnapshot(site!.siteId, "month");
-    expect(report?.payload.clientSlug).toBe("REDACTED_CLIENT_DATA");
+    expect(report?.payload.clientSlug).toBe("alpha");
     expect(report?.periodKey).toBe("month");
   });
 });

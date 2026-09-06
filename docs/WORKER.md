@@ -107,12 +107,12 @@ Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; 
 ```bash
 pnpm build:collector
 pnpm worker:sync:project -- <project-slug>
-pnpm worker:sync:REDACTED_CLIENT_DATA
+pnpm worker:sync:all
 pnpm worker:outbox:drain
 pnpm worker:outbox:retention
 ```
 
-Commands require a safe DB environment and provider secrets. `worker:sync:REDACTED_CLIENT_DATA` is not a browser action and does not deploy.
+Commands require a safe DB environment and provider secrets. The scheduled `projects-sync` command reads all active project slugs from PostgreSQL; no client slug is embedded in the release artifact.
 
 ## Проверки
 

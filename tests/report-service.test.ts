@@ -19,41 +19,41 @@ import { siteReportSnapshotSchema } from "../src/shared/schemas/report.ts";
 
 const analystUser = createPlatformAnalystPrincipal("analyst-1");
 
-const REDACTED_CLIENT_DATAViewer = createTenantUserPrincipal({
+const alphaViewer = createTenantUserPrincipal({
   userId: "viewer-1",
-  membershipId: "membership-REDACTED_CLIENT_DATA",
-  organizationId: "org-REDACTED_CLIENT_DATA",
+  membershipId: "membership-alpha",
+  organizationId: "org-alpha",
 });
 
-const deniedReportPrincipal = createDeniedJobPrincipal("org-REDACTED_CLIENT_DATA");
+const deniedReportPrincipal = createDeniedJobPrincipal("org-alpha");
 
 const sampleSite: StoredSiteRecord = {
-  siteId: "site-REDACTED_CLIENT_DATA",
-  projectId: "project-REDACTED_CLIENT_DATA",
-  organizationId: "org-REDACTED_CLIENT_DATA",
-  projectSlug: "REDACTED_CLIENT_DATA",
-  siteSlug: "REDACTED_CLIENT_DATA",
-  name: "REDACTED_CLIENT_DATA",
-  url: "https://REDACTED_CLIENT_DATA",
+  siteId: "site-north",
+  projectId: "project-alpha",
+  organizationId: "org-alpha",
+  projectSlug: "alpha",
+  siteSlug: "north",
+  name: "Север",
+  url: "https://alpha.example.test",
   timezone: "+03:00",
   enabled: true,
   enabledSourceCount: 2,
 };
 
 const sampleProject: StoredProjectRecord = {
-  projectId: "project-REDACTED_CLIENT_DATA",
-  organizationId: "org-REDACTED_CLIENT_DATA",
-  projectSlug: "REDACTED_CLIENT_DATA",
-  name: "REDACTED_CLIENT_DATA",
+  projectId: "project-alpha",
+  organizationId: "org-alpha",
+  projectSlug: "alpha",
+  name: "Альфа",
   status: "ACTIVE",
   sites: [sampleSite],
 };
 
 const sampleReport = siteReportSnapshotSchema.parse({
   schemaVersion: 1,
-  clientSlug: "REDACTED_CLIENT_DATA",
-  siteSlug: "REDACTED_CLIENT_DATA",
-  siteUrl: "https://REDACTED_CLIENT_DATA",
+  clientSlug: "alpha",
+  siteSlug: "north",
+  siteUrl: "https://alpha.example.test",
   generatedAt: "2026-08-30T00:00:00+03:00",
   freshness: "fresh",
   periodKey: "month",
@@ -148,28 +148,28 @@ describe("ReportService", () => {
   it("returns report for analyst", async () => {
     const report = await reportService.getSiteReportForUser(
       analystUser,
-      "REDACTED_CLIENT_DATA",
-      "REDACTED_CLIENT_DATA",
+      "alpha",
+      "north",
       "month",
     );
-    expect(report?.clientSlug).toBe("REDACTED_CLIENT_DATA");
+    expect(report?.clientSlug).toBe("alpha");
   });
 
   it("returns report for allowed client viewer", async () => {
     const report = await reportService.getSiteReportForUser(
-      REDACTED_CLIENT_DATAViewer,
-      "REDACTED_CLIENT_DATA",
-      "REDACTED_CLIENT_DATA",
+      alphaViewer,
+      "alpha",
+      "north",
       "month",
     );
-    expect(report?.siteSlug).toBe("REDACTED_CLIENT_DATA");
+    expect(report?.siteSlug).toBe("north");
   });
 
   it("denies report without report-read capability", async () => {
     const deniedReport = await reportService.getSiteReportForUser(
       deniedReportPrincipal,
-      "REDACTED_CLIENT_DATA",
-      "REDACTED_CLIENT_DATA",
+      "alpha",
+      "north",
       "month",
     );
     expect(deniedReport).toBeNull();
@@ -177,9 +177,9 @@ describe("ReportService", () => {
 
   it("denies report outside allowed organization", async () => {
     const deniedReport = await reportService.getSiteReportForUser(
-      REDACTED_CLIENT_DATAViewer,
-      "REDACTED_CLIENT_DATA",
-      "REDACTED_CLIENT_DATA",
+      alphaViewer,
+      "beta",
+      "west",
       "month",
     );
     expect(deniedReport).toBeNull();

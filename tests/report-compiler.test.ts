@@ -3,15 +3,15 @@ import { compileSiteReportSnapshot } from "../src/modules/reporting/index.ts";
 import {
   getClientBySlug,
   getRegistryBundle,
-} from "../src/modules/project-registry/server.ts";
+} from "./helpers/example-registry.ts";
 import {
   createMetricaSourceFixture,
   createWebmasterSourceFixture,
 } from "./helpers/source-dto-fixtures.ts";
 
-function getREDACTED_CLIENT_DATASite() {
-  const site = getClientBySlug("REDACTED_CLIENT_DATA")?.sites.find((item) => item.siteSlug === "REDACTED_CLIENT_DATA");
-  if (!site) throw new Error("Missing REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA fixture site");
+function getNorthSite() {
+  const site = getClientBySlug("alpha")?.sites.find((item) => item.siteSlug === "north");
+  if (!site) throw new Error("Missing Alpha North fixture site");
   return site;
 }
 
@@ -28,7 +28,7 @@ if (!clusterProfile) throw new Error("Missing real-estate cluster profile");
 
 describe("SiteReportSnapshot compiler", () => {
   it("compiles both source DTOs into one validated snapshot", () => {
-    const site = getREDACTED_CLIENT_DATASite();
+    const site = getNorthSite();
     const currentWebmaster = createWebmasterSourceFixture(site);
     currentWebmaster.queryCollections[0]!.queries[0]!.avgShowPosition = 2;
     const previousWebmaster = createWebmasterSourceFixture(site);
@@ -48,7 +48,7 @@ describe("SiteReportSnapshot compiler", () => {
     previousMetrica.yandexOrganic.summary.conversionRate = 3.75;
     previousMetrica.allTraffic.summary.visits = 250;
     const snapshot = compileSiteReportSnapshot({
-      clientSlug: "REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
       site,
       generatedAt: "2026-08-27T10:10:00.000Z",
       clusterProfile,
@@ -62,14 +62,14 @@ describe("SiteReportSnapshot compiler", () => {
       queryThresholds: thresholds,
       trackedQuerySet: {
         schemaVersion: 1,
-        clientSlug: "REDACTED_CLIENT_DATA",
-        siteSlug: "REDACTED_CLIENT_DATA",
+        clientSlug: "alpha",
+        siteSlug: "north",
         source: "owner-provided",
         baselineLabel: "02.06",
         expectedCount: 1,
         queries: [
           {
-            query: "квартиры REDACTED_CLIENT_DATA",
+            query: "квартиры север",
             position: { current: 1, baseline: 3, delta: 2 },
           },
         ],
@@ -104,7 +104,7 @@ describe("SiteReportSnapshot compiler", () => {
       top3Count: 1,
     });
     expect(snapshot.webmaster?.trackedCore?.queries[0]).toMatchObject({
-      query: "квартиры REDACTED_CLIENT_DATA",
+      query: "квартиры север",
       shows: 100,
       previousShows: 100,
       ownerPosition: 1,
@@ -131,7 +131,7 @@ describe("SiteReportSnapshot compiler", () => {
 
 
   it("promotes critical crawl health into the management risk", () => {
-    const site = getREDACTED_CLIENT_DATASite();
+    const site = getNorthSite();
     const webmasterData = createWebmasterSourceFixture(site);
     webmasterData.indexingHistory.push({
       indicator: "HTTP_5XX",
@@ -139,7 +139,7 @@ describe("SiteReportSnapshot compiler", () => {
     });
 
     const snapshot = compileSiteReportSnapshot({
-      clientSlug: "REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
       site,
       generatedAt: "2026-08-27T10:10:00.000Z",
       clusterProfile,
@@ -157,11 +157,11 @@ describe("SiteReportSnapshot compiler", () => {
 
   it("compiles Topvisor capture history into ranking movements", () => {
     const site = {
-      ...getREDACTED_CLIENT_DATASite(),
-      topvisor: { enabled: true, projectId: REDACTED_CLIENT_DATA, regionIndex: 0 },
+      ...getNorthSite(),
+      topvisor: { enabled: true, projectId: 700004, regionIndex: 0 },
     };
     const snapshot = compileSiteReportSnapshot({
-      clientSlug: "REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
       site,
       generatedAt: "2026-08-23T10:10:00.000Z",
       clusterProfile,
@@ -173,18 +173,18 @@ describe("SiteReportSnapshot compiler", () => {
       queryThresholds: thresholds,
       trackedQuerySet: {
         schemaVersion: 1,
-        clientSlug: "REDACTED_CLIENT_DATA",
-        siteSlug: "REDACTED_CLIENT_DATA",
+        clientSlug: "alpha",
+        siteSlug: "north",
         source: "owner-provided",
         baselineLabel: "02.06",
         expectedCount: 2,
         queries: [
           {
-            query: "квартиры REDACTED_CLIENT_DATA",
+            query: "квартиры север",
             position: { current: 4, baseline: 9, delta: 5 },
           },
           {
-            query: "новостройки REDACTED_CLIENT_DATA",
+            query: "новостройки север",
             position: { current: 8, baseline: null, delta: 0 },
           },
         ],
@@ -192,21 +192,21 @@ describe("SiteReportSnapshot compiler", () => {
       rankingData: {
         schemaVersion: 1,
         fetchedAt: "2026-08-23T10:00:00.000Z",
-        projectId: REDACTED_CLIENT_DATA,
+        projectId: 700004,
         regionIndex: 0,
         snapshots: [
           {
             capturedAt: "2026-08-01",
             queries: [
-              { query: "квартиры REDACTED_CLIENT_DATA", position: 12 },
-              { query: "новостройки REDACTED_CLIENT_DATA", position: null },
+              { query: "квартиры север", position: 12 },
+              { query: "новостройки север", position: null },
             ],
           },
           {
             capturedAt: "2026-08-22",
             queries: [
-              { query: "квартиры REDACTED_CLIENT_DATA", position: 5 },
-              { query: "новостройки REDACTED_CLIENT_DATA", position: 3 },
+              { query: "квартиры север", position: 5 },
+              { query: "новостройки север", position: 3 },
             ],
           },
         ],
@@ -228,9 +228,9 @@ describe("SiteReportSnapshot compiler", () => {
     expect(snapshot.ranking?.history).toHaveLength(2);
   });
   it("marks a source partial when current data arrived with a request failure", () => {
-    const site = getREDACTED_CLIENT_DATASite();
+    const site = getNorthSite();
     const snapshot = compileSiteReportSnapshot({
-      clientSlug: "REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
       site,
       generatedAt: "2026-08-28T10:10:00.000Z",
       clusterProfile,
@@ -246,9 +246,9 @@ describe("SiteReportSnapshot compiler", () => {
   });
 
   it("uses last-known-good source section and marks a failed refresh partial", () => {
-    const site = getREDACTED_CLIENT_DATASite();
+    const site = getNorthSite();
     const previous = compileSiteReportSnapshot({
-      clientSlug: "REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
       site,
       generatedAt: "2026-08-27T10:10:00.000Z",
       clusterProfile,
@@ -257,7 +257,7 @@ describe("SiteReportSnapshot compiler", () => {
       queryThresholds: thresholds,
     });
     const partial = compileSiteReportSnapshot({
-      clientSlug: "REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
       site,
       generatedAt: "2026-08-28T10:10:00.000Z",
       clusterProfile,

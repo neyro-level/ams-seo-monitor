@@ -1,9 +1,10 @@
+import { getWorkerMonitoringService } from "../infrastructure/worker-service-container.ts";
 import type { CreateSyncRunInput } from "../modules/data-ingestion/index.ts";
+import { syncProjectToDatabase } from "../modules/data-ingestion/worker.ts";
 import {
   drainOutbox,
   runReliabilityRetention,
 } from "../modules/platform-operations/worker.ts";
-import { syncProjectToDatabase } from "../modules/data-ingestion/worker.ts";
 import { getLogger } from "../platform/observability/logger.ts";
 
 const command = process.argv[2] ?? null;
@@ -38,9 +39,31 @@ async function main() {
     return;
   }
 
+  if (command === "projects-sync") {
+    const trigger = (argument ?? "daily") as CreateSyncRunInput["trigger"];
+    if (!allowedTriggers.includes(trigger)) {
+      throw new Error(`Unsupported sync trigger: ${trigger}`);
+    }
+    const projectSlugs = await getWorkerMonitoringService().listActiveProjectSlugs();
+    const results = [];
+    for (const projectSlug of projectSlugs) {
+      results.push(await syncProjectToDatabase({ projectSlug, trigger, env: process.env }));
+    }
+    logger.info(
+      {
+        event: "active_projects_sync_finished",
+        projectsProcessed: results.length,
+        projectsFailed: results.filter((result) => result.status === "failed").length,
+      },
+      "active projects sync finished",
+    );
+    if (results.some((result) => result.status === "failed")) process.exitCode = 1;
+    return;
+  }
+
   if (command !== "project-sync" || !argument) {
     throw new Error(
-      "Usage: worker project-sync <project-slug> [trigger] | outbox-drain [worker-id] | outbox-retention",
+      "Usage: worker projects-sync [trigger] | project-sync <project-slug> [trigger] | outbox-drain [worker-id] | outbox-retention",
     );
   }
   if (!allowedTriggers.includes(requestedTrigger as CreateSyncRunInput["trigger"])) {

@@ -45,7 +45,7 @@ describe("webmaster normalized dto", () => {
       {
         token: "token",
         baseUrl: "https://api.webmaster.yandex.net/v4",
-        targetSiteUrl: "https://REDACTED_CLIENT_DATA",
+        targetSiteUrl: "https://alpha.example.test",
         tokenStatus: "ACTIVE",
       },
       {
@@ -56,13 +56,13 @@ describe("webmaster normalized dto", () => {
 
     const dto = await client.collectSiteData({ queryLimit: 2 });
 
-    expect(dto.access.hostId).toBe("https:REDACTED_CLIENT_DATA:443");
+    expect(dto.access.hostId).toBe("https:alpha.example.test:443");
     expect(dto.summary.sqi).toBe(230);
     expect(dto.summary.searchablePages).toBe(2123);
     expect(dto.diagnostics[0]?.code).toBe("NO_SITEMAPS");
     expect(dto.sitemaps[0]?.urlsTotal).toBe(1099);
     expect(dto.queryCollections).toHaveLength(6);
-    expect(dto.queryCollections[0]?.queries[0]?.queryText).toBe("квартиры REDACTED_CLIENT_DATA новостройки");
+    expect(dto.queryCollections[0]?.queries[0]?.queryText).toBe("квартиры север новостройки");
     expect(dto.queryCollections[0]?.queries[0]?.ctrPercent).toBe(10.95);
     expect(dto.allQueryHistory.find((item) => item.indicator === "TOTAL_SHOWS")?.points[0]?.value).toBe(
       12000,

@@ -59,9 +59,9 @@ workerTestDescription("syncProjectToDatabase", () => {
       where: {
         provider: Provider.TOPVISOR,
         site: {
-          slug: "REDACTED_CLIENT_DATA",
+          slug: "north",
           project: {
-            slug: "REDACTED_CLIENT_DATA",
+            slug: "alpha",
           },
         },
       },
@@ -89,7 +89,7 @@ workerTestDescription("syncProjectToDatabase", () => {
           ? "2026-08-30T00:00:00+03:00"
           : "2026-08-30T00:01:00+03:00";
       const result = await syncProjectToDatabase({
-        projectSlug: "REDACTED_CLIENT_DATA",
+        projectSlug: "alpha",
         trigger: "daily",
         now,
         collectors: {
@@ -145,7 +145,7 @@ workerTestDescription("syncProjectToDatabase", () => {
             topvisorSiteDataSchema.parse({
               schemaVersion: 1,
               fetchedAt: "2026-08-30T00:00:00+03:00",
-              projectId: REDACTED_CLIENT_DATA,
+              projectId: 700004,
               regionIndex: 0,
               snapshots: [
                 {
@@ -160,7 +160,7 @@ workerTestDescription("syncProjectToDatabase", () => {
         },
       });
 
-      expect(result.projectSlug).toBe("REDACTED_CLIENT_DATA");
+      expect(result.projectSlug).toBe("alpha");
       expect(result.status).toBe("success");
       expect(result.sites).toHaveLength(3);
       expect(result.sites[0]?.periods).toHaveLength(4);
@@ -230,7 +230,7 @@ workerTestDescription("syncProjectToDatabase", () => {
       const startedAt = "2026-08-31T00:00:00+03:00";
       await expect(
         syncProjectToDatabase({
-          projectSlug: "REDACTED_CLIENT_DATA",
+          projectSlug: "alpha",
           trigger: "manual",
           now: () => startedAt,
           collectors: {
@@ -240,7 +240,7 @@ workerTestDescription("syncProjectToDatabase", () => {
               topvisorSiteDataSchema.parse({
                 schemaVersion: 1,
                 fetchedAt: startedAt,
-                projectId: REDACTED_CLIENT_DATA,
+                projectId: 700004,
                 regionIndex: 0,
                 snapshots: [],
               }),

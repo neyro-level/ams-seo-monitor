@@ -38,6 +38,10 @@ export function getWorkerSyncService() {
   return syncService;
 }
 
+export function getWorkerMonitoringService() {
+  return monitoringService;
+}
+
 export function getWorkerReliabilityService() {
   return reliabilityService;
 }

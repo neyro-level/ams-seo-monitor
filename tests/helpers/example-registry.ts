@@ -1,5 +1,3 @@
-import "server-only";
-
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import {
@@ -13,9 +11,9 @@ import {
   type GoalProfile,
   type SiteRegistry,
   type ThresholdsConfig,
-} from "../../../shared/schemas/registry.ts";
+} from "../../src/shared/schemas/registry.ts";
 
-const configRoot = path.join(process.cwd(), "config");
+const configRoot = path.join(process.cwd(), "config", "examples");
 
 function readJsonDirectory(relativePath: string) {
   const directory = path.join(configRoot, relativePath);

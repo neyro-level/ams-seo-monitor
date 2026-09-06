@@ -25,7 +25,7 @@ describe("pino observability logger", () => {
       password: "secret-value",
       authorization: "Bearer token",
       headers: { cookie: "sid=1", authorization: "Bearer inner" },
-      payload: { apiKey: "top-secret", projectSlug: "REDACTED_CLIENT_DATA" },
+      payload: { apiKey: "top-secret", projectSlug: "alpha" },
     }, "structured-test");
 
     const payload = JSON.parse(read()) as Record<string, unknown>;
@@ -37,7 +37,7 @@ describe("pino observability logger", () => {
     });
     expect(payload.payload).toMatchObject({
       apiKey: "[REDACTED]",
-      projectSlug: "REDACTED_CLIENT_DATA",
+      projectSlug: "alpha",
     });
   });
 });

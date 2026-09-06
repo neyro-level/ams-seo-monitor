@@ -28,6 +28,16 @@ describe("production configuration boundary", () => {
     expect(integrationRunner).toContain("scripts/seed-test-database.mjs");
     expect(integrationRunner).not.toContain("config/clients");
   });
+
+  it("excludes private operator configuration from the image build context", () => {
+    const dockerIgnore = readFileSync(".dockerignore", "utf8");
+    const gitIgnore = readFileSync(".gitignore", "utf8");
+
+    expect(dockerIgnore).toContain("config/*");
+    expect(dockerIgnore).toContain("!config/examples/**");
+    expect(gitIgnore).toContain("/config/*");
+    expect(gitIgnore).toContain("!/config/examples/**");
+  });
 });
 
 describe("production restore readiness", () => {
@@ -80,6 +90,13 @@ describe("production compose networking", () => {
 });
 
 describe("production worker module boundary", () => {
+  it("schedules every active database project instead of a hardcoded client", () => {
+    const workerUnit = readFileSync("ops/systemd/seo-monitor-worker.service", "utf8");
+
+    expect(workerUnit).toContain("maintenance projects-sync daily");
+    expect(workerUnit).not.toContain("project-sync alpha");
+  });
+
   it(
     "loads the complete worker dependency graph outside the Next.js runtime",
     () => {

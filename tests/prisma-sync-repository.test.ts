@@ -44,14 +44,14 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
   it("prevents overlapping full syncs for the same scope", async () => {
     const firstRepository = new PrismaSyncRepository();
     const secondRepository = new PrismaSyncRepository();
-    const firstLock = await firstRepository.tryAcquireFullSyncLock("REDACTED_CLIENT_DATA-test");
+    const firstLock = await firstRepository.tryAcquireFullSyncLock("alpha-test");
     expect(firstLock).not.toBeNull();
 
-    const overlappingLock = await secondRepository.tryAcquireFullSyncLock("REDACTED_CLIENT_DATA-test");
+    const overlappingLock = await secondRepository.tryAcquireFullSyncLock("alpha-test");
     expect(overlappingLock).toBeNull();
 
     await firstLock!.release();
-    const lockAfterRelease = await secondRepository.tryAcquireFullSyncLock("REDACTED_CLIENT_DATA-test");
+    const lockAfterRelease = await secondRepository.tryAcquireFullSyncLock("alpha-test");
     expect(lockAfterRelease).not.toBeNull();
     await lockAfterRelease!.release();
   });
@@ -60,8 +60,8 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
     const repository = new PrismaSyncRepository();
     const site = await prisma!.site.findFirstOrThrow({
       where: {
-        slug: "REDACTED_CLIENT_DATA",
-        project: { slug: "REDACTED_CLIENT_DATA" },
+        slug: "north",
+        project: { slug: "alpha" },
       },
       select: { id: true, organizationId: true, projectId: true },
     });
@@ -78,7 +78,7 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
     const syncRun = await repository.createSyncRun({
       organizationId: site.organizationId,
       projectId: site.projectId,
-      projectSlug: "REDACTED_CLIENT_DATA",
+      projectSlug: "alpha",
       trigger: "manual",
       startedAt: "2026-08-30T00:00:00+03:00",
       correlationId: "00000000-0000-4000-8000-000000000020",
@@ -94,9 +94,9 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
 
     const snapshot = siteReportSnapshotSchema.parse({
       schemaVersion: 1,
-      clientSlug: "REDACTED_CLIENT_DATA",
-      siteSlug: "REDACTED_CLIENT_DATA",
-      siteUrl: "https://REDACTED_CLIENT_DATA",
+      clientSlug: "alpha",
+      siteSlug: "north",
+      siteUrl: "https://alpha.example.test",
       generatedAt: "2026-08-30T00:00:00+03:00",
       freshness: "partial",
       periodKey: "week",
@@ -198,7 +198,7 @@ syncRepositoryTestDescription("PrismaSyncRepository", () => {
     expect(storedSyncRun.sitesProcessed).toBe(1);
     expect(storedSyncRun.sitesPartial).toBe(1);
     expect(storedSyncRun.projectId).toBe(site.projectId);
-    expect(storedSyncRun.projectSlug).toBe("REDACTED_CLIENT_DATA");
+    expect(storedSyncRun.projectSlug).toBe("alpha");
     expect(storedSyncRun.correlationId).toBe("00000000-0000-4000-8000-000000000020");
     expect(storedSyncRun.organizationId).toBe(site.organizationId);
     expect(storedSourceRun.status).toBe("PARTIAL");

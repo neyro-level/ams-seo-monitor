@@ -43,7 +43,7 @@ integrationDescription("reliability foundation", () => {
     prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
     organizationId = (
       await prisma.organization.findUniqueOrThrow({
-        where: { slug: "REDACTED_CLIENT_DATA" },
+        where: { slug: "alpha" },
         select: { id: true },
       })
     ).id;
@@ -71,12 +71,12 @@ integrationDescription("reliability foundation", () => {
       idempotencyScope: "project.sync.enqueue",
       idempotencyKey: "request-001",
       topic: "test.reliability",
-      payload: { projectSlug: "REDACTED_CLIENT_DATA", trigger: "manual" },
+      payload: { projectSlug: "alpha", trigger: "manual" },
       actorType: "USER" as const,
       actorId: "platform-admin-test",
       action: "project.sync.enqueue",
       entityType: "Project",
-      entityId: "REDACTED_CLIENT_DATA",
+      entityId: "alpha",
       source: "integration-test",
       correlationId,
     };
@@ -84,7 +84,7 @@ integrationDescription("reliability foundation", () => {
     const first = await service.enqueue(command);
     const duplicate = await service.enqueue({
       ...command,
-      payload: { trigger: "manual", projectSlug: "REDACTED_CLIENT_DATA" },
+      payload: { trigger: "manual", projectSlug: "alpha" },
     });
 
     expect(first.duplicate).toBe(false);

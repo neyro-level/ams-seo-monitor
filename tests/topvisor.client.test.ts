@@ -5,18 +5,18 @@ import {
   readTopvisorEnvironment,
   TopvisorSafeError,
 } from "../collector/sources/topvisor/client.ts";
-import { getClientBySlug } from "../src/modules/project-registry/server.ts";
+import { getClientBySlug } from "./helpers/example-registry.ts";
 
 function getTopvisorSite() {
-  const site = getClientBySlug("REDACTED_CLIENT_DATA")?.sites.find(
-    (item) => item.siteSlug === "REDACTED_CLIENT_DATA",
+  const site = getClientBySlug("alpha")?.sites.find(
+    (item) => item.siteSlug === "north",
   );
-  if (!site) throw new Error("Missing REDACTED_CLIENT_DATA site");
+  if (!site) throw new Error("Missing North site");
   return {
     ...site,
     topvisor: {
       enabled: true,
-      projectId: REDACTED_CLIENT_DATA,
+      projectId: 700004,
       regionIndex: 0,
     },
   };
@@ -47,11 +47,11 @@ describe("Topvisor read-only source", () => {
         result: {
           rows: [
             {
-              name: "купить квартиру в REDACTED_CLIENT_DATAе",
+              name: "купить квартиру в Севере",
               positionsData: [{ position: 12 }, { position: 5 }],
             },
             {
-              name: "квартира REDACTED_CLIENT_DATA",
+              name: "квартира Север",
               positionsData: [{ position: null }, { position: 3 }],
             },
           ],
@@ -59,7 +59,7 @@ describe("Topvisor read-only source", () => {
       },
       dates: ["2026-08-01", "2026-08-22"],
       fetchedAt: "2026-08-23T10:00:00.000Z",
-      projectId: REDACTED_CLIENT_DATA,
+      projectId: 700004,
       regionIndex: 0,
     });
 
@@ -67,15 +67,15 @@ describe("Topvisor read-only source", () => {
       {
         capturedAt: "2026-08-01",
         queries: [
-          { query: "купить квартиру в REDACTED_CLIENT_DATAе", position: 12 },
-          { query: "квартира REDACTED_CLIENT_DATA", position: null },
+          { query: "купить квартиру в Севере", position: 12 },
+          { query: "квартира Север", position: null },
         ],
       },
       {
         capturedAt: "2026-08-22",
         queries: [
-          { query: "купить квартиру в REDACTED_CLIENT_DATAе", position: 5 },
-          { query: "квартира REDACTED_CLIENT_DATA", position: 3 },
+          { query: "купить квартиру в Севере", position: 5 },
+          { query: "квартира Север", position: 3 },
         ],
       },
     ]);
@@ -99,7 +99,7 @@ describe("Topvisor read-only source", () => {
           result: {
             rows: [
               {
-                name: "купить квартиру в REDACTED_CLIENT_DATAе",
+                name: "купить квартиру в Севере",
                 positionsData: [{ position: 12 }, { position: 5 }],
               },
             ],

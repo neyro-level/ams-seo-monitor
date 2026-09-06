@@ -3,18 +3,18 @@ import {
   mergeWebmasterTechnicalData,
   summarizeSourceRun,
 } from "../src/modules/data-ingestion/index.ts";
-import { getClientBySlug } from "../src/modules/project-registry/server.ts";
+import { getClientBySlug } from "./helpers/example-registry.ts";
 import { createWebmasterSourceFixture } from "./helpers/source-dto-fixtures.ts";
 
-function getREDACTED_CLIENT_DATASite() {
-  const site = getClientBySlug("REDACTED_CLIENT_DATA")?.sites.find((item) => item.siteSlug === "REDACTED_CLIENT_DATA");
-  if (!site) throw new Error("Missing REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA fixture site");
+function getNorthSite() {
+  const site = getClientBySlug("alpha")?.sites.find((item) => item.siteSlug === "north");
+  if (!site) throw new Error("Missing Alpha North fixture site");
   return site;
 }
 
 describe("Sync source-state handling", () => {
   it("preserves technical partial errors without leaking baseline query errors", () => {
-    const site = getREDACTED_CLIENT_DATASite();
+    const site = getNorthSite();
     const periodData = createWebmasterSourceFixture(site);
     const baselineData = createWebmasterSourceFixture(site);
     baselineData.partial = true;

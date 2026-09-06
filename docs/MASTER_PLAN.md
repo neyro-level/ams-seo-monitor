@@ -4,11 +4,11 @@
 
 ## Platform contract completion
 
-### Public-data sanitation
+### Git history sanitation
 
-- оставить в repository только synthetic examples/fixtures;
-- удалить реальные operator configs/snapshots и запретить известные client markers verifier-ом;
-- после закрытия PR переписать целевые Git refs и проверить весь достижимый object graph.
+- после закрытия всех product PR переписать целевые SourceCraft/GitHub refs;
+- удалить прежние client paths и content signatures из всего достижимого object graph;
+- подтвердить exact-SHA equality очищенных mirrors; до этого GitHub остаётся private.
 
 ### Security и architecture cleanup
 
