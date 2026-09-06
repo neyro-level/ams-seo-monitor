@@ -4,11 +4,11 @@
 
 ## Platform contract completion
 
-### Git history sanitation
+### GitHub sanitation closure
 
-- после закрытия всех product PR переписать целевые SourceCraft/GitHub refs;
-- удалить прежние client paths и content signatures из всего достижимого object graph;
-- подтвердить exact-SHA equality очищенных mirrors; до этого GitHub остаётся private.
+- зеркалировать очищенный canonical `main`, сохраняя GitHub private;
+- добиться удаления доступного старого pre-rewrite SHA через официальный GitHub purge process;
+- вернуть public visibility только после недоступности старого SHA и exact-SHA equality зеркал.
 
 ## Product backlog
 
