@@ -65,9 +65,20 @@ try {
       siteUrl: `https://${siteSlug}.example.test`,
       timezone: "+03:00",
       enabled: true,
-      webmaster: { enabled: false, expectedHostUrl: null },
-      metrica: { enabled: false, counterId: null, goalProfile: null },
-      topvisor: { enabled: false, projectId: null, regionIndex: null },
+      webmaster: {
+        enabled: true,
+        expectedHostUrl: `https://${siteSlug}.example.test`,
+      },
+      metrica: {
+        enabled: true,
+        counterId: String(700001 + index),
+        goalProfile: "REDACTED_CLIENT_DATA",
+      },
+      topvisor: {
+        enabled: false,
+        projectId: index === 0 ? 900001 : null,
+        regionIndex: index === 0 ? 0 : null,
+      },
     })),
   });
   await writeJson("clients/REDACTED_CLIENT_DATA.json", {
