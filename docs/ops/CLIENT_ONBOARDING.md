@@ -68,6 +68,4 @@ pnpm project:add -- --project-name "Новый проект" --project-slug new-
 - secrets/raw provider data отсутствуют в Git/browser/logs;
 - backup/recovery contract не ослаблен.
 
-## Current product queue
-
-REDACTED_CLIENT_DATA sites и SZ REDACTED_CLIENT_DATA status фиксируются в `docs/MASTER_PLAN.md`. Этот runbook не утверждает live access без preflight/production proof.
+Live access и onboarding status подтверждаются preflight/production evidence, а не этим runbook.

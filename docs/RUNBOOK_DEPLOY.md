@@ -1,10 +1,12 @@
 # DEPLOY RUNBOOK
 
-> Standard 3.0 production baseline. Release is an immutable OCI image plus Docker Compose on the host. Merge, image build and deploy remain separate owner-gated steps.
+Release unit: immutable OCI image + Docker Compose + host Nginx. Merge, image build and deploy are separate owner-gated steps.
 
 ## Scope
 
 Manual production deploy of reviewed canonical `main`. This runbook does not authorize deploy without an owner command.
+
+Current repository assets use Linux host networking: web binds `127.0.0.1:3000`, and database/backup operations expect host-local PostgreSQL access. A move to private Managed PostgreSQL requires the separate HEAVY scope in `docs/MASTER_PLAN.md`; this runbook does not claim that live topology already exists.
 
 ## Preconditions
 

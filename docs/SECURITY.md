@@ -30,10 +30,10 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - Better Auth validates identity/session/2FA challenge only;
 - `getCurrentPrincipalState()` re-reads User + AMS Membership and rejects `disabledAt`;
 - platform principals do not receive fake tenant scopes;
-- compatibility `Session.activeOrganizationId` is accepted only after fresh Membership validation;
+- deprecated `Session.activeOrganizationId` is accepted only as a server-side preference after fresh Membership validation;
 - first-password onboarding blocks cabinet routes until `mustChangePassword=false`;
 - production Platform Admin requires verified 2FA; `AMS_E2E_TEST` bypass is test-only and forbidden in deployment env;
-- private pages/services require permission + resource authorization while routes transition from legacy ActorContext;
+- new and migrated private pages/services require `PrincipalContext` permission + resource authorization; remaining ActorContext read callsites are explicit technical debt;
 - public signup is disabled;
 - presentation does not import Prisma;
 - readiness exposes no connection details and Nginx restricts it externally.
@@ -170,8 +170,8 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 ## Security invariants
 
 - public signup off;
-- `PrincipalContext`, not browser organization values or legacy ActorContext, is the target authorization input;
-- Better Auth Organization Plugin is removed from runtime; plugin-compatible records are migration-only;
+- `PrincipalContext`, not browser organization values or `ActorContext`, is the canonical authorization input;
+- Better Auth Organization Plugin is absent from runtime; deprecated plugin-compatible records do not define access;
 - `mustChangePassword` is server-owned and completion records AuditEvent;
 - production Platform Admin requires 2FA; session revocation follows Better Auth password change;
 - disabled user denied;

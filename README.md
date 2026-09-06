@@ -2,7 +2,7 @@
 
 AMS IMPULSE — публичная страница SEO-продукта АМС и приватный кабинет SEO-отчётности по нескольким проектам и сайтам.
 
-Миграция к адаптированному Application Platform Core Standard 3.0 завершена в canonical `main`. Новая работа следует глобальному Application Platform Core 3.1; расхождения с ним фиксируются как отдельный scope, без скрытой архитектурной миграции.
+Проект следует `AMS Application Platform Core 3.1`. Фактические runtime-версии и границы определяют package/lockfile, schema, migrations и versioned конфигурация этого repository.
 
 ## Что делает система
 
@@ -47,7 +47,7 @@ systemd timer
 Главные инварианты:
 
 - `SiteReportSnapshot` — единственный browser-safe DTO отчёта;
-- Better Auth создаёт session; server ActorContext, capabilities и fresh memberships защищают приватные маршруты;
+- Better Auth создаёт session; server-generated `PrincipalContext`, permissions и fresh memberships защищают новые и мигрированные приватные пути; оставшиеся report/project reads на `ActorContext` перечислены как technical debt в активном плане;
 - browser не обращается к provider APIs и не получает provider credentials;
 - UI не импортирует Prisma и не рассчитывает provider semantics;
 - PostgreSQL — runtime source of truth; `config/*` используется как проверяемый seed/input;
@@ -142,7 +142,7 @@ Production web env отдельно проверяется общей Zod bounda
 pnpm verify:web-environment
 ```
 
-Production restore smoke выполняется release/deploy pipeline скриптом `ops/postgres/restore-smoke.sh` после подтверждённого offsite backup. Ручной порядок и ограничения описаны в [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md).
+Production restore smoke выполняется release/deploy pipeline через `ops/postgres/restore-smoke.sh` после подтверждённого offsite backup. Ручной порядок и ограничения описаны в [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md).
 
 Provider preflight и worker sync требуют разрешённого scope и server-side secrets:
 
@@ -177,18 +177,13 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/DATABASE.md`](docs/DATABASE.md);
 - [`docs/AUTH.md`](docs/AUTH.md);
 - [`docs/WORKER.md`](docs/WORKER.md);
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md);
 - [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md);
 - [`docs/SITE_REPORT_IA.md`](docs/SITE_REPORT_IA.md);
 - [`docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`](docs/EXTERNAL_SITE_DESIGN_SYSTEM.md);
 - [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);
-- [`docs/adr/ADR-003-adopt-core-standard-v3.md`](docs/adr/ADR-003-adopt-core-standard-v3.md) — реализованное архитектурное решение Standard 3.0;
-- [`docs/adr/ADR-001-adopt-application-platform-standard.md`](docs/adr/ADR-001-adopt-application-platform-standard.md) — superseded implementation history;
-- [`docs/adr/ADR-002-actor-context-and-capabilities.md`](docs/adr/ADR-002-actor-context-and-capabilities.md) — superseded implementation history;
-- [`docs/modules/MODULE_PLATFORM_RELIABILITY.md`](docs/modules/MODULE_PLATFORM_RELIABILITY.md);
-- [`docs/modules/MODULE_IDENTITY_ACCESS.md`](docs/modules/MODULE_IDENTITY_ACCESS.md);
+- [`docs/adr/ADR-001-application-platform-profile.md`](docs/adr/ADR-001-application-platform-profile.md);
+- [`docs/modules/MODULE_DATA_INGESTION.md`](docs/modules/MODULE_DATA_INGESTION.md);
+- [`docs/modules/MODULE_REPORTING.md`](docs/modules/MODULE_REPORTING.md);
+- [`docs/modules/`](docs/modules/) — остальные актуальные module contracts;
 - [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md);
-- [`docs/modules/`](docs/modules/);
 - [`docs/ops/`](docs/ops/).
-
-Устаревшие migration-планы находятся в `docs/archive/` и не являются source of truth.

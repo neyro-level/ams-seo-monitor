@@ -2,54 +2,82 @@
 
 ## Назначение
 
-Показывает позиции утверждённого поискового ядра, доли Top-3/Top-10 и динамику tracked queries. Webmaster average show position остаётся отдельной метрикой и не заменяет exact rank.
+Вычисляет позиции утверждённого ядра, доли Top-3/Top-10 и movement tracked queries.
 
-## Ownership
+## Не входит в scope
 
-- runtime model: `TrackedQuerySet`, `TrackedQuery`, `RankingCapture` в Prisma;
-- seed input: `config/tracked-queries/*`;
-- schemas: `src/shared/schemas/tracked-query.ts`, `rank-source.ts`, `report.ts`;
-- optional source: `collector/sources/topvisor/client.ts`;
-- compiler: `src/modules/reporting/domain/report-compiler.ts`;
-- UI: `RankingShareChart.tsx`, `TrackedQueryTable.tsx`.
+Webmaster average position as exact rank, keyword mutation/import, paid checks, browser provider calls and cross-site aggregate rank.
 
-## Sources
+## Data ownership
 
-- `TOPVISOR` — exact read-only capture history;
-- `OWNER_PROVIDED` — labelled baseline/current input when live mapping is not enabled.
+Domain query merge/calculations in `src/modules/ranking-analytics`; TrackedQuery/RankingCapture persistence belongs to Project Registry/Data Ingestion schema paths.
 
-Topvisor checker runs, keyword import/edit/delete и paid mutations запрещены.
+## Principal types
+
+No principal handling inside pure domain functions. Access is enforced by the calling Reporting/Project Registry use case.
+
+## Roles and permissions
+
+Inherited from the owner query: analyst global read or tenant report/project read.
+
+## Commands
+
+None. This module is deterministic read/calculation logic.
+
+## Queries
+
+Merge approved tracked queries with exact Topvisor or labelled owner-provided positions.
+
+## DTO
+
+Uses browser-safe ranking parts of `SiteReportSnapshot`; credentials and transport details are excluded.
 
 ## Invariants
 
-- query unique по normalized text внутри set;
-- active denominator = полное утверждённое ядро, включая unmeasured queries;
-- Top-3 является подмножеством Top-10;
-- меньшая числовая позиция лучше;
-- improvement: current < previous;
-- decline: current > previous;
-- `new/lost` требуют exact previous capture;
-- nullable owner baseline не превращается в `new/lost`;
-- source, baseline/capture labels и measured count видимы;
-- разные sites не агрегируются в fake rank;
-- credentials/internal transport data не входят в report DTO.
+- denominator includes the full enabled approved query set;
+- Top-3 is a subset of Top-10;
+- lower numeric position is better;
+- improvement: current < previous; decline: current > previous;
+- new/lost requires exact previous capture;
+- nullable owner baseline does not become new/lost;
+- source, baseline/capture label and measured count remain visible.
 
-## Calculations
+## Tenant behavior
 
-```text
-top3Share  = top3Count  / queryCount × 100
-top10Share = top10Count / queryCount × 100
-```
+Calculations receive one already-authorized Site dataset. Cross-site or cross-tenant inputs are not combined.
 
-Position delta остаётся согласован с UI contract: положительное improvement означает движение к меньшему числу позиции.
+## Resource authorization
 
-## Проверки
+Owned by the caller; this pure module never resolves routes, sessions or organization IDs.
 
-- tracked set uniqueness/expected count;
-- denominator includes unmeasured queries;
-- Top-3 subset Top-10;
-- exact vs nullable baseline movement;
-- Topvisor allowlisted read-only endpoints;
-- DB RankingCapture uniqueness;
-- browser-safe report serialization;
-- local mobile table overflow only, без whole-page overflow.
+## State lifecycle
+
+Tracked query `enabled=false` excludes it from active denominator while stored captures remain history.
+
+## Concurrency
+
+Pure calculations are deterministic for one input snapshot. Capture persistence uniqueness is enforced by database keys.
+
+## Idempotency
+
+Same normalized input produces the same output; no side effects.
+
+## Audit
+
+None for calculation. Query-set mutations are audited by Project Registry.
+
+## Events / Async policy
+
+No topics or jobs owned.
+
+## Integrations
+
+Optional Topvisor provides read-only exact captures through Data Ingestion; owner-provided fallback remains labelled.
+
+## Failure behavior
+
+Missing position stays null/unmeasured. Provider absence never becomes position zero.
+
+## Tests
+
+Normalization/uniqueness, denominator, Top-3/Top-10, movement semantics, source labelling and browser-safe serialization.

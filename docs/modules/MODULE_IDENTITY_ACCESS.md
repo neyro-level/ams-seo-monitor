@@ -1,115 +1,98 @@
-# Module: Identity and Access
+# Module: Identity Access
 
 ## Назначение
 
-Разделяет Better Auth identity/session lifecycle и AMS business authorization. Создаёт server-only `PrincipalContext`, first-password/2FA gates и AMS Membership roles.
+Разделяет Better Auth identity/session lifecycle и AMS business authorization. Создаёт server-only `PrincipalContext`, first-password/2FA gates и Membership roles.
 
 ## Не входит в scope
 
-- public signup;
-- self-service invitation/reset;
-- impersonation;
-- RLS;
-- external API client;
-- removal legacy plugin-compatible data before stabilization.
+Public signup, self-service invitation/reset, impersonation, RLS, external API clients и schema cleanup внутри обычной auth-задачи.
 
 ## Data ownership
 
-- Better Auth: User identity, Account, Session, Verification and TwoFactor security state;
-- AMS: Organization, Member, `Member.tenantRole`, business permission/resource policies and onboarding state;
-- compatibility-only: `Session.activeOrganizationId`, `Member.role`, Invitation/plugin records.
+- Better Auth: User identity, Account, Session, Verification, TwoFactor;
+- AMS: Organization, Member.tenantRole, permissions, onboarding state;
+- deprecated only: Session.activeOrganizationId, Member.role, Invitation.
 
 ## Principal types
 
-- `platform-admin` — PLATFORM_ADMIN, no organizationId;
-- `platform-analyst` — project-specific SEO_ANALYST, no fake tenant;
-- `tenant-user` — fresh Membership + `ORG_OWNER | ORG_MEMBER | VIEWER`;
-- `job` — explicit organizationId;
-- `api-client` — reserved until a real external contract exists.
+`platform-admin`, `platform-analyst`, `tenant-user`, `job`; `api-client` зарезервирован до появления внешнего API.
 
 ## Roles and permissions
 
-- Platform Admin has platform permissions and must name a target organization for cross-tenant operations.
-- Platform Analyst has global project/report/sync read but no platform/membership management.
-- Tenant user receives only role-mapped organization permissions.
-- Permission and module resource authorization are separate required checks.
+- PLATFORM_ADMIN: platform management, explicit cross-tenant target, mandatory production 2FA;
+- SEO_ANALYST: project/report/sync read, no Platform Admin access;
+- ORG_OWNER/ORG_MEMBER/VIEWER: organization-scoped permissions from fresh Membership.
 
 ## Commands
 
-- `auth.complete-password-onboarding` clears server-owned onboarding state and appends AuditEvent after Better Auth password change;
-- Platform Admin organization/membership commands use `defineAction → defineCommand` with optimistic `version`, explicit target organization and no direct CLI/UI CRUD.
+`auth.complete-password-onboarding` и identity-owned Platform Admin user/membership commands. Business writes use `defineCommand` and AuditEvent.
 
 ## Queries
 
-- `getPrincipalStateByUserId`;
-- `getCurrentPrincipalState`;
-- `getCurrentCabinetRedirect`;
-- `requirePlatformAdmin`, `requirePlatformAnalyst`, `requireTenantUser`.
+`getPrincipalStateByUserId`, `getCurrentPrincipalState`, `getCurrentCabinetRedirect`, exact-principal guards и identity admin queries.
 
 ## DTO
 
-Principal does not expose email, session token, password hash, TOTP secret, backup codes or raw membership records to browser code.
+Principal and identity DTOs exclude email where unnecessary, session token, password hash, TOTP secret, backup codes and raw Member records.
 
 ## Invariants
 
-- Browser cannot construct PrincipalContext.
-- Disabled user has no principal.
-- Platform principals have no fake organization.
-- Tenant principal requires fresh membership.
-- Session active organization is only a server-side compatibility preference and is revalidated.
-- `mustChangePassword=true` blocks the cabinet.
-- Platform Admin requires verified TOTP in production.
-- Better Auth Organization Plugin is not registered.
+- browser never constructs PrincipalContext;
+- disabled user has no principal;
+- platform principals have no fake organization;
+- tenant principal requires fresh active Membership;
+- Better Auth Organization Plugin is absent from runtime;
+- public signup is disabled;
+- `ActorContext` is a deprecated read-only compatibility boundary.
 
 ## Tenant behavior
 
-Client scope derived from `Member.tenantRole` проходит через scopedDb и database-level tenant relation constraints; модуль никогда не доверяет browser organization input.
+Tenant scope comes only from fresh Membership. Session active organization is a revalidated server-side preference, not authority.
 
 ## Resource authorization
 
-Identity module authorizes principal class. Project/report modules own concrete resource loaders.
+Identity Access authorizes principal class; owner modules authorize Project/Site/report resources.
 
 ## State lifecycle
 
 ```text
-admin-created user
+operator-created user
 → mustChangePassword
 → Better Auth password change
 → audited onboarding completion
 → cabinet
 
-platform admin
+PLATFORM_ADMIN
 → TOTP enrollment
-→ verified twoFactorEnabled
+→ verified 2FA
 → production cabinet
 ```
 
 ## Concurrency
 
-Password/2FA provider state is owned by Better Auth. Onboarding completion is idempotent: an already-completed state returns `changed=false`.
+Better Auth owns credential/2FA concurrency. Onboarding completion is idempotent and returns `changed=false` when already complete.
 
 ## Idempotency
 
-No external/retryable identity API exists. Future invite/webhook paths need an explicit idempotency contract.
+No external identity API exists. Retried AMS commands must use their command-level idempotency contract where applicable.
 
 ## Audit
 
-Password onboarding writes User audit marker. Platform Admin cross-tenant and membership commands must write explicit target organization audit in their own transaction.
+Password onboarding and every Platform Admin cross-tenant/membership mutation write safe AuditEvent markers.
+
+## Events / Async policy
+
+Identity flows do not emit provider side effects. Future delivery/invitation needs a separate outbox topic and schema.
 
 ## Integrations
 
-Better Auth adapter only. No Organization Plugin, no second auth provider.
+Better Auth `1.7.2` only; no second auth provider or Organization Plugin.
 
 ## Failure behavior
 
-- unauthenticated → login;
-- must-change-password → `/onboarding/password/`;
-- production Platform Admin without 2FA → `/onboarding/two-factor/`;
-- disabled/no membership tenant user → cabinet denied without tenant disclosure.
+Unauthenticated → login; password setup → `/onboarding/password/`; missing admin 2FA → `/onboarding/two-factor/`; disabled/no-membership → denial without tenant disclosure.
 
 ## Tests
 
-- principal kind/permission/type guards;
-- real PostgreSQL platform/analyst/tenant/no-membership factory matrix;
-- first-password E2E at 375/768/1280/1440;
-- required before production: real controlled TOTP enrollment and sign-in proof.
+Principal/permission unit tests, real-PostgreSQL factory matrix, first-password and TOTP E2E, foreign/no-membership denial.

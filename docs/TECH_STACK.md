@@ -1,6 +1,6 @@
 # TECH STACK
 
-Таблица ниже описывает фактический runtime canonical `main`. Адаптированная миграция Standard 3.0 завершена; соответствие новым требованиям Core 3.1 оценивается отдельным scope и не предполагается автоматически.
+Таблица ниже описывает фактический runtime canonical `main` по `package.json`, lockfile, `.node-version` и release assets. Platform contract — Application Platform Core 3.1.
 
 ## Source of truth
 
@@ -48,15 +48,14 @@
 - compatibility is proven by typecheck, lint, tests, build and affected runtime smoke;
 - production Node version must satisfy `scripts/verify-release-runtime.mjs`.
 
-## Реализованный Standard 3.0 baseline
+## Active stack decisions
 
-- current runtime uses React Hook Form, TanStack Table and `nuqs` in private admin surfaces;
-- Refine removed in Workstream 5; Platform Admin now relies on typed route composition and shared primitives instead of a resource framework;
-- TanStack Table and `nuqs` are the canonical private list patterns after the Project reference slice and Platform Admin rewrite;
-- pg-boss `12.30.0` entered in Workstream 6 with reviewed schema/pool/runbook contract;
-- pino `10.3.1` entered in Workstream 7 with redaction and correlation callsites;
+- private admin surfaces use React Hook Form, TanStack Table and `nuqs`;
+- Platform Admin uses typed route composition and shared primitives; Refine отсутствует;
+- pg-boss `12.30.0` has a separate schema/pool/migration contract;
+- pino `10.3.1` uses redaction and correlation-aware callsites;
 - Sentry remains disabled until SECURITY records a compliant DSN/proof path;
-- production Docker assets реализованы; фактический cutover требует отдельного release intent и operational proof.
+- Docker release assets are versioned; фактическое production state требует отдельного operational proof.
 
 Пустые platform dependencies без callsites запрещены.
 
