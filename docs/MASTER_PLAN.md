@@ -4,12 +4,6 @@
 
 ## Platform contract completion
 
-### Database target guard
-
-- убрать placeholder datasource из `prisma.config.ts`;
-- разрешить `prisma generate` без DB и fail closed для DB-команд без explicit target;
-- разделить production/local/test identities и безопасно показывать только target summary.
-
 ### PrincipalContext clean cutover
 
 - перевести оставшиеся report/project/navigation/layout/demo reads;

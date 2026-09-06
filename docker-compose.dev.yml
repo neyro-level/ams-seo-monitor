@@ -6,6 +6,9 @@ services:
       POSTGRES_USER: ${LOCAL_POSTGRES_USER:-seo_monitor_local}
       POSTGRES_PASSWORD: ${LOCAL_POSTGRES_PASSWORD:?Set LOCAL_POSTGRES_PASSWORD in .env.local}
       POSTGRES_DB: postgres
+      TEST_DATABASE_USER: ${TEST_DATABASE_USER:-seo_monitor_test}
+      TEST_DATABASE_PASSWORD: ${TEST_DATABASE_PASSWORD:?Set TEST_DATABASE_PASSWORD in .env.local}
+      TEST_DATABASE_NAME: ${TEST_DATABASE_NAME:-seo_monitor_test}
     ports:
       - "127.0.0.1:${LOCAL_POSTGRES_PORT:-55432}:5432"
     volumes:

@@ -1,4 +1,8 @@
 import { PgBoss } from "pg-boss";
+import {
+  formatDatabaseTargetSummary,
+  inspectDatabaseTarget,
+} from "../src/platform/config/database-target.ts";
 
 function readDatabaseOptions(env) {
   if (env.DATABASE_URL?.trim()) {
@@ -18,6 +22,9 @@ function readDatabaseOptions(env) {
     ssl: env.DATABASE_SSLMODE === "disable" ? false : undefined,
   };
 }
+
+const target = inspectDatabaseTarget(process.env);
+process.stdout.write(`database_target=${formatDatabaseTargetSummary(target)}\n`);
 
 const boss = new PgBoss({
   ...readDatabaseOptions(process.env),

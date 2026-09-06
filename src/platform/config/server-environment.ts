@@ -9,6 +9,8 @@ const optionalEnvironmentValue = z.preprocess(
 
 const databaseEnvironmentSchema = z
   .object({
+    APP_ENV: optionalEnvironmentValue,
+    NODE_ENV: optionalEnvironmentValue,
     DATABASE_URL: optionalEnvironmentValue,
     DATABASE_HOST: optionalEnvironmentValue,
     DATABASE_PORT: optionalEnvironmentValue,

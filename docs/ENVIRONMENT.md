@@ -16,6 +16,7 @@
 
 | Variable | Required | Environments / consumer | Secret | Owner / change effect |
 |---|---|---|---|---|
+| `APP_ENV` | DB runtime/commands | web, worker, admin scripts | no | explicit `development`, `test` or `production` target class |
 | `DATABASE_URL` | alternative | web, worker, migrator | yes | protected env; restart, migrator uses separate credential |
 | `DATABASE_HOST` | alternative set | web, worker, migrator | no | protected env; restart |
 | `DATABASE_PORT` | optional | web, worker, migrator | no | protected env; restart |
@@ -24,7 +25,7 @@
 | `DATABASE_NAME` | alternative set | web, worker, migrator | no | explicit target; restart |
 | `DATABASE_SSLMODE` | optional | web, worker, migrator | no | connection policy; restart |
 
-Use either one explicit URL or the complete component set. Partial configuration fails closed. Full URLs and passwords never appear in diagnostics.
+Application runtime accepts one explicit URL or the complete component set. Prisma DB commands require an explicit `DATABASE_URL`; `prisma generate` is the only DB-independent Prisma command. Partial configuration and environment/identity mismatches fail closed. Diagnostics contain only environment, host, port, database and identity — never a full URL or password.
 
 ## Web and auth
 
@@ -69,7 +70,7 @@ Site URLs are loaded server-side from PostgreSQL and passed to provider adapters
 | `LOCAL_POSTGRES_PASSWORD` | local | Docker PostgreSQL | yes | ignored local env |
 | `TEST_DATABASE_HOST/PORT/USER/PASSWORD/NAME/SSLMODE` | integration | test runner | mixed | isolated test environment |
 
-`TEST_DATABASE_NAME` must end with `_test`; test identity and production identity must differ.
+`TEST_DATABASE_NAME` must end with `_test`; `TEST_DATABASE_USER` must identify a dedicated test role and differ from local/production identities. Development uses a `_dev` database and local/development identity; production rejects both suffixes and identities.
 
 ## Backup and restore
 

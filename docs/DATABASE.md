@@ -27,12 +27,15 @@ Self-managed PostgreSQL 18 is an approved project exception under Core 3.4. Mana
 
 Используется `prisma migrate deploy` и schema rollout. Web/worker не получают эти credentials.
 
+Local development, tests and production use distinct database identities. Test identity contains an explicit `test` marker and may connect only to a database ending in `_test`; development identity is local/dev-only and targets `_dev`. Production rejects either marker.
+
 ## Schema policy
 
 - source of truth: `prisma/schema.prisma`;
 - applied migration не редактируется;
 - schema change требует новой migration;
 - production: только `pnpm prisma:deploy`;
+- Prisma migration/introspection commands require an explicit `DATABASE_URL`; only client generation is allowed without a target;
 - `prisma db push` в production запрещён;
 - destructive migration требует backup, compatibility plan и owner approval;
 - relational columns используются для identity, access и queryable metrics; JSONB — только для validated complex snapshots/DTO.
@@ -52,10 +55,10 @@ Prisma migrations own application schema history. pg-boss schema lifecycle is se
 
 - Docker image: PostgreSQL `18.6`;
 - bind: `127.0.0.1`, default host port `55432`;
-- separate databases: `seo_monitor_dev`, `seo_monitor_test`;
+- separate databases and roles: `seo_monitor_dev`/`seo_monitor_local`, `seo_monitor_test`/`seo_monitor_test`;
 - credentials exist only in ignored `.env.local`;
 - named volume survives normal stop/start;
-- integration runner rejects a database name without `_test`, then generates Prisma client, applies migrations, runs only synthetic test bootstrap and executes DB suites;
+- integration runner rejects a database or identity without the test marker, then generates Prisma client, applies migrations, runs only synthetic test bootstrap and executes DB suites;
 - SourceCraft `risky-check` поднимает isolated PostgreSQL для профильных DB/auth/tenant/worker checks перед merge.
 
 Runbook: `docs/ops/LOCAL_DEVELOPMENT.md`.

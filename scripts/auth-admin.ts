@@ -35,6 +35,8 @@ for (let index = 0; index < args.length; index += 1) {
 }
 
 const database = createPrismaContext({
+  APP_ENV: process.env.APP_ENV,
+  NODE_ENV: process.env.NODE_ENV,
   DATABASE_URL: process.env.DATABASE_URL,
   DATABASE_HOST: process.env.DATABASE_HOST,
   DATABASE_PORT: process.env.DATABASE_PORT,

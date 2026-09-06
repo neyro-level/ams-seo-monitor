@@ -7,14 +7,15 @@
 - bind: `127.0.0.1`;
 - default host port: `55432`;
 - databases: `seo_monitor_dev`, `seo_monitor_test`;
+- identities: `seo_monitor_local` for development and `seo_monitor_test` for tests;
 - project-scoped named volume: `seo-monitor-postgres-data`;
 - production credentials/data запрещены.
 
 ## Подготовка
 
 1. Скопировать `.env.example` в ignored `.env.local`.
-2. Сгенерировать отдельные local-only `LOCAL_POSTGRES_PASSWORD` и `BETTER_AUTH_SECRET`.
-3. Заполнить matching `DATABASE_*` для `seo_monitor_dev` и `TEST_DATABASE_*` для `seo_monitor_test`.
+2. Сгенерировать отдельные local-only `LOCAL_POSTGRES_PASSWORD`, `TEST_DATABASE_PASSWORD` и `BETTER_AUTH_SECRET`.
+3. Оставить `APP_ENV=development`; заполнить matching `DATABASE_*` для `seo_monitor_dev`/`seo_monitor_local` и `TEST_DATABASE_*` для `seo_monitor_test`/`seo_monitor_test`.
 4. Не коммитить `.env.local` и не печатать значения.
 
 ## Database lifecycle
@@ -57,12 +58,14 @@ Runner:
 
 1. читает existing process env или ignored `.env.local`;
 2. требует полный `TEST_DATABASE_*` contract;
-3. отклоняет database без suffix `_test`;
+3. отклоняет database без suffix `_test`, недедицированную test identity и совпадение с local identity;
 4. применяет immutable migrations только к test DB;
 5. выполняет synthetic test bootstrap;
 6. запускает пять real-PostgreSQL suites.
 
 Production DB name отклоняется до соединения.
+
+Seed/config commands перед соединением печатают только безопасный target summary без URL и пароля. Prisma migration commands без явного `DATABASE_URL` завершаются ошибкой; `prisma:generate` остаётся доступным без DB.
 
 ## Browser E2E
 

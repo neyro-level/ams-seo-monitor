@@ -1,4 +1,7 @@
 import { Client } from "pg";
+import { inspectDatabaseTarget } from "../src/platform/config/database-target.ts";
+
+inspectDatabaseTarget(process.env);
 
 const connection = {
   host: process.env.DATABASE_HOST,

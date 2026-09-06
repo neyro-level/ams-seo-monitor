@@ -18,6 +18,10 @@ import {
 } from "../src/shared/schemas/registry.ts";
 import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
 import {
+  formatDatabaseTargetSummary,
+  inspectDatabaseTarget,
+} from "../src/platform/config/database-target.ts";
+import {
   trackedQuerySetSchema,
   type TrackedQuerySet,
 } from "../src/shared/schemas/tracked-query.ts";
@@ -32,7 +36,7 @@ if (!sourceArg || sourceArg.startsWith("--")) {
 }
 
 const sourceRoot = path.resolve(process.cwd(), sourceArg);
-const database = createPrismaContext({
+const databaseEnvironment = {
   DATABASE_URL: process.env.DATABASE_URL,
   DATABASE_HOST: process.env.DATABASE_HOST,
   DATABASE_PORT: process.env.DATABASE_PORT,
@@ -40,7 +44,12 @@ const database = createPrismaContext({
   DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
   DATABASE_NAME: process.env.DATABASE_NAME,
   DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
-});
+  APP_ENV: process.env.APP_ENV,
+  NODE_ENV: process.env.NODE_ENV,
+};
+const target = inspectDatabaseTarget(databaseEnvironment);
+console.log(`database_target=${formatDatabaseTargetSummary(target)}`);
+const database = createPrismaContext(databaseEnvironment);
 const { prisma } = database;
 
 type ChangeKind = "CREATE" | "UPDATE" | "DELETE_OR_DISABLE" | "UNCHANGED";
