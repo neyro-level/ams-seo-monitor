@@ -59,7 +59,6 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
       const dialog = document.getElementById("impulse-login-dialog") as HTMLDialogElement | null;
       dialog?.close();
       router.replace("/dashboard/");
-      router.refresh();
     } catch {
       setErrorMessage("Не удалось войти. Повторите попытку позже.");
     } finally {
