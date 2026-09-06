@@ -1,6 +1,7 @@
 # PLATFORM CONFORMANCE
 
-Core Standard version: `3.4 — Solo Minimal`  
+Core Standard version: `3.4 — Solo Minimal`
+
 Conformance reviewed: `2026-09-06`
 
 Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform Admin enabled / self-managed PostgreSQL`.
