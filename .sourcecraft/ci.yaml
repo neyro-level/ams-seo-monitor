@@ -38,7 +38,7 @@ workflows:
       max_cube_duration: 70m
     tasks:
       - name: exact-head-risky
-        env: &test-environment
+        env:
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
           TEST_DATABASE_HOST: 127.0.0.1
           TEST_DATABASE_PORT: "5432"
@@ -75,8 +75,22 @@ workflows:
     tasks:
       - name: nightly-main
         env:
-          <<: *test-environment
           EXPECTED_COMMIT_SHA: ""
+          TEST_DATABASE_HOST: 127.0.0.1
+          TEST_DATABASE_PORT: "5432"
+          TEST_DATABASE_USER: seo_monitor_test
+          TEST_DATABASE_PASSWORD: seo_monitor_test
+          TEST_DATABASE_NAME: seo_monitor_ci_test
+          TEST_DATABASE_SSLMODE: disable
+          DATABASE_HOST: 127.0.0.1
+          DATABASE_PORT: "5432"
+          DATABASE_USER: seo_monitor_test
+          DATABASE_PASSWORD: seo_monitor_test
+          DATABASE_NAME: seo_monitor_ci_test
+          DATABASE_SSLMODE: disable
+          DATABASE_URL: postgresql://seo_monitor_test:seo_monitor_test@127.0.0.1:5432/seo_monitor_ci_test?sslmode=disable
+          BETTER_AUTH_SECRET: ci-only-secret-not-for-production-1234567890
+          BETTER_AUTH_URL: http://127.0.0.1:3100
         cubes:
           - name: verify
             image: docker.io/library/node:24.20.0-bookworm
@@ -101,8 +115,22 @@ workflows:
     tasks:
       - name: exact-head-release
         env:
-          <<: *test-environment
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+          TEST_DATABASE_HOST: 127.0.0.1
+          TEST_DATABASE_PORT: "5432"
+          TEST_DATABASE_USER: seo_monitor_test
+          TEST_DATABASE_PASSWORD: seo_monitor_test
+          TEST_DATABASE_NAME: seo_monitor_ci_test
+          TEST_DATABASE_SSLMODE: disable
+          DATABASE_HOST: 127.0.0.1
+          DATABASE_PORT: "5432"
+          DATABASE_USER: seo_monitor_test
+          DATABASE_PASSWORD: seo_monitor_test
+          DATABASE_NAME: seo_monitor_ci_test
+          DATABASE_SSLMODE: disable
+          DATABASE_URL: postgresql://seo_monitor_test:seo_monitor_test@127.0.0.1:5432/seo_monitor_ci_test?sslmode=disable
+          BETTER_AUTH_SECRET: ci-only-secret-not-for-production-1234567890
+          BETTER_AUTH_URL: http://127.0.0.1:3100
         cubes:
           - name: verify
             image: docker.io/library/node:24.20.0-bookworm
