@@ -66,7 +66,6 @@ function applyProviderFieldErrors<TValues extends FieldValues>(
     setError,
   );
 }
-
 function ProviderConnectionEditCard({ item }: { item: ProviderConnectionListItem }) {
   const router = useRouter();
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -195,5 +194,4 @@ export function ProviderConnectionsAdminForms({ items, options }: { items: Provi
     </div>
   );
 }
-
 

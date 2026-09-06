@@ -56,7 +56,6 @@ function applyTrackedQueryFieldErrors<TValues extends FieldValues>(
     setError,
   );
 }
-
 function TrackedQuerySetEditCard({ item }: { item: TrackedQuerySetListItem }) {
   const router = useRouter();
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -162,4 +161,3 @@ export function TrackedQuerySetsAdminForms({ items, options }: { items: TrackedQ
     </div>
   );
 }
-

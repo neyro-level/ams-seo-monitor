@@ -94,7 +94,6 @@ function SiteEditCard({ item }: { item: SiteListItem }) {
     </SectionCard>
   );
 }
-
 export function SitesAdminForms({ items, options }: { items: SiteListItem[]; options: ProjectRegistryAdminFormOptions }) {
   const router = useRouter();
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -152,5 +151,4 @@ export function SitesAdminForms({ items, options }: { items: SiteListItem[]; opt
     </div>
   );
 }
-
 

@@ -62,7 +62,6 @@ function applyGoalFieldErrors<TValues extends FieldValues>(
     setError,
   );
 }
-
 function GoalDefinitionEditCard({ item }: { item: GoalDefinitionListItem }) {
   const router = useRouter();
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -199,5 +198,4 @@ export function GoalDefinitionsAdminForms({ items, options }: { items: GoalDefin
     </div>
   );
 }
-
 
