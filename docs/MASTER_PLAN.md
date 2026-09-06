@@ -12,7 +12,6 @@
 
 ### DateTime и compatibility contracts
 
-- зафиксировать смысл/timezone/UTC proof каждого DateTime в `DATA_MODEL.md`;
 - менять на `timestamptz` только доказанные UTC-поля отдельной migration;
 - после compatibility Release A доказать нулевое использование legacy auth columns/tables и удалить их новой migration.
 

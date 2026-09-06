@@ -27,7 +27,7 @@ Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform A
 | Backup/offsite/restore contract | IMPLEMENTED | scripts and runbooks exist; each release still requires current proof |
 | PII/log redaction | IMPLEMENTED | nested user/actor/payload/header fields are redacted and serialized-log tested; Better Auth 1.7.2 login/2FA rate limits are explicit |
 | Repository client-data sanitation | PARTIAL | tracked tree contains only synthetic examples/fixtures and is protected by a signature verifier; history rewrite remains |
-| DateTime UTC/native-type proof | REQUIRES_CHECK | per-field audit pending in DATA_MODEL |
+| DateTime UTC/native-type proof | PARTIAL | all 90 fields are mapped in DATA_MODEL: 20 UTC candidates, 6 civil dates kept as timestamp, 64 fields require production proof |
 | Legacy Better Auth schema removal | NOT_IMPLEMENTED | allowed only after compatibility Release A and production read-only proof |
 
 Этот файл отражает только текущее соответствие. История работ и отдельные audit reports не создаются; финальный аудит обновляет эту же таблицу.
