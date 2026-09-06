@@ -34,6 +34,5 @@ Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform A
 | Production PostgreSQL topology | IMPLEMENTED | PostgreSQL 18.6, loopback-only listener, runtime/migrator boundaries, pg-boss ownership, capacity, locks, timers, backup and restore were audited read-only |
 | Production DB least privilege | PARTIAL | runtime role has no DDL; migration role still has `CREATEDB`, so narrowing that grant remains `REQUIRES_CHECK` |
 | Production controlled TOTP login proof | REQUIRES_CHECK | integration/E2E cover the policy; a live credentialed enrollment/login/recovery exercise is still required without exposing credentials |
-| Final Release B | NOT_IMPLEMENTED | exact-head release gate, contract/DateTime migrations, immutable rollout and final live proof remain |
 
-Этот файл отражает только текущее соответствие. История работ и отдельные audit reports не создаются; финальный аудит обновляет эту же таблицу.
+Этот файл отражает устойчивые гарантии проекта. Текущий production SHA/digest и proof конкретного релиза принадлежат release evidence, а не постоянной conformance-таблице. История работ и отдельные audit reports не создаются; следующий аудит обновляет эту же таблицу.
