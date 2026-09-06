@@ -5,7 +5,8 @@
 ## Sources and isolation
 
 - local development: ignored `.env.local`, подготовленный по `.env.example`;
-- production web, worker, migrator и backup: отдельные protected environment files, управляемые оператором;
+- canonical application secret source: Doppler project/config `ams-seo-monitor/prd`;
+- production web, worker, migrator и backup: отдельные root-owned protected environment files, материализованные оператором из разрешённого secret source;
 - release identity: root-owned generated `shared/release.env`;
 - tests: explicit `TEST_DATABASE_*`; production credentials недоступны;
 - SourceCraft inputs (`EXPECTED_COMMIT_SHA` и workflow values) принадлежат CI, а не application env.
@@ -60,6 +61,8 @@ E2E uses the explicit `APP_ENV=test` identity. Production 2FA has no environment
 | `PGBOSS_SCHEMA` | optional | migration command | no | queue schema name; migration scope only |
 
 Site URLs are loaded server-side from PostgreSQL and passed to provider adapters; they are not long-lived production authority from browser env.
+
+Provider credential presence не включает источник автоматически. Provider call разрешён только когда PostgreSQL `ProviderConnection.enabled=true`, external mapping подтверждён read-only preflight, а worker env после materialization/restart содержит соответствующие credential names. Для Topvisor дополнительно требуются подтверждённые project/region mapping и свежие непустые position rows; создание проекта, импорт keywords и paid checker остаются отдельными запрещёнными mutations.
 
 ## Local and test database
 
