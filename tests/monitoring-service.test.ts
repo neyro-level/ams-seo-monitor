@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../src/generated/prisma/client.ts"
+import { PrismaClient } from "../src/generated/prisma/client.ts";
 import { Pool } from "pg";
 import { MonitoringService } from "../src/modules/project-registry/index.ts";
 import { PrismaMonitoringRepository } from "../src/modules/project-registry/server.ts";
@@ -49,16 +49,22 @@ monitoringTestDescription("MonitoringService", () => {
     }
   });
 
-  it("reconstructs legacy monitoring context from PostgreSQL", async () => {
+  it("reconstructs synthetic monitoring context from PostgreSQL", async () => {
     const monitoringService = new MonitoringService(new PrismaMonitoringRepository());
-    const context = await monitoringService.getProjectContext("REDACTED_CLIENT_DATA");
+    const context = await monitoringService.getProjectContext("alpha");
 
     expect(context).not.toBeNull();
-    expect(context?.client.clientSlug).toBe("REDACTED_CLIENT_DATA");
+    expect(context?.client.clientSlug).toBe("alpha");
     expect(context?.client.sites).toHaveLength(3);
     expect(context?.goalProfile.goals.length).toBeGreaterThan(0);
     expect(context?.trackedQuerySets[0]?.expectedCount).toBe(75);
     expect(context?.clusterProfile.groups[0]?.slug).toBe("brand");
     expect(context?.thresholds.queryOpportunity.minimumShows).toBe(30);
+  });
+
+  it("lists only active projects in stable order", async () => {
+    const monitoringService = new MonitoringService(new PrismaMonitoringRepository());
+
+    await expect(monitoringService.listActiveProjectSlugs()).resolves.toEqual(["alpha", "beta"]);
   });
 });

@@ -73,7 +73,7 @@ describe("webmaster error handling", () => {
       readWebmasterEnvironment({
         YANDEX_WEBMASTER_OAUTH_TOKEN: "token",
         YANDEX_WEBMASTER_API_BASE_URL: "https://api.webmaster.yandex.net/v4",
-        YANDEX_WEBMASTER_SITE_URL: "https://REDACTED_CLIENT_DATA",
+        YANDEX_WEBMASTER_SITE_URL: "https://alpha.example.test",
         YANDEX_WEBMASTER_TOKEN_STATUS: "REVOKED",
       }),
     ).toThrow("YANDEX_WEBMASTER_TOKEN_STATUS is not ACTIVE");
@@ -87,7 +87,7 @@ describe("webmaster error handling", () => {
       readWebmasterEnvironment({
         YANDEX_WEBMASTER_OAUTH_TOKEN: "token",
         YANDEX_WEBMASTER_API_BASE_URL: baseUrl,
-        YANDEX_WEBMASTER_SITE_URL: "https://REDACTED_CLIENT_DATA",
+        YANDEX_WEBMASTER_SITE_URL: "https://alpha.example.test",
         YANDEX_WEBMASTER_TOKEN_STATUS: "ACTIVE",
       }),
     ).toThrow("YANDEX_WEBMASTER_API_BASE_URL is not allowlisted");

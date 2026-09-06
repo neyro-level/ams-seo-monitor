@@ -2,10 +2,10 @@
   "rows": 2,
   "counters": [
     {
-      "id": REDACTED_CLIENT_DATA,
-      "site": "REDACTED_CLIENT_DATA",
+      "id": 700001,
+      "site": "alpha.example.test",
       "permission": "edit",
-      "name": "REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA",
+      "name": "Альфа Север",
       "time_zone_name": "Europe/Moscow",
       "time_zone_offset": 180
     },

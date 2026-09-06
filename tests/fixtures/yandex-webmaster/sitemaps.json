@@ -2,7 +2,7 @@
   "sitemaps": [
     {
       "sitemap_id": "sm-1",
-      "sitemap_url": "https://REDACTED_CLIENT_DATA/sitemap.xml",
+      "sitemap_url": "https://alpha.example.test/sitemap.xml",
       "status": "OK",
       "urls_count": 1099,
       "errors_count": 0,

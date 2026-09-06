@@ -7,7 +7,7 @@ import type { WebmasterQueryCollection } from "../src/shared/schemas/webmaster-s
 
 const baseQuery = {
   queryId: "q-1",
-  queryText: "квартиры REDACTED_CLIENT_DATA новостройки",
+  queryText: "квартиры север новостройки",
   device: "ALL" as const,
   shows: 120,
   clicks: 4,

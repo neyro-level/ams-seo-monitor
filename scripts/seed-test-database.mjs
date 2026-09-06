@@ -53,13 +53,13 @@ try {
       { slug: "generic", label: "Generic", terms: ["service"] },
     ],
   });
-  await writeJson("clients/REDACTED_CLIENT_DATA.json", {
+  await writeJson("clients/alpha.json", {
     schemaVersion: 1,
-    clientSlug: "REDACTED_CLIENT_DATA",
+    clientSlug: "alpha",
     name: "Synthetic Alpha Organization",
     enabled: true,
     clusterProfile: "real-estate",
-    sites: ["REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA"].map((siteSlug, index) => ({
+    sites: ["north", "east", "south"].map((siteSlug, index) => ({
       siteSlug,
       name: `Synthetic site ${index + 1}`,
       siteUrl: `https://${siteSlug}.example.test`,
@@ -72,7 +72,7 @@ try {
       metrica: {
         enabled: true,
         counterId: String(700001 + index),
-        goalProfile: "REDACTED_CLIENT_DATA",
+        goalProfile: "alpha",
       },
       topvisor: {
         enabled: false,
@@ -81,15 +81,15 @@ try {
       },
     })),
   });
-  await writeJson("clients/REDACTED_CLIENT_DATA.json", {
+  await writeJson("clients/beta.json", {
     schemaVersion: 1,
-    clientSlug: "REDACTED_CLIENT_DATA",
+    clientSlug: "beta",
     name: "Synthetic Beta Organization",
     enabled: true,
     clusterProfile: "default",
     sites: [
       {
-        siteSlug: "REDACTED_CLIENT_DATA",
+        siteSlug: "west",
         name: "Synthetic site",
         siteUrl: "https://beta.example.test",
         timezone: "+03:00",
@@ -100,9 +100,9 @@ try {
       },
     ],
   });
-  await writeJson("goals/REDACTED_CLIENT_DATA.json", {
+  await writeJson("goals/alpha.json", {
     schemaVersion: 1,
-    clientSlug: "REDACTED_CLIENT_DATA",
+    clientSlug: "alpha",
     goals: [
       {
         goalId: "100001",
@@ -110,20 +110,20 @@ try {
         category: "lead_submit",
         direction: "primary",
         includeInSeoConversion: true,
-        siteSlugs: ["REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA"],
+        siteSlugs: ["north", "east", "south"],
       },
     ],
   });
-  await writeJson("goals/REDACTED_CLIENT_DATA.json", {
+  await writeJson("goals/beta.json", {
     schemaVersion: 1,
-    clientSlug: "REDACTED_CLIENT_DATA",
+    clientSlug: "beta",
     goals: [],
   });
   await mkdir(path.join(sourceRoot, "tracked-queries"), { recursive: true });
-  await writeJson("tracked-queries/REDACTED_CLIENT_DATA-REDACTED_CLIENT_DATA.json", {
+  await writeJson("tracked-queries/alpha-north.json", {
     schemaVersion: 1,
-    clientSlug: "REDACTED_CLIENT_DATA",
-    siteSlug: "REDACTED_CLIENT_DATA",
+    clientSlug: "alpha",
+    siteSlug: "north",
     source: "owner-provided",
     baselineLabel: "synthetic-baseline",
     expectedCount: 75,

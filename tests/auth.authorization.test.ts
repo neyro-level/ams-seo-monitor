@@ -40,8 +40,8 @@ const authTestDescription = authTestEnabled ? describe : describe.skip;
 const authTestEmails = {
   platformAdmin: "platform-admin-test@seo-monitor.local",
   analyst: "analyst-test@seo-monitor.local",
-  REDACTED_CLIENT_DATAViewer: "client-REDACTED_CLIENT_DATA-test@seo-monitor.local",
-  REDACTED_CLIENT_DATAViewer: "client-REDACTED_CLIENT_DATA-test@seo-monitor.local",
+  alphaViewer: "client-alpha-test@seo-monitor.local",
+  westViewer: "client-west-test@seo-monitor.local",
   disabledViewer: "client-disabled-test@seo-monitor.local",
 } as const;
 
@@ -49,8 +49,8 @@ let prisma: PrismaClient | null = null;
 let pool: Pool | null = null;
 let platformAdminUser: PrincipalContext | null = null;
 let analystUser: PrincipalContext | null = null;
-let REDACTED_CLIENT_DATAViewerUser: PrincipalContext | null = null;
-let REDACTED_CLIENT_DATAViewerUser: PrincipalContext | null = null;
+let alphaViewerUser: PrincipalContext | null = null;
+let westViewerUser: PrincipalContext | null = null;
 let disabledViewerId: string | null = null;
 const projectService = new ProjectService(new PrismaProjectRepository());
 
@@ -122,12 +122,12 @@ authTestDescription("authorization matrix", () => {
     );
     prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
-    const REDACTED_CLIENT_DATAOrganization = await prisma.organization.findUniqueOrThrow({
-      where: { slug: "REDACTED_CLIENT_DATA" },
+    const alphaOrganization = await prisma.organization.findUniqueOrThrow({
+      where: { slug: "alpha" },
       select: { id: true },
     });
-    const REDACTED_CLIENT_DATAOrganization = await prisma.organization.findUniqueOrThrow({
-      where: { slug: "REDACTED_CLIENT_DATA" },
+    const westOrganization = await prisma.organization.findUniqueOrThrow({
+      where: { slug: "beta" },
       select: { id: true },
     });
 
@@ -141,14 +141,14 @@ authTestDescription("authorization matrix", () => {
       "SEO Analyst Test",
       SystemRole.SEO_ANALYST,
     );
-    const REDACTED_CLIENT_DATAViewerId = await ensureCredentialUser(
-      authTestEmails.REDACTED_CLIENT_DATAViewer,
-      "REDACTED_CLIENT_DATA Viewer Test",
+    const alphaViewerId = await ensureCredentialUser(
+      authTestEmails.alphaViewer,
+      "Alpha Viewer Test",
       SystemRole.CLIENT_VIEWER,
     );
-    const REDACTED_CLIENT_DATAViewerId = await ensureCredentialUser(
-      authTestEmails.REDACTED_CLIENT_DATAViewer,
-      "REDACTED_CLIENT_DATA Viewer Test",
+    const westViewerId = await ensureCredentialUser(
+      authTestEmails.westViewer,
+      "West Viewer Test",
       SystemRole.CLIENT_VIEWER,
     );
     disabledViewerId = await ensureCredentialUser(
@@ -165,14 +165,14 @@ authTestDescription("authorization matrix", () => {
     await prisma.member.upsert({
       where: {
         organizationId_userId: {
-          organizationId: REDACTED_CLIENT_DATAOrganization.id,
-          userId: REDACTED_CLIENT_DATAViewerId,
+          organizationId: alphaOrganization.id,
+          userId: alphaViewerId,
         },
       },
       update: { role: "client_viewer" },
       create: {
-        organizationId: REDACTED_CLIENT_DATAOrganization.id,
-        userId: REDACTED_CLIENT_DATAViewerId,
+        organizationId: alphaOrganization.id,
+        userId: alphaViewerId,
         role: "client_viewer",
       },
     });
@@ -180,14 +180,14 @@ authTestDescription("authorization matrix", () => {
     await prisma.member.upsert({
       where: {
         organizationId_userId: {
-          organizationId: REDACTED_CLIENT_DATAOrganization.id,
-          userId: REDACTED_CLIENT_DATAViewerId,
+          organizationId: westOrganization.id,
+          userId: westViewerId,
         },
       },
       update: { role: "client_viewer" },
       create: {
-        organizationId: REDACTED_CLIENT_DATAOrganization.id,
-        userId: REDACTED_CLIENT_DATAViewerId,
+        organizationId: westOrganization.id,
+        userId: westViewerId,
         role: "client_viewer",
       },
     });
@@ -198,11 +198,11 @@ authTestDescription("authorization matrix", () => {
     analystUser = (await getPrincipalStateByUserId(analystUserId, {
       correlationId: "00000000-0000-4000-8000-000000000011",
     }))?.principal ?? null;
-    REDACTED_CLIENT_DATAViewerUser = (await getPrincipalStateByUserId(REDACTED_CLIENT_DATAViewerId, {
-      activeOrganizationId: REDACTED_CLIENT_DATAOrganization.id,
+    alphaViewerUser = (await getPrincipalStateByUserId(alphaViewerId, {
+      activeOrganizationId: alphaOrganization.id,
       correlationId: "00000000-0000-4000-8000-000000000012",
     }))?.principal ?? null;
-    REDACTED_CLIENT_DATAViewerUser = (await getPrincipalStateByUserId(REDACTED_CLIENT_DATAViewerId, {
+    westViewerUser = (await getPrincipalStateByUserId(westViewerId, {
       correlationId: "00000000-0000-4000-8000-000000000013",
     }))?.principal ?? null;
   });
@@ -227,35 +227,35 @@ authTestDescription("authorization matrix", () => {
       correlationId: "00000000-0000-4000-8000-000000000010",
     });
     expect(hasPermission(platformAdminUser!, "platform:manage")).toBe(true);
-    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "alpha")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "beta")).not.toBeNull();
   });
 
   it("allows analyst to read every project", async () => {
     expect(analystUser).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(analystUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(analystUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(analystUser!, "alpha")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(analystUser!, "beta")).not.toBeNull();
   });
 
   it("loads current memberships and validates active organization", () => {
-    expect(REDACTED_CLIENT_DATAViewerUser).toMatchObject({
+    expect(alphaViewerUser).toMatchObject({
       kind: "tenant-user",
       organizationId: expect.any(String),
       role: "VIEWER",
     });
-    expect(hasPermission(REDACTED_CLIENT_DATAViewerUser!, "project:read:organization")).toBe(true);
-    expect(hasPermission(REDACTED_CLIENT_DATAViewerUser!, "report:read:organization")).toBe(true);
+    expect(hasPermission(alphaViewerUser!, "project:read:organization")).toBe(true);
+    expect(hasPermission(alphaViewerUser!, "report:read:organization")).toBe(true);
   });
 
   it("allows client viewer only inside own organization project", async () => {
-    expect(REDACTED_CLIENT_DATAViewerUser).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA")).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA")).toBeNull();
+    expect(alphaViewerUser).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(alphaViewerUser!, "alpha")).not.toBeNull();
+    expect(await projectService.getProjectAccessForUser(alphaViewerUser!, "beta")).toBeNull();
   });
 
   it("denies foreign site access for another client viewer", async () => {
-    expect(REDACTED_CLIENT_DATAViewerUser).not.toBeNull();
-    expect(await projectService.getSiteAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA")).toBeNull();
-    expect(await projectService.getSiteAccessForUser(REDACTED_CLIENT_DATAViewerUser!, "REDACTED_CLIENT_DATA", "REDACTED_CLIENT_DATA")).not.toBeNull();
+    expect(westViewerUser).not.toBeNull();
+    expect(await projectService.getSiteAccessForUser(westViewerUser!, "alpha", "north")).toBeNull();
+    expect(await projectService.getSiteAccessForUser(westViewerUser!, "beta", "west")).not.toBeNull();
   });
 });

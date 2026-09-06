@@ -2,7 +2,7 @@
   "queries": [
     {
       "query_id": "q-4",
-      "query_text": "квартиры REDACTED_CLIENT_DATA вторичка",
+      "query_text": "квартиры север вторичка",
       "indicators": {
         "TOTAL_SHOWS": 86,
         "TOTAL_CLICKS": 0,

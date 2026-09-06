@@ -6,7 +6,9 @@ import { z } from "zod";
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourceIndex = process.argv.indexOf("--source");
 const sourceArg = sourceIndex >= 0 ? process.argv[sourceIndex + 1] : undefined;
-const configRoot = sourceArg ? path.resolve(process.cwd(), sourceArg) : path.join(projectRoot, "config");
+const configRoot = sourceArg
+  ? path.resolve(process.cwd(), sourceArg)
+  : path.join(projectRoot, "config", "examples");
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const timezonePattern = /^[+-](0\d|1[0-4]):[0-5]\d$/;
 const placeholderHost = "todo.invalid";

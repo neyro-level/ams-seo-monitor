@@ -14,7 +14,7 @@ describe("Webmaster endpoint-level partial collection", () => {
       {
         token: "token",
         baseUrl: "https://api.webmaster.yandex.net/v4",
-        targetSiteUrl: "https://REDACTED_CLIENT_DATA",
+        targetSiteUrl: "https://alpha.example.test",
         tokenStatus: "ACTIVE",
       },
       {
@@ -27,8 +27,8 @@ describe("Webmaster endpoint-level partial collection", () => {
             return jsonResponse({
               hosts: [
                 {
-                  host_id: "https:REDACTED_CLIENT_DATA:443",
-                  ascii_host_url: "https://REDACTED_CLIENT_DATA/",
+                  host_id: "https:alpha.example.test:443",
+                  ascii_host_url: "https://alpha.example.test/",
                   verified: true,
                 },
               ],
@@ -59,7 +59,7 @@ describe("Webmaster endpoint-level partial collection", () => {
     expect(result.partial).toBe(true);
     expect(result.endpointErrors).toEqual([
       {
-        endpoint: "/user/77/hosts/https:REDACTED_CLIENT_DATA:443/summary",
+        endpoint: "/user/77/hosts/https:alpha.example.test:443/summary",
         code: "SERVER_ERROR",
         status: 500,
       },

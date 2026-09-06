@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import alphaGoals from "../config/examples/goals/alpha.json";
 import { createMetricaClient, readMetricaEnvironment } from "../collector/sources/yandex-metrica/client.ts";
+import { goalProfileSchema } from "../src/shared/schemas/registry.ts";
 
 function fixturePath(name: string) {
   return path.join(process.cwd(), "tests", "fixtures", "yandex-metrica", name);
@@ -31,12 +33,22 @@ describe("metrica audit dto", () => {
     const uniqueTarget = await loadFixture("unique-target.json");
     const targetByTime = await loadFixture("target-bytime.json");
     const targetLanding = await loadFixture("target-landing.json");
+    const allowedGoals = goalProfileSchema
+      .parse(alphaGoals)
+      .goals.filter((goal) => goal.siteSlugs.includes("north"))
+      .map((goal) => ({
+        goalId: goal.goalId,
+        label: goal.label,
+        category: goal.category,
+        direction: goal.direction,
+        includeInSeoConversion: goal.includeInSeoConversion,
+      }));
 
     const client = createMetricaClient(
       readMetricaEnvironment({
         YANDEX_METRICA_OAUTH_TOKEN: "token",
         YANDEX_METRICA_API_BASE_URL: "https://api-metrika.yandex.net",
-        YANDEX_METRICA_SITE_URL: "https://REDACTED_CLIENT_DATA",
+        YANDEX_METRICA_SITE_URL: "https://alpha.example.test",
         YANDEX_METRICA_TOKEN_STATUS: "ACTIVE",
       }),
       {
@@ -48,7 +60,7 @@ describe("metrica audit dto", () => {
           if (target.pathname.endsWith("/management/v1/counters")) {
             return createJsonResponse(counters);
           }
-          if (target.pathname.endsWith("/management/v1/counter/REDACTED_CLIENT_DATA/goals")) {
+          if (target.pathname.endsWith("/management/v1/counter/700001/goals")) {
             return createJsonResponse(goals);
           }
           if (target.pathname.endsWith("/stat/v1/data/bytime")) {
@@ -85,9 +97,15 @@ describe("metrica audit dto", () => {
       },
     );
 
-    const result = await client.collectSiteData({ date1: "2026-07-28", date2: "2026-08-27", landingLimit: 2 });
+    const result = await client.collectSiteData({
+      date1: "2026-07-28",
+      date2: "2026-08-27",
+      landingLimit: 2,
+      timezone: "+03:00",
+      allowedGoals,
+    });
 
-    expect(result.access.counterId).toBe("REDACTED_CLIENT_DATA");
+    expect(result.access.counterId).toBe("700001");
     expect(result.allTraffic.summary.goalReaches).toBe(398);
     expect(result.yandexOrganic.summary.visits).toBe(5290);
     expect(result.yandexOrganic.summary.targetVisits).toBe(49);

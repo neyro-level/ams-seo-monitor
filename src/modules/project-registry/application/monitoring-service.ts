@@ -205,6 +205,10 @@ export class MonitoringService {
     await this.monitoringRepository.ping();
   }
 
+  async listActiveProjectSlugs(): Promise<string[]> {
+    return this.monitoringRepository.listActiveProjectSlugs();
+  }
+
   async getProjectContext(projectSlug: string): Promise<MonitoringProjectContext | null> {
     const project = await this.monitoringRepository.findProjectBySlug(projectSlug);
     if (!project) {

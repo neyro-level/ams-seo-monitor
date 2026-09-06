@@ -11,3 +11,6 @@ coverage
 pnpm-store
 .env.local
 *.log
+config/*
+!config/examples
+!config/examples/**

@@ -24,13 +24,10 @@ async function main() {
     return;
   }
 
-  if (command === "metrica-preflight" || command === "metrica-audit") {
+  if (command === "metrica-preflight") {
     const config = readMetricaEnvironment(process.env);
     const client = createMetricaClient(config);
-    const result =
-      command === "metrica-preflight"
-        ? await client.preflight()
-        : await client.collectSiteData();
+    const result = await client.preflight();
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }

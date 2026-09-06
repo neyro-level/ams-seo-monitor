@@ -26,7 +26,7 @@ Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform A
 | Immutable image release and rollback | IMPLEMENTED | repository release assets; live proof required per release |
 | Backup/offsite/restore contract | IMPLEMENTED | scripts and runbooks exist; each release still requires current proof |
 | PII/log redaction | PARTIAL | baseline redaction exists; nested log and auth rate-limit hardening remains |
-| Repository client-data sanitation | NOT_IMPLEMENTED | tracked-tree cleanup and history rewrite remain |
+| Repository client-data sanitation | PARTIAL | tracked tree contains only synthetic examples/fixtures and is protected by a signature verifier; history rewrite remains |
 | DateTime UTC/native-type proof | REQUIRES_CHECK | per-field audit pending in DATA_MODEL |
 | Legacy Better Auth schema removal | NOT_IMPLEMENTED | allowed only after compatibility Release A and production read-only proof |
 

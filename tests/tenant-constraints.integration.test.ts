@@ -25,11 +25,11 @@ integrationDescription("tenant composite constraints", () => {
       DATABASE_SSLMODE: process.env.TEST_DATABASE_SSLMODE,
     });
     projectA = await database.prisma.project.findUniqueOrThrow({
-      where: { slug: "REDACTED_CLIENT_DATA" },
+      where: { slug: "alpha" },
       select: { id: true, organizationId: true },
     });
     const projectB = await database.prisma.project.findUniqueOrThrow({
-      where: { slug: "REDACTED_CLIENT_DATA" },
+      where: { slug: "beta" },
       select: { organizationId: true },
     });
     organizationBId = projectB.organizationId;

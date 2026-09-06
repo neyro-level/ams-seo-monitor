@@ -36,7 +36,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
       DATABASE_SSLMODE: process.env.DATABASE_SSLMODE,
     });
     const organization = await database.prisma.organization.findUniqueOrThrow({
-      where: { slug: "REDACTED_CLIENT_DATA" },
+      where: { slug: "alpha" },
       select: { id: true },
     });
     await database.prisma.user.upsert({
@@ -77,7 +77,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
     await database.close();
   });
   it("renders only the current client subtree on a client route", async () => {
-    const sections = await buildNavigation("/c/REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA/", clientViewerPrincipal!);
+    const sections = await buildNavigation("/c/alpha/north/", clientViewerPrincipal!);
     const items = sections.flatMap((section) => section.items);
 
     expect(sections).toHaveLength(2);

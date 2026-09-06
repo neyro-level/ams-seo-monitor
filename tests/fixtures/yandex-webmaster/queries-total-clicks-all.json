@@ -2,7 +2,7 @@
   "queries": [
     {
       "query_id": "q-2",
-      "query_text": "застройщик REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA",
+      "query_text": "застройщик альфа север",
       "indicators": {
         "TOTAL_SHOWS": 260,
         "TOTAL_CLICKS": 119,

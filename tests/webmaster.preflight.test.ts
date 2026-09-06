@@ -16,7 +16,7 @@ describe("webmaster preflight", () => {
       createJsonResponse({
         hosts: [
           { host_id: "http:other.ru:80", ascii_host_url: "https://other.ru", verified: true },
-          { host_id: "https:REDACTED_CLIENT_DATA:443", ascii_host_url: "https://REDACTED_CLIENT_DATA/", verified: true },
+          { host_id: "https:alpha.example.test:443", ascii_host_url: "https://alpha.example.test/", verified: true },
         ],
       }),
     ];
@@ -25,7 +25,7 @@ describe("webmaster preflight", () => {
       {
         token: "token",
         baseUrl: "https://api.webmaster.yandex.net/v4",
-        targetSiteUrl: "https://REDACTED_CLIENT_DATA",
+        targetSiteUrl: "https://alpha.example.test",
         tokenStatus: "ACTIVE",
       },
       {
@@ -35,9 +35,9 @@ describe("webmaster preflight", () => {
 
     await expect(client.preflight()).resolves.toEqual({
       userId: "77",
-      hostId: "https:REDACTED_CLIENT_DATA:443",
-      matchedHostUrl: "https://REDACTED_CLIENT_DATA/",
-      targetSiteUrl: "https://REDACTED_CLIENT_DATA",
+      hostId: "https:alpha.example.test:443",
+      matchedHostUrl: "https://alpha.example.test/",
+      targetSiteUrl: "https://alpha.example.test",
       verified: true,
     });
   });
@@ -54,7 +54,7 @@ describe("webmaster preflight", () => {
       {
         token: "token",
         baseUrl: "https://api.webmaster.yandex.net/v4",
-        targetSiteUrl: "https://REDACTED_CLIENT_DATA",
+        targetSiteUrl: "https://alpha.example.test",
         tokenStatus: "ACTIVE",
       },
       {

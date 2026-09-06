@@ -3,9 +3,9 @@ import { siteReportSnapshotSchema, type SiteReportSnapshot } from "../../../shar
 
 const syntheticSnapshot = siteReportSnapshotSchema.parse({
   schemaVersion: 1,
-  clientSlug: "REDACTED_CLIENT_DATA",
-  siteSlug: "REDACTED_CLIENT_DATA",
-  siteUrl: "https://REDACTED_CLIENT_DATA",
+  clientSlug: "alpha",
+  siteSlug: "north",
+  siteUrl: "https://alpha.example.test",
   generatedAt: "2026-08-27T09:30:00+03:00",
   freshness: "fresh",
   sources: {
@@ -49,7 +49,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
     queries: [
       {
         queryId: "q-1",
-        query: "квартиры REDACTED_CLIENT_DATA новостройки",
+        query: "квартиры север новостройки",
         cluster: "new-buildings",
         device: "ALL",
         shows: 420,
@@ -65,7 +65,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       },
       {
         queryId: "q-2",
-        query: "застройщик REDACTED_CLIENT_DATA REDACTED_CLIENT_DATA",
+        query: "застройщик альфа север",
         cluster: "brand",
         device: "ALL",
         shows: 260,
@@ -81,7 +81,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       },
       {
         queryId: "q-3",
-        query: "купить квартиру REDACTED_CLIENT_DATA ипотека",
+        query: "купить квартиру север ипотека",
         cluster: "mortgage",
         device: "MOBILE",
         shows: 118,
@@ -97,7 +97,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       },
       {
         queryId: "q-4",
-        query: "квартиры REDACTED_CLIENT_DATA вторичка купить у застройщика",
+        query: "квартиры север вторичка купить у застройщика",
         cluster: "resale",
         device: "DESKTOP",
         shows: 86,
@@ -125,7 +125,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       },
     ],
     sitemap: {
-      url: "https://REDACTED_CLIENT_DATA/sitemap.xml",
+      url: "https://alpha.example.test/sitemap.xml",
       urls: 1099,
       errors: 0,
     },
@@ -263,7 +263,7 @@ const demoSnapshot = siteReportSnapshotSchema.parse({
   siteUrl: "https://demo.ams-cloud.ru",
 });
 
-const snapshotMap = new Map<string, SiteReportSnapshot>([["REDACTED_CLIENT_DATA/REDACTED_CLIENT_DATA", syntheticSnapshot]]);
+const snapshotMap = new Map<string, SiteReportSnapshot>([["alpha/north", syntheticSnapshot]]);
 
 export function getFixtureSnapshot(clientSlug: string, siteSlug: string) {
   const snapshot = snapshotMap.get(`${clientSlug}/${siteSlug}`);

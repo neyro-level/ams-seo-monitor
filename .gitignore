@@ -27,3 +27,8 @@
 # env
 .env*
 !.env.example
+
+# operator configuration is private; only synthetic examples belong to Git
+/config/*
+!/config/examples/
+!/config/examples/**

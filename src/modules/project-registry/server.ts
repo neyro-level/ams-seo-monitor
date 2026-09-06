@@ -25,13 +25,3 @@ export {
   saveThresholdProfile,
   saveTrackedQuerySet,
 } from "./infrastructure/platform-admin-runtime.ts";
-export {
-  getApprovedRoutes,
-  getClientBySlug,
-  getClients,
-  getConnectedSites,
-  getGoalProfileForClient,
-  getRegistryBundle,
-  getSiteBySlugs,
-  hasConnectedSite,
-} from "./infrastructure/seed-registry.ts";
