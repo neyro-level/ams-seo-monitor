@@ -86,13 +86,16 @@ navigationTestDescription("database-backed navigation isolation", () => {
     const items = sections.flatMap((section) => section.items);
 
     expect(sections).toHaveLength(2);
-    expect(items.map((item) => item.label)).toEqual(["Мои проекты", "Проект REDACTED_CLIENT_DATA"]);
-    expect(items[1]?.children?.map((item) => item.label)).toEqual([
-      "REDACTED_CLIENT_DATA",
-      "REDACTED_CLIENT_DATA",
-      "REDACTED_CLIENT_DATA",
+    expect(items.map((item) => item.label)).toEqual([
+      "Мои проекты",
+      "Проект Synthetic Alpha Organization",
     ]);
-    expect(JSON.stringify(sections)).not.toContain("Союз застройщиков");
+    expect(items[1]?.children?.map((item) => item.label)).toEqual([
+      "Synthetic site 2",
+      "Synthetic site 1",
+      "Synthetic site 3",
+    ]);
+    expect(JSON.stringify(sections)).not.toContain("Synthetic Beta Organization");
     expect(items[0]?.active).toBe(false);
   });
 
@@ -106,8 +109,8 @@ navigationTestDescription("database-backed navigation isolation", () => {
     expect(mainItems.map((item) => item.label)).toEqual(["Все проекты"]);
     expect(mainItems[0]?.active).toBe(true);
     expect(projectItems.map((item) => item.label)).toEqual([
-      "Проект REDACTED_CLIENT_DATA",
-      "Проект Союз застройщиков",
+      "Проект Synthetic Alpha Organization",
+      "Проект Synthetic Beta Organization",
     ]);
     expect(serialized).not.toContain("Общий кабинет");
   });

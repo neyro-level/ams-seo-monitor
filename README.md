@@ -50,7 +50,7 @@ systemd timer
 - Better Auth создаёт session; server-generated `PrincipalContext`, permissions и fresh memberships защищают новые и мигрированные приватные пути; оставшиеся report/project reads на `ActorContext` перечислены как technical debt в активном плане;
 - browser не обращается к provider APIs и не получает provider credentials;
 - UI не импортирует Prisma и не рассчитывает provider semantics;
-- PostgreSQL — runtime source of truth; `config/*` используется как проверяемый seed/input;
+- PostgreSQL — runtime source of truth; operator config импортируется только явной командой из private path;
 - worker отделён от web runtime;
 - reliability foundation атомарно связывает idempotency, audit, outbox и JobRun;
 - outbox worker uses leases, bounded retry/backoff and dead-letter;
@@ -108,7 +108,7 @@ pnpm playwright:install
 ```bash
 pnpm dev:db:start
 pnpm dev:db:migrate
-pnpm dev:db:seed
+pnpm dev:db:bootstrap
 pnpm dev
 ```
 
@@ -136,7 +136,9 @@ pnpm verify:daily
 pnpm verify:release
 ```
 
-`test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и seed. `test:e2e` строит standalone runtime, создаёт только в loopback DB отдельного E2E PLATFORM_ADMIN и проверяет public UI, auth boundary и Admin CMS на 375/768/1280/1440.
+`test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и только synthetic test bootstrap. `test:e2e` строит standalone runtime, создаёт только в loopback DB отдельного E2E PLATFORM_ADMIN и проверяет public UI, auth boundary и Admin CMS на 375/768/1280/1440.
+
+`pnpm seed:bootstrap` создаёт только отсутствующие default/reference records и не изменяет существующие business data. `pnpm config:sync -- --source <private-path>` всегда выполняет dry-run; запись разрешена только с дополнительным `--apply`. Deployment не вызывает config sync.
 
 Production web env отдельно проверяется общей Zod boundary:
 

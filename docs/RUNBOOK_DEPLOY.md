@@ -48,7 +48,7 @@ Deploy script:
 9. runs the pre-migration backup as the `postgres` OS user, then requires offsite upload + HEAD confirmation;
 10. resolves the immutable backup file behind `latest.dump`, mounts that exact file read-only, waits for first-run PostgreSQL initialization to finish, then restores it in an ephemeral PostgreSQL container;
 11. runs `migrate` container with Prisma + pg-boss schema migration;
-12. runs `seed` from the same immutable image;
+12. never imports operator configuration; migrations are the only automatic database change;
 13. installs reviewed Nginx/systemd assets.
 
 Any failure before symlink switch leaves the current code runtime untouched. The mandatory backup and restore smoke run before migration because code rollback does not reverse database changes.

@@ -16,6 +16,7 @@ const { values } = parseArgs({
     "cluster-profile": { type: "string", default: "default" },
     "webmaster-host": { type: "string" },
     "metrica-counter": { type: "string" },
+    source: { type: "string" },
     "dry-run": { type: "boolean", default: false },
     yes: { type: "boolean", short: "y", default: false },
     help: { type: "boolean", short: "h", default: false },
@@ -27,12 +28,12 @@ if (values.help) {
   process.stdout.write(`AMS SEO Monitor project wizard
 
 Interactive:
-  pnpm project:add
+  pnpm project:add -- --source C:\\private\\ams-impulse-config
 
 Non-interactive preview:
   pnpm project:add --project-name "Example" --project-slug example \\
     --site-name "Moscow" --site-slug moscow --site-url https://example.ru \\
-    --dry-run --yes
+    --source C:\\private\\ams-impulse-config --dry-run --yes
 
 Rules:
   - never writes secrets;
@@ -44,6 +45,7 @@ Rules:
 }
 
 const requiredOptions = [
+  "source",
   "project-name",
   "project-slug",
   "site-name",
@@ -77,6 +79,7 @@ async function ask(optionName, label, fallback = "") {
 }
 
 try {
+  const rootDir = path.resolve(await ask("source", "Private config directory"));
   const input = {
     projectName: await ask("project-name", "Название проекта"),
     projectSlug: await ask("project-slug", "Slug проекта (latin lowercase)"),
@@ -97,7 +100,6 @@ try {
     ),
   };
 
-  const rootDir = process.cwd();
   const preview = await writeProjectConfig({ rootDir, input, dryRun: true });
 
   process.stdout.write(`\nБудут созданы:\n- ${path.relative(rootDir, preview.projectPath)}\n- ${path.relative(rootDir, preview.goalsPath)}\n\n`);
@@ -119,8 +121,8 @@ try {
   }
 
   const written = await writeProjectConfig({ rootDir, input });
-  const verification = spawnSync(process.execPath, [path.join(rootDir, "scripts", "verify-config.mjs")], {
-    cwd: rootDir,
+  const verification = spawnSync(process.execPath, [path.join(process.cwd(), "scripts", "verify-config.mjs"), "--source", rootDir], {
+    cwd: process.cwd(),
     encoding: "utf8",
   });
 

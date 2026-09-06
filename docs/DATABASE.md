@@ -55,7 +55,7 @@ Prisma migrations own application schema history. pg-boss schema lifecycle is se
 - separate databases: `seo_monitor_dev`, `seo_monitor_test`;
 - credentials exist only in ignored `.env.local`;
 - named volume survives normal stop/start;
-- integration runner rejects a database name without `_test`, then generates Prisma client, applies migrations, runs seed and executes DB suites;
+- integration runner rejects a database name without `_test`, then generates Prisma client, applies migrations, runs only synthetic test bootstrap and executes DB suites;
 - SourceCraft cloud gate пока не поднимает PostgreSQL: real integration proof выполняется operator HEAVY на isolated Docker DB и фиксируется перед merge.
 
 Runbook: `docs/ops/LOCAL_DEVELOPMENT.md`.
@@ -95,9 +95,11 @@ Backup на том же VPS без offsite copy не считается дост
 - release rollback не откатывает DB schema/data;
 - physical delete project/site/history — отдельная destructive operation;
 - test/dev DB names должны явно относиться к безопасному environment;
-- production seed выполняется reviewed script после migrations и не должен уничтожать historical records;
+- production deploy никогда не импортирует operator configuration;
+- `seed:bootstrap` создаёт только отсутствующие default/reference records и не обновляет existing business data;
+- `config:sync --source <private-path>` является dry-run, а запись требует отдельного `--apply`; отсутствующие tracked queries/sites отключаются, записи без безопасного disable остаются без физического удаления;
 - backup/restore credentials хранятся в Doppler/protected server env.
 
 ## Операционный статус
 
-Repository содержит schema, migrations, seed, backup и restore tooling. Live database version, backup object, restore result и deployed migration state подтверждаются только server-side operational proof; не выводятся из документа по предположению.
+Repository содержит schema, migrations, bootstrap, explicit config sync, backup и restore tooling. Live database version, backup object, restore result и deployed migration state подтверждаются только server-side operational proof; не выводятся из документа по предположению.

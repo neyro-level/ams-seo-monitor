@@ -10,7 +10,7 @@ Provider HTTP, report compilation, credentials storage, physical project deletio
 
 ## Data ownership
 
-Organization, Project, Site, ProviderConnection, GoalDefinition, TrackedQuerySet/TrackedQuery, ThresholdProfile и QueryClusterProfile. Prisma schema/migrations own shape; `config/*` is reviewed nonsecret seed input.
+Organization, Project, Site, ProviderConnection, GoalDefinition, TrackedQuerySet/TrackedQuery, ThresholdProfile и QueryClusterProfile. Prisma schema/migrations own shape; operator config is an explicit private-path import, not a deploy input.
 
 ## Principal types
 
@@ -75,7 +75,7 @@ Registry writes emit OutboxEvent only when a named command requires deferred wor
 
 ## Integrations
 
-No direct provider calls. `pnpm project:add` creates reviewed seed files; DB seed materializes them.
+No direct provider calls. `pnpm project:add` prepares operator config; only explicit `config:sync --source <private-path> --apply` materializes it.
 
 ## Failure behavior
 

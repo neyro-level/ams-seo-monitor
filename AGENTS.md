@@ -176,7 +176,7 @@ Production drift не узаконивается молча: он устраня
 - `collector/sources` — read-only provider adapters;
 - `src/shared/schemas` — Zod contracts;
 - `prisma` — schema и immutable migrations;
-- `config` — reviewed nonsecret seed inputs;
+- `config` — временные legacy inputs до этапа public-data cleanup; runtime import принимает только explicit private path;
 - `ops` — reviewed production assets;
 - `scripts` — verification, admin, backup/release boundaries.
 

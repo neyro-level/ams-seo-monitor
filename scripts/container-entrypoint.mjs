@@ -76,8 +76,15 @@ switch (mode) {
     await run(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"]);
     await run(process.execPath, ["scripts/pgboss-migrate.mjs"]);
     break;
-  case "seed":
-    await run(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/seed-database.ts"]);
+  case "bootstrap":
+    await run(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/seed-bootstrap.ts"]);
+    break;
+  case "config-sync":
+    await run(process.execPath, [
+      "node_modules/tsx/dist/cli.mjs",
+      "scripts/config-sync.ts",
+      ...args,
+    ]);
     break;
   case "verify-web-env":
     await run(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/verify-web-environment.ts"]);

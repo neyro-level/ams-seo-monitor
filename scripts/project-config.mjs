@@ -70,7 +70,6 @@ export async function writeProjectConfig({ rootDir, input, dryRun = false }) {
   const payload = buildProjectConfig(input);
   const clusterPath = path.join(
     rootDir,
-    "config",
     "clusters",
     `${payload.project.clusterProfile}.json`,
   );
@@ -81,13 +80,11 @@ export async function writeProjectConfig({ rootDir, input, dryRun = false }) {
 
   const projectPath = path.join(
     rootDir,
-    "config",
     "clients",
     `${payload.project.clientSlug}.json`,
   );
   const goalsPath = path.join(
     rootDir,
-    "config",
     "goals",
     `${payload.project.clientSlug}.json`,
   );
@@ -104,7 +101,7 @@ export async function writeProjectConfig({ rootDir, input, dryRun = false }) {
     throw new Error(`Проект ${payload.project.clientSlug} уже существует; перезапись запрещена`);
   }
 
-  const clientsDir = path.join(rootDir, "config", "clients");
+  const clientsDir = path.join(rootDir, "clients");
   const clientEntries = await readdir(clientsDir).catch(() => []);
   const requestedSiteUrl = new URL(payload.project.sites[0].siteUrl);
   const requestedSitePath =

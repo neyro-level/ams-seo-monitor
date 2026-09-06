@@ -128,8 +128,8 @@ workerTestDescription("syncProjectToDatabase", () => {
                 ...fixture.goalsSummary,
                 items: [
                   {
-                    goalId: "REDACTED_CLIENT_DATA",
-                    name: "Отправка формы",
+                    goalId: "100001",
+                    name: "Synthetic conversion",
                     category: "lead_submit",
                     direction: "primary",
                     reaches: 5,
@@ -151,8 +151,8 @@ workerTestDescription("syncProjectToDatabase", () => {
                 {
                   capturedAt: "2026-08-23",
                   queries: [
-                    { query: "агентство недвижимости REDACTED_CLIENT_DATA", position: 5 },
-                    { query: "REDACTED_CLIENT_DATA недвижимость REDACTED_CLIENT_DATA", position: 2 },
+                    { query: "synthetic query 1", position: 5 },
+                    { query: "synthetic query 2", position: 2 },
                   ],
                 },
               ],
