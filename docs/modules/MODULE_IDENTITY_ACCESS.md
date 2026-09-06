@@ -11,7 +11,7 @@ Public signup, self-service invitation/reset, impersonation, RLS, external API c
 ## Data ownership
 
 - Better Auth: User identity, Account, Session, Verification, TwoFactor;
-- AMS: Organization, Member.tenantRole, permissions, onboarding state;
+- AMS: Organization, Member.tenantRole, permissions, onboarding state.
 
 ## Principal types
 
@@ -57,9 +57,9 @@ Identity Access authorizes principal class; owner modules authorize Project/Site
 
 ```text
 operator-created user
-→ mustChangePassword
-→ Better Auth password change
-→ audited onboarding completion
+→ one-time setup capability (raw token shown once; only SHA-256 stored)
+→ server-only Better Auth credential creation
+→ atomic token consumption + audited onboarding completion
 → cabinet
 
 PLATFORM_ADMIN

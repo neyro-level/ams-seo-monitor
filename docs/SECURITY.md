@@ -119,9 +119,9 @@ Foreign tenant access возвращает denial/not-found без раскры�
 - immutable lowercase username, unique;
 - email/password provider используется внутренне;
 - public signup и user-created organizations выключены;
-- accounts создаются operator-only CLI;
-- новый password — ровно 8 цифр согласно действующему provisioning contract;
-- password поступает через bounded stdin, не argv;
+- identity и одноразовая setup capability создаются operator-only CLI;
+- новый пользователь сам задаёт password через `/setup/#<token>`; raw token показывается оператору один раз, а fragment не попадает в HTTP/access logs;
+- password не принимается CLI, argv, environment или документацией; server-only setup endpoint применяет password policy Better Auth;
 - auth secret rotation намеренно инвалидирует или сохраняет sessions согласно runbook.
 
 ## Секреты и env

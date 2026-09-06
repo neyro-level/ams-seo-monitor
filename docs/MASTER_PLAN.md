@@ -26,7 +26,9 @@
 
 ### Optional Topvisor activation
 
-- включать только после подтверждения project/region mapping и API access;
+- credential names в project Doppler подготовлены; перед runtime activation материализовать их только в protected worker env и выполнить restart/preflight;
+- для текущего production registry подтвердить project/region mapping каждого сайта: часть доменов найдена в Topvisor, один mapping отсутствует, найденные проекты выключены и не имеют свежей истории;
+- включать `ProviderConnection` только после появления свежих непустых position rows;
 - отсутствие данных не маскировать как нулевые позиции;
 - paid checks и provider mutations оставить запрещёнными.
 

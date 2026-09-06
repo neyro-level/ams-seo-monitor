@@ -38,6 +38,8 @@ systemd timer / operator command / outbox handler
 - mutations, keyword import and paid checks prohibited;
 - HTTP/token/raw sensitive bodies not persisted or logged.
 
+Topvisor считается готовым к включению только после read-only proof project/region mapping и непустой свежей истории. Валидный credential при выключенном `ProviderConnection` означает «доступ подготовлен», а не «источник подключён». Пустой history возвращает failed/partial source state и не превращается в нулевые позиции.
+
 ## Period contract
 
 | Key | Days |

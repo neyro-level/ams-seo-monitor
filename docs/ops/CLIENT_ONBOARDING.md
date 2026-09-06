@@ -48,11 +48,12 @@ pnpm project:add -- --source <private-path> --project-name "Новый прое�
 4. выполнить `config:sync --source <private-path>` и проверить dry-run;
 5. отдельно подтвердить `config:sync --source <private-path> --apply` в безопасном environment;
 6. проверить Project/Site/ProviderConnection/Goal/TrackedQuery records;
-7. создать user через bounded-stdin admin CLI;
-8. добавить membership;
-9. проверить analyst/client isolation;
-10. выполнить worker sync и четыре periods;
-11. release/deploy — отдельная owner-команда.
+7. создать user через operator CLI и передать одноразовую `/setup/#<token>` ссылку по согласованному приватному каналу;
+8. пользователь задаёт password через setup route; raw token не сохраняется и не повторяется;
+9. добавить membership;
+10. проверить analyst/client isolation;
+11. выполнить worker sync и четыре periods;
+12. release/deploy — отдельная owner-команда.
 
 ## Acceptance
 
