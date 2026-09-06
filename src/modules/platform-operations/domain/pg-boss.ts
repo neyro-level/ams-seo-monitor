@@ -35,8 +35,6 @@ export const outboxDispatchEventSchema = z.object({
 
 export const outboxDispatchJobSchema = z.object({
   schemaVersion: z.literal(OUTBOX_DELIVERY_SCHEMA),
-  occurredAt: z.string().datetime(),
-  topic: z.string().trim().min(1),
   event: outboxDispatchEventSchema,
 });
 

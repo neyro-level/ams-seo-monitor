@@ -7,6 +7,10 @@ import { PrismaReliabilityRepository } from "../src/modules/platform-operations/
 import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
 import { drainOutbox } from "../src/modules/platform-operations/worker.ts";
 import { runReliabilityRetention } from "../src/modules/platform-operations/infrastructure/retention-runtime.ts";
+import {
+  OUTBOX_WORKER_RUNTIME,
+  recordRuntimeHeartbeat,
+} from "../src/modules/platform-operations/infrastructure/runtime-heartbeat.ts";
 
 const integrationEnabled = Boolean(
   process.env.TEST_DATABASE_HOST &&
@@ -44,6 +48,7 @@ integrationDescription("reliability foundation", () => {
       })
     ).id;
     await prisma.jobRun.deleteMany();
+    await prisma.runtimeHeartbeat.deleteMany();
     await prisma.idempotencyKey.deleteMany();
     await prisma.auditEvent.deleteMany();
     await prisma.outboxEvent.deleteMany();
@@ -51,6 +56,7 @@ integrationDescription("reliability foundation", () => {
 
   afterAll(async () => {
     await prisma.jobRun.deleteMany();
+    await prisma.runtimeHeartbeat.deleteMany();
     await prisma.idempotencyKey.deleteMany();
     await prisma.auditEvent.deleteMany();
     await prisma.outboxEvent.deleteMany();
@@ -121,6 +127,41 @@ integrationDescription("reliability foundation", () => {
     ).toEqual([{ status: "FAILED" }, { status: "SUCCESS" }]);
   });
 
+  it("does not lease one event to two concurrent drainers", async () => {
+    const enqueue = (key: string) => service.enqueue({
+      organizationId: null,
+      organizationScope: "platform",
+      idempotencyScope: "outbox.concurrent",
+      idempotencyKey: key,
+      topic: "test.concurrent",
+      payload: { key },
+      actorType: "SYSTEM",
+      actorId: null,
+      action: "outbox.test.enqueue",
+      entityType: "OutboxEvent",
+      entityId: null,
+      source: "integration-test",
+      correlationId,
+    });
+    await Promise.all([enqueue("concurrent-1"), enqueue("concurrent-2")]);
+
+    const concurrent = await Promise.all([
+      service.claim("concurrent-worker-a", 60_000),
+      service.claim("concurrent-worker-b", 60_000),
+    ]);
+    const claimed = concurrent.filter((item): item is NonNullable<typeof item> => item !== null);
+    expect(new Set(claimed.map((item) => item.outboxEventId)).size).toBe(claimed.length);
+    for (const item of claimed) {
+      await service.complete(item);
+    }
+    const remaining = await service.claim("concurrent-worker-c", 60_000);
+    if (remaining) {
+      expect(claimed.map((item) => item.outboxEventId)).not.toContain(remaining.outboxEventId);
+      await service.complete(remaining);
+    }
+    expect(await service.getHealth()).toEqual({ pending: 0, processing: 0, deadLetter: 0 });
+  });
+
   it("moves unknown topics to dead letter through the real outbox processor", async () => {
     await service.enqueue({
       organizationId: null,
@@ -138,9 +179,40 @@ integrationDescription("reliability foundation", () => {
       correlationId,
     });
 
-    const result = await drainOutbox({ workerId: "integration-worker", maxEvents: 1 });
-    expect(result).toEqual({ claimed: 1, completed: 0, failed: 1 });
+    const dispatched = await drainOutbox({ workerId: "integration-worker", maxEvents: 1 });
+    expect(dispatched).toEqual({ claimed: 1, completed: 0, failed: 0 });
+    expect(await service.getHealth()).toEqual({ pending: 0, processing: 1, deadLetter: 0 });
+
+    const processed = await drainOutbox({ workerId: "integration-worker", maxEvents: 1 });
+    expect(processed).toEqual({ claimed: 1, completed: 0, failed: 1 });
     expect(await service.getHealth()).toEqual({ pending: 0, processing: 0, deadLetter: 1 });
+  });
+
+  it("stores one throttled heartbeat per runtime and worker", async () => {
+    const first = new Date("2026-09-06T12:00:00.000Z");
+    expect(
+      await recordRuntimeHeartbeat({ runtime: OUTBOX_WORKER_RUNTIME, workerId: "idle-worker", now: first }),
+    ).toBe(true);
+    expect(
+      await recordRuntimeHeartbeat({
+        runtime: OUTBOX_WORKER_RUNTIME,
+        workerId: "idle-worker",
+        now: new Date(first.getTime() + 30_000),
+      }),
+    ).toBe(false);
+    expect(
+      await recordRuntimeHeartbeat({
+        runtime: OUTBOX_WORKER_RUNTIME,
+        workerId: "idle-worker",
+        now: new Date(first.getTime() + 61_000),
+      }),
+    ).toBe(true);
+
+    const heartbeats = await prisma.runtimeHeartbeat.findMany({
+      where: { runtime: OUTBOX_WORKER_RUNTIME, workerId: "idle-worker" },
+      select: { heartbeatAt: true },
+    });
+    expect(heartbeats).toEqual([{ heartbeatAt: new Date(first.getTime() + 61_000) }]);
   });
 
   it("retains only old processed and dead-letter outbox history", async () => {
