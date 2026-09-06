@@ -162,6 +162,17 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - Better Auth backup codes are the only 2FA recovery mechanism; public password/2FA reset and environment bypass are disabled.
 - setup completion returns one generic failure for unknown, expired, revoked and replayed tokens; password, raw token and token hash never enter AuditEvent.
 
+## Auth abuse protection и log redaction
+
+- встроенный limiter Better Auth явно включён независимо от runtime mode;
+- global memory bucket ограничивает общий auth traffic одного web runtime; exact custom rules защищают установленные `1.7.2` endpoints `/sign-in/email`, `/sign-in/username` и `/two-factor/*`;
+- username/email login: не более 5 запросов за 60 секунд на IP и endpoint;
+- 2FA enrollment/recovery mutations: не более 3 запросов за 60 секунд; verification endpoints — не более 5 за 60 секунд;
+- отдельный application limiter не создаётся; built-in two-factor challenge lockout Better Auth сохраняется;
+- Nginx передаёт фактический client address через `X-Real-IP`/`X-Forwarded-For`; приложение не принимает browser-supplied tenant/auth scope из headers;
+- Pino redaction закрывает root и nested `user`, `actor`, `payload`, `headers`, `request/response` и `req/res` поля с password/token/secret/cookie/API key/email/phone/backup codes;
+- serialized-log test проверяет отсутствие исходных PII/secret sentinel values, а не только наличие строки `[REDACTED]`.
+
 ## Security headers и indexing
 
 - public landing/legal routes indexable;
@@ -177,6 +188,7 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - Better Auth Organization Plugin is absent from runtime; deprecated plugin-compatible records do not define access;
 - `mustChangePassword` is server-owned and completion records AuditEvent;
 - production Platform Admin requires 2FA; session revocation follows Better Auth password change;
+- Better Auth rate limiting explicitly enabled with strict installed login/2FA endpoint rules;
 - disabled user denied;
 - foreign tenant read/write denied server-side and a mismatched owner-parent relation is rejected by PostgreSQL;
 - browser-to-provider calls prohibited;
@@ -220,7 +232,7 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - invalid DB/auth/release/public env rejection;
 - public signup disabled;
 - exact provider/Leads origin enforcement;
-- no secret/raw body in logs and DTO;
+- no secret/raw body/nested user-actor-payload PII in serialized logs and DTO;
 - readiness external denial;
 - private noindex metadata;
 - backup upload confirmation и isolated restore smoke;
