@@ -51,6 +51,19 @@ describe("production compose networking", () => {
     expect(compose).toContain("HOSTNAME: 127.0.0.1");
     expect(compose).not.toContain('"127.0.0.1:3000:3000"');
   });
+
+  it("uses one explicit compose project across deploy checks and systemd", () => {
+    const deployScript = readFileSync("scripts/deploy-production.mjs", "utf8");
+    const webUnit = readFileSync(
+      "ops/systemd/seo-monitor-web.service",
+      "utf8",
+    );
+
+    expect(deployScript).toContain(
+      "export COMPOSE_PROJECT_NAME=ams-seo-monitor",
+    );
+    expect(webUnit).toContain("Environment=COMPOSE_PROJECT_NAME=ams-seo-monitor");
+  });
 });
 
 describe("production worker module boundary", () => {

@@ -65,6 +65,7 @@ WEB_ENV_FILE=/etc/ams-platform/ams-seo-monitor-web.env
 WORKER_ENV_FILE=/etc/ams-platform/ams-seo-monitor-worker.env
 MIGRATOR_ENV_FILE=/etc/ams-platform/ams-seo-monitor-migrator.env
 BACKUP_ENV_FILE=/etc/ams-platform/ams-seo-monitor-backup.env
+export COMPOSE_PROJECT_NAME=ams-seo-monitor
 COMPOSE_FILE="$RELEASE/docker-compose.production.yml"
 MANIFEST_FILE="$RELEASE/release-manifest.json"
 IMAGE_TAR="$RELEASE/docker-image.tar"

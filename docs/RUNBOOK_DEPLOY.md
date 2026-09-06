@@ -41,7 +41,7 @@ Deploy script:
 4. verifies all protected env files;
 5. loads the OCI image with Docker on target;
 6. verifies loaded image digest against the manifest;
-7. validates compose config;
+7. validates compose config under the fixed project name `ams-seo-monitor`, shared by deploy checks and systemd;
 8. installs backup/restore scripts;
 9. runs the pre-migration backup as the `postgres` OS user, then requires offsite upload + HEAD confirmation;
 10. resolves the immutable backup file behind `latest.dump`, mounts that exact file read-only, waits for first-run PostgreSQL initialization to finish, then restores it in an ephemeral PostgreSQL container;
