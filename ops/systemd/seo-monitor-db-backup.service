@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=root
-Group=root
+User=postgres
+Group=postgres
 Environment=DB_NAME=seo_monitor_prod
 Environment=BACKUP_ROOT=/var/backups/ams-seo-monitor-postgres
 Environment=KEEP_DAILY=7

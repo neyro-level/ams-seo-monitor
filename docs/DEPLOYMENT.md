@@ -62,7 +62,7 @@ Release rollback does not automatically reverse PostgreSQL migration/data.
 - web env: DB runtime + Better Auth + public Leads API build values;
 - worker env: DB runtime + provider tokens/mappings;
 - migrator env: schema migration credentials;
-- backup env: restricted DB + offsite credentials with required-offsite mode;
+- backup env: offsite credentials with required-offsite mode; local PostgreSQL backup runs as the `postgres` OS user through peer auth, while a future managed database must provide a dedicated restricted connection URL;
 - release env: deploy-generated `RELEASE_SHA`, `AMS_SEO_MONITOR_IMAGE`, `AMS_SEO_MONITOR_IMAGE_DIGEST`, mode `0640`, owner `root:www-data`.
 
 Secret values remain outside artifact/Git. Deploy reads env as literal values, validates them before compose start and never accepts release SHA from browser input.

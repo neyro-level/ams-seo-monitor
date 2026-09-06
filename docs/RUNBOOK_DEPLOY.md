@@ -42,7 +42,7 @@ Deploy script:
 6. verifies loaded image digest against the manifest;
 7. validates compose config;
 8. installs backup/restore scripts;
-9. requires a pre-migration offsite backup upload + HEAD confirmation;
+9. runs the pre-migration backup as the `postgres` OS user, then requires offsite upload + HEAD confirmation;
 10. restores that backup in an ephemeral PostgreSQL container;
 11. runs `migrate` container with Prisma + pg-boss schema migration;
 12. runs `seed` from the same immutable image;
