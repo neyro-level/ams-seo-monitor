@@ -130,8 +130,10 @@ pnpm architecture:check
 pnpm test:unit
 pnpm test:integration
 pnpm test:e2e
-pnpm verify:fast
-pnpm verify:heavy
+pnpm verify:quick
+pnpm verify:risky
+pnpm verify:daily
+pnpm verify:release
 ```
 
 `test:integration` fail-closed без безопасного `*_test` database, сам применяет migrations и seed. `test:e2e` строит standalone runtime, создаёт только в loopback DB отдельного E2E PLATFORM_ADMIN и проверяет public UI, auth boundary и Admin CMS на 375/768/1280/1440.

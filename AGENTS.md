@@ -219,7 +219,7 @@ Code/runtime scope:
 ```bash
 pnpm architecture:check
 pnpm test:unit
-pnpm verify:fast
+pnpm verify:quick
 ```
 
 DB/auth/worker scope:
@@ -236,16 +236,17 @@ pnpm playwright:install
 pnpm test:e2e
 ```
 
-HEAVY candidate:
+Risky candidate:
 
 ```bash
-pnpm verify:heavy
+pnpm verify:risky
 ```
 
 Production/release scope дополнительно:
 
 ```bash
 pnpm verify:web-environment
+pnpm verify:release
 ```
 
 Integration runner обязан fail-closed без isolated `*_test` database. UI scope требует browser proof на `375 / 768 / 1280 / 1440`. Backup scope — `pnpm db:restore-smoke` только на временной БД.

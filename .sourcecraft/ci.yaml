@@ -1,72 +1,44 @@
 on:
   pull_request:
     - workflows: [pr-check]
-
-  push:
-    - workflows: [pr-check]
       filter:
-        branches: ["main"]
+        target_branches: ["main"]
+
+  schedule:
+    - workflows: [daily]
+      cron: "0 1 * * *"
+      description: "Nightly full verification of canonical main"
 
 workflows:
   pr-check:
     checkout:
       fetch_depth: 0
     settings:
-      max_cube_duration: 35m
+      max_cube_duration: 20m
     tasks:
-      - name: foundation-verify
-        cubes:
-          - name: install-and-check
-            image: docker.io/library/node:24.20.0-bookworm
-            script:
-              - corepack enable
-              - corepack prepare pnpm@11.5.1 --activate
-              - node scripts/verify-release-runtime.mjs
-              - pnpm install --frozen-lockfile
-              - pnpm verify:snapshots
-              - pnpm verify:fast
-              - pnpm build
-
-  merge-fast:
-    inputs:
-      expected_commit_sha:
-        type: string
-        required: true
-        description: "Reviewed PR head SHA"
-    checkout:
-      fetch_depth: 0
-    settings:
-      max_cube_duration: 45m
-    tasks:
-      - name: exact-head-fast-gate
-        env:
-          EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+      - name: cheap-contract
         cubes:
           - name: verify
             image: docker.io/library/node:24.20.0-bookworm
             script:
               - corepack enable
               - corepack prepare pnpm@11.5.1 --activate
-              - node scripts/verify-release-runtime.mjs
               - pnpm install --frozen-lockfile
-              - node scripts/ci/verify-exact-head.mjs
-              - pnpm verify:snapshots
-              - pnpm verify:fast
-              - pnpm build
+              - pnpm verify:quick
 
-  merge-heavy:
+  risky-check:
     inputs:
       expected_commit_sha:
         type: string
         required: true
-        description: "Full reviewed PR head SHA"
+        description: "Reviewed risky PR head SHA"
     checkout:
       fetch_depth: 0
     settings:
-      max_cube_duration: 90m
+      max_cube_duration: 70m
     tasks:
-      - name: exact-head-heavy-gate
-        env:
+      - name: exact-head-risky
+        env: &test-environment
           EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
           TEST_DATABASE_HOST: 127.0.0.1
           TEST_DATABASE_PORT: "5432"
@@ -93,4 +65,51 @@ workflows:
               - pnpm install --frozen-lockfile
               - bash scripts/ci/prepare-heavy-environment.sh
               - node scripts/ci/verify-exact-head.mjs
-              - pnpm verify:heavy
+              - pnpm verify:risky
+
+  daily:
+    checkout:
+      fetch_depth: 0
+    settings:
+      max_cube_duration: 120m
+    tasks:
+      - name: nightly-main
+        env:
+          <<: *test-environment
+          EXPECTED_COMMIT_SHA: ""
+        cubes:
+          - name: verify
+            image: docker.io/library/node:24.20.0-bookworm
+            script:
+              - corepack enable
+              - corepack prepare pnpm@11.5.1 --activate
+              - node scripts/verify-release-runtime.mjs
+              - pnpm install --frozen-lockfile
+              - bash scripts/ci/prepare-daily-environment.sh
+              - pnpm verify:daily
+
+  release-check:
+    inputs:
+      expected_commit_sha:
+        type: string
+        required: true
+        description: "Reviewed canonical main SHA for release"
+    checkout:
+      fetch_depth: 0
+    settings:
+      max_cube_duration: 120m
+    tasks:
+      - name: exact-head-release
+        env:
+          <<: *test-environment
+          EXPECTED_COMMIT_SHA: ${{ inputs.expected_commit_sha }}
+        cubes:
+          - name: verify
+            image: docker.io/library/node:24.20.0-bookworm
+            script:
+              - corepack enable
+              - corepack prepare pnpm@11.5.1 --activate
+              - pnpm install --frozen-lockfile
+              - bash scripts/ci/prepare-daily-environment.sh
+              - node scripts/ci/verify-exact-head.mjs
+              - pnpm verify:release

@@ -84,8 +84,9 @@ pnpm test:e2e
 
 ```bash
 pnpm architecture:check
-pnpm verify:fast
-pnpm verify:heavy
+pnpm verify:quick
+pnpm verify:risky
+pnpm verify:daily
 ```
 
-`verify:heavy` требует уже запущенную isolated test DB и установленный Playwright Chromium.
+`verify:risky` и `verify:daily` требуют уже запущенную isolated test DB; `verify:daily` дополнительно требует Playwright Chromium и Semgrep.
