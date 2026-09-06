@@ -1,9 +1,11 @@
 .git
 .gitignore
 .next
+out
 .local
 .release-artifacts
 dist-collector
+graphify-out
 node_modules
 test-results
 playwright-report
@@ -11,6 +13,7 @@ coverage
 pnpm-store
 .env.local
 *.log
+*.tsbuildinfo
 config/*
 !config/examples
 !config/examples/**
