@@ -16,7 +16,7 @@ const databaseEnvironment = {
   NODE_ENV: process.env.NODE_ENV,
 };
 const target = inspectDatabaseTarget(databaseEnvironment);
-console.log(`database_target=${formatDatabaseTargetSummary(target)}`);
+console.error(`database_target=${formatDatabaseTargetSummary(target)}`);
 const database = createPrismaContext(databaseEnvironment);
 
 const DEFAULT_THRESHOLD_PROFILE = {
