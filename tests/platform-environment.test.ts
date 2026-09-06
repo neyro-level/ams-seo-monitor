@@ -6,6 +6,10 @@ import {
   readDatabaseEnvironment,
   readReleaseSha,
 } from "../src/platform/config/server-environment.ts";
+import {
+  formatDatabaseTargetSummary,
+  inspectDatabaseTarget,
+} from "../src/platform/config/database-target.ts";
 
 describe("platform environment contracts", () => {
   it("accepts complete component database configuration", () => {
@@ -32,6 +36,41 @@ describe("platform environment contracts", () => {
     expect(() =>
       readDatabaseEnvironment({ DATABASE_URL: "https://example.com/database" }),
     ).toThrow("invalid or incomplete");
+  });
+
+  it("enforces isolated database names and identities", () => {
+    const testTarget = inspectDatabaseTarget({
+      NODE_ENV: "production",
+      DATABASE_URL: "postgresql://seo_monitor_test:secret@127.0.0.1:55432/seo_monitor_test",
+    });
+    expect(formatDatabaseTargetSummary(testTarget)).toBe(
+      "environment=test host=127.0.0.1 port=55432 database=seo_monitor_test identity=seo_monitor_test",
+    );
+    expect(formatDatabaseTargetSummary(testTarget)).not.toContain("secret");
+
+    expect(() =>
+      inspectDatabaseTarget({
+        APP_ENV: "test",
+        DATABASE_URL: "postgresql://seo_monitor_test:secret@127.0.0.1/seo_monitor",
+      }),
+    ).toThrow("must end with _test");
+    expect(() =>
+      inspectDatabaseTarget({
+        APP_ENV: "production",
+        NODE_ENV: "production",
+        DATABASE_URL: "postgresql://seo_monitor_test:secret@db.internal/seo_monitor",
+      }),
+    ).toThrow("production cannot use a test or development identity");
+    expect(() =>
+      inspectDatabaseTarget({
+        APP_ENV: "development",
+        DATABASE_URL: "postgresql://seo_monitor_local:secret@127.0.0.1/seo_monitor_dev",
+        DATABASE_HOST: "other-host",
+        DATABASE_USER: "seo_monitor_local",
+        DATABASE_PASSWORD: "secret",
+        DATABASE_NAME: "seo_monitor_dev",
+      }),
+    ).toThrow("identify different databases");
   });
 
   it("requires complete HTTPS auth configuration outside loopback", () => {

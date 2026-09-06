@@ -26,6 +26,7 @@ process.env.DATABASE_PASSWORD = process.env.TEST_DATABASE_PASSWORD;
 process.env.DATABASE_NAME = process.env.TEST_DATABASE_NAME;
 process.env.DATABASE_SSLMODE = process.env.TEST_DATABASE_SSLMODE?.trim() || "disable";
 process.env.DATABASE_URL = databaseUrl.toString();
+process.env.APP_ENV = "test";
 
 function runNodeScript(relativePath, args = []) {
   const result = spawnSync(process.execPath, [path.join(rootDir, relativePath), ...args], {

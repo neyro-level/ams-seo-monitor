@@ -3,6 +3,7 @@ import {
   readDatabaseEnvironment,
   type DatabaseEnvironment,
 } from "../../config/server-environment.ts";
+import { inspectDatabaseTarget } from "../../config/database-target.ts";
 
 export function createPgPoolConfig(databaseUrl: string): PoolConfig {
   const parsed = new URL(databaseUrl);
@@ -20,6 +21,7 @@ export function createPgPoolConfig(databaseUrl: string): PoolConfig {
 
 export function createPgPoolConfigFromEnvironment(env: DatabaseEnvironment): PoolConfig {
   const parsedEnvironment = readDatabaseEnvironment(env);
+  inspectDatabaseTarget(env);
   if (
     parsedEnvironment.DATABASE_HOST &&
     parsedEnvironment.DATABASE_USER &&

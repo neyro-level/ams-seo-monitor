@@ -21,7 +21,7 @@ Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform A
 | Async outbox + pg-boss | IMPLEMENTED | deterministic dispatch, idempotency, leases, bounded retry/dead-letter |
 | Persistent worker heartbeat/readiness | IMPLEMENTED | RuntimeHeartbeat is the sole worker-liveness input |
 | Seed/config boundary | IMPLEMENTED | safe bootstrap, private-path dry-run/apply, no deploy import |
-| Environment registry and validation | PARTIAL | registry exists; datasource fail-closed cleanup remains |
+| Environment registry and validation | IMPLEMENTED | explicit datasource, isolated environment identities and safe target summary |
 | SourceCraft verification contract | IMPLEMENTED | quick PR, exact-head risky, nightly daily, manual release |
 | Immutable image release and rollback | IMPLEMENTED | repository release assets; live proof required per release |
 | Backup/offsite/restore contract | IMPLEMENTED | scripts and runbooks exist; each release still requires current proof |

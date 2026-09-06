@@ -10,6 +10,7 @@ services:
       - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
         required: false
     environment:
+      APP_ENV: production
       HOSTNAME: 127.0.0.1
       PORT: 3000
       NODE_ENV: production
@@ -25,6 +26,7 @@ services:
       - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
         required: false
     environment:
+      APP_ENV: production
       NODE_ENV: production
       OUTBOX_WORKER_ID: seo-monitor-outbox
 
@@ -40,6 +42,7 @@ services:
       - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
         required: false
     environment:
+      APP_ENV: production
       NODE_ENV: production
 
   maintenance:
@@ -54,4 +57,5 @@ services:
       - path: /opt/ams-platform/ams-seo-monitor/shared/release.env
         required: false
     environment:
+      APP_ENV: production
       NODE_ENV: production
