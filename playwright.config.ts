@@ -36,25 +36,41 @@ export default defineConfig({
     },
     {
       name: "mobile-375",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 375, height: 812 },
+        extraHTTPHeaders: { "x-forwarded-for": "192.0.2.11" },
+      },
       dependencies: ["setup"],
       testIgnore: /auth\.setup\.ts/,
     },
     {
       name: "tablet-768",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 768, height: 1024 },
+        extraHTTPHeaders: { "x-forwarded-for": "192.0.2.12" },
+      },
       dependencies: ["setup"],
       testIgnore: /auth\.setup\.ts/,
     },
     {
       name: "desktop-1280",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1280, height: 800 },
+        extraHTTPHeaders: { "x-forwarded-for": "192.0.2.13" },
+      },
       dependencies: ["setup"],
       testIgnore: /auth\.setup\.ts/,
     },
     {
       name: "desktop-1440",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+        extraHTTPHeaders: { "x-forwarded-for": "192.0.2.14" },
+      },
       dependencies: ["setup"],
       testIgnore: /auth\.setup\.ts/,
     },
