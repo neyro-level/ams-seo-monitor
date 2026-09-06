@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 
 const forbiddenSignatures = new Set([
   "f27757a3c2307caa4b92dd18f152f195503505bc99284d6c14f88efc2986dc8c",
@@ -38,9 +39,43 @@ const forbiddenSignatures = new Set([
   "ad0050dd161b1a8c9a9d63fb04fcba7db8a55504b0849ed30bd44918e85d1414",
 ]);
 
-const trackedFiles = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" })
-  .split("\0")
-  .filter(Boolean);
+const ignoredDirectories = new Set([
+  ".git",
+  ".local",
+  ".next",
+  ".release-artifacts",
+  "coverage",
+  "dist-collector",
+  "node_modules",
+  "playwright-report",
+  "pnpm-store",
+  "test-results",
+]);
+
+function listContextFiles(root = ".", relativeRoot = "") {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = path.posix.join(relativeRoot, entry.name);
+    if (entry.isDirectory()) {
+      return ignoredDirectories.has(entry.name)
+        ? []
+        : listContextFiles(path.join(root, entry.name), relativePath);
+    }
+    if (!entry.isFile() || entry.name === ".env.local" || entry.name.endsWith(".log")) return [];
+    return [relativePath];
+  });
+}
+
+function listFilesForVerification() {
+  try {
+    return execFileSync("git", ["ls-files", "-z"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] })
+      .split("\0")
+      .filter(Boolean);
+  } catch {
+    return listContextFiles().sort();
+  }
+}
+
+const trackedFiles = listFilesForVerification();
 const violations = new Set();
 const signatureCache = new Map();
 
@@ -85,4 +120,4 @@ if (violations.size > 0) {
   process.exit(1);
 }
 
-console.log(`Public-data boundary verified across ${trackedFiles.length} tracked files.`);
+console.log(`Public-data boundary verified across ${trackedFiles.length} files.`);
