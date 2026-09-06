@@ -184,6 +184,32 @@ for env_file in "$WEB_ENV_FILE" "$WORKER_ENV_FILE" "$MIGRATOR_ENV_FILE" "$BACKUP
   fi
 done
 
+WORKER_DATABASE_ROLE="$(python3 - "$WORKER_ENV_FILE" <<'PY'
+from pathlib import Path
+from urllib.parse import urlsplit
+import sys
+
+values = {}
+for raw_line in Path(sys.argv[1]).read_text(encoding="utf-8").splitlines():
+    line = raw_line.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    values[key.removeprefix("export ").strip()] = value.strip().strip('"').strip("'")
+
+runtime_role = values.get("DATABASE_USER")
+if not runtime_role and values.get("DATABASE_URL"):
+    runtime_role = urlsplit(values["DATABASE_URL"]).username
+if not runtime_role:
+    raise SystemExit("worker_database_role_missing=true")
+print(runtime_role)
+PY
+)"
+if ! [[ "$WORKER_DATABASE_ROLE" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+  echo "worker_database_role_invalid=true" >&2
+  exit 1
+fi
+
 LOAD_OUTPUT="$(docker load -i "$IMAGE_TAR")"
 echo "$LOAD_OUTPUT"
 ACTUAL_IMAGE_ID="$(docker image inspect "$IMAGE_TAG" --format '{{.Id}}')"
@@ -202,7 +228,7 @@ mkdir -p /var/backups/ams-seo-monitor-postgres/{tmp,daily,weekly,monthly}
 run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres -- /usr/bin/env REQUIRE_OFFSITE=true /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
 run_with_env_file "$BACKUP_ENV_FILE" /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
 
-run_with_env_file "$MIGRATOR_ENV_FILE" docker compose -f "$COMPOSE_FILE" run --rm migrate
+run_with_env_file "$MIGRATOR_ENV_FILE" docker compose -f "$COMPOSE_FILE" run --rm -e PGBOSS_RUNTIME_ROLE="$WORKER_DATABASE_ROLE" migrate
 
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
@@ -230,7 +256,15 @@ WORKER_CONTAINER_ID="$(docker compose -f "$ROOT/current/docker-compose.productio
 [ "$(docker inspect --format '{{.Image}}' "$WEB_CONTAINER_ID")" = "$IMAGE_DIGEST" ]
 [ "$(docker inspect --format '{{.Image}}' "$WORKER_CONTAINER_ID")" = "$IMAGE_DIGEST" ]
 curl -fsS http://127.0.0.1:3000/api/health/live | python3 -c 'import json,sys; payload=json.load(sys.stdin); assert payload["releaseSha"] == sys.argv[1]' "$SHA"
-curl -fsS http://127.0.0.1:3000/api/health/ready | python3 -c 'import json,sys; payload=json.load(sys.stdin); deps=payload["dependencies"]; assert payload["releaseSha"] == sys.argv[1]; assert deps["postgresql"] == "ready"; assert deps["auth"] == "configured"; assert isinstance(deps["outbox"]["deadLetter"], int); assert deps["worker"]["status"] in ("healthy", "stale", "unknown")' "$SHA"
+READINESS_CONFIRMED=false
+for _attempt in $(seq 1 30); do
+  if curl -fsS http://127.0.0.1:3000/api/health/ready | python3 -c 'import json,sys; payload=json.load(sys.stdin); deps=payload["dependencies"]; assert payload["releaseSha"] == sys.argv[1]; assert deps["postgresql"] == "ready"; assert deps["auth"] == "configured"; assert deps["outbox"]["status"] == "healthy"; assert deps["worker"]["status"] == "healthy"; assert deps["integrationFreshness"]["status"] == "fresh"' "$SHA"; then
+    READINESS_CONFIRMED=true
+    break
+  fi
+  sleep 2
+done
+[ "$READINESS_CONFIRMED" = true ]
 rm -f "$ARTIFACT" "$CHECKSUM"
 printf '%s\n' "$PREVIOUS" > "$ROOT/shared/previous-release.txt"
 printf '%s\n' "$SHA" > "$ROOT/shared/deployed-sha.txt"

@@ -22,11 +22,27 @@ describe("production configuration boundary", () => {
     const deployScript = readFileSync("scripts/deploy-production.mjs", "utf8");
     const integrationRunner = readFileSync("scripts/run-integration-tests.mjs", "utf8");
 
-    expect(deployScript).toContain('run --rm migrate');
+    expect(deployScript).toContain('run --rm -e PGBOSS_RUNTIME_ROLE="$WORKER_DATABASE_ROLE" migrate');
     expect(deployScript).not.toContain('run --rm migrate seed');
     expect(deployScript).not.toContain("config-sync");
     expect(integrationRunner).toContain("scripts/seed-test-database.mjs");
     expect(integrationRunner).not.toContain("config/clients");
+  });
+
+  it("grants pg-boss runtime access without granting schema mutation privileges", () => {
+    const migrationScript = readFileSync("scripts/pgboss-migrate.mjs", "utf8");
+
+    expect(migrationScript).toContain("GRANT USAGE ON SCHEMA");
+    expect(migrationScript).toContain("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES");
+    expect(migrationScript).not.toContain("GRANT CREATE ON SCHEMA");
+    expect(migrationScript).not.toContain("GRANT ALL PRIVILEGES");
+  });
+
+  it("requires a healthy worker before completing production rollout", () => {
+    const deployScript = readFileSync("scripts/deploy-production.mjs", "utf8");
+
+    expect(deployScript).toContain('deps["worker"]["status"] == "healthy"');
+    expect(deployScript).not.toContain('("healthy", "stale", "unknown")');
   });
 
   it("excludes private operator configuration from the image build context", () => {
