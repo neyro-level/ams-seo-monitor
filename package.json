@@ -41,6 +41,7 @@
     "dev:db:migrate": "node --env-file=.env.local node_modules/prisma/build/index.js migrate deploy && node --env-file=.env.local scripts/pgboss-migrate.mjs",
     "dev:db:bootstrap": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/seed-bootstrap.ts",
     "user:create": "tsx scripts/auth-admin.ts create",
+    "user:revoke-setup-token": "tsx scripts/auth-admin.ts revoke-setup-token",
     "user:disable": "tsx scripts/auth-admin.ts disable",
     "user:set-system-role": "tsx scripts/auth-admin.ts set-system-role",
     "user:add-to-organization": "tsx scripts/auth-admin.ts add-to-organization",

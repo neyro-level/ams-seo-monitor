@@ -4,12 +4,6 @@
 
 ## Platform contract completion
 
-### Setup token и auth recovery
-
-- заменить основной временный пароль одноразовым setup-token flow;
-- хранить только SHA-256 token hash, expiry/used/revoked и creator metadata;
-- использовать Better Auth backup codes для 2FA recovery без public reset и ENV bypass.
-
 ### Public-data sanitation
 
 - оставить в repository только synthetic examples/fixtures;

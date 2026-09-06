@@ -79,37 +79,36 @@ describe("PrincipalContext", () => {
     });
   });
 
-  it("requires platform-admin 2FA in production but isolates local E2E", () => {
+  it("requires platform-admin 2FA only for the explicit production identity", () => {
     expect(isPlatformAdminTwoFactorRequired({ NODE_ENV: "production" })).toBe(true);
-    expect(isPlatformAdminTwoFactorRequired({ NODE_ENV: "development" })).toBe(false);
-    expect(
-      isPlatformAdminTwoFactorRequired({ NODE_ENV: "production", AMS_E2E_TEST: "true" }),
-    ).toBe(false);
+    expect(isPlatformAdminTwoFactorRequired({ APP_ENV: "development" })).toBe(false);
+    expect(isPlatformAdminTwoFactorRequired({ APP_ENV: "test", NODE_ENV: "production" })).toBe(false);
+    expect(isPlatformAdminTwoFactorRequired({ APP_ENV: "production" })).toBe(true);
   });
 
   it("enforces completed password onboarding and production admin 2FA", () => {
     expect(() =>
       requireCabinetPrincipalFromState(
         { principal: admin, displayName: "Admin", mustChangePassword: true, twoFactorEnabled: false },
-        { NODE_ENV: "production" },
+        { APP_ENV: "production" },
       ),
     ).toThrow(new CabinetPrincipalError("PASSWORD_ONBOARDING_REQUIRED"));
     expect(() =>
       requireCabinetPrincipalFromState(
         { principal: admin, displayName: "Admin", mustChangePassword: false, twoFactorEnabled: false },
-        { NODE_ENV: "production" },
+        { APP_ENV: "production" },
       ),
     ).toThrow(new CabinetPrincipalError("TWO_FACTOR_REQUIRED"));
     expect(
       requireCabinetPrincipalFromState(
         { principal: admin, displayName: "Admin", mustChangePassword: false, twoFactorEnabled: true },
-        { NODE_ENV: "production" },
+        { APP_ENV: "production" },
       ),
     ).toBe(admin);
     expect(
       requireCabinetPrincipalFromState(
         { principal: viewer, displayName: "Viewer", mustChangePassword: false, twoFactorEnabled: false },
-        { NODE_ENV: "production" },
+        { APP_ENV: "production" },
       ),
     ).toBe(viewer);
   });

@@ -28,6 +28,16 @@ Better Auth identity with project `systemRole`, immutable optional `username`, `
 
 Better Auth 2FA record, unique by `userId`. Stores the plugin-managed secret, encrypted backup codes, verification state and lockout counters. These fields never enter DTO, logs, AuditEvent markers or browser payload.
 
+### UserSetupToken
+
+One-time operator-issued first-access capability. The table stores only a 64-character SHA-256 `tokenHash`, owner `userId`, expiry, optional used/revoked timestamps and nonsecret `createdBy` operator identity.
+
+- raw token is 32 random bytes and never enters PostgreSQL, logs, audit or documentation;
+- `expiresAt`, `usedAt`, `revokedAt`, `createdAt` and `updatedAt` are application/database UTC instants currently mapped to PostgreSQL `timestamp(3)` consistently with the existing schema; native-type conversion remains governed by the project-wide DateTime audit;
+- successful setup creates the Better Auth credential account, consumes the token, clears `mustChangePassword` and creates a safe AuditEvent atomically;
+- expiry, revocation, replay, disabled user or an existing credential leave business state unchanged;
+- deleting a User cascades its setup tokens; normal operations revoke or expire tokens rather than physically deleting them.
+
 ### Session, Account, Verification
 
 Better Auth-owned authentication state. Session token, IP and user-agent are not DTO. `Session.activeOrganizationId` is a deprecated server-side preference: it is never trusted directly and is validated against fresh AMS Membership before principal creation.
