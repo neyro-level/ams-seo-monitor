@@ -8,7 +8,7 @@ import {
   requestProjectSyncInputSchema,
   type RequestProjectSyncInput,
 } from "../../../modules/platform-operations/contracts.ts";
-import { requestProjectSyncAction } from "../actions.ts";
+import { requestProjectSyncAction } from "../_actions/operations.ts";
 import {
   applyFieldErrors,
   feedbackFrom,

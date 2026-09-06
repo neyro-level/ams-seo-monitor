@@ -26,7 +26,7 @@ import {
   removeMembershipAction,
   updateMembershipAction,
   updateOrganizationAction,
-} from "../actions.ts";
+} from "../_actions/identity.ts";
 import {
   applyFieldErrors,
   feedbackFrom,

@@ -88,7 +88,7 @@ Better Auth владеет identity/password/session/2FA. AMS владеет Org
 
 ### Platform Admin
 
-`/admin/*` агрегирует typed queries/commands владельцев данных. Generic dispatcher, Refine registry и arbitrary Prisma CRUD отсутствуют.
+`/admin/*` агрегирует typed queries/commands владельцев данных. Forms и Next action adapters разделены по bounded resources: sites, providers, goals, tracked queries, thresholds и query clusters; общий слой содержит только transport primitives и safe error mapping. Generic form framework, generic dispatcher, Refine registry и arbitrary Prisma CRUD отсутствуют.
 
 ## Canonical data paths
 

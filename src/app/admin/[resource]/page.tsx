@@ -46,13 +46,12 @@ import {
 } from "../_components/IdentityAdminForms.tsx";
 import { OperationsAdminForms } from "../_components/OperationsAdminForms.tsx";
 import { PlatformAdminTable, type PlatformAdminDisplayRow } from "../_components/PlatformAdminTable.tsx";
-import {
-  GoalDefinitionsAdminForms,
-  ProfilesAdminForms,
-  ProviderConnectionsAdminForms,
-  SitesAdminForms,
-  TrackedQuerySetsAdminForms,
-} from "../_components/RegistryAdminForms.tsx";
+import { GoalDefinitionsAdminForms } from "../_components/GoalDefinitionAdminForms.tsx";
+import { ProviderConnectionsAdminForms } from "../_components/ProviderConnectionAdminForms.tsx";
+import { QueryClusterProfilesAdminForms } from "../_components/QueryClusterProfileAdminForms.tsx";
+import { SitesAdminForms } from "../_components/SiteAdminForms.tsx";
+import { ThresholdProfilesAdminForms } from "../_components/ThresholdProfileAdminForms.tsx";
+import { TrackedQuerySetsAdminForms } from "../_components/TrackedQuerySetAdminForms.tsx";
 
 const defaultSortOptions: Array<{ field: PlatformAdminSortField; label: string }> = [
   { field: "name", label: "Запись" },
@@ -336,7 +335,10 @@ export default async function AdminResourcePageRoute({
           <Filters query={query} resource={resource} />
           <PlatformAdminTable pageSize={thresholds.pageSize} query={query} resource={resource} rows={thresholdRows} sortOptions={defaultSortOptions} total={thresholds.total} />
           <PlatformAdminTable pageSize={clusters.pageSize} query={query} resource={resource} rows={clusterRows} sortOptions={defaultSortOptions} total={clusters.total} />
-          <ProfilesAdminForms clusters={clusters.items} thresholds={thresholds.items} />
+          <div className="space-y-6">
+            <ThresholdProfilesAdminForms items={thresholds.items} />
+            <QueryClusterProfilesAdminForms items={clusters.items} />
+          </div>
         </div>
       </AppShell>
     );
