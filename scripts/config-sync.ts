@@ -13,6 +13,7 @@ import {
   type ClusterProfile,
   type ClientRegistry,
   type GoalProfile,
+  type SiteRegistry,
   type ThresholdsConfig,
 } from "../src/shared/schemas/registry.ts";
 import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
@@ -81,6 +82,29 @@ function goalDirectionToEnum(direction: string) {
 
 function normalizeTrackedQuery(query: string) {
   return query.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim();
+}
+
+function providerRowsForSite(site: SiteRegistry) {
+  return [
+    {
+      provider: Provider.YANDEX_WEBMASTER,
+      externalId: site.webmaster.expectedHostUrl,
+      enabled: site.webmaster.enabled,
+      settingsJson: { expectedHostUrl: site.webmaster.expectedHostUrl },
+    },
+    {
+      provider: Provider.YANDEX_METRIKA,
+      externalId: site.metrica.counterId,
+      enabled: site.metrica.enabled,
+      settingsJson: { goalProfile: site.metrica.goalProfile },
+    },
+    {
+      provider: Provider.TOPVISOR,
+      externalId: site.topvisor.projectId === null ? null : String(site.topvisor.projectId),
+      enabled: site.topvisor.enabled,
+      settingsJson: { regionIndex: site.topvisor.regionIndex },
+    },
+  ];
 }
 
 async function readJsonDirectory<T>(relativeDir: string, schema: { parse: (value: unknown) => T }) {
@@ -195,22 +219,34 @@ async function buildChangeSummary(input: {
     }
 
     const desiredSiteSlugs = new Set(client.sites.map((site) => site.siteSlug));
-    const changed =
+    let changed =
       current.name !== client.name ||
       current.organization.name !== client.name ||
       current.status !== projectStatusForClient(client) ||
       current.sites.some((site) => !desiredSiteSlugs.has(site.slug)) ||
       client.sites.some((site) => {
         const row = current.sites.find((candidate) => candidate.slug === site.siteSlug);
-        return (
+        if (
           !row ||
           row.name !== site.name ||
           row.url !== site.siteUrl ||
           row.timezone !== site.timezone ||
           row.enabled !== site.enabled
-        );
+        ) {
+          return true;
+        }
+        return providerRowsForSite(site).some((provider) => {
+          const existing = row.providerConnections.find(
+            (candidate) => candidate.provider === provider.provider,
+          );
+          return (
+            !existing ||
+            existing.externalId !== provider.externalId ||
+            existing.enabled !== provider.enabled ||
+            !sameJson(existing.settingsJson, provider.settingsJson)
+          );
+        });
       });
-    summary[changed ? "UPDATE" : "UNCHANGED"].push(`project:${client.clientSlug}`);
 
     for (const site of current.sites) {
       if (!desiredSiteSlugs.has(site.slug) && site.enabled) {
@@ -221,8 +257,27 @@ async function buildChangeSummary(input: {
     const desiredGoals = input.goalProfiles.find((profile) => profile.clientSlug === client.clientSlug);
     if (desiredGoals) {
       const goalIds = new Set(desiredGoals.goals.map((goal) => goal.goalId));
+      for (const desiredGoal of desiredGoals.goals) {
+        const existing = current.goalDefinitions.find(
+          (goal) => goal.externalGoalId === desiredGoal.goalId,
+        );
+        const currentSiteSlugs =
+          existing?.siteScopes.map((scope) => scope.site.slug).sort() ?? [];
+        const desiredGoalSiteSlugs = [...desiredGoal.siteSlugs].sort();
+        if (
+          !existing ||
+          existing.label !== desiredGoal.label ||
+          existing.category !== goalCategoryToEnum(desiredGoal.category) ||
+          existing.direction !== goalDirectionToEnum(desiredGoal.direction) ||
+          existing.includeInSeoConversion !== desiredGoal.includeInSeoConversion ||
+          !sameJson(currentSiteSlugs, desiredGoalSiteSlugs)
+        ) {
+          changed = true;
+        }
+      }
       for (const goal of current.goalDefinitions) {
         if (!goalIds.has(goal.externalGoalId)) {
+          changed = true;
           summary.DELETE_OR_DISABLE.push(
             `goal-definition:${client.clientSlug}/${goal.externalGoalId}:leave-as-is`,
           );
@@ -238,14 +293,37 @@ async function buildChangeSummary(input: {
       const desiredQueries = new Set(
         desiredSet.queries.map((query) => normalizeTrackedQuery(query.query)),
       );
+      if (
+        !site?.trackedQuerySet ||
+        site.trackedQuerySet.baselineLabel !== desiredSet.baselineLabel ||
+        site.trackedQuerySet.expectedCount !== desiredSet.expectedCount ||
+        desiredSet.queries.some((query) => {
+          const normalized = normalizeTrackedQuery(query.query);
+          const existing = existingQueries.find(
+            (candidate) => candidate.normalizedQuery === normalized,
+          );
+          return (
+            !existing ||
+            existing.query !== query.query ||
+            !existing.enabled ||
+            existing.baselineCurrentPosition !== query.position.current ||
+            existing.baselinePreviousPosition !== query.position.baseline
+          );
+        })
+      ) {
+        changed = true;
+      }
       for (const query of existingQueries) {
         if (!desiredQueries.has(query.normalizedQuery) && query.enabled) {
+          changed = true;
           summary.DELETE_OR_DISABLE.push(
             `tracked-query:${client.clientSlug}/${desiredSet.siteSlug}/${query.id}:disable`,
           );
         }
       }
     }
+
+    summary[changed ? "UPDATE" : "UNCHANGED"].push(`project:${client.clientSlug}`);
   }
 
   return summary;
@@ -415,26 +493,7 @@ async function main() {
 
       siteIdsBySlug[site.siteSlug] = siteRecord.id;
 
-      const providerRows = [
-        {
-          provider: Provider.YANDEX_WEBMASTER,
-          externalId: site.webmaster.expectedHostUrl,
-          enabled: site.webmaster.enabled,
-          settingsJson: { expectedHostUrl: site.webmaster.expectedHostUrl },
-        },
-        {
-          provider: Provider.YANDEX_METRIKA,
-          externalId: site.metrica.counterId,
-          enabled: site.metrica.enabled,
-          settingsJson: { goalProfile: site.metrica.goalProfile },
-        },
-        {
-          provider: Provider.TOPVISOR,
-          externalId: site.topvisor.projectId === null ? null : String(site.topvisor.projectId),
-          enabled: site.topvisor.enabled,
-          settingsJson: { regionIndex: site.topvisor.regionIndex },
-        },
-      ];
+      const providerRows = providerRowsForSite(site);
 
       for (const row of providerRows) {
         await prisma.providerConnection.upsert({
