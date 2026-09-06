@@ -1,6 +1,8 @@
 # ARCHITECTURE
 
-Project Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii`.
+Platform contract: `AMS Application Platform Core 3.4 — Solo Minimal`.
+
+Project Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii`, `DELIVERY = own-saas`, `PLATFORM_ADMIN = enabled`, `DATABASE = self-managed-postgresql`.
 
 ## System context
 
@@ -160,7 +162,7 @@ Repository assets определяют текущий release contract:
 - pre-migration backup + offsite confirmation + isolated restore smoke;
 - automatic code/assets rollback после failed cutover.
 
-Текущие deploy assets используют host networking и host-local PostgreSQL operations. Переход на private Timeweb Managed PostgreSQL остаётся отдельным HEAVY этапом; live provider/network/DB state без server proof не утверждается.
+Текущая topology с host networking и self-managed PostgreSQL 18 является утверждённым project exception. БД не публикует `5432` в Internet; runtime/migrator/backup identities, capacity, backup timers и offsite proof проверяются перед release. Managed PostgreSQL для этого проекта — `NOT_APPLICABLE`.
 
 ## Executable proof
 

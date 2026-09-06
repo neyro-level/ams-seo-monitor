@@ -2,7 +2,7 @@
 
 AMS IMPULSE — публичная страница SEO-продукта АМС и приватный кабинет SEO-отчётности по нескольким проектам и сайтам.
 
-Проект следует `AMS Application Platform Core 3.1`. Фактические runtime-версии и границы определяют package/lockfile, schema, migrations и versioned конфигурация этого repository.
+Проект следует `AMS Application Platform Core 3.4 — Solo Minimal`. Фактические runtime-версии и границы определяют package/lockfile, schema, migrations и versioned конфигурация этого repository.
 
 ## Что делает система
 
@@ -25,7 +25,7 @@ AMS IMPULSE — публичная страница SEO-продукта АМС 
 
 ## Архитектура
 
-Project Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii` — ограниченные account и operational PII без CRM-хранилища заявок.
+Project Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii`, `DELIVERY = own-saas`, `PLATFORM_ADMIN = enabled`, `DATABASE = self-managed-postgresql`. Self-managed PostgreSQL — утверждённый project contract, а не временный этап переезда.
 
 ```text
 Browser
@@ -173,7 +173,10 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md);
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md);
 - [`docs/SECURITY.md`](docs/SECURITY.md);
-- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md).
+- [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md);
+- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md);
+- [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md);
+- [`docs/PLATFORM_CONFORMANCE.md`](docs/PLATFORM_CONFORMANCE.md).
 
 Профильные документы:
 
@@ -181,7 +184,6 @@ Merge и production deploy выполняются только отдельно�
 - [`docs/DATABASE.md`](docs/DATABASE.md);
 - [`docs/AUTH.md`](docs/AUTH.md);
 - [`docs/WORKER.md`](docs/WORKER.md);
-- [`docs/RUNBOOK_DEPLOY.md`](docs/RUNBOOK_DEPLOY.md);
 - [`docs/SITE_REPORT_IA.md`](docs/SITE_REPORT_IA.md);
 - [`docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`](docs/EXTERNAL_SITE_DESIGN_SYSTEM.md);
 - [`docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md);

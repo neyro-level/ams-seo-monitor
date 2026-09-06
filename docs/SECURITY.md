@@ -1,6 +1,6 @@
 # SECURITY
 
-Документ описывает актуальную security boundary canonical `main`. PrincipalContext, AMS-owned tenancy, 2FA, scopedDb и container release contract реализованы; фактический production proof подтверждается только release evidence. Новая работа следует Application Platform Core 3.1.
+Документ описывает актуальную security boundary canonical `main`. PrincipalContext, AMS-owned tenancy, 2FA, scopedDb и container release contract реализованы; фактический production proof подтверждается только release evidence. Новая работа следует Application Platform Core 3.4.
 
 ## Модель безопасности
 
@@ -223,4 +223,4 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - backup upload confirmation и isolated restore smoke;
 - web/worker env separation.
 
-Auth, roles, PII, provider credentials, Nginx, DB, backup и release changes требуют HEAVY review.
+Auth, roles, PII, provider credentials, Nginx, DB, backup и release changes классифицируются `RISKY` и требуют профильный exact-head proof перед merge.

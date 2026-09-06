@@ -10,7 +10,7 @@ Unregistered arbitrary jobs, Redis/broker, HTTP inside DB transaction, secrets/r
 
 ## Data ownership
 
-AuditEvent, IdempotencyKey, OutboxEvent, JobRun and RetentionRun.
+AuditEvent, IdempotencyKey, OutboxEvent, JobRun, RuntimeHeartbeat and RetentionRun.
 
 ## Principal types
 
@@ -40,6 +40,8 @@ Versioned bounded payload, safe error code, correlationId, timestamps and counts
 - runtime pg-boss does not perform schema DDL;
 - retries are bounded; permanent/exhausted failure becomes DEAD_LETTER;
 - application OutboxEvent/JobRun remain business delivery truth.
+- successful `send()` completes dispatch even when it returns null for a duplicate; no immediate arbitrary fetch follows send;
+- readiness uses only the throttled persistent outbox-worker heartbeat for worker liveness.
 
 ## Tenant behavior
 
@@ -67,7 +69,7 @@ Enqueue and admin retry write safe markers. Payload and error redaction is manda
 
 ## Events / Async policy
 
-Current topic: `project.sync.requested`. Outbox is persisted in business transaction; persistent worker publishes to pg-boss and invokes handler outside transaction.
+Current topic: `project.sync.requested`. Outbox is persisted in business transaction; persistent worker publishes with `singletonKey = outboxEventId`, and the later handler reads only `job.data.event` outside transaction.
 
 ## Integrations
 

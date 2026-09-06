@@ -6,14 +6,14 @@ PostgreSQL — единственный runtime source of truth AMS IMPULSE. Pri
 
 ## Топология
 
-Current repository release contract:
+Approved production contract:
 
 - PostgreSQL `18.x` доступен production processes через Linux host networking;
 - host-local deployment expects loopback/Unix-socket administration and no public `5432`;
 - app, test, migration and backup credentials are separated;
-- exact live host/database/version remain unverified until server proof.
+- exact live host/database/version are confirmed only by read-only server proof before release.
 
-Canonical target is private Timeweb Managed PostgreSQL 18 with TLS. Repository assets do not yet prove that topology; migration is tracked in `docs/MASTER_PLAN.md`.
+Self-managed PostgreSQL 18 is an approved project exception under Core 3.4. Managed PostgreSQL is `NOT_APPLICABLE`; no migration plan is required.
 
 Фактический host/port/database name берётся из protected environment, не из browser или checked-in config.
 
@@ -56,7 +56,7 @@ Prisma migrations own application schema history. pg-boss schema lifecycle is se
 - credentials exist only in ignored `.env.local`;
 - named volume survives normal stop/start;
 - integration runner rejects a database name without `_test`, then generates Prisma client, applies migrations, runs only synthetic test bootstrap and executes DB suites;
-- SourceCraft cloud gate пока не поднимает PostgreSQL: real integration proof выполняется operator HEAVY на isolated Docker DB и фиксируется перед merge.
+- SourceCraft `risky-check` поднимает isolated PostgreSQL для профильных DB/auth/tenant/worker checks перед merge.
 
 Runbook: `docs/ops/LOCAL_DEVELOPMENT.md`.
 

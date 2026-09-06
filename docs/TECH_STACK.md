@@ -1,6 +1,6 @@
 # TECH STACK
 
-Таблица ниже описывает фактический runtime canonical `main` по `package.json`, lockfile, `.node-version` и release assets. Platform contract — Application Platform Core 3.1.
+Таблица ниже описывает фактический runtime canonical `main` по `package.json`, lockfile, `.node-version` и release assets. Platform contract — Application Platform Core 3.4; TypeScript `6.0.3` зафиксирован как project exception в ADR-001.
 
 ## Source of truth
 
