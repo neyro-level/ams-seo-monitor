@@ -10,11 +10,6 @@
 - удалить прежние client paths и content signatures из всего достижимого object graph;
 - подтвердить exact-SHA equality очищенных mirrors; до этого GitHub остаётся private.
 
-### Security и architecture cleanup
-
-- разделить Platform Admin forms/actions по bounded resources;
-- удалить пустые модули без создания generic framework.
-
 ### DateTime и compatibility contracts
 
 - зафиксировать смысл/timezone/UTC proof каждого DateTime в `DATA_MODEL.md`;

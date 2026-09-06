@@ -9,7 +9,7 @@ Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform A
 | Guarantee | State | Current evidence / gap |
 |---|---|---|
 | Project profile and docs canon | IMPLEMENTED | README, AGENTS, ARCHITECTURE, ADR-001, ENVIRONMENT |
-| Modular monolith and import boundaries | IMPLEMENTED | module entrypoints, Dependency Cruiser, static architecture guard |
+| Modular monolith and import boundaries | IMPLEMENTED | module entrypoints, Dependency Cruiser, static guard and bounded Platform Admin resource adapters |
 | PostgreSQL/Prisma source of truth | IMPLEMENTED | Prisma 7 schema, immutable migrations, repository boundaries |
 | Self-managed PostgreSQL 18 | APPROVED_PROJECT_EXCEPTION | approved in ADR-001; live topology audited before release |
 | Managed PostgreSQL | NOT_APPLICABLE | no migration target or backlog |

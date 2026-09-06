@@ -1,50 +1,8 @@
-"use server";
-
-import { defineAction } from "../../platform/actions/define-action.ts";
-import type { PrincipalContext } from "../../platform/authorization/principal.ts";
-import { IdentityAdminError } from "../../modules/identity-access/contracts.ts";
-import {
-  createMembership,
-  createOrganization,
-  removeMembership,
-  updateMembership,
-  updateOrganization,
-} from "../../modules/identity-access/server.ts";
-import {
-  PlatformOperationsAdminError,
-  type RequestProjectSyncInput,
-} from "../../modules/platform-operations/contracts.ts";
-import { requestProjectSync } from "../../modules/platform-operations/server.ts";
-import {
-  ProjectRegistryAdminError,
-  type CreateGoalDefinitionInput,
-  type CreateProviderConnectionInput,
-  type CreateQueryClusterProfileInput,
-  type CreateSiteInput,
-  type CreateThresholdProfileInput,
-  type CreateTrackedQuerySetInput,
-  type UpdateGoalDefinitionInput,
-  type UpdateProviderConnectionInput,
-  type UpdateQueryClusterProfileInput,
-  type UpdateSiteInput,
-  type UpdateThresholdProfileInput,
-  type UpdateTrackedQuerySetInput,
-} from "../../modules/project-registry/contracts.ts";
-import {
-  saveGoalDefinition,
-  saveProviderConnection,
-  saveQueryClusterProfile,
-  saveSite,
-  saveThresholdProfile,
-  saveTrackedQuerySet,
-} from "../../modules/project-registry/server.ts";
-import type {
-  CreateMembershipInput,
-  CreateOrganizationInput,
-  RemoveMembershipInput,
-  UpdateMembershipInput,
-  UpdateOrganizationInput,
-} from "../../modules/identity-access/contracts.ts";
+import { IdentityAdminError } from "../../../modules/identity-access/contracts.ts";
+import { PlatformOperationsAdminError } from "../../../modules/platform-operations/contracts.ts";
+import { ProjectRegistryAdminError } from "../../../modules/project-registry/contracts.ts";
+import { defineAction } from "../../../platform/actions/define-action.ts";
+import type { PrincipalContext } from "../../../platform/authorization/principal.ts";
 
 function mapError(error: unknown) {
   const code =
@@ -95,13 +53,10 @@ function mapError(error: unknown) {
     PROJECT_SYNC_INVALID_SCOPE: "Проект недоступен для этого действия.",
   };
 
-  return {
-    code,
-    message: messages[code] ?? "Не удалось сохранить изменения.",
-  };
+  return { code, message: messages[code] ?? "Не удалось сохранить изменения." };
 }
 
-function platformAdminAction<TInput, TResult>(
+export function platformAdminAction<TInput, TResult>(
   resource: string,
   execute: (principal: PrincipalContext, input: TInput) => Promise<TResult>,
 ) {
@@ -118,22 +73,3 @@ function platformAdminAction<TInput, TResult>(
     ],
   });
 }
-
-export const createOrganizationAction = platformAdminAction<CreateOrganizationInput, Awaited<ReturnType<typeof createOrganization>>>("organizations", createOrganization);
-export const updateOrganizationAction = platformAdminAction<UpdateOrganizationInput, Awaited<ReturnType<typeof updateOrganization>>>("organizations", updateOrganization);
-export const createMembershipAction = platformAdminAction<CreateMembershipInput, Awaited<ReturnType<typeof createMembership>>>("memberships", createMembership);
-export const updateMembershipAction = platformAdminAction<UpdateMembershipInput, Awaited<ReturnType<typeof updateMembership>>>("memberships", updateMembership);
-export const removeMembershipAction = platformAdminAction<RemoveMembershipInput, Awaited<ReturnType<typeof removeMembership>>>("memberships", removeMembership);
-export const createSiteAction = platformAdminAction<CreateSiteInput, Awaited<ReturnType<typeof saveSite>>>("sites", saveSite);
-export const updateSiteAction = platformAdminAction<UpdateSiteInput, Awaited<ReturnType<typeof saveSite>>>("sites", saveSite);
-export const createProviderConnectionAction = platformAdminAction<CreateProviderConnectionInput, Awaited<ReturnType<typeof saveProviderConnection>>>("providers", saveProviderConnection);
-export const updateProviderConnectionAction = platformAdminAction<UpdateProviderConnectionInput, Awaited<ReturnType<typeof saveProviderConnection>>>("providers", saveProviderConnection);
-export const createGoalDefinitionAction = platformAdminAction<CreateGoalDefinitionInput, Awaited<ReturnType<typeof saveGoalDefinition>>>("goals", saveGoalDefinition);
-export const updateGoalDefinitionAction = platformAdminAction<UpdateGoalDefinitionInput, Awaited<ReturnType<typeof saveGoalDefinition>>>("goals", saveGoalDefinition);
-export const createTrackedQuerySetAction = platformAdminAction<CreateTrackedQuerySetInput, Awaited<ReturnType<typeof saveTrackedQuerySet>>>("tracked-queries", saveTrackedQuerySet);
-export const updateTrackedQuerySetAction = platformAdminAction<UpdateTrackedQuerySetInput, Awaited<ReturnType<typeof saveTrackedQuerySet>>>("tracked-queries", saveTrackedQuerySet);
-export const createThresholdProfileAction = platformAdminAction<CreateThresholdProfileInput, Awaited<ReturnType<typeof saveThresholdProfile>>>("profiles", saveThresholdProfile);
-export const updateThresholdProfileAction = platformAdminAction<UpdateThresholdProfileInput, Awaited<ReturnType<typeof saveThresholdProfile>>>("profiles", saveThresholdProfile);
-export const createQueryClusterProfileAction = platformAdminAction<CreateQueryClusterProfileInput, Awaited<ReturnType<typeof saveQueryClusterProfile>>>("profiles", saveQueryClusterProfile);
-export const updateQueryClusterProfileAction = platformAdminAction<UpdateQueryClusterProfileInput, Awaited<ReturnType<typeof saveQueryClusterProfile>>>("profiles", saveQueryClusterProfile);
-export const requestProjectSyncAction = platformAdminAction<RequestProjectSyncInput, Awaited<ReturnType<typeof requestProjectSync>>>("operations", requestProjectSync);
