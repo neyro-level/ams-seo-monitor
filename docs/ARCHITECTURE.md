@@ -167,8 +167,9 @@ Repository assets определяют текущий release contract:
 - `pnpm test:unit` — domain/contracts;
 - `pnpm test:integration` — fail-closed real PostgreSQL;
 - `pnpm test:e2e` — standalone/browser flows;
-- `pnpm verify:fast` — local FAST;
-- `pnpm verify:heavy` — integration/build/E2E;
-- SourceCraft `merge-fast` и `merge-heavy` проверяют exact requested SHA; heavy поднимает PostgreSQL 18 и выполняет `verify:heavy`.
+- `pnpm verify:quick` — постоянная дешёвая проверка;
+- `pnpm verify:risky` — unit, security integration subset и build для auth/data/tenant/worker/CI/deploy;
+- `pnpm verify:daily` — полный integration/E2E/security набор один раз ночью;
+- SourceCraft `risky-check` и `release-check` проверяют exact requested SHA; обычный PR выполняет только `verify:quick`.
 
 Локальный PASS не заменяет SourceCraft exact-head gate. Production release требует отдельного live proof по `docs/RUNBOOK_DEPLOY.md`.

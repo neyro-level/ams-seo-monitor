@@ -8,7 +8,7 @@
 - `PrincipalContext`, AMS Membership, 2FA, tenant ownership, scopedDb, composite constraints и optimistic concurrency реализованы для новых и мигрированных путей;
 - Project Registry и Platform Admin mutations используют typed actions/commands и atomic AuditEvent;
 - OutboxEvent → pg-boss → idempotent handler работает через постоянный worker container;
-- SourceCraft имеет `pr-check`, exact-head `merge-fast` и PostgreSQL-backed `merge-heavy`;
+- SourceCraft имеет дешёвый `pr-check`, exact-head `risky-check`, nightly `daily` и release-only `release-check`;
 - production topology и live release state не считаются подтверждёнными без отдельного server/live proof.
 
 ## Активный technical debt
