@@ -72,7 +72,7 @@ const projects: StoredProjectRecord[] = [
         organizationId: "org-west",
         projectSlug: "beta",
         siteSlug: "west",
-        name: "Запад-на-Дону",
+        name: "Запад",
         url: "https://todo.invalid/west",
         timezone: "+03:00",
         enabled: false,

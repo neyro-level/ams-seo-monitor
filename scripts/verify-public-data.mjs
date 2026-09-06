@@ -42,9 +42,15 @@ const trackedFiles = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" 
   .split("\0")
   .filter(Boolean);
 const violations = new Set();
+const signatureCache = new Map();
 
 function signature(value) {
-  return createHash("sha256").update(value.toLocaleLowerCase("und"), "utf8").digest("hex");
+  const normalized = value.toLocaleLowerCase("und");
+  const cached = signatureCache.get(normalized);
+  if (cached) return cached;
+  const calculated = createHash("sha256").update(normalized, "utf8").digest("hex");
+  signatureCache.set(normalized, calculated);
+  return calculated;
 }
 
 function inspectCandidate(file, candidate) {
