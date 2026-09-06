@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { isPlatformAdminTwoFactorRequired } from "../src/platform/auth/two-factor-policy.ts";
 import {
+  CabinetPrincipalError,
+  requireCabinetPrincipalFromState,
+} from "../src/platform/auth/principal-session.ts";
+import {
   getPrincipalPermissions,
   hasPermission,
   isTenantPrincipal,
@@ -80,5 +84,32 @@ describe("PrincipalContext", () => {
     expect(
       isPlatformAdminTwoFactorRequired({ NODE_ENV: "production", AMS_E2E_TEST: "true" }),
     ).toBe(false);
+  });
+
+  it("enforces completed password onboarding and production admin 2FA", () => {
+    expect(() =>
+      requireCabinetPrincipalFromState(
+        { principal: admin, mustChangePassword: true, twoFactorEnabled: false },
+        { NODE_ENV: "production" },
+      ),
+    ).toThrow(new CabinetPrincipalError("PASSWORD_ONBOARDING_REQUIRED"));
+    expect(() =>
+      requireCabinetPrincipalFromState(
+        { principal: admin, mustChangePassword: false, twoFactorEnabled: false },
+        { NODE_ENV: "production" },
+      ),
+    ).toThrow(new CabinetPrincipalError("TWO_FACTOR_REQUIRED"));
+    expect(
+      requireCabinetPrincipalFromState(
+        { principal: admin, mustChangePassword: false, twoFactorEnabled: true },
+        { NODE_ENV: "production" },
+      ),
+    ).toBe(admin);
+    expect(
+      requireCabinetPrincipalFromState(
+        { principal: viewer, mustChangePassword: false, twoFactorEnabled: false },
+        { NODE_ENV: "production" },
+      ),
+    ).toBe(viewer);
   });
 });

@@ -65,6 +65,8 @@ Until password onboarding completes, private cabinet routes redirect to `/onboar
 
 `PLATFORM_ADMIN` has TOTP enrollment at `/onboarding/two-factor/`. The production policy requires 2FA before cabinet access. `AMS_E2E_TEST=true` is local Playwright-only test isolation and must never be set in production runtime.
 
+Каждая Server Action кабинета проходит `requireCurrentCabinetPrincipal()`: Better Auth session перечитывается без cookie cache, AMS User должен быть активен, password onboarding завершён, а production Platform Admin иметь включённую 2FA. Better Auth 1.7.2 выдаёт credential session только после успешного второго фактора, поэтому свежая session вместе с `twoFactorEnabled` является session-level proof.
+
 Two-factor plugin schema:
 
 - `User.twoFactorEnabled`;
