@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 
 const rootDir = path.resolve(import.meta.dirname, "..");
 const localEnvPath = path.join(rootDir, ".env.local");
+const requestedTestFiles = process.argv.slice(2);
 
 if (!process.env.TEST_DATABASE_NAME && existsSync(localEnvPath)) {
   process.loadEnvFile(localEnvPath);
@@ -44,4 +45,5 @@ runNodeScript("node_modules/vitest/vitest.mjs", [
   "run",
   "--config",
   "vitest.integration.config.mts",
+  ...requestedTestFiles,
 ]);
