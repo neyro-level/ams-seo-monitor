@@ -205,6 +205,8 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 
 ## Проверки security-scope
 
+Локальный статический security-профиль запускается командой `pnpm security:semgrep`. Он использует небольшой checked-in набор AMS-правил, не загружает внешний ruleset и не входит в обязательный CI. Production dependency audit запускается отдельно командой `pnpm security:dependencies`, потому что его результат зависит от актуального advisory registry.
+
 - platform-admin/analyst/client/disabled-user capability matrix;
 - fresh memberships и active organization validation;
 - foreign project/site/report denial;
