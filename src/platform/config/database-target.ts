@@ -34,11 +34,26 @@ function resolveEnvironment(
   env: EnvironmentSource,
   database: string,
 ): DatabaseTargetEnvironment {
-  const declared = env.APP_ENV?.trim() || env.NODE_ENV?.trim();
-  if (declared === "production" || declared === "test" || declared === "development") {
-    return declared;
+  const applicationEnvironment = env.APP_ENV?.trim();
+  if (
+    applicationEnvironment === "production" ||
+    applicationEnvironment === "test" ||
+    applicationEnvironment === "development"
+  ) {
+    return applicationEnvironment;
   }
-  return database.endsWith("_test") ? "test" : "development";
+  if (database.endsWith("_test")) {
+    return "test";
+  }
+  const nodeEnvironment = env.NODE_ENV?.trim();
+  if (
+    nodeEnvironment === "production" ||
+    nodeEnvironment === "test" ||
+    nodeEnvironment === "development"
+  ) {
+    return nodeEnvironment;
+  }
+  return "development";
 }
 
 export function inspectDatabaseTarget(env: EnvironmentSource): DatabaseTargetSummary {

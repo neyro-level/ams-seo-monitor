@@ -40,7 +40,6 @@ describe("platform environment contracts", () => {
 
   it("enforces isolated database names and identities", () => {
     const testTarget = inspectDatabaseTarget({
-      APP_ENV: "test",
       NODE_ENV: "production",
       DATABASE_URL: "postgresql://seo_monitor_test:secret@127.0.0.1:55432/seo_monitor_test",
     });
@@ -58,6 +57,7 @@ describe("platform environment contracts", () => {
     expect(() =>
       inspectDatabaseTarget({
         APP_ENV: "production",
+        NODE_ENV: "production",
         DATABASE_URL: "postgresql://seo_monitor_test:secret@db.internal/seo_monitor",
       }),
     ).toThrow("production cannot use a test or development identity");
