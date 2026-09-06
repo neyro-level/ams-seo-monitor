@@ -1,72 +1,79 @@
 # MASTER PLAN
 
-## Проверенное состояние repository
+Только незавершённая работа. Выполненные этапы и прежние планы не хранятся здесь — их история остаётся в Git/SourceCraft.
 
-- Application Platform Core 3.1, profile `multi-tenant / outbox-plus-queue / pii`;
-- Next.js standalone web и compiled worker собираются из одного OCI image;
-- PostgreSQL/Prisma — единственный runtime source of truth;
-- `PrincipalContext`, AMS Membership, 2FA, tenant ownership, scopedDb, composite constraints и optimistic concurrency реализованы для новых и мигрированных путей;
-- Project Registry и Platform Admin mutations используют typed actions/commands и atomic AuditEvent;
-- OutboxEvent → pg-boss → idempotent handler работает через постоянный worker container;
-- SourceCraft имеет дешёвый `pr-check`, exact-head `risky-check`, nightly `daily` и release-only `release-check`;
-- production topology и live release state не считаются подтверждёнными без отдельного server/live proof.
+## Platform contract completion
 
-## Активный technical debt
+### Database target guard
 
-### 1. PrincipalContext clean cutover
+- убрать placeholder datasource из `prisma.config.ts`;
+- разрешить `prisma generate` без DB и fail closed для DB-команд без explicit target;
+- разделить production/local/test identities и безопасно показывать только target summary.
 
-- перевести оставшиеся report/project/navigation reads с `ActorContext` на `PrincipalContext`;
-- удалить ActorContext facade и его tests только после полного affected-callsite proof;
-- не расширять compatibility API новыми сценариями.
+### PrincipalContext clean cutover
 
-### 2. Auth schema contract cleanup
+- перевести оставшиеся report/project/navigation/layout/demo reads;
+- сохранить текущие permission и tenant semantics;
+- удалить `ActorContext` facade, exports, helpers и tests; запретить новый import механически.
 
-- подтвердить отсутствие runtime-зависимости от `Session.activeOrganizationId`, `Member.role` и `Invitation`;
-- выполнить removal только новой compatibility-first migration;
-- перед contract migration проверить backup/restore и production data shape.
+### Setup token и auth recovery
 
-### 3. Production database topology
+- заменить основной временный пароль одноразовым setup-token flow;
+- хранить только SHA-256 token hash, expiry/used/revoked и creator metadata;
+- использовать Better Auth backup codes для 2FA recovery без public reset и ENV bypass.
 
-- repository deploy assets сейчас используют Linux host networking и host-local PostgreSQL operations;
-- canonical target — private Timeweb Managed PostgreSQL 18 с TLS и разделёнными runtime/migrator identities;
-- переход требует отдельного HEAVY scope: provider capabilities, network/TLS, backup path, connection budget, migration rehearsal, rollback и live proof;
-- до такого решения документация не утверждает, что Managed PostgreSQL уже подключён.
+### Public-data sanitation
 
-### 4. UI token normalization
+- оставить в repository только synthetic examples/fixtures;
+- удалить реальные operator configs/snapshots и запретить известные client markers verifier-ом;
+- после закрытия PR переписать целевые Git refs и проверить весь достижимый object graph.
 
-- проверить private routes на единое использование `crm-*` tokens;
-- унифицировать заголовки, таблицы и actions без изменения data/auth/report contracts;
-- подтвердить `375 / 768 / 1280 / 1440`.
+### Security и architecture cleanup
 
-## Следующие продуктовые этапы
+- расширить nested Pino redaction и подтвердить Better Auth rate limits фактических endpoint names;
+- разделить Platform Admin forms/actions по bounded resources;
+- удалить пустые модули без создания generic framework.
 
-### SZ REDACTED_CLIENT_DATA onboarding
+### DateTime и compatibility contracts
+
+- зафиксировать смысл/timezone/UTC proof каждого DateTime в `DATA_MODEL.md`;
+- менять на `timestamptz` только доказанные UTC-поля отдельной migration;
+- после compatibility Release A доказать нулевое использование legacy auth columns/tables и удалить их новой migration.
+
+## Product backlog
+
+### New tenant onboarding
 
 - зарегистрировать organization/project/sites и memberships;
-- подтвердить provider mappings и read-only access;
-- выполнить первый sync и проверить четыре report periods;
-- доказать tenant isolation без публикации credentials.
+- подтвердить read-only provider mappings/access;
+- выполнить первый sync, четыре report periods и tenant-isolation proof без публикации credentials.
 
 ### Analyst detail views
 
-- добавить диагностические представления поверх существующих snapshots;
-- сохранить server-side filtering, bounded pagination и browser-safe DTO;
-- не создавать второй report compiler или browser-provider path.
+- добавить bounded diagnostic views поверх существующих snapshots;
+- сохранить server filtering/pagination и browser-safe DTO;
+- не создавать второй report compiler.
 
-### Topvisor activation
+### Optional Topvisor activation
 
 - включать только после подтверждения project/region mapping и API access;
 - отсутствие данных не маскировать как нулевые позиции;
-- paid rank checks и provider mutations остаются запрещены.
+- paid checks и provider mutations оставить запрещёнными.
 
 ### Availability and freshness monitoring
 
-- внешний monitor только public health/landing;
-- alerts по stale integration data и worker/queue degradation;
+- внешний monitor ограничить public health/landing;
+- alert-ить stale integration data и worker/queue degradation;
 - readiness body, PII и provider tokens наружу не передавать.
 
-## Порядок выполнения
+### Private UI normalization
 
-Каждый независимый этап: отдельная branch/worktree от актуального `origin/main` → scoped proof → PR → review → exact-head FAST/HEAVY gate. Production выполняется только отдельной owner-командой по `docs/RUNBOOK_DEPLOY.md`.
+- привести private routes к общим `crm-*` tokens и одинаковым table/action patterns;
+- сохранить data/auth/report contracts;
+- подтвердить `375 / 768 / 1280 / 1440`.
 
-Завершённый пункт удаляется из этого файла. Реализованная история остаётся только в Git/SourceCraft.
+## Release boundary
+
+До production: final conformance audit → exact-head `release-check` → backup/checksum/offsite proof → isolated restore smoke → reviewed migrations → immutable image exact SHA → live auth/tenant/outbox/heartbeat/sync proof.
+
+Managed PostgreSQL: `NOT_APPLICABLE`. Действующий contract — self-managed PostgreSQL; topology/roles/backups проверяются read-only перед финальным release.

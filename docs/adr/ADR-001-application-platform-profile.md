@@ -10,10 +10,14 @@ AMS IMPULSE совмещает публичный SEO-лендинг, прива
 
 ## Решение
 
-- platform contract: `AMS Application Platform Core 3.1`;
+- platform contract: `AMS Application Platform Core 3.4 — Solo Minimal`;
 - `TENANCY = multi-tenant`;
 - `ASYNC = outbox-plus-queue`;
 - `DATA = pii`;
+- `DELIVERY = own-saas`;
+- `PLATFORM_ADMIN = enabled`;
+- `DATABASE = self-managed-postgresql`;
+- project runtime retains exact TypeScript `6.0.3` as an approved project exception to the Core 3.4 default line; downgrade has no product or safety benefit;
 - архитектура: один modular monolith на Next.js, отдельные web/worker процессы из одного OCI image;
 - data owner: PostgreSQL + Prisma, без второго ORM или runtime storage;
 - auth owner: Better Auth для identity/session/2FA, AMS для Membership, permissions и resource authorization;
@@ -29,7 +33,8 @@ AMS IMPULSE совмещает публичный SEO-лендинг, прива
 - Platform Admin не получает фиктивный tenant и обязан использовать 2FA в production;
 - applied migrations неизменяемы, production использует только `prisma migrate deploy`;
 - release привязан к exact reviewed SHA и immutable image;
-- текущая host-local PostgreSQL topology не считается подтверждённой Managed PostgreSQL topology; такой переход требует отдельного HEAVY scope и live proof.
+- self-managed PostgreSQL 18 — утверждённая production topology: private listener, separate runtime/migrator/backup boundaries, offsite backup и restore proof обязательны;
+- перенос на Managed PostgreSQL не планируется и не является conformance gap.
 
 ## Критерий пересмотра
 
