@@ -117,7 +117,8 @@ Docker PostgreSQL слушает только `127.0.0.1`, использует 
 Operator provisioning поддерживает `PLATFORM_ADMIN`, `SEO_ANALYST` и `CLIENT_VIEWER`:
 
 ```bash
-<secret-provider> | pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN
+pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN --created-by <operator-id>
+pnpm user:revoke-setup-token -- --token-id <id>
 pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
 ```
 

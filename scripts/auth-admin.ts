@@ -1,14 +1,18 @@
 import { MembershipRole, SystemRole } from "../src/generated/prisma/client.ts";
 import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
 import { randomUUID } from "node:crypto";
-import { stdin } from "node:process";
-import { createLocalAccountIssuer } from "better-auth/db";
 import { hashPassword } from "better-auth/crypto";
 import { parseSystemRole } from "../src/modules/identity-access/index.ts";
+import {
+  createUserSetupToken,
+  getUserSetupTokenExpiry,
+  hashUserSetupToken,
+} from "../src/platform/auth/setup-token.ts";
 
 type AuthAdminCommand =
   | "create"
   | "disable"
+  | "revoke-setup-token"
   | "set-system-role"
   | "add-to-organization"
   | "remove-from-organization";
@@ -75,29 +79,6 @@ async function findUserByUsername(username: string) {
   return user;
 }
 
-async function readPasswordFromStdin() {
-  if (stdin.isTTY) {
-    throw new Error("Password must be provided through bounded stdin, never argv");
-  }
-
-  const chunks: Buffer[] = [];
-  let totalBytes = 0;
-  for await (const chunk of stdin) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    totalBytes += buffer.length;
-    if (totalBytes > 1024) {
-      throw new Error("Password input exceeds 1024 bytes");
-    }
-    chunks.push(buffer);
-  }
-
-  const password = Buffer.concat(chunks).toString("utf8").replace(/\r?\n$/, "");
-  if (!/^\d{8}$/.test(password)) {
-    throw new Error("Password must contain exactly 8 digits");
-  }
-  return password;
-}
-
 function parseTenantRole(value: string | undefined): MembershipRole {
   if (!value || value === "VIEWER") return MembershipRole.VIEWER;
   if (value === "ORG_OWNER") return MembershipRole.ORG_OWNER;
@@ -109,10 +90,10 @@ async function createUser() {
   const username = requireUsername();
   const email = (options.email ?? `${username}@users.impulse.invalid`).toLowerCase();
   const name = requireOption("name");
+  const createdBy = requireOption("created-by");
   if (options.password !== undefined) {
-    throw new Error("--password is forbidden; provide the password through stdin");
+    throw new Error("--password is forbidden; user:create issues a one-time setup token");
   }
-  const password = await readPasswordFromStdin();
   const systemRole = parseSystemRole(options["system-role"] ?? SystemRole.CLIENT_VIEWER);
   const existingUser = await prisma.user.findFirst({
     where: {
@@ -125,7 +106,9 @@ async function createUser() {
   }
 
   const userId = randomUUID();
-  const passwordHash = await hashPassword(password);
+  const rawSetupToken = createUserSetupToken();
+  const setupTokenId = randomUUID();
+  const expiresAt = getUserSetupTokenExpiry();
 
   await prisma.$transaction([
     prisma.user.create({
@@ -139,19 +122,34 @@ async function createUser() {
         mustChangePassword: true,
       },
     }),
-    prisma.account.create({
+    prisma.userSetupToken.create({
       data: {
-        id: randomUUID(),
+        id: setupTokenId,
         userId,
-        providerId: "credential",
-        issuer: createLocalAccountIssuer("credential"),
-        accountId: userId,
-        password: passwordHash,
+        tokenHash: hashUserSetupToken(rawSetupToken),
+        expiresAt,
+        createdBy,
       },
     }),
   ]);
 
   console.log(`created_user=${username}`);
+  console.log(`setup_token_id=${setupTokenId}`);
+  console.log(`setup_path=/setup/#${rawSetupToken}`);
+  console.log(`setup_expires_at=${expiresAt.toISOString()}`);
+}
+
+async function revokeSetupToken() {
+  const tokenId = requireOption("token-id");
+  const revokedAt = new Date();
+  const result = await prisma.userSetupToken.updateMany({
+    where: { id: tokenId, usedAt: null, revokedAt: null },
+    data: { revokedAt },
+  });
+  if (result.count !== 1) {
+    throw new Error("Setup token not found or already unavailable");
+  }
+  console.log(`revoked_setup_token=${tokenId}`);
 }
 
 async function disableUser() {
@@ -261,6 +259,9 @@ async function main() {
       return;
     case "disable":
       await disableUser();
+      return;
+    case "revoke-setup-token":
+      await revokeSetupToken();
       return;
     case "set-system-role":
       await setSystemRole();

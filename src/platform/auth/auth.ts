@@ -8,6 +8,7 @@ import {
   readAuthEnvironment,
 } from "../config/server-environment.ts";
 import { getPrismaClient } from "../database/prisma/client.ts";
+import { userSetupTokenPlugin } from "./setup-token-plugin.ts";
 
 const authEnvironment = readAuthEnvironment();
 
@@ -36,6 +37,7 @@ export const auth =
           maxPasswordLength: 128,
         },
         plugins: [
+          userSetupTokenPlugin(),
           username({
             displayUsername: false,
             immutableUsername: true,

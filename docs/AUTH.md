@@ -59,9 +59,11 @@ Permission answers whether an action class is permitted. Module resource authori
 
 ## First password and 2FA
 
-`user:create` creates `mustChangePassword=true`.
+`user:create` creates a user without a credential account and issues a 32-byte one-time setup token. PostgreSQL stores only its SHA-256 hash, 24-hour expiry, used/revoked timestamps and explicit operator identity. The CLI prints the raw token once as `/setup/#<token>`; the URL fragment is removed by the browser before submission and is never sent in an HTTP request or access-log path.
 
-Until password onboarding completes, private cabinet routes redirect to `/onboarding/password/`. Password change uses Better Auth; a server-owned `defineCommand` then clears the onboarding flag, revokes other sessions through Better Auth and writes `AuditEvent`.
+The server-only Better Auth setup endpoint applies the installed password policy and Better Auth password hashing. Credential account creation, atomic token consumption, `mustChangePassword=false` and a token-free `AuditEvent` commit in one database transaction. Expired, revoked, replayed, disabled-user and already-provisioned tokens return the same safe failure.
+
+`/onboarding/password/` remains only for existing compatibility users who already have a temporary credential. Until onboarding completes, private cabinet routes stay blocked.
 
 `PLATFORM_ADMIN` has TOTP enrollment at `/onboarding/two-factor/`. The production policy requires 2FA before cabinet access. `AMS_E2E_TEST=true` is local Playwright-only test isolation and must never be set in production runtime.
 
@@ -74,17 +76,20 @@ Two-factor plugin schema:
 - encrypted `backupCodes`;
 - verification and account-lockout state.
 
+Better Auth backup codes are the only supported 2FA recovery path. Each code is single-use. Public password reset, public 2FA reset and environment bypass are not configured.
+
 ## Provisioning commands
 
 ```bash
-<secret-provider> | pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN
+pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN --created-by <operator-id>
+pnpm user:revoke-setup-token -- --token-id <id>
 pnpm user:disable -- --username <name>
 pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
 pnpm user:add-to-organization -- --username <name> --organization <slug> --tenant-role VIEWER
 pnpm user:remove-from-organization -- --username <name> --organization <slug>
 ```
 
-Passwords use bounded stdin, never argv. `--tenant-role` accepts `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
+The setup token is emitted once to stdout and is never accepted through argv. `--tenant-role` accepts `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
 
 ## Current schema contract
 
@@ -102,6 +107,8 @@ Passwords use bounded stdin, never argv. `--tenant-role` accepts `ORG_OWNER`, `O
 - `src/platform/authorization/principal.ts` — discriminated types and permissions;
 - `src/platform/authorization/principal-factories.ts` — server factories;
 - `src/platform/auth/complete-password-onboarding.ts` — audited onboarding command;
+- `src/platform/auth/setup-token-plugin.ts` — server-only Better Auth setup endpoint;
+- `src/app/setup/*` — one-time password setup surface;
 - `src/app/onboarding/*` — first-password and TOTP surfaces;
 - `src/modules/identity-access/domain/system-role.ts` — bounded parser для operator CLI roles, без отдельной permission model.
 

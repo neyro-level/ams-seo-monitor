@@ -26,6 +26,7 @@ export default defineConfig({
       "tests/tenant-ownership.integration.test.ts",
       "tests/tenant-constraints.integration.test.ts",
       "tests/config-sync.integration.test.ts",
+      "tests/setup-token.integration.test.ts",
     ],
   },
 });

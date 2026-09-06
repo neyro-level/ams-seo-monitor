@@ -32,6 +32,7 @@ Security boundary состоит из public browser surface, Next.js applicatio
 - platform principals do not receive fake tenant scopes;
 - deprecated `Session.activeOrganizationId` is accepted only as a server-side preference after fresh Membership validation;
 - first-password onboarding blocks cabinet routes until `mustChangePassword=false`;
+- new users receive a 32-byte setup capability through operator CLI; only SHA-256 is stored and `/setup/#token` keeps the raw value out of HTTP/access-log paths;
 - production Platform Admin requires verified 2FA; `AMS_E2E_TEST` bypass is test-only and forbidden in deployment env;
 - every private page/service requires `PrincipalContext` permission + resource authorization;
 - public signup is disabled;
@@ -158,6 +159,8 @@ Source of truth — Doppler/project-specific protected server env. Значен�
 - raw error bodies не сохраняются в `SourceRun`;
 - retention/erasure auth data требует отдельной owner-approved operation.
 - TOTP secret, backup codes and failed-verification state are auth-only; they never enter DTO, browser logs, audit markers or error response.
+- Better Auth backup codes are the only 2FA recovery mechanism; public password/2FA reset and environment bypass are disabled.
+- setup completion returns one generic failure for unknown, expired, revoked and replayed tokens; password, raw token and token hash never enter AuditEvent.
 
 ## Security headers и indexing
 
