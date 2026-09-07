@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 import { Button } from "../../../components/ui/button.tsx";
 import { Input } from "../../../components/ui/input.tsx";
-import { Select } from "../../../components/ui/select.tsx";
+import { NativeSelect, NativeSelectOption } from "../../../components/ui/native-select.tsx";
 import {
   getProjectFormOptions,
   listProjects,
@@ -14,6 +14,7 @@ import { hasPermission } from "../../../platform/authorization/principal.ts";
 import { getCurrentPrincipalState } from "../../../platform/auth/principal-session.ts";
 import { ProjectCreateForm } from "./_components/ProjectForms.tsx";
 import { ProjectTable } from "./_components/ProjectTable.tsx";
+import { PermissionDeniedState, StatePanel } from "../../../components/states/StatePanel.tsx";
 import {
   loadProjectSearchParams,
   serializeProjectSearchParams,
@@ -31,10 +32,7 @@ export default async function ProjectsPage({
     return (
       <>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6" role="alert">
-            <h1 className="text-xl font-semibold text-slate-950">Раздел недоступен</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-700">У текущей роли нет права управлять проектами.</p>
-          </div>
+          <PermissionDeniedState title="Раздел недоступен" description="У текущей роли нет права управлять проектами." />
         </main>
       </>
     );
@@ -67,23 +65,20 @@ export default async function ProjectsPage({
     <>
       <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Platform Admin</p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-950">Проекты</h1>
-          <p className="mt-2 text-sm text-slate-600">{projects.total} в текущем срезе реестра</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--info)]">Platform Admin</p>
+          <h1 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">Проекты</h1>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">{projects.total} в текущем срезе реестра</p>
         </header>
 
         {hasRequiredOptions ? (
           <ProjectCreateForm options={options} />
         ) : (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5" role="alert">
-            <h2 className="font-semibold text-slate-900">Создание проекта недоступно</h2>
-            <p className="mt-1 text-sm text-slate-700">Сначала добавьте организацию, пороговый и кластерный профили.</p>
-          </div>
+          <StatePanel state="not-connected" title="Создание проекта недоступно" description="Сначала добавьте организацию, пороговый и кластерный профили." />
         )}
 
-        <form className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]" method="get">
+        <form className="grid gap-4 rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--card)] p-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]" method="get">
           <label className="space-y-1.5">
-            <span className="block text-sm font-medium text-slate-800">Поиск</span>
+            <span className="block text-sm font-medium text-[var(--foreground)]">Поиск</span>
             <Input
               defaultValue={query.search}
               maxLength={100}
@@ -92,20 +87,20 @@ export default async function ProjectsPage({
             />
           </label>
           <label className="space-y-1.5">
-            <span className="block text-sm font-medium text-slate-800">Статус</span>
-            <Select
+            <span className="block text-sm font-medium text-[var(--foreground)]">Статус</span>
+            <NativeSelect
               defaultValue={query.status ?? ""}
               name="status"
             >
-              <option value="">Все статусы</option>
-              <option value="ACTIVE">Активные</option>
-              <option value="PLANNED">Запланированные</option>
-              <option value="DISABLED">Отключённые</option>
-            </Select>
+              <NativeSelectOption value="">Все статусы</NativeSelectOption>
+              <NativeSelectOption value="ACTIVE">Активные</NativeSelectOption>
+              <NativeSelectOption value="PLANNED">Запланированные</NativeSelectOption>
+              <NativeSelectOption value="DISABLED">Отключённые</NativeSelectOption>
+            </NativeSelect>
           </label>
           <div className="flex items-end gap-2">
             <Button type="submit">Применить</Button>
-            {filtersActive ? <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-slate-600 hover:text-slate-950" href="/admin/projects">Сбросить</Link> : null}
+            {filtersActive ? <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)]" href="/admin/projects">Сбросить</Link> : null}
           </div>
         </form>
 

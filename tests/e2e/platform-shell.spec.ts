@@ -89,6 +89,7 @@ test.describe("Platform Admin", () => {
     await expect(page.getByText(/Страница 1 из/i)).toBeVisible();
 
     if ((page.viewportSize()?.width ?? 0) >= 1024) {
+      await expect(page.getByText("Platform Admin", { exact: true })).toBeVisible();
       const collapseButton = page.getByRole("button", { name: "Свернуть боковую панель" });
       await expect(collapseButton).toBeVisible();
       await collapseButton.click();
@@ -112,7 +113,10 @@ test.describe("Platform Admin", () => {
   test("renders the Project reference slice with URL-owned filters", async ({ page }) => {
     await page.goto("/admin/projects/");
     await expect(page.getByRole("heading", { level: 1, name: "Проекты" })).toBeVisible();
-    await expect(page.getByText("Создать проект")).toBeVisible();
+    const createProjectTrigger = page.getByRole("button", { name: "Создать проект" });
+    await expect(createProjectTrigger).toBeVisible();
+    await createProjectTrigger.click();
+    await expect(page.getByLabel("Организация")).toBeVisible();
     await page.getByLabel("Поиск").fill("alpha");
     await page.getByRole("button", { name: "Применить" }).click();
     await expect(page).toHaveURL(/search=alpha/);

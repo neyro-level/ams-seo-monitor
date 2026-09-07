@@ -55,17 +55,17 @@ export default async function AllProjectsPage() {
                       : "План";
               const stateClasses =
                 project.status === "DISABLED"
-                  ? "border-slate-200 bg-slate-50 text-slate-600"
+                  ? "border-[var(--status-neutral)]/20 bg-[var(--status-neutral-soft)] text-[var(--status-neutral)]"
                   : projectReady
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                    ? "border-[var(--success)]/20 bg-[var(--success-soft)] text-[var(--success)]"
                     : project.connectedSites > 0
-                      ? "border-amber-200 bg-amber-50 text-amber-950"
-                      : "border-sky-200 bg-sky-50 text-sky-950";
+                      ? "border-[var(--warning)]/20 bg-[var(--warning-soft)] text-[var(--warning)]"
+                      : "border-[var(--info)]/20 bg-[var(--info-soft)] text-[var(--info)]";
 
               return (
                 <article
                   key={project.projectSlug}
-                  className="rounded-2xl border border-[var(--border)] bg-white p-5"
+                  className="rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--card)] p-5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -84,7 +84,7 @@ export default async function AllProjectsPage() {
                   </div>
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-[var(--muted)] p-4">
+                    <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                         Сайты
                       </p>
@@ -92,7 +92,7 @@ export default async function AllProjectsPage() {
                         {project.totalSites}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-[var(--muted)] p-4">
+                    <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                         Подключено
                       </p>
@@ -100,7 +100,7 @@ export default async function AllProjectsPage() {
                         {project.connectedSites}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-[var(--muted)] p-4">
+                    <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                         Готово
                       </p>
@@ -108,7 +108,7 @@ export default async function AllProjectsPage() {
                         {project.readySites}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-[var(--muted)] p-4">
+                    <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
                       <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                         Источники
                       </p>
@@ -128,7 +128,7 @@ export default async function AllProjectsPage() {
 
                   <Link
                     href={`/c/${project.projectSlug}/`}
-                    className="mt-5 inline-flex rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white"
+                    className="mt-5 inline-flex rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
                   >
                     Открыть проект
                   </Link>
@@ -148,7 +148,7 @@ export default async function AllProjectsPage() {
                 Wizard создаёт project/site config и пустой goal profile, проверяет collisions и общий registry. Секреты, deploy и SourceCraft он не изменяет.
               </p>
             </div>
-            <code className="rounded-xl border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]">
+            <code className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]">
               pnpm project:add
             </code>
           </div>

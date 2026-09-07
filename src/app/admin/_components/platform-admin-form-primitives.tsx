@@ -5,7 +5,7 @@ import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 import { Button } from "../../../components/ui/button.tsx";
 import { Card, CardContent, CardHeader } from "../../../components/ui/card.tsx";
 import { Input, Textarea } from "../../../components/ui/input.tsx";
-import { Select } from "../../../components/ui/select.tsx";
+import { NativeSelect, NativeSelectOption } from "../../../components/ui/native-select.tsx";
 import { Field, FieldDescription, FieldError, FieldLabel } from "../../../components/ui/field.tsx";
 import type { DefinedAction } from "../../../platform/actions/define-action.ts";
 import type { PlatformAdminActionFailure } from "../../../modules/platform-admin/index.ts";
@@ -60,8 +60,8 @@ export function SectionCard({
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
-        <p className="text-sm leading-6 text-slate-600">{description}</p>
+        <h2 className="text-lg font-semibold text-[var(--foreground)]">{title}</h2>
+        <p className="text-sm leading-6 text-[var(--text-secondary)]">{description}</p>
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -104,13 +104,13 @@ export function SelectInput(
 ) {
   const { options, ...rest } = props;
   return (
-    <Select {...rest}>
+    <NativeSelect {...rest}>
       {options.map((option) => (
-        <option key={option.value} value={option.value}>
+        <NativeSelectOption key={option.value} value={option.value}>
           {option.label}
-        </option>
+        </NativeSelectOption>
       ))}
-    </Select>
+    </NativeSelect>
   );
 }
 

@@ -52,7 +52,9 @@
 
 ## Active stack decisions
 
+- UI implementation follows AMS UI Development Constitution `3.1` and Application Design System `2.1`; the established AMS IMPULSE palette is an approved isolated project-theme override;
 - все public/private controls используют project-owned shadcn primitives; public `ch-*` изолированы в `theme-public`, private UI использует единый semantic token layer;
+- native HTML selects use the shadcn `NativeSelect` wrapper; popup Select is added only for an interaction that needs it; disclosure sections use the Base UI/shadcn Accordion primitive;
 - private admin surfaces use React Hook Form, TanStack Table `9.2.4`, shadcn Table и `nuqs`;
 - report visualization uses shadcn Chart wrappers over Recharts;
 - Platform Admin uses typed route composition and shared primitives; Refine отсутствует;

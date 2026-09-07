@@ -24,7 +24,6 @@
   --popover-foreground: #020617;
   --primary: #101720;
   --primary-foreground: #ffffff;
-  --primary-hover: #1b2633;
   --secondary: #f8fafc;
   --secondary-foreground: #020617;
   --muted: #f8fafc;
@@ -38,10 +37,7 @@
   --input: #cbd5e1;
   --ring: #5f7fae;
   --text-secondary: #475569;
-  --text-disabled: #94a3b8;
   --link: #3e5d86;
-  --interactive: #5f7fae;
-  --brand-accent: #5f7fae;
   --sidebar: #101720;
   --sidebar-foreground: #f5f7f8;
   --sidebar-primary: #d4dbe0;
@@ -52,6 +48,8 @@
   --sidebar-hover: #1b2633;
   --sidebar-border: #2a2f34;
   --sidebar-ring: #5f7fae;
+  --sidebar-surface: rgb(255 255 255 / 5.5%);
+  --sidebar-surface-hover: rgb(255 255 255 / 10%);
   --success: #2a7057;
   --success-soft: #eaf5f0;
   --warning: #8d5c10;
@@ -66,11 +64,11 @@
   --chart-4: #8d5c10;
   --chart-5: #8a5fa8;
   --radius: 10px;
-  --radius-control: 10px;
   --radius-panel: 14px;
   --radius-card: 18px;
   --shadow-surface: 0 1px 2px rgb(16 32 47 / 4%);
   --shadow-overlay: 0 24px 64px rgb(16 32 47 / 16%);
+  --overlay: rgb(0 0 0 / 70%);
 }
 
 .theme-app {
@@ -95,6 +93,44 @@
   --ch-white: #f8fafc;
   --ch-soft-white: #cbd5e1;
   --ch-muted-ondark: rgb(248 250 252 / 62%);
+  --ch-faint-ondark: rgb(248 250 252 / 38%);
+  --ch-label-ondark: rgb(248 250 252 / 58%);
+  --ch-icon-ondark: rgb(248 250 252 / 34%);
+  --ch-placeholder-ondark: rgb(248 250 252 / 24%);
+  --ch-body-ondark: rgb(248 250 252 / 52%);
+  --ch-strong-ondark: rgb(248 250 252 / 82%);
+  --ch-copy-ondark: rgb(248 250 252 / 55%);
+  --ch-subtle-ondark: rgb(248 250 252 / 45%);
+  --ch-action-ondark: rgb(248 250 252 / 70%);
+  --ch-icon-weak-ondark: rgb(248 250 252 / 35%);
+  --ch-ghost-ondark: rgb(248 250 252 / 2.5%);
+  --ch-border-subtle: rgb(255 255 255 / 8%);
+  --ch-border-hover: rgb(255 255 255 / 16%);
+  --ch-border-control: rgb(255 255 255 / 14%);
+  --ch-border-strong: rgb(255 255 255 / 24%);
+  --ch-surface-subtle: rgb(255 255 255 / 5.5%);
+  --ch-surface-hover: rgb(255 255 255 / 9%);
+  --ch-surface-faint: rgb(255 255 255 / 3.5%);
+  --ch-surface-faint-hover: rgb(255 255 255 / 6%);
+  --ch-border-light: #d9e1e8;
+  --ch-link-decoration: rgb(62 93 134 / 32%);
+  --ch-hero-gradient: linear-gradient(135deg, rgb(95 127 174 / 9%), transparent 38%, rgb(95 127 174 / 6%));
+  --ch-signal-ring: 0 0 0 6px rgb(95 127 174 / 12%);
+  --ch-data-line: rgb(95 127 174 / 62%);
+  --ch-data-line-soft: rgb(248 250 252 / 22%);
+  --ch-data-line-faint: rgb(248 250 252 / 13%);
+  --ch-grid-image: linear-gradient(rgb(248 250 252 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(248 250 252 / 4%) 1px, transparent 1px);
+  --ch-grid-mask: linear-gradient(to bottom, black 0%, rgb(0 0 0 / 68%) 72%, transparent 100%);
+  --ch-atmosphere: radial-gradient(circle at 77% 34%, rgb(95 127 174 / 22%), transparent 26%), radial-gradient(circle at 60% 84%, rgb(95 127 174 / 10%), transparent 32%), linear-gradient(110deg, transparent 0 47%, rgb(16 23 32 / 46%) 64%, rgb(12 17 23 / 88%) 100%);
+  --ch-atmosphere-mobile: radial-gradient(circle at 68% 58%, rgb(95 127 174 / 18%), transparent 34%), linear-gradient(180deg, transparent 0 54%, rgb(12 17 23 / 62%) 100%);
+  --ch-visual-shadow: 0 32px 80px rgb(0 0 0 / 28%);
+  --ch-visual-overlay: linear-gradient(180deg, transparent 58%, rgb(12 17 23 / 46%) 100%);
+  --ch-not-found-atmosphere: radial-gradient(circle at 50% 44%, rgb(95 127 174 / 16%), transparent 36%);
+  --ch-overlay-shadow: 0 32px 100px rgb(0 0 0 / 55%);
+  --ch-focus-soft: rgb(95 127 174 / 16%);
+  --ch-error: #fecaca;
+  --ch-error-soft: rgb(136 19 55 / 25%);
+  --ch-error-border: rgb(253 164 175 / 20%);
 }
 
 * {

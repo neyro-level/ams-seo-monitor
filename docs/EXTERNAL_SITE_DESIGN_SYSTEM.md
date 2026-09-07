@@ -71,7 +71,7 @@
 }
 ```
 
-Цветовой ритм будущего лендинга: `dark hero → light → soft → light → dark CTA → dark footer`.
+Цветовой ритм лендинга: `dark hero → light → soft → light → dark CTA → dark footer`. Значения живут только в изолированном `.theme-public`; generic primitives не зависят от `ch-*`.
 
 Steel-blue используется редко: primary CTA, focus, ключевой marker, одна линия динамики. Несколько равносильных акцентов запрещены.
 
@@ -187,6 +187,8 @@ Steel-blue используется редко: primary CTA, focus, ключев
 Ключевой визуал хранится отдельным оптимизированным asset. H1, CTA и значимые подписи всегда остаются HTML.
 
 ## 10. Кнопки и ссылки
+
+Marketing-варианты принадлежат публичному `MarketingButton`, а не generic `Button`. Это сохраняет переносимость shadcn primitive и визуальную неизменность внешней темы.
 
 Primary CTA:
 

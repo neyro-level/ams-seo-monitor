@@ -30,7 +30,7 @@ Unauthenticated route redirect: `/?login=1`. Foreign tenant получает not
 
 ## Report order
 
-1. Page header: project/site, URL, period control, freshness/source context.
+1. Page header: project/site, URL, period control, timezone and freshness/source context.
 2. Ranking: Top-3/Top-10, coverage, movement and tracked queries.
 3. Technical/Webmaster health: diagnostics, indexing, SQI and search events.
 4. Search demand: shows, clicks, CTR, average show position and comparison.
@@ -47,7 +47,7 @@ Ranking stays above Webmaster/Metrika detail. Webmaster average show position is
 - `stale`/LKG section — previous data may be displayed only with explicit source state;
 - `unavailable` — no usable current/previous report section;
 - `null` renders unknown/unavailable, not zero;
-- source, period, baseline and safe error labels remain visible.
+- source, period, timezone, baseline and safe error labels remain visible.
 
 ## Period control
 

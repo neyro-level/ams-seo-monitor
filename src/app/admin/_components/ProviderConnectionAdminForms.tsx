@@ -116,7 +116,7 @@ function ProviderConnectionEditCard({ item }: { item: ProviderConnectionListItem
         <FormField error={form.formState.errors.settingsJsonText?.message} helper="Только плоский nonsecret JSON-объект." label="Текущие настройки JSON" required>
           <AreaInput rows={6} {...form.register("settingsJsonText")} />
         </FormField>
-        <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800">
+        <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)]">
           <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
           Источник включён
         </label>
@@ -177,7 +177,7 @@ export function ProviderConnectionsAdminForms({ items, options }: { items: Provi
           <FormField error={form.formState.errors.externalId?.message} label="External ID">
             <TextInput {...form.register("externalId")} />
           </FormField>
-          <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 xl:self-end">
+          <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)] xl:self-end">
             <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
             Источник включён
           </label>

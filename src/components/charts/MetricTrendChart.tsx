@@ -26,6 +26,7 @@ type MetricTrendChartProps = {
   secondaryMetricLabel?: string;
   tertiaryMetricLabel?: string;
   period?: string;
+  timezone: string;
 };
 
 export function MetricTrendChart({
@@ -36,13 +37,14 @@ export function MetricTrendChart({
   secondaryMetricLabel,
   tertiaryMetricLabel,
   period,
+  timezone,
 }: MetricTrendChartProps) {
   const gradientId = useId();
 
   if (data.length === 0) return <ChartEmptyState title={title} description="За выбранный период нет точек для построения графика." />;
 
   return (
-    <AnalyticsCard title={title} description={subtitle} period={period} units={secondaryMetricLabel ? `${metricLabel}, ${secondaryMetricLabel}` : metricLabel} summary={<div className="grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-3"><p>{metricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(data.at(-1)?.value)}</strong></p>{secondaryMetricLabel ? <p>{secondaryMetricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(data.at(-1)?.secondaryValue ?? null)}</strong></p> : null}{tertiaryMetricLabel ? <p>{tertiaryMetricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatPosition(data.at(-1)?.tertiaryValue ?? null)}</strong></p> : null}</div>}>
+    <AnalyticsCard title={title} description={subtitle} period={period} units={secondaryMetricLabel ? `${metricLabel}, ${secondaryMetricLabel}` : metricLabel} timezone={timezone} summary={<div className="grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-3"><p>{metricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(data.at(-1)?.value)}</strong></p>{secondaryMetricLabel ? <p>{secondaryMetricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(data.at(-1)?.secondaryValue ?? null)}</strong></p> : null}{tertiaryMetricLabel ? <p>{tertiaryMetricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatPosition(data.at(-1)?.tertiaryValue ?? null)}</strong></p> : null}</div>}>
       <ChartContainer className="h-[280px]" config={{ value: { label: metricLabel, color: "var(--chart-1)" }, secondaryValue: { label: secondaryMetricLabel ?? "", color: "var(--chart-2)" } }}>
           <AreaChart data={data}>
             <defs>
@@ -56,7 +58,7 @@ export function MetricTrendChart({
             <YAxis yAxisId="primary" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
             <ChartTooltip
               contentStyle={{
-                borderRadius: "var(--radius-control)",
+                borderRadius: "var(--radius)",
                 border: "1px solid var(--border)",
                 boxShadow: "var(--shadow-overlay)",
               }}

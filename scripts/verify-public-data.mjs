@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const forbiddenSignatures = new Set([
@@ -93,6 +93,9 @@ function inspectCandidate(file, candidate) {
 }
 
 for (const file of trackedFiles) {
+  // `git ls-files` still reports a tracked file deleted in the current diff.
+  // Deleted paths contain no release data and must not make the verifier crash.
+  if (!existsSync(file)) continue;
   const normalizedPath = file.replaceAll("\\", "/");
   if (normalizedPath.startsWith("config/") && !normalizedPath.startsWith("config/examples/")) {
     violations.add(normalizedPath);

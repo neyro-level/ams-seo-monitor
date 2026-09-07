@@ -4,7 +4,7 @@ import { LockKeyhole, LogIn, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Button } from "../../../components/ui/button.tsx";
+import { MarketingButton } from "../../../components/marketing/MarketingButton.tsx";
 import {
   Dialog,
   DialogContent,
@@ -63,9 +63,9 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
 
   return (
     <>
-      <Button
+      <MarketingButton
         type="button"
-        variant="marketingOutline"
+        tone="outline"
         className="group gap-2 px-4"
         onClick={() => {
           setErrorMessage(null);
@@ -75,31 +75,31 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
         <span className="hidden sm:inline">Вход в личный кабинет</span>
         <span className="sm:hidden">Войти</span>
         <LogIn className="transition-transform group-hover:translate-x-0.5" strokeWidth={1.7} aria-hidden />
-      </Button>
+      </MarketingButton>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="theme-public impulse-landing rounded-none border-white/12 bg-[var(--ch-bg-deeper)] p-7 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-10"
+          className="theme-public impulse-landing rounded-none border-[var(--ch-border-control)] bg-[var(--ch-bg-deeper)] p-7 text-[var(--ch-white)] shadow-[var(--ch-overlay-shadow)] sm:p-10"
           showCloseButton={!pending}
         >
           <DialogHeader>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ch-accent)]">AMS IMPULSE</p>
-            <DialogTitle className="mt-2 text-[32px] font-extrabold leading-tight tracking-[-0.04em] text-white sm:text-[34px]">
+            <DialogTitle className="mt-2 text-[32px] font-extrabold leading-tight tracking-[-0.04em] text-[var(--ch-white)] sm:text-[34px]">
               Вход в кабинет
             </DialogTitle>
           </DialogHeader>
 
-          <form className="mt-9 border-t border-white/10 pt-8" onSubmit={handleSubmit}>
+          <form className="mt-9 border-t border-[var(--ch-border-subtle)] pt-8" onSubmit={handleSubmit}>
             <div className="space-y-6">
               <label className="block">
-                <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">Логин</span>
+                <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ch-label-ondark)]">Логин</span>
                 <span className="group relative flex min-h-14 items-center">
-                  <UserRound className="pointer-events-none absolute left-4 z-10 size-[18px] text-white/34 group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
+                  <UserRound className="pointer-events-none absolute left-4 z-10 size-[18px] text-[var(--ch-icon-ondark)] group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
                   <Input
                     type="text"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    className="min-h-14 rounded-none border-white/14 bg-[#151e29]/72 py-3 pl-12 pr-4 text-base font-medium text-white placeholder:text-white/24 focus-visible:border-[var(--ch-accent)] focus-visible:ring-[rgba(95,127,174,0.16)]"
+                    className="min-h-14 rounded-none border-[var(--ch-border-control)] bg-[var(--ch-bg-dark)]/72 py-3 pl-12 pr-4 text-base font-medium text-[var(--ch-white)] placeholder:text-[var(--ch-placeholder-ondark)] focus-visible:border-[var(--ch-accent)] focus-visible:ring-[var(--ch-focus-soft)]"
                     autoComplete="username"
                     autoCapitalize="none"
                     spellCheck={false}
@@ -110,14 +110,14 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
               </label>
 
               <label className="block">
-                <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">Пароль</span>
+                <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ch-label-ondark)]">Пароль</span>
                 <span className="group relative flex min-h-14 items-center">
-                  <LockKeyhole className="pointer-events-none absolute left-4 z-10 size-[18px] text-white/34 group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
+                  <LockKeyhole className="pointer-events-none absolute left-4 z-10 size-[18px] text-[var(--ch-icon-ondark)] group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
                   <Input
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="min-h-14 rounded-none border-white/14 bg-[#151e29]/72 py-3 pl-12 pr-4 text-base font-medium text-white placeholder:text-white/24 focus-visible:border-[var(--ch-accent)] focus-visible:ring-[rgba(95,127,174,0.16)]"
+                    className="min-h-14 rounded-none border-[var(--ch-border-control)] bg-[var(--ch-bg-dark)]/72 py-3 pl-12 pr-4 text-base font-medium text-[var(--ch-white)] placeholder:text-[var(--ch-placeholder-ondark)] focus-visible:border-[var(--ch-accent)] focus-visible:ring-[var(--ch-focus-soft)]"
                     autoComplete="current-password"
                     required
                   />
@@ -126,21 +126,20 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
             </div>
 
             {errorMessage ? (
-              <p className="mt-6 border border-rose-300/20 bg-rose-950/25 px-4 py-3 text-sm leading-5 text-rose-100" role="alert">
+              <p className="mt-6 border border-[var(--ch-error-border)] bg-[var(--ch-error-soft)] px-4 py-3 text-sm leading-5 text-[var(--ch-error)]" role="alert">
                 {errorMessage}
               </p>
             ) : null}
 
-            <Button
+            <MarketingButton
               type="submit"
-              variant="marketing"
               size="lg"
               disabled={pending}
-              className="mt-7 min-h-14 w-full focus-visible:ring-white focus-visible:ring-offset-[var(--ch-bg-deeper)]"
+              className="mt-7 min-h-14 w-full focus-visible:ring-[var(--ch-white)] focus-visible:ring-offset-[var(--ch-bg-deeper)]"
             >
               {pending ? "Входим…" : "Войти"}
               {!pending ? <LogIn strokeWidth={1.7} aria-hidden /> : null}
-            </Button>
+            </MarketingButton>
           </form>
         </DialogContent>
       </Dialog>

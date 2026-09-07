@@ -94,7 +94,7 @@ Better Auth владеет identity/password/session. AMS владеет Organiz
 
 UI следует `tokens → shadcn primitives → shared application components → module presentation → route composition`.
 
-- `.theme-app` изолирует светлый приватный интерфейс на PT Root UI и Application Design System 2.0 semantic tokens;
+- `.theme-app` изолирует светлый приватный интерфейс на PT Root UI и semantic tokens Application Design System 2.1; UI-реализация следует AMS UI Development Constitution 3.1;
 - `.theme-public` изолирует Manrope и `ch-*` только для landing, legal и modal-входа;
 - `src/components/ui` содержит generic project-owned primitives поверх Base UI;
 - `src/components/shell`, `dashboard`, `tables`, `charts`, `states` содержат reusable application patterns;

@@ -6,7 +6,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div data-slot="card-header" className={cn("space-y-1 border-b border-slate-100 p-5", className)} {...props} />;
+  return <div data-slot="card-header" className={cn("space-y-1 border-b border-[var(--border)] p-5", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

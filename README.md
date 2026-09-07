@@ -94,7 +94,7 @@ systemd timer
 | Tailwind CSS | `4.3.3` | preserve |
 | Zod | `4.5.4` | preserve |
 
-UI основан на shadcn primitives поверх Base UI `1.8.0`: внешний слой сохраняет Manrope и изолированную тему `ch-*`, кабинет — PT Root UI и semantic tokens Application Design System 2.0. Таблицы используют TanStack Table `9.2.4` + shadcn Table, графики — shadcn Chart поверх Recharts `3.10.1`. Refine отсутствует.
+UI следует AMS UI Development Constitution `3.1` и основан на project-owned shadcn primitives поверх Base UI `1.8.0`: внешний слой сохраняет Manrope и изолированную тему `ch-*`, кабинет — PT Root UI и semantic tokens Application Design System `2.1`. Таблицы используют TanStack Table `9.2.4` + shadcn Table, графики — shadcn Chart поверх Recharts `3.10.1`. Refine отсутствует.
 
 ## Локальная подготовка
 
