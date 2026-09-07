@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 import { Button } from "../../../components/ui/button.tsx";
 import { Input } from "../../../components/ui/input.tsx";
-import { NativeSelect } from "../../../components/ui/native-select.tsx";
+import { Select } from "../../../components/ui/select.tsx";
 import {
   getProjectFormOptions,
   listProjects,
@@ -93,7 +93,7 @@ export default async function ProjectsPage({
           </label>
           <label className="space-y-1.5">
             <span className="block text-sm font-medium text-slate-800">Статус</span>
-            <NativeSelect
+            <Select
               defaultValue={query.status ?? ""}
               name="status"
             >
@@ -101,7 +101,7 @@ export default async function ProjectsPage({
               <option value="ACTIVE">Активные</option>
               <option value="PLANNED">Запланированные</option>
               <option value="DISABLED">Отключённые</option>
-            </NativeSelect>
+            </Select>
           </label>
           <div className="flex items-end gap-2">
             <Button type="submit">Применить</Button>

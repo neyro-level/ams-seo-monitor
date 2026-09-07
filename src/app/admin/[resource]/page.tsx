@@ -6,7 +6,7 @@ import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { Button } from "../../../components/ui/button.tsx";
 import { Input } from "../../../components/ui/input.tsx";
-import { NativeSelect } from "../../../components/ui/native-select.tsx";
+import { Select } from "../../../components/ui/select.tsx";
 import {
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
@@ -72,19 +72,19 @@ function Filters({ query, resource }: { query: PlatformAdminPageQuery; resource:
       </label>
       <label className="space-y-1.5">
         <span className="block text-sm font-medium text-slate-800">Сортировка</span>
-        <NativeSelect defaultValue={query.sort} name="sort">
+        <Select defaultValue={query.sort} name="sort">
           <option value="updatedAt">Обновлено</option>
           <option value="createdAt">Создано</option>
           <option value="name">Название</option>
           <option value="status">Статус</option>
-        </NativeSelect>
+        </Select>
       </label>
       <label className="space-y-1.5">
         <span className="block text-sm font-medium text-slate-800">Направление</span>
-        <NativeSelect defaultValue={query.direction} name="direction">
+        <Select defaultValue={query.direction} name="direction">
           <option value="desc">По убыванию</option>
           <option value="asc">По возрастанию</option>
-        </NativeSelect>
+        </Select>
       </label>
       <div className="flex items-end gap-2">
         <Button type="submit">Применить</Button>
