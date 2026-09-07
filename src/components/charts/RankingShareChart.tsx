@@ -4,12 +4,11 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import type { TrackedRankingReport } from "../../shared/schemas/report.ts";
+import { ChartContainer, ChartTooltip } from "../ui/chart.tsx";
 
 type RankingShareChartProps = {
   ranking: TrackedRankingReport;
@@ -35,13 +34,12 @@ export function RankingShareChart({ ranking }: RankingShareChartProps) {
           Реальные даты съёмов позиций. Знаменатель — утверждённое ядро из {ranking.queryCount} запросов.
         </p>
       </div>
-      <div className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
+      <ChartContainer className="h-[300px]" config={{ top10Share: { label: "Топ-10", color: "#3E5D86" }, top3Share: { label: "Топ-3", color: "#D97706" } }}>
           <LineChart data={ranking.history}>
             <CartesianGrid vertical={false} stroke="#E3E3E1" />
             <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
             <YAxis domain={[0, 100]} unit="%" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
-            <Tooltip
+            <ChartTooltip
               contentStyle={{
                 borderRadius: 8,
                 border: "1px solid #E3E3E1",
@@ -55,11 +53,10 @@ export function RankingShareChart({ ranking }: RankingShareChartProps) {
                 return [`${Number(value).toFixed(1)}% · ${payload.top10Count} из ${ranking.queryCount}`, "Топ-10"];
               }}
             />
-            <Line type="monotone" dataKey="top10Share" stroke="#2563EB" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-            <Line type="monotone" dataKey="top3Share" stroke="#D97706" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey="top10Share" stroke="var(--color-top10Share)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+            <Line type="monotone" dataKey="top3Share" stroke="var(--color-top3Share)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
           </LineChart>
-        </ResponsiveContainer>
-      </div>
+      </ChartContainer>
       <div className="mt-3 flex flex-wrap gap-5 text-sm text-[var(--crm-text-secondary)]">
         <span><span className="mr-2 inline-block size-2.5 rounded-full bg-blue-600" />Топ-10</span>
         <span><span className="mr-2 inline-block size-2.5 rounded-full bg-amber-600" />Топ-3</span>

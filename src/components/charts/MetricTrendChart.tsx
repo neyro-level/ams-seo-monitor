@@ -6,11 +6,10 @@ import {
   AreaChart,
   CartesianGrid,
   Line,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartContainer, ChartTooltip } from "../ui/chart.tsx";
 import { formatInteger, formatPosition } from "../../shared/format/metrics.ts";
 import type { TrendPoint } from "../../shared/schemas/report.ts";
 
@@ -43,19 +42,18 @@ export function MetricTrendChart({
         <h3 className="text-lg font-semibold leading-6 text-[var(--crm-text)]">{title}</h3>
         <p className="text-sm leading-5 text-[var(--crm-text-secondary)]">{subtitle}</p>
       </div>
-      <div className="h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
+      <ChartContainer className="h-[280px]" config={{ value: { label: metricLabel, color: "#5F7FAE" }, secondaryValue: { label: secondaryMetricLabel ?? "", color: "#3E5D86" } }}>
           <AreaChart data={data}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8A1515" stopOpacity={0.18} />
-                <stop offset="100%" stopColor="#8A1515" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="var(--color-value)" stopOpacity={0.18} />
+                <stop offset="100%" stopColor="var(--color-value)" stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="#E3E3E1" />
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
             <YAxis yAxisId="primary" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
-            <Tooltip
+            <ChartTooltip
               contentStyle={{
                 borderRadius: 8,
                 border: "1px solid #E3E3E1",
@@ -71,7 +69,7 @@ export function MetricTrendChart({
               type="monotone"
               yAxisId="primary"
               dataKey="value"
-              stroke="#8A1515"
+              stroke="var(--color-value)"
               strokeWidth={2}
               fill={`url(#${gradientId})`}
               activeDot={{ r: 4 }}
@@ -83,7 +81,7 @@ export function MetricTrendChart({
                   type="monotone"
                   dataKey="secondaryValue"
                   yAxisId="secondary"
-                  stroke="#2563EB"
+                  stroke="var(--color-secondaryValue)"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4 }}
@@ -92,8 +90,7 @@ export function MetricTrendChart({
               </>
             ) : null}
           </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      </ChartContainer>
       <div className="mt-4 grid gap-2 text-sm text-[var(--crm-text-secondary)] sm:grid-cols-3">
         <p>
           {metricLabel}: {formatInteger(data.at(-1)?.value)}

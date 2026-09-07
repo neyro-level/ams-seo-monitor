@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
+  useTable,
   type ColumnDef,
 } from "@tanstack/react-table";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
+import { impulseTableFeatures } from "../../../../components/tables/tanstack.ts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table.tsx";
 import type {
   ProjectFormOptions,
   ProjectListItem,
@@ -90,7 +90,7 @@ export function ProjectTable({
   options: ProjectFormOptions;
   query: ProjectTableQuery;
 }) {
-  const columns = useMemo<ColumnDef<ProjectListItem>[]>(
+  const columns = useMemo<ColumnDef<typeof impulseTableFeatures, ProjectListItem, unknown>[]>(
     () => [
       {
         accessorKey: "name",
@@ -131,17 +131,10 @@ export function ProjectTable({
     ],
     [options, query],
   );
-  // TanStack Table owns a mutable table instance; React Compiler intentionally skips this hook.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features: impulseTableFeatures,
     data: result.items,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    rowCount: result.total,
-    state: {
-      pagination: { pageIndex: result.page - 1, pageSize: result.pageSize },
-    },
   });
   const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
 
@@ -157,28 +150,28 @@ export function ProjectTable({
   return (
     <section aria-label="Список проектов" className="space-y-4">
       <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white md:block">
-        <table className="w-full min-w-[980px] border-collapse text-left">
-          <thead className="bg-[var(--crm-surface-muted)]">
+        <Table className="min-w-[980px] text-left">
+          <TableHeader className="bg-[var(--crm-surface-muted)]">
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600" key={header.id} scope="col">
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </th>
+                  <TableHead className="py-2 text-slate-600" key={header.id} scope="col">
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                  </TableHead>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+          </TableHeader>
+          <TableBody className="divide-y divide-slate-100">
             {table.getRowModel().rows.map((row) => (
-              <tr className="align-top transition-colors hover:bg-slate-50" key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td className="px-4 py-4" key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+              <TableRow className="align-top hover:bg-slate-50" key={row.id}>
+                {row.getAllCells().map((cell) => (
+                  <TableCell className="px-4 py-4" key={cell.id}><table.FlexRender cell={cell} /></TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       <div className="grid gap-3 md:hidden">

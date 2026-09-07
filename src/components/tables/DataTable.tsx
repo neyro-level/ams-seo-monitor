@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../ui/table.tsx";
 
 type DataTableProps = {
   caption: string;
@@ -12,34 +13,34 @@ type DataTableProps = {
 export function DataTable({ caption, columns, rows }: DataTableProps) {
   return (
     <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-2xl border border-[var(--crm-border)] bg-white">
-      <div className="inline-block min-w-full align-top">
-        <table className="w-full border-collapse text-sm">
-          <caption className="sr-only">{caption}</caption>
-          <thead className="bg-[var(--crm-surface-muted)]">
-            <tr>
+      <div className="inline-block min-w-full align-top [&_[data-slot=table-container]]:overflow-visible">
+        <Table>
+          <TableCaption className="sr-only">{caption}</TableCaption>
+          <TableHeader className="bg-[var(--crm-surface-muted)]">
+            <TableRow>
               {columns.map((column) => (
-                <th
+                <TableHead
                   key={column}
                   scope="col"
                   className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--crm-text-muted)]"
                 >
                   {column}
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((row) => (
-              <tr key={row.key} className="border-t border-[var(--crm-border)] align-top">
+              <TableRow key={row.key} className="border-t border-[var(--crm-border)] align-top">
                 {row.cells.map((cell, index) => (
-                  <td key={`${row.key}-${index}`} className="px-4 py-3 text-[var(--crm-text-secondary)]">
+                  <TableCell key={`${row.key}-${index}`} className="px-4 py-3 text-[var(--crm-text-secondary)]">
                     {cell}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
