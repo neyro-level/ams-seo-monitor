@@ -20,7 +20,7 @@ AMS IMPULSE совмещает публичный SEO-лендинг, прива
 - project runtime retains exact TypeScript `6.0.3` as an approved project exception to the Core 3.4 default line; downgrade has no product or safety benefit;
 - архитектура: один modular monolith на Next.js, отдельные web/worker процессы из одного OCI image;
 - data owner: PostgreSQL + Prisma, без второго ORM или runtime storage;
-- auth owner: Better Auth для identity/session/2FA, AMS для Membership, permissions и resource authorization;
+- auth owner: Better Auth для identity/password/session, AMS для Membership, permissions, resource authorization и admin provisioning;
 - mutations: `defineAction/API/job adapter → defineCommand → transaction-bound repositories`;
 - async: transactional OutboxEvent → pg-boss → idempotent handler;
 - public landing и внутренний кабинет сохраняют разные design systems;
@@ -30,7 +30,7 @@ AMS IMPULSE совмещает публичный SEO-лендинг, прива
 ## Последствия
 
 - `PrincipalContext`, tenant-aware repositories и PostgreSQL constraints являются совместными уровнями защиты;
-- Platform Admin не получает фиктивный tenant и обязан использовать 2FA в production;
+- Platform Admin не получает фиктивный tenant; вход без дополнительного фактора является утверждённым owner exception с HTTPS, закрытой регистрацией, rate limiting, session revocation и audit как compensating controls;
 - applied migrations неизменяемы, production использует только `prisma migrate deploy`;
 - release привязан к exact reviewed SHA и immutable image;
 - self-managed PostgreSQL 18 — утверждённая production topology: private listener, separate runtime/migrator/backup boundaries, offsite backup и restore proof обязательны;

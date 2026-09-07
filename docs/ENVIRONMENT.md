@@ -5,7 +5,7 @@
 ## Sources and isolation
 
 - local development: ignored `.env.local`, подготовленный по `.env.example`;
-- canonical application secret source: Doppler project/config `ams-seo-monitor/prd`;
+- canonical application secret source: Doppler project/config `ams-research/prd` до отдельного owner-approved переноса;
 - production web, worker, migrator и backup: отдельные root-owned protected environment files, материализованные оператором из разрешённого secret source;
 - release identity: root-owned generated `shared/release.env`;
 - tests: explicit `TEST_DATABASE_*`; production credentials недоступны;
@@ -40,7 +40,7 @@ Application runtime accepts one explicit URL or the complete component set. Pris
 | `NEXT_PUBLIC_LEADS_SITE_KEY` | public lead form | build/browser | no | public anti-abuse site key, not read credential; rebuild |
 | `NODE_ENV` | runtime | web/worker | no | compose/runtime; redeploy |
 
-E2E uses the explicit `APP_ENV=test` identity. Production 2FA has no environment bypass flag.
+E2E uses the explicit `APP_ENV=test` identity. Auth policy не имеет environment bypass для входа или authorization.
 
 ## Worker and providers
 

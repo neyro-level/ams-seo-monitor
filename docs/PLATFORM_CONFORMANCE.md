@@ -1,39 +1,39 @@
 # PLATFORM CONFORMANCE
 
-Core Standard version: `3.4 — Solo Minimal`
+Core: `AMS Application Platform Core 3.4 — Solo Minimal`
+Reviewed: `2026-09-07`
+Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform Admin enabled / self-managed PostgreSQL`.
 
-Conformance reviewed: `2026-09-06`
-
-Project Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform Admin enabled / self-managed PostgreSQL`.
-
-| Guarantee | State | Current evidence / gap |
+| Guarantee | State | Evidence / gap |
 |---|---|---|
-| Project profile and docs canon | IMPLEMENTED | README, AGENTS, ARCHITECTURE, ADR-001, ENVIRONMENT |
-| Modular monolith and import boundaries | IMPLEMENTED | module entrypoints, Dependency Cruiser, static guard and bounded Platform Admin resource adapters |
+| Project profile and minimal docs canon | IMPLEMENTED | README, AGENTS, ARCHITECTURE, ADR-001, ENVIRONMENT |
+| Modular monolith and import boundaries | IMPLEMENTED | module entrypoints, Dependency Cruiser, bounded admin adapters |
 | PostgreSQL/Prisma source of truth | IMPLEMENTED | Prisma 7 schema, immutable migrations, repository boundaries |
-| Self-managed PostgreSQL 18 | APPROVED_PROJECT_EXCEPTION | approved in ADR-001; live topology audited before release |
+| Self-managed PostgreSQL 18 | APPROVED_PROJECT_EXCEPTION | ADR-001; loopback listener, roles, capacity, backup/restore checked before release |
 | Managed PostgreSQL | NOT_APPLICABLE | no migration target or backlog |
-| TypeScript 6.0.3 | APPROVED_PROJECT_EXCEPTION | exact lockfile version retained in ADR-001 |
-| Authentication and production Platform Admin 2FA | IMPLEMENTED | one-time hashed setup capability, fresh cabinet boundary, TOTP enrollment and single-use Better Auth backup-code recovery |
-| PrincipalContext authorization | IMPLEMENTED | all private reads/actions use the discriminated principal; legacy facade is statically forbidden |
-| Multi-tenant ownership and DB constraints | IMPLEMENTED | tenant registry, scoped repositories, composite constraints and isolation tests |
+| TypeScript 6.0.3 | APPROVED_PROJECT_EXCEPTION | exact package/lockfile version in ADR-001 |
+| Username/password authentication | IMPLEMENTED | admin-assigned exact 8-character password, closed signup, fresh session/active-user boundary |
+| Additional auth factor | APPROVED_PROJECT_EXCEPTION | owner chose simple password access; HTTPS, rate limit, session revocation, disabled-user boundary and audit remain |
+| PrincipalContext authorization | IMPLEMENTED | private reads/actions use discriminated principal; legacy facade is forbidden |
+| Multi-tenant ownership and constraints | IMPLEMENTED | tenant registry, scoped repositories, composite constraints, isolation tests |
+| Admin client provisioning | IMPLEMENTED | one atomic Organization→Project→User credential→Membership→AuditEvent command |
 | `defineAction → defineCommand` mutations | IMPLEMENTED | centralized action boundary and transaction-owned commands |
-| Async outbox + pg-boss | IMPLEMENTED | deterministic dispatch, idempotency, leases, bounded retry/dead-letter |
-| Persistent worker heartbeat/readiness | IMPLEMENTED | RuntimeHeartbeat is the sole worker-liveness input |
-| Seed/config boundary | IMPLEMENTED | safe bootstrap, private-path dry-run/apply, no deploy import |
-| Environment registry and validation | IMPLEMENTED | explicit datasource, isolated environment identities and safe target summary |
-| Provider integrations | PARTIAL | Yandex Webmaster and Metrika production mappings return fresh successful data; Topvisor credentials are prepared in project Doppler, but runtime activation is blocked by missing/stale project-region data and remains disabled |
-| SourceCraft verification contract | IMPLEMENTED | ordinary PR runs only `verify:quick`; exact-head risky, nightly daily and manual release workflows are defined |
-| SourceCraft secret scanning | REQUIRES_CHECK | scanner is required by Core 3.4, but platform-side enablement was not independently confirmed |
-| Immutable image release and rollback | IMPLEMENTED | one immutable image serves web/worker; exact SHA/digest and rollback proof are mandatory release evidence outside this document |
-| Backup/offsite/restore contract | IMPLEMENTED | release requires checksum, private offsite confirmation and isolated restore smoke before migration |
-| PII/log redaction | IMPLEMENTED | nested user/actor/payload/header fields are redacted and serialized-log tested; Better Auth 1.7.2 login/2FA rate limits are explicit |
-| Repository client-data sanitation | IMPLEMENTED | tracked tree and rewritten canonical refs contain only synthetic examples/fixtures and are protected by a signature verifier |
-| GitHub public mirror sanitation | REQUIRES_CHECK | cleaned `main` may be mirrored while private, but an old pre-rewrite SHA remains directly accessible; public visibility is blocked until GitHub confirms purge |
-| DateTime UTC/native-type proof | PARTIAL | all 87 fields are mapped in DATA_MODEL: 20 proven UTC instants migrated, 6 civil timestamps retained, 61 fields remain `REQUIRES_CHECK` without speculative conversion |
-| Legacy Better Auth schema removal | IMPLEMENTED | runtime compatibility reads are absent; an additive contract migration removed only proven-unused fields/table |
-| Production PostgreSQL topology | IMPLEMENTED | PostgreSQL 18.6, loopback-only listener, runtime/migrator boundaries, pg-boss ownership, capacity, locks, timers, backup and restore were audited read-only |
-| Production DB least privilege | PARTIAL | runtime role has no DDL; migration role still has `CREATEDB`, so narrowing that grant remains `REQUIRES_CHECK` |
-| Production controlled TOTP login proof | REQUIRES_CHECK | integration/E2E cover the policy; a live credentialed enrollment/login/recovery exercise is still required without exposing credentials |
+| Async outbox + pg-boss | IMPLEMENTED | deterministic dispatch, idempotency, lease, bounded retry/dead-letter |
+| Worker heartbeat/readiness | IMPLEMENTED | RuntimeHeartbeat is worker-liveness source |
+| Seed/config boundary | IMPLEMENTED | safe bootstrap, private-path dry-run/apply, no deployment import |
+| Environment validation | IMPLEMENTED | explicit DB target, isolated identities, safe target summary |
+| Provider integrations | PARTIAL | Webmaster and Metrika fresh on configured sites; one proven Topvisor mapping enabled with current positions, three unmapped connections remain disabled |
+| shadcn UI foundation | IMPLEMENTED | Base UI primitives wrap public/private controls while `ch-*` and `crm-*` preserve visual identity |
+| Tables and charts | IMPLEMENTED | TanStack Table 9.2.4 + shadcn Table; shadcn Chart + Recharts |
+| SourceCraft verification | IMPLEMENTED | quick PR check; exact risky/release workflows; nightly daily |
+| SourceCraft secret scanning | REQUIRES_CHECK | platform-side enablement not independently confirmed |
+| Immutable image release and rollback | IMPLEMENTED | exact SHA/digest, single web/worker image, rollback contract |
+| Backup/offsite/restore | IMPLEMENTED | release gate requires checksum, offsite confirmation and isolated restore smoke |
+| PII/log redaction | IMPLEMENTED | nested redaction and serialized-log sentinel test |
+| Repository client-data sanitation | IMPLEMENTED | only synthetic examples/fixtures; signature verifier |
+| GitHub public mirror sanitation | REQUIRES_CHECK | mirror stays private while an old pre-rewrite SHA remains accessible |
+| DateTime native-type proof | PARTIAL | 81 fields mapped: 17 UTC instants, 6 civil timestamps, 58 require proof |
+| Obsolete auth compatibility schema | IMPLEMENTED | runtime removed first; following immutable migration removes proven-unused tables/flags |
+| Production DB least privilege | PARTIAL | runtime has no DDL; migrator `CREATEDB` narrowing remains `REQUIRES_CHECK` |
 
-Этот файл отражает устойчивые гарантии проекта. Текущий production SHA/digest и proof конкретного релиза принадлежат release evidence, а не постоянной conformance-таблице. История работ и отдельные audit reports не создаются; следующий аудит обновляет эту же таблицу.
+Этот файл хранит устойчивый conformance state, а не историю релизов. Exact production SHA/digest и live proof принадлежат release evidence.

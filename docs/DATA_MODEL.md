@@ -13,7 +13,7 @@ PostgreSQL — единственный runtime source of truth.
 
 ## DateTime contract
 
-Audit date: `2026-09-06`. Prisma version: `7.10.0`. В schema найдено 87 полей `DateTime`: 20 доказанных UTC instant полей используют PostgreSQL `timestamptz(3)`, остальные 67 остаются `timestamp(3)` (`timestamp without time zone`). Prisma default mapping для PostgreSQL задаёт `DateTime → timestamp(3)`; timezone-aware mapping задан явно через `@db.Timestamptz(3)`.
+Audit updated: `2026-09-07`. Prisma version: `7.10.0`. После удаления compatibility auth schema в schema осталось 81 поле `DateTime`: 17 доказанных UTC instant полей используют PostgreSQL `timestamptz(3)`, остальные 64 остаются `timestamp(3)` (`timestamp without time zone`). Prisma default mapping для PostgreSQL задаёт `DateTime → timestamp(3)`; timezone-aware mapping задан явно через `@db.Timestamptz(3)`.
 
 Нормативные источники: [Prisma PostgreSQL type mapping](https://docs.prisma.io/docs/orm/v6/overview/databases/postgresql), [Prisma 7 native database types](https://docs.prisma.io/docs/orm/v7/prisma-migrate/workflows/native-database-types), [PostgreSQL 18 date/time types](https://www.postgresql.org/docs/18/datatype-datetime.html).
 
@@ -29,11 +29,8 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 |---|---|---|---|---|
 | `User.disabledAt` | момент административной блокировки | admin CLI передаёт `new Date()` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `User.createdAt`, `User.updatedAt` | создание/последнее изменение identity | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять; проверить production timezone и samples | REQUIRES_CHECK |
-| `UserSetupToken.expiresAt`, `UserSetupToken.usedAt`, `UserSetupToken.revokedAt` | expiry/consumption/revocation одноразовой capability | CLI/setup flow использует JS `Date` и UTC duration arithmetic | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `UserSetupToken.createdAt`, `UserSetupToken.updatedAt` | создание/изменение token record | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `Session.expiresAt`, `Session.createdAt`, `Session.updatedAt` | Better Auth session lifecycle | Better Auth-owned writer; historical adapter/session timezone не доказан | не менять; сверить production rows и Better Auth adapter | REQUIRES_CHECK |
 | `Account.accessTokenExpiresAt`, `Account.refreshTokenExpiresAt`, `Account.createdAt`, `Account.updatedAt` | Better Auth account/token lifecycle | Better Auth-owned writer; provider offsets и historical rows не доказаны | не менять; сверить provider/adapter writers | REQUIRES_CHECK |
-| `TwoFactor.lockedUntil` | Better Auth 2FA lockout deadline | Better Auth plugin-owned writer; production rows не доказаны | не менять; проверить plugin writer и samples | REQUIRES_CHECK |
 | `Verification.expiresAt`, `Verification.createdAt`, `Verification.updatedAt` | Better Auth verification lifecycle | Better Auth-owned writer; historical rows не доказаны | не менять; проверить adapter и samples | REQUIRES_CHECK |
 | `Organization.createdAt`, `Organization.updatedAt` | tenant record audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `Member.createdAt`, `Member.updatedAt` | membership audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
@@ -71,35 +68,20 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 | `RetentionRun.startedAt`, `RetentionRun.finishedAt` | retention execution boundaries | runtime passes one injected JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `RetentionRun.createdAt` | retention row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 
-Coverage: `20 TIMESTAMPTZ_UTC + 6 KEEP_TIMESTAMP + 61 REQUIRES_CHECK = 87 DateTime fields`. Backup-copy proof подтвердил сохранение epoch/null-shape для всех 20 полей при production timezone `Etc/UTC`; migration заняла 541 ms на затронутых таблицах общим размером менее 15 MB. Остальные поля остаются без schema change.
+Coverage: `17 TIMESTAMPTZ_UTC + 6 KEEP_TIMESTAMP + 58 REQUIRES_CHECK = 81 DateTime fields`. Ранее подтверждённый backup-copy proof сохраняет epoch/null-shape для оставшихся UTC-полей при production timezone `Etc/UTC`. Остальные поля остаются без schema change.
 
 ## Identity и access
 
 ### User
 
-Better Auth identity with project `systemRole`, immutable optional `username`, `disabledAt`, `mustChangePassword` and `twoFactorEnabled`.
+Better Auth identity with project `systemRole`, immutable optional `username` и `disabledAt`.
 
 - `username` and `email` are unique;
 - `PLATFORM_ADMIN` maps to non-tenant `platform-admin`;
 - `SEO_ANALYST` maps to non-tenant project-specific `platform-analyst`;
 - client access is created only through `Member.tenantRole`;
-- `mustChangePassword=true` blocks cabinet access until audited completion;
 - `disabledAt` blocks principal creation;
-- additive migration does not change existing system roles or lock existing users.
-
-### TwoFactor
-
-Better Auth 2FA record, unique by `userId`. Stores the plugin-managed secret, encrypted backup codes, verification state and lockout counters. These fields never enter DTO, logs, AuditEvent markers or browser payload.
-
-### UserSetupToken
-
-One-time operator-issued first-access capability. The table stores only a 64-character SHA-256 `tokenHash`, owner `userId`, expiry, optional used/revoked timestamps and nonsecret `createdBy` operator identity.
-
-- raw token is 32 random bytes and never enters PostgreSQL, logs, audit or documentation;
-- `expiresAt`, `usedAt`, `revokedAt` используют `timestamptz(3)`; `createdAt` и `updatedAt` остаются `timestamp(3)` до отдельного proof;
-- successful setup creates the Better Auth credential account, consumes the token, clears `mustChangePassword` and creates a safe AuditEvent atomically;
-- expiry, revocation, replay, disabled user or an existing credential leave business state unchanged;
-- deleting a User cascades its setup tokens; normal operations revoke or expire tokens rather than physically deleting them.
+- schema содержит только текущие identity/session records; удалённые compatibility auth tables и flags не являются частью runtime contract.
 
 ### Session, Account, Verification
 

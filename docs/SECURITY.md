@@ -1,241 +1,93 @@
 # SECURITY
 
-Документ описывает актуальную security boundary canonical `main`. PrincipalContext, AMS-owned tenancy, 2FA, scopedDb и container release contract реализованы; фактический production proof подтверждается только release evidence. Новая работа следует Application Platform Core 3.4.
-
-## Модель безопасности
-
-Security boundary состоит из public browser surface, Next.js application, Better Auth, server-side authorization, PostgreSQL, worker/provider adapters, AMS Leads API, Nginx и secret store.
+Документ фиксирует security boundary canonical `main` для профиля `multi-tenant / pii / own-saas`.
 
 ## Trust boundaries
 
 ### Browser
 
-Может получить:
-
-- публичный landing и legal pages;
-- login/lead forms;
-- после авторизации — только явно сформированные project/report DTO.
-
-Не получает:
-
-- DB URLs и Prisma records;
-- Better Auth secret;
-- provider OAuth/API tokens;
-- raw provider payloads и internal technical JSON;
-- backup credentials;
-- delivery bot token/chat ID.
+Browser получает публичный сайт либо явные DTO кабинета. Он не получает Prisma records, database URL, provider credentials, raw provider payloads, backup credentials, password hashes или внутренние error bodies.
 
 ### Next.js application
 
-- Better Auth validates identity/session/2FA challenge only;
-- `getCurrentPrincipalState()` re-reads User + AMS Membership and rejects `disabledAt`;
-- platform principals do not receive fake tenant scopes;
-- tenant scope derives only from a fresh server-side Membership read;
-- first-password onboarding blocks cabinet routes until `mustChangePassword=false`;
-- new users receive a 32-byte setup capability through operator CLI; only SHA-256 is stored and `/setup/#token` keeps the raw value out of HTTP/access-log paths;
-- production Platform Admin requires verified 2FA from the fail-closed `APP_ENV=production` identity; no bypass flag exists;
-- every private page/service requires `PrincipalContext` permission + resource authorization;
-- public signup is disabled;
-- presentation does not import Prisma;
-- readiness exposes no connection details and Nginx restricts it externally.
+- Better Auth проверяет identity/password/session;
+- `requireCurrentCabinetPrincipal()` перечитывает session без cookie cache и требует активного User;
+- tenant scope создаётся только из свежего AMS Membership;
+- permission и module-owned resource authorization обязательны одновременно;
+- public signup и user-created organizations выключены;
+- public errors имеют stable code, safe message и correlation ID;
+- readiness доступен только с localhost.
 
 ### PostgreSQL
 
-- runtime source of truth;
-- production listener — loopback/local only;
-- app и migrator roles разделены;
-- every tenant-owned registry, configuration, run, metric and report record has a required `organizationId`;
-- direct ownership and composite parent foreign keys reject cross-tenant relations independently of application authorization;
-- `pnpm verify:tenant-ownership` is a read-only count-only preflight; production migration stops if any ownership check is nonzero;
-- web/worker используют только необходимые runtime privileges;
-- migration и restore не выполняются через browser;
-- backup/restore обязательны.
+- единственный runtime source of truth;
+- listener не публикуется в Internet;
+- runtime и migrator identities разделены;
+- tenant-owned records имеют `organizationId`, а composite constraints блокируют cross-tenant relations;
+- production применяет только новые reviewed migrations;
+- backup, checksum, offsite confirmation и isolated restore smoke обязательны перед release.
 
-### Worker
+### Worker и integrations
 
-- отдельный oneshot runtime и OS service;
-- web environment не содержит provider tokens;
-- worker environment не содержит Better Auth secret;
-- provider calls только read-only и только к exact allowlisted HTTPS origins;
-- pg-boss uses the same database with a separate schema and bounded pool, but worker runtime starts with `migrate:false/createSchema:false`;
-- logs содержат IDs, timestamps, counts, duration, status и safe error code, но не token/header/raw body/PII;
-- outbox worker dispatches only registered topics and bounded JSON payloads;
-- lease ownership prevents one worker from completing another worker's job;
-- safe error codes replace raw exception/response bodies.
+- provider tokens доступны только worker environment;
+- вызовы Яндекс.Вебмастера, Яндекс.Метрики и Topvisor только read-only и на exact allowlisted HTTPS origins;
+- browser не вызывает provider API;
+- provider mapping хранит только nonsecret identifiers/settings;
+- provider mutations и paid rank checks запрещены;
+- logs содержат safe IDs/counts/status, но не token/header/raw body/PII;
+- outbox использует idempotency, lease, bounded retry и dead-letter.
 
-### Sentry
+### Leads API
 
-Current state: explicitly disabled. No DSN, token, scrub policy confirmation or controlled event proof are configured in this repository. Until those prerequisites exist, observability relies on redacted pino JSON logs, health endpoints and deterministic tests; no fake `connected` status is claimed.
+Публичная форма передаёт заявку в отдельный allowlisted AMS Leads API. Имя и телефон не сохраняются в PostgreSQL AMS IMPULSE и не логируются. `NEXT_PUBLIC_LEADS_SITE_KEY` — публичный site identifier, а delivery credentials остаются во внешнем сервисе.
 
-### AMS Leads API
+## Identity и доступ
 
-Public contact form отправляет имя, телефон, source/UTM и anti-spam metadata в отдельный allowlisted сервис.
+- вход по уникальному логину и паролю ровно из 8 печатных ASCII-символов;
+- пароль назначает только Platform Admin и передаёт вне Git, URL, argv, docs и logs;
+- открытый пароль никогда не возвращается после сохранения;
+- смена пароля отзывает все старые sessions;
+- отключённый User отклоняется на fresh principal boundary;
+- Platform Admin — non-tenant principal и всегда указывает целевую organization для cross-tenant операции;
+- tenant user видит только organization свежего Membership;
+- знание URL, slug или скрытый UI control не дают доступ.
 
-- `NEXT_PUBLIC_LEADS_SITE_KEY` — public site identifier, не credential чтения;
-- origin/project/site key, honeypot, minimum-fill-time и rate limits проверяются внешним сервисом;
-- AMS IMPULSE не сохраняет lead PII в своей PostgreSQL;
-- delivery credentials остаются только в AMS Leads API environment;
-- frontend не логирует payload; отображаемый Leads API error обязан быть client-safe.
+Отсутствие дополнительного фактора — утверждённое владельцем исключение. Компенсирующие меры: HTTPS/HSTS, закрытая регистрация, встроенный Better Auth limiter, server-side authorization, короткая административная поверхность, session revocation, disabled-user boundary и AuditEvent.
 
-### Nginx
+## Rate limiting и redaction
 
-- TLS/HSTS;
-- reverse proxy к loopback standalone server;
-- static assets;
-- framework version suppression и базовые security headers;
-- `/api/health/ready` разрешён только localhost;
-- не заменяет application authorization.
+- встроенный Better Auth limiter включён независимо от runtime mode;
+- `/sign-in/email` и `/sign-in/username` ограничены до 5 попыток за 60 секунд на IP и endpoint;
+- отдельный application limiter не создаётся;
+- Pino redaction закрывает root и nested `user`, `actor`, `payload`, `headers`, `request/response`, `req/res` поля с password/token/secret/cookie/API key/email/phone;
+- serialized-log test проверяет отсутствие исходных sentinel values.
 
-## Roles и authorization
+## Секреты
 
-### PLATFORM_ADMIN
+Source of truth — разрешённый Doppler scope и root-owned protected server env. К секретам относятся Better Auth secret, DB credentials, provider tokens и backup credentials. Они запрещены в Git, fixtures, build output, browser, argv, документации и логах. Server-only values не используют `NEXT_PUBLIC_*`.
 
-Internal non-tenant principal. Production cabinet access requires verified Better Auth TOTP. Cross-tenant operation must have explicit target tenant and audit; UI visibility is never authorization.
+## PII и retention
 
-### PLATFORM_ANALYST
-
-Project-specific non-tenant read/sync principal derived from current `SEO_ANALYST`. It cannot manage Platform Admin or tenant memberships.
-
-### Tenant user
-
-Client access derives from fresh AMS Membership role `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`. Knowledge of `clientSlug`, `siteSlug` or report URL does not grant scope.
-
-Authorization flow:
-
-```text
-Better Auth session
-→ fresh User + Member.tenantRole read
-→ PrincipalContext
-→ permission
-→ module resource authorization
-→ explicit DTO + correlation ID
-```
-
-Foreign tenant access возвращает denial/not-found без раскрытия существования записи.
-
-## Authentication
-
-- official Better Auth username plugin;
-- immutable lowercase username, unique;
-- email/password provider используется внутренне;
-- public signup и user-created organizations выключены;
-- identity и одноразовая setup capability создаются operator-only CLI;
-- новый пользователь сам задаёт password через `/setup/#<token>`; raw token показывается оператору один раз, а fragment не попадает в HTTP/access logs;
-- password не принимается CLI, argv, environment или документацией; server-only setup endpoint применяет password policy Better Auth;
-- auth secret rotation намеренно инвалидирует или сохраняет sessions согласно runbook.
-
-## Секреты и env
-
-Секреты:
-
-- Better Auth secret;
-- DB app/migrator passwords и URLs;
-- provider tokens;
-- offsite backup credentials;
-- external delivery credentials.
-
-Source of truth — Doppler/project-specific protected server env. Значения не попадают в Git, docs, fixtures, build output, browser, argv или logs. Server-only values запрещены под `NEXT_PUBLIC_*`.
-
-Допустимые public build values для lead form:
-
-- Leads API URL;
-- project identifier;
-- public site key.
-
-## Environment validation
-
-- DB принимает только complete URL или complete component set;
-- auth secret/URL проверяются вместе;
-- non-loopback Better Auth URL требует HTTPS;
-- Leads endpoint/project/site key проходят exact public schema;
-- invalid production web env блокирует deploy build;
-- `RELEASE_SHA` принимает только full lowercase Git SHA.
-
-## PII
-
-- User/session tables могут содержать email, IP и user-agent, доступные только auth/server layer;
-- lead name/phone не сохраняются и не логируются AMS IMPULSE;
-- test fixtures не используют production PII;
-- raw error bodies не сохраняются в `SourceRun`;
-- retention/erasure auth data требует отдельной owner-approved operation.
-- TOTP secret, backup codes and failed-verification state are auth-only; they never enter DTO, browser logs, audit markers or error response.
-- Better Auth backup codes are the only 2FA recovery mechanism; public password/2FA reset and environment bypass are disabled.
-- setup completion returns one generic failure for unknown, expired, revoked and replayed tokens; password, raw token and token hash never enter AuditEvent.
-
-## Auth abuse protection и log redaction
-
-- встроенный limiter Better Auth явно включён независимо от runtime mode;
-- global memory bucket ограничивает общий auth traffic одного web runtime; exact custom rules защищают установленные `1.7.2` endpoints `/sign-in/email`, `/sign-in/username` и `/two-factor/*`;
-- username/email login: не более 5 запросов за 60 секунд на IP и endpoint;
-- 2FA enrollment/recovery mutations: не более 3 запросов за 60 секунд; verification endpoints — не более 5 за 60 секунд;
-- отдельный application limiter не создаётся; built-in two-factor challenge lockout Better Auth сохраняется;
-- Nginx передаёт фактический client address через `X-Real-IP`/`X-Forwarded-For`; приложение не принимает browser-supplied tenant/auth scope из headers;
-- Pino redaction закрывает root и nested `user`, `actor`, `payload`, `headers`, `request/response` и `req/res` поля с password/token/secret/cookie/API key/email/phone/backup codes;
-- serialized-log test проверяет отсутствие исходных PII/secret sentinel values, а не только наличие строки `[REDACTED]`.
-
-## Security headers и indexing
-
-- public landing/legal routes indexable;
-- private `/dashboard`, `/analyst`, `/admin`, `/onboarding`, `/c`, `/demo` have noindex metadata;
-- readiness external access denied;
-- Nginx задаёт HSTS, `nosniff`, `DENY`, referrer policy, permissions policy и `frame-ancestors 'none'`;
-- static hashed assets cacheable; private dynamic data не должна попадать в shared public cache.
+- User/Session могут содержать email, IP и user-agent только в auth/server layer;
+- lead PII не хранится в этой БД;
+- production PII не используется в fixtures;
+- raw errors и provider bodies не сохраняются;
+- удаление/retention identity data — отдельная owner-approved операция;
+- release rollback не откатывает schema/data автоматически.
 
 ## Security invariants
 
 - public signup off;
-- `PrincipalContext`, not browser organization values, is the canonical authorization input;
-- Better Auth Organization Plugin is absent from runtime; deprecated plugin-compatible records do not define access;
-- `mustChangePassword` is server-owned and completion records AuditEvent;
-- production Platform Admin requires 2FA; session revocation follows Better Auth password change;
-- Better Auth rate limiting explicitly enabled with strict installed login/2FA endpoint rules;
-- disabled user denied;
-- foreign tenant read/write denied server-side and a mismatched owner-parent relation is rejected by PostgreSQL;
-- browser-to-provider calls prohibited;
-- Prisma/SQL in UI prohibited;
-- web process has no provider tokens;
-- provider mutations and paid checker operations prohibited;
-- provider origin exact-allowlisted HTTPS;
-- secret values absent from code/docs/logs/browser;
-- lead PII not stored in AMS IMPULSE DB;
-- permissions вычисляются server-side из versioned role matrix;
-- report reads требуют отдельный report capability;
-- public error envelope содержит stable code, safe message, fieldErrors и correlationId;
-- health/auth responses возвращают matching `X-Correlation-ID`;
-- idempotency key is tenant-scoped and payload-hash bound;
-- audit/outbox/idempotency enqueue is one transaction;
-- Platform Admin использует только typed Server Actions и owner commands; resource mutation и safe AuditEvent атомарны;
-- `defineAction` централизованно требует fresh non-cached Better Auth session, active user, completed password onboarding и production 2FA для Platform Admin; direct action call не обходит boundary;
-- provider settings из browser принимают только плоский nonsecret JSON и отклоняют sensitive key names;
-- tracked query replacement сохраняет records/history и меняет lifecycle через `enabled`;
-- outbox payload, pg-boss transport data, audit markers and JobRun errors exclude secrets/raw PII;
-- retries are bounded; permanent failures become visible dead-letter;
-- release health SHA поступает из root-owned deploy-generated env;
-- concurrent full worker sync blocked by PostgreSQL advisory lock;
-- partial/error metadata remains honest;
-- production DB not used for local tests;
-- local PostgreSQL binds only to `127.0.0.1`; credentials stay in ignored `.env.local`;
-- integration runner accepts only explicit `TEST_DATABASE_*` with a `*_test` database name;
-- public/auth-boundary E2E does not embed login credentials or production data;
-- production migration/deploy/restore requires explicit owner action.
+- fresh `PrincipalContext` — единственный authorization input;
+- foreign tenant read/write denied server-side и PostgreSQL constraints;
+- UI не импортирует Prisma/SQL;
+- `defineAction → defineCommand → transaction-bound repository` для business mutations;
+- Platform Admin provisioning и user operations пишут safe AuditEvent атомарно;
+- provider settings отклоняют sensitive key names;
+- secret/PII отсутствуют в DTO, logs, AuditEvent и error response;
+- integration runner принимает только отдельную `*_test` database;
+- production deploy привязан к exact reviewed SHA и immutable image digest.
 
-## Проверки security-scope
+## Проверка
 
-Локальный статический security-профиль запускается командой `pnpm security:semgrep`. Он использует небольшой checked-in набор AMS-правил, не загружает внешний ruleset и не входит в обязательный CI. Production dependency audit запускается отдельно командой `pnpm security:dependencies`, потому что его результат зависит от актуального advisory registry.
-
-- platform-admin/analyst/client/disabled-user capability matrix;
-- fresh memberships и active organization validation;
-- foreign project/site/report denial;
-- report capability denial;
-- auth unavailable standard 503 envelope;
-- correlation/error/health schema tests;
-- invalid DB/auth/release/public env rejection;
-- public signup disabled;
-- exact provider/Leads origin enforcement;
-- no secret/raw body/nested user-actor-payload PII in serialized logs and DTO;
-- readiness external denial;
-- private noindex metadata;
-- backup upload confirmation и isolated restore smoke;
-- web/worker env separation.
-
-Auth, roles, PII, provider credentials, Nginx, DB, backup и release changes классифицируются `RISKY` и требуют профильный exact-head proof перед merge.
+Auth, PII, provider credentials, migrations, Nginx, backup и release имеют класс `RISKY`. Перед `main` нужен профильный exact-head gate, перед production — `release-check`, backup/restore proof и live smoke изменённого сценария.

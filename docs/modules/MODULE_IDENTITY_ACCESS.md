@@ -2,96 +2,44 @@
 
 ## Назначение
 
-Разделяет Better Auth identity/session lifecycle и AMS business authorization. Создаёт server-only `PrincipalContext`, first-password/2FA gates и Membership roles.
+Разделяет Better Auth identity/password/session lifecycle и AMS business authorization. Создаёт server-only `PrincipalContext`, управляет пользователями и Membership.
 
-## Не входит в scope
+## Ownership
 
-Public signup, self-service invitation/reset, impersonation, RLS, external API clients и schema cleanup внутри обычной auth-задачи.
+- Better Auth: User identity, Account credential, Session, Verification;
+- AMS: Organization, `Member.tenantRole`, permissions, resource authorization и административные операции доступа.
 
-## Data ownership
+Public signup, self-service password recovery, invitations, impersonation, Organization Plugin и второй auth provider не входят в scope.
 
-- Better Auth: User identity, Account, Session, Verification, TwoFactor;
-- AMS: Organization, Member.tenantRole, permissions, onboarding state.
+## Principal и роли
 
-## Principal types
+- `platform-admin`: platform management, явный cross-tenant target;
+- `platform-analyst`: project/report/sync read;
+- `tenant-user`: свежий Membership и `ORG_OWNER | ORG_MEMBER | VIEWER`;
+- `job`: server-owned organization scope;
+- `api-client`: зарезервирован до появления внешнего API.
 
-`platform-admin`, `platform-analyst`, `tenant-user`, `job`; `api-client` зарезервирован до появления внешнего API.
+Browser никогда не создаёт PrincipalContext. Disabled User не получает principal; platform roles не имеют fake organization; tenant principal требует свежий Membership.
 
-## Roles and permissions
-
-- PLATFORM_ADMIN: platform management, explicit cross-tenant target, mandatory production 2FA;
-- SEO_ANALYST: project/report/sync read, no Platform Admin access;
-- ORG_OWNER/ORG_MEMBER/VIEWER: organization-scoped permissions from fresh Membership.
-
-## Commands
-
-`auth.complete-password-onboarding` и identity-owned Platform Admin user/membership commands. Business writes use `defineCommand` and AuditEvent.
-
-## Queries
-
-`getPrincipalStateByUserId`, `getCurrentPrincipalState`, `getCurrentCabinetRedirect`, exact-principal guards и identity admin queries.
-
-## DTO
-
-Principal and identity DTOs exclude email where unnecessary, session token, password hash, TOTP secret, backup codes and raw Member records.
-
-## Invariants
-
-- browser never constructs PrincipalContext;
-- disabled user has no principal;
-- platform principals have no fake organization;
-- tenant principal requires fresh active Membership;
-- Better Auth Organization Plugin is absent from runtime;
-- public signup is disabled;
-- one `PrincipalContext` permission model owns all private reads and mutations;
-
-## Tenant behavior
-
-Tenant scope comes only from fresh Membership. Browser/session organization preferences are not an authority source.
-
-## Resource authorization
-
-Identity Access authorizes principal class; owner modules authorize Project/Site/report resources.
-
-## State lifecycle
+## User lifecycle
 
 ```text
-operator-created user
-→ one-time setup capability (raw token shown once; only SHA-256 stored)
-→ server-only Better Auth credential creation
-→ atomic token consumption + audited onboarding completion
-→ cabinet
-
-PLATFORM_ADMIN
-→ TOTP enrollment
-→ verified 2FA
-→ production cabinet
+Platform Admin
+→ атомарно создаёт Organization + Project + User credential + Membership + AuditEvent
+→ передаёт назначенный пароль приватным каналом
+→ пользователь входит и сразу открывает /dashboard/
 ```
 
-## Concurrency
+Пароль содержит ровно 8 печатных ASCII-символов. Он хранится только как Better Auth hash, не возвращается после сохранения и не попадает в URL, logs или AuditEvent. Назначение нового пароля отзывает sessions. Отключение пользователя также отзывает доступ.
 
-Better Auth owns credential/2FA concurrency. Onboarding completion is idempotent and returns `changed=false` when already complete.
+## Commands и queries
 
-## Idempotency
+Identity-owned commands: provision client, reset password, enable/disable user, change tenant role, add/remove Membership. Business writes проходят `defineCommand` и пишут безопасный AuditEvent в той же транзакции.
 
-No external identity API exists. Retried AMS commands must use their command-level idempotency contract where applicable.
+Queries возвращают browser-safe user/membership DTO и исключают email, когда он не нужен, session token и password hash.
 
-## Audit
+## Failure и tests
 
-Password onboarding and every Platform Admin cross-tenant/membership mutation write safe AuditEvent markers.
+Unauthenticated → login; disabled/no-membership → denial без раскрытия tenant; duplicate login → stable safe error; transaction failure → полный rollback.
 
-## Events / Async policy
-
-Identity flows do not emit provider side effects. Future delivery/invitation needs a separate outbox topic and schema.
-
-## Integrations
-
-Better Auth `1.7.2` only; no second auth provider or Organization Plugin.
-
-## Failure behavior
-
-Unauthenticated → login; password setup → `/onboarding/password/`; missing admin 2FA → `/onboarding/two-factor/`; disabled/no-membership → denial without tenant disclosure.
-
-## Tests
-
-Principal/permission unit tests, real-PostgreSQL factory matrix, first-password and TOTP E2E, foreign/no-membership denial.
+Проверяются principal matrix, atomic provisioning, password length, duplicate login/slug, session revocation, disabled user, foreign/no-membership denial, закрытый signup и прямой первый вход в кабинет.

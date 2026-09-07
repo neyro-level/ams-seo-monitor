@@ -38,7 +38,7 @@ pnpm dev
 
 Next.js читает `.env.local`. Local URL: `http://127.0.0.1:3000`.
 
-Auth user создаётся operator CLI с одной из versioned roles: `PLATFORM_ADMIN`, `SEO_ANALYST`, `CLIENT_VIEWER`. CLI выводит одноразовую setup-ссылку; password задаётся через server-only setup route. Local auth bypass, hardcoded password и password через argv/stdin запрещены.
+Auth user создаётся Platform Admin UI или operator CLI с одной из versioned roles: `PLATFORM_ADMIN`, `SEO_ANALYST`, `CLIENT_VIEWER`. Пароль ровно из 8 печатных символов передаётся CLI только через stdin; argv, hardcoded password и local auth bypass запрещены. Первый вход сразу открывает `/dashboard/`.
 
 ## Tests
 

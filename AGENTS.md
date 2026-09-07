@@ -55,8 +55,8 @@ DATABASE = self-managed-postgresql
 9. Tenant relations защищаются explicit scope и composite PostgreSQL constraints; nested tenant writes запрещены без доказанного исключения.
 10. Applied migration не переписывается; production `db push` запрещён; после schema change выполняется explicit Prisma generate.
 11. Unknown environment/database target для destructive операции означает fail closed.
-12. Better Auth владеет identity/password/session/2FA; public signup и Organization Plugin выключены.
-13. Production Platform Admin обязан пройти fresh session, password onboarding и 2FA.
+12. Better Auth владеет identity/password/session; public signup и Organization Plugin выключены.
+13. Пароль ровно из 8 печатных символов назначает Platform Admin через protected UI или stdin-only CLI; fresh session и active User обязательны.
 14. Secrets/PII не попадают в Git, browser, argv, docs или logs; provider calls только read-only.
 15. Production использует exact reviewed SHA и immutable image; merge не равен release.
 

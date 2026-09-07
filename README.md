@@ -94,7 +94,7 @@ systemd timer
 | Tailwind CSS | `4.3.3` | preserve |
 | Zod | `4.5.4` | preserve |
 
-Дополнительные UI/runtime packages: Recharts `3.10.1`, React Hook Form `7.87.0`, TanStack Table `8.21.3`, nuqs `2.10.1`, pino `10.3.1` и pg-boss `12.30.0`. Refine удалён. Docker production assets реализованы; production cutover остаётся отдельной командой владельца.
+UI основан на shadcn primitives поверх Base UI `1.8.0`: внешний слой сохраняет Manrope и `ch-*`, кабинет — PT Root UI и `crm-*`. Таблицы используют TanStack Table `9.2.4` + shadcn Table, графики — shadcn Chart поверх Recharts `3.10.1`. Refine отсутствует.
 
 ## Локальная подготовка
 
@@ -117,12 +117,12 @@ Docker PostgreSQL слушает только `127.0.0.1`, использует 
 Operator provisioning поддерживает `PLATFORM_ADMIN`, `SEO_ANALYST` и `CLIENT_VIEWER`:
 
 ```bash
-pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN --created-by <operator-id>
-pnpm user:revoke-setup-token -- --token-id <id>
+pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN
+pnpm user:reset-password -- --username <name>
 pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
 ```
 
-Команда создаёт одноразовую setup-ссылку: raw token показывается оператору один раз, а PostgreSQL хранит только SHA-256 hash. Пароль задаёт сам пользователь через setup route; CLI пароль не принимает и не выводит.
+`user:create` и `user:reset-password` принимают пароль ровно из 8 печатных символов только через stdin. В `/admin/` Platform Admin может одной транзакцией создать organization, project, credential user и Membership; первый вход сразу открывает `/dashboard/`.
 
 ## Проверки
 

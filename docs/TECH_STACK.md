@@ -18,7 +18,9 @@
 | Zod | `4.5.4` | DTO/config validation |
 | Prisma / `@prisma/client` | `7.10.0` / `7.10.0` | explicit generated client, schema, migrations, repositories |
 | PostgreSQL | `18.x` | runtime source of truth |
-| Better Auth | `1.7.2` | identity/password/session/2FA; Organization Plugin не зарегистрирован в runtime |
+| Better Auth | `1.7.2` | identity/password/session; Organization Plugin и public signup выключены |
+| Base UI / shadcn | `1.8.0` / project-owned components | accessible UI primitives и переносимая visual оболочка |
+| TanStack Table | `9.2.4` | headless table state для private UI |
 | pg / Prisma pg adapter | `8.23.0` / `7.10.0` | PostgreSQL transport |
 | Tailwind CSS | `4.3.3` | styles |
 | Recharts | `3.10.1` | report charts |
@@ -50,7 +52,9 @@
 
 ## Active stack decisions
 
-- private admin surfaces use React Hook Form, TanStack Table and `nuqs`;
+- все public/private controls используют project-owned shadcn primitives; собственный visual слой сохраняют `ch-*` и `crm-*` tokens;
+- private admin surfaces use React Hook Form, TanStack Table `9.2.4`, shadcn Table и `nuqs`;
+- report visualization uses shadcn Chart wrappers over Recharts;
 - Platform Admin uses typed route composition and shared primitives; Refine отсутствует;
 - pg-boss `12.30.0` has a separate schema/pool/migration contract;
 - pino `10.3.1` uses redaction and correlation-aware callsites;
