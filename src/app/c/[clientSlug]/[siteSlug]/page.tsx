@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import { notFound, redirect } from "next/navigation";
-import { AppShell } from "../../../../components/shell/AppShell.tsx";
 import { ReportPeriodSelector } from "../../../../components/dashboard/ReportPeriodSelector.tsx";
 import { SiteReportView } from "../../../../modules/reporting/presentation.ts";
 import {
@@ -59,7 +58,7 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
   }
 
   return (
-    <AppShell currentPath={`/c/${clientSlug}/${siteSlug}/`} principal={state.principal} displayName={state.displayName}>
+    <>
       <SiteReportView
         clientName={`Проект ${projectContext.client.name}`}
         site={site}
@@ -69,10 +68,9 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
         periodControl={
           <ReportPeriodSelector
             active={periodKey}
-            basePath={`/c/${clientSlug}/${siteSlug}/`}
           />
         }
       />
-    </AppShell>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import styles from "./landing.module.css";
+import styles from "../components/marketing/ImpulseLanding.module.css";
 
 const quickLinks = [
   {

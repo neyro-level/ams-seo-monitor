@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { AppShell } from "../../components/shell/AppShell.tsx";
 import { SiteReportView } from "../../modules/reporting/presentation.ts";
 import { getDemoSnapshot } from "../../modules/reporting/presentation.ts";
 import {
@@ -34,13 +33,13 @@ export default async function DemoPage() {
   if (!state) redirect("/?login=1");
 
   return (
-    <AppShell currentPath="/demo/" principal={state.principal} displayName={state.displayName}>
+    <>
       <SiteReportView
         clientName="Demo"
         site={demoSite}
         snapshot={getDemoSnapshot()}
         mode="fixture"
       />
-    </AppShell>
+    </>
   );
 }
