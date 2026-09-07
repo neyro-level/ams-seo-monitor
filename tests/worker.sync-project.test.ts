@@ -57,6 +57,18 @@ workerTestDescription("syncProjectToDatabase", () => {
     });
     await prisma.providerConnection.updateMany({
       where: {
+        site: {
+          project: {
+            slug: "alpha",
+          },
+        },
+      },
+      data: {
+        status: "CONNECTED",
+      },
+    });
+    await prisma.providerConnection.updateMany({
+      where: {
         provider: Provider.TOPVISOR,
         site: {
           slug: "north",

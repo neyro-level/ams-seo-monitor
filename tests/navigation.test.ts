@@ -101,7 +101,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
     const projectItems = sections[1]?.items ?? [];
 
     expect(sections[0]?.title).toBe("");
-    expect(mainItems.map((item) => item.label)).toEqual(["Все проекты"]);
+    expect(mainItems.map((item) => item.label)).toEqual(["Все проекты", "Уведомления"]);
     expect(mainItems[0]?.active).toBe(true);
     expect(projectItems.map((item) => item.label)).toEqual([
       "Проект Synthetic Alpha Organization",
