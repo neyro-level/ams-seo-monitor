@@ -68,7 +68,6 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
         periodControl={
           <ReportPeriodSelector
             active={periodKey}
-            basePath={`/c/${clientSlug}/${siteSlug}/`}
           />
         }
       />

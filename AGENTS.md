@@ -26,6 +26,8 @@ DATABASE = self-managed-postgresql
 - environment ownership — `docs/ENVIRONMENT.md`;
 - текущий backlog — `docs/MASTER_PLAN.md`;
 - release и recovery — `docs/RUNBOOK_DEPLOY.md`, `docs/ops/*`;
+- private UI — `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
+- public UI, legal и login modal — `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
 - соответствие Core 3.4 — `docs/PLATFORM_CONFORMANCE.md`;
 - exact versions/runtime — `package.json`, lockfile, `.node-version`, Prisma schema/migrations и runtime config.
 
@@ -59,6 +61,8 @@ DATABASE = self-managed-postgresql
 13. Пароль ровно из 8 печатных символов назначает Platform Admin через protected UI или stdin-only CLI; fresh session и active User обязательны.
 14. Secrets/PII не попадают в Git, browser, argv, docs или logs; provider calls только read-only.
 15. Production использует exact reviewed SHA и immutable image; merge не равен release.
+16. Private UI использует Application Design System 2.0 semantic tokens и PT Root UI; `crm-*`, системный HEX в reusable UI и business CSS в `globals.css` запрещены.
+17. Public UI остаётся в изолированной `theme-public` с Manrope; landing, legal и modal-вход не редизайнятся без отдельного решения владельца.
 
 ## Architecture map
 
