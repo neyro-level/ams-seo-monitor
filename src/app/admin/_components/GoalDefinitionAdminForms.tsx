@@ -3,8 +3,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm, type Resolver, type FieldValues, type UseFormSetError } from "react-hook-form";
+import { Controller, useForm, type Resolver, type FieldValues, type UseFormSetError } from "react-hook-form";
 import { z } from "zod";
+import { Checkbox } from "../../../components/ui/checkbox.tsx";
 import {
   createGoalDefinitionAction,
   updateGoalDefinitionAction,
@@ -111,7 +112,7 @@ function GoalDefinitionEditCard({ item }: { item: GoalDefinitionListItem }) {
           <SelectInput options={goalDirectionOptions} {...form.register("direction")} />
         </FormField>
         <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 xl:self-end">
-          <input type="checkbox" className="size-4 accent-slate-900" {...form.register("includeInSeoConversion")} />
+          <Controller control={form.control} name="includeInSeoConversion" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
           Учитывать в SEO-конверсии
         </label>
         <div className="sm:col-span-2">
@@ -181,7 +182,7 @@ export function GoalDefinitionsAdminForms({ items, options }: { items: GoalDefin
             <SelectInput options={goalDirectionOptions} {...form.register("direction")} />
           </FormField>
           <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 xl:self-end">
-            <input type="checkbox" className="size-4 accent-slate-900" {...form.register("includeInSeoConversion")} />
+            <Controller control={form.control} name="includeInSeoConversion" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
             Учитывать в SEO-конверсии
           </label>
           <div className="sm:col-span-2">
