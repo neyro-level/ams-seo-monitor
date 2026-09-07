@@ -36,9 +36,15 @@ export function createIdentityAdminQueries(
     return dependencies.createRepository().listFormOptions();
   }
 
+  async function listUsers(principal: PrincipalContext) {
+    requireIdentityAdminActor(principal);
+    return dependencies.createRepository().listUsers();
+  }
+
   return {
     getIdentityAdminFormOptions,
     listOrganizations,
     listMemberships,
+    listUsers,
   };
 }

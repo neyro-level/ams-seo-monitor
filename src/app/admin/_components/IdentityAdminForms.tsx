@@ -4,10 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
+import { Button } from "../../../components/ui/button.tsx";
 import {
   createMembershipInputSchema,
   createOrganizationInputSchema,
   removeMembershipInputSchema,
+  provisionClientInputSchema,
+  resetUserPasswordInputSchema,
   tenantRoleSchema,
   updateMembershipInputSchema,
   updateOrganizationInputSchema,
@@ -16,6 +19,9 @@ import {
   type IdentityAdminFormOptions,
   type MembershipListItem,
   type OrganizationListItem,
+  type IdentityAdminUserListItem,
+  type ProvisionClientInput,
+  type ResetUserPasswordInput,
   type RemoveMembershipInput,
   type UpdateMembershipInput,
   type UpdateOrganizationInput,
@@ -26,6 +32,9 @@ import {
   removeMembershipAction,
   updateMembershipAction,
   updateOrganizationAction,
+  provisionClientAction,
+  resetUserPasswordAction,
+  setUserEnabledAction,
 } from "../_actions/identity.ts";
 import {
   applyFieldErrors,
@@ -267,5 +276,105 @@ export function MembershipsAdminForms({
         {items.map((item) => <MembershipEditCard item={item} key={item.id} />)}
       </div>
     </div>
+  );
+}
+
+export function ClientProvisioningAdmin({
+  users,
+  thresholdProfiles,
+  clusterProfiles,
+}: {
+  users: IdentityAdminUserListItem[];
+  thresholdProfiles: Array<{ id: string; label: string }>;
+  clusterProfiles: Array<{ id: string; label: string }>;
+}) {
+  const router = useRouter();
+  const [feedback, setFeedback] = useState<Feedback>(null);
+  const form = useForm<ProvisionClientInput>({
+    resolver: zodResolver(provisionClientInputSchema) as Resolver<ProvisionClientInput>,
+    defaultValues: {
+      organizationName: "",
+      organizationSlug: "",
+      projectName: "",
+      projectSlug: "",
+      thresholdProfileId: thresholdProfiles[0]?.id ?? "",
+      clusterProfileId: clusterProfiles[0]?.id ?? "",
+      userName: "",
+      username: "",
+      password: "",
+      tenantRole: "VIEWER",
+    },
+  });
+  const submit = form.handleSubmit(async (values) => {
+    const result = await provisionClientAction(values);
+    if (!result.ok) {
+      applyFieldErrors(result.fieldErrors, form.setError);
+      setFeedback(feedbackFrom(result));
+      return;
+    }
+    form.reset({ ...form.getValues(), organizationName: "", organizationSlug: "", projectName: "", projectSlug: "", userName: "", username: "", password: "" });
+    setFeedback({ kind: "success", message: "Организация, проект и пользователь созданы" });
+    router.refresh();
+  });
+
+  return (
+    <div className="space-y-6">
+      <SectionCard title="Создать клиента" description="Организация, проект, пользователь и доступ создаются одной атомарной операцией.">
+        <form className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" onSubmit={submit}>
+          <FormField error={form.formState.errors.organizationName?.message} label="Организация" required><TextInput {...form.register("organizationName")} /></FormField>
+          <FormField error={form.formState.errors.organizationSlug?.message} label="Slug организации" required><TextInput {...form.register("organizationSlug")} /></FormField>
+          <FormField error={form.formState.errors.projectName?.message} label="Проект" required><TextInput {...form.register("projectName")} /></FormField>
+          <FormField error={form.formState.errors.projectSlug?.message} label="Slug проекта" required><TextInput {...form.register("projectSlug")} /></FormField>
+          <FormField error={form.formState.errors.thresholdProfileId?.message} label="Пороговый профиль" required><SelectInput options={thresholdProfiles.map((item) => ({ value: item.id, label: item.label }))} {...form.register("thresholdProfileId")} /></FormField>
+          <FormField error={form.formState.errors.clusterProfileId?.message} label="Кластерный профиль" required><SelectInput options={clusterProfiles.map((item) => ({ value: item.id, label: item.label }))} {...form.register("clusterProfileId")} /></FormField>
+          <FormField error={form.formState.errors.userName?.message} label="Имя пользователя" required><TextInput {...form.register("userName")} /></FormField>
+          <FormField error={form.formState.errors.username?.message} label="Логин" required><TextInput autoCapitalize="none" autoComplete="off" {...form.register("username")} /></FormField>
+          <FormField error={form.formState.errors.password?.message} helper="Ровно 8 печатных символов без пробелов." label="Пароль" required><TextInput autoComplete="new-password" maxLength={8} minLength={8} type="password" {...form.register("password")} /></FormField>
+          <FormField error={form.formState.errors.tenantRole?.message} label="Роль" required><SelectInput options={tenantRoleOptions} {...form.register("tenantRole")} /></FormField>
+          <div className="sm:col-span-2 xl:col-span-3"><SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Создать клиента" onRefresh={() => router.refresh()} pendingLabel="Создаём…" /></div>
+        </form>
+      </SectionCard>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {users.map((user) => <UserAccessCard key={user.id} user={user} />)}
+      </div>
+    </div>
+  );
+}
+
+function UserAccessCard({ user }: { user: IdentityAdminUserListItem }) {
+  const router = useRouter();
+  const [feedback, setFeedback] = useState<Feedback>(null);
+  const form = useForm<ResetUserPasswordInput>({
+    resolver: zodResolver(resetUserPasswordInputSchema) as Resolver<ResetUserPasswordInput>,
+    defaultValues: { userId: user.id, password: "" },
+  });
+  const resetPassword = form.handleSubmit(async (values) => {
+    const result = await resetUserPasswordAction(values);
+    if (!result.ok) {
+      applyFieldErrors(result.fieldErrors, form.setError);
+      setFeedback(feedbackFrom(result));
+      return;
+    }
+    form.reset({ userId: user.id, password: "" });
+    setFeedback({ kind: "success", message: "Пароль изменён, старые сессии отозваны" });
+  });
+  async function toggleEnabled() {
+    const result = await setUserEnabledAction({ userId: user.id, enabled: user.disabled });
+    setFeedback(result.ok ? { kind: "success", message: user.disabled ? "Пользователь включён" : "Пользователь отключён" } : feedbackFrom(result));
+    if (result.ok) router.refresh();
+  }
+  return (
+    <SectionCard title={user.name} description={`${user.username} · ${user.disabled ? "отключён" : "активен"}`}>
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600">{user.memberships.length ? user.memberships.map((item) => `${item.organizationName}: ${item.tenantRole}`).join(" · ") : "Нет доступа к организациям"}</p>
+        <form className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={resetPassword}>
+          <input type="hidden" {...form.register("userId")} />
+          <FormField error={form.formState.errors.password?.message} label="Новый пароль"><TextInput autoComplete="new-password" maxLength={8} minLength={8} type="password" {...form.register("password")} /></FormField>
+          <div className="self-end"><SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Назначить пароль" pendingLabel="Сохраняем…" variant="outline" /></div>
+        </form>
+        <Button variant="link" type="button" onClick={toggleEnabled}>{user.disabled ? "Включить пользователя" : "Отключить пользователя"}</Button>
+      </div>
+    </SectionCard>
   );
 }

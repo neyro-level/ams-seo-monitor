@@ -22,10 +22,14 @@ export const {
   removeMembership,
   updateMembership,
   updateOrganization,
+  provisionClient,
+  resetUserPassword,
+  setUserEnabled,
 } = commands;
 
 export const {
   getIdentityAdminFormOptions,
   listMemberships,
   listOrganizations,
+  listUsers,
 } = queries;

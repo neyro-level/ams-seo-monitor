@@ -1,4 +1,5 @@
 import type { PrincipalContext } from "../../../platform/authorization/principal.ts";
+import { hashPassword } from "better-auth/crypto";
 import { defineCommand } from "../../../platform/commands/define-command.ts";
 import type { DatabaseTransaction } from "../../../platform/database/transaction.ts";
 import {
@@ -6,7 +7,10 @@ import {
   createOrganizationInputSchema,
   IdentityAdminError,
   nextIdentityVersion,
+  provisionClientInputSchema,
   removeMembershipInputSchema,
+  resetUserPasswordInputSchema,
+  setUserEnabledInputSchema,
   updateMembershipInputSchema,
   updateOrganizationInputSchema,
 } from "../domain/admin-identity.ts";
@@ -37,6 +41,67 @@ export interface IdentityAdminCommandDependencies {
 export function createIdentityAdminCommands(
   dependencies: IdentityAdminCommandDependencies,
 ) {
+  const provisionClient = defineCommand<
+    PrincipalContext,
+    typeof provisionClientInputSchema,
+    { organizationId: string; projectId: string; userId: string; membershipId: string }
+  >({
+    name: "identity-access.client.provision",
+    input: provisionClientInputSchema,
+    authorize: (principal) => { requireIdentityAdminActor(principal); },
+    execute: async ({ principal, input, transaction }) => {
+      const actor = requireIdentityAdminActor(principal);
+      const repository = dependencies.createRepository(transaction);
+      const { password, ...safeInput } = input;
+      const passwordHash = await hashPassword(password);
+      const result = await repository.provisionClient({
+        ...safeInput,
+        passwordHash,
+      });
+      await repository.appendAudit({
+        actorId: actor.actorId,
+        action: "client.provision",
+        entityType: "User",
+        entityId: result.userId,
+        organizationId: result.organizationId,
+        beforeMarker: null,
+        afterMarker: {
+          username: input.username,
+          projectId: result.projectId,
+          tenantRole: input.tenantRole,
+        },
+        correlationId: actor.correlationId,
+      });
+      return result;
+    },
+  });
+
+  const resetUserPassword = defineCommand<PrincipalContext, typeof resetUserPasswordInputSchema, { userId: string }>({
+    name: "identity-access.user.password-reset",
+    input: resetUserPasswordInputSchema,
+    authorize: (principal) => { requireIdentityAdminActor(principal); },
+    execute: async ({ principal, input, transaction }) => {
+      const actor = requireIdentityAdminActor(principal);
+      const repository = dependencies.createRepository(transaction);
+      const passwordHash = await hashPassword(input.password);
+      if (!await repository.resetUserPassword(input.userId, passwordHash)) throw new IdentityAdminError("USER_NOT_FOUND");
+      await repository.appendAudit({ actorId: actor.actorId, action: "user.password-reset", entityType: "User", entityId: input.userId, organizationId: null, beforeMarker: null, afterMarker: { sessionsRevoked: true }, correlationId: actor.correlationId });
+      return { userId: input.userId };
+    },
+  });
+
+  const setUserEnabled = defineCommand<PrincipalContext, typeof setUserEnabledInputSchema, { userId: string; enabled: boolean }>({
+    name: "identity-access.user.set-enabled",
+    input: setUserEnabledInputSchema,
+    authorize: (principal) => { requireIdentityAdminActor(principal); },
+    execute: async ({ principal, input, transaction }) => {
+      const actor = requireIdentityAdminActor(principal);
+      const repository = dependencies.createRepository(transaction);
+      if (!await repository.setUserEnabled(input.userId, input.enabled)) throw new IdentityAdminError("USER_NOT_FOUND");
+      await repository.appendAudit({ actorId: actor.actorId, action: input.enabled ? "user.enable" : "user.disable", entityType: "User", entityId: input.userId, organizationId: null, beforeMarker: null, afterMarker: { enabled: input.enabled, sessionsRevoked: !input.enabled }, correlationId: actor.correlationId });
+      return input;
+    },
+  });
   const createOrganization = defineCommand<
     PrincipalContext,
     typeof createOrganizationInputSchema,
@@ -264,5 +329,8 @@ export function createIdentityAdminCommands(
     removeMembership,
     updateMembership,
     updateOrganization,
+    provisionClient,
+    resetUserPassword,
+    setUserEnabled,
   };
 }
