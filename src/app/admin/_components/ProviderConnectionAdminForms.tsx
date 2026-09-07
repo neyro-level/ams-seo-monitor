@@ -3,8 +3,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm, type Resolver, type FieldValues, type UseFormSetError } from "react-hook-form";
+import { Controller, useForm, type Resolver, type FieldValues, type UseFormSetError } from "react-hook-form";
 import { z } from "zod";
+import { Checkbox } from "../../../components/ui/checkbox.tsx";
 import {
   createProviderConnectionAction,
   updateProviderConnectionAction,
@@ -116,7 +117,7 @@ function ProviderConnectionEditCard({ item }: { item: ProviderConnectionListItem
           <AreaInput rows={6} {...form.register("settingsJsonText")} />
         </FormField>
         <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800">
-          <input type="checkbox" className="size-4 accent-slate-900" {...form.register("enabled")} />
+          <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
           Источник включён
         </label>
         <SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Сохранить подключение" onRefresh={() => router.refresh()} pendingLabel="Сохраняем…" />
@@ -177,7 +178,7 @@ export function ProviderConnectionsAdminForms({ items, options }: { items: Provi
             <TextInput {...form.register("externalId")} />
           </FormField>
           <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 xl:self-end">
-            <input type="checkbox" className="size-4 accent-slate-900" {...form.register("enabled")} />
+            <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
             Источник включён
           </label>
           <div className="sm:col-span-2">

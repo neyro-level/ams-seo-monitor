@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { ReportPeriodKey } from "../../shared/schemas/report.ts";
+import { Button } from "../ui/button.tsx";
 
 type ReportPeriodSelectorProps = {
   active: ReportPeriodKey;
@@ -27,14 +28,15 @@ export function ReportPeriodSelector({ active, onChange, basePath }: ReportPerio
       {periods.map((period) => {
         const selected = active === period.key;
         return (
-          <button
+          <Button
             key={period.key}
             type="button"
+            variant={selected ? "default" : "ghost"}
             className={[
-              "min-h-10 shrink-0 whitespace-nowrap rounded-lg px-2 text-sm font-semibold transition-colors sm:px-4",
+              "h-10 min-h-10 shrink-0 rounded-lg px-2 sm:px-4",
               selected
                 ? "bg-[var(--crm-primary)] text-white"
-                : "text-[var(--crm-text-secondary)] hover:bg-slate-100",
+                : "text-[var(--crm-text-secondary)]",
             ].join(" ")}
             aria-pressed={selected}
             onClick={() => {
@@ -56,7 +58,7 @@ export function ReportPeriodSelector({ active, onChange, basePath }: ReportPerio
             }}
           >
             {period.label}
-          </button>
+          </Button>
         );
       })}
     </div>

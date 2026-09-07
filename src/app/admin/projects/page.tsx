@@ -4,6 +4,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
 import { AppShell } from "../../../components/shell/AppShell.tsx";
+import { Button } from "../../../components/ui/button.tsx";
+import { Input } from "../../../components/ui/input.tsx";
+import { NativeSelect } from "../../../components/ui/native-select.tsx";
 import {
   getProjectFormOptions,
   listProjects,
@@ -82,8 +85,7 @@ export default async function ProjectsPage({
         <form className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]" method="get">
           <label className="space-y-1.5">
             <span className="block text-sm font-medium text-slate-800">Поиск</span>
-            <input
-              className="min-h-11 w-full rounded-xl border border-[var(--crm-border-strong)] bg-white px-3 text-sm outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
+            <Input
               defaultValue={query.search}
               maxLength={100}
               name="search"
@@ -92,8 +94,7 @@ export default async function ProjectsPage({
           </label>
           <label className="space-y-1.5">
             <span className="block text-sm font-medium text-slate-800">Статус</span>
-            <select
-              className="min-h-11 w-full rounded-xl border border-[var(--crm-border-strong)] bg-white px-3 pr-12 text-sm outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100"
+            <NativeSelect
               defaultValue={query.status ?? ""}
               name="status"
             >
@@ -101,10 +102,10 @@ export default async function ProjectsPage({
               <option value="ACTIVE">Активные</option>
               <option value="PLANNED">Запланированные</option>
               <option value="DISABLED">Отключённые</option>
-            </select>
+            </NativeSelect>
           </label>
           <div className="flex items-end gap-2">
-            <button className="min-h-11 rounded-xl bg-[var(--crm-sidebar)] px-4 text-sm font-semibold text-white hover:bg-slate-800" type="submit">Применить</button>
+            <Button type="submit">Применить</Button>
             {filtersActive ? <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-slate-600 hover:text-slate-950" href="/admin/projects">Сбросить</Link> : null}
           </div>
         </form>

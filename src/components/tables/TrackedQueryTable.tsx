@@ -6,6 +6,7 @@ import type {
   RankingMovement,
   TrackedRankingReport,
 } from "../../shared/schemas/report.ts";
+import { Button } from "../ui/button.tsx";
 import { DataTable } from "./DataTable.tsx";
 
 type RankingFilter =
@@ -87,16 +88,17 @@ export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
     <div className="min-w-0 space-y-4">
       <div className="flex max-w-full gap-2 overflow-x-auto pb-1" aria-label="Фильтры поискового ядра">
         {filters.map((item) => (
-          <button
+          <Button
             key={item.key}
             type="button"
+            variant={filter === item.key ? "default" : "outline"}
             aria-pressed={filter === item.key}
             onClick={() => {
               setFilter(item.key);
               setExpanded(false);
             }}
             className={[
-              "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition",
+              "h-10 min-h-10 shrink-0 gap-2 rounded-lg px-3",
               filter === item.key
                 ? "border-[var(--crm-primary)] bg-[var(--crm-primary)] text-white"
                 : "border-[var(--crm-border)] bg-white text-[var(--crm-text-secondary)] hover:border-[var(--crm-primary)]",
@@ -106,7 +108,7 @@ export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
             <span className={filter === item.key ? "text-white/75" : "text-[var(--crm-text-muted)]"}>
               {item.count}
             </span>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -149,13 +151,14 @@ export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
       />
 
       {filteredQueries.length > 20 ? (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setExpanded((value) => !value)}
-          className="inline-flex min-h-11 items-center rounded-lg border border-[var(--crm-border)] bg-white px-4 text-sm font-semibold text-[var(--crm-text)] transition hover:border-[var(--crm-primary)] hover:text-[var(--crm-primary)]"
+          className="rounded-lg border-[var(--crm-border)] text-[var(--crm-text)] hover:border-[var(--crm-primary)] hover:text-[var(--crm-primary)]"
         >
           {expanded ? "Показать первые 20" : `Показать все ${filteredQueries.length}`}
-        </button>
+        </Button>
       ) : null}
     </div>
   );

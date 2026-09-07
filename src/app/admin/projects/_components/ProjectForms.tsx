@@ -12,6 +12,7 @@ import {
 } from "react-hook-form";
 import { Button } from "../../../../components/ui/button.tsx";
 import { Input } from "../../../../components/ui/input.tsx";
+import { NativeSelect } from "../../../../components/ui/native-select.tsx";
 import {
   changeProjectStatusInputSchema,
   createProjectInputSchema,
@@ -57,9 +58,9 @@ function FeedbackMessage({ feedback, onRefresh }: { feedback: Feedback; onRefres
     >
       <span>{feedback.message}</span>
       {feedback.kind === "stale" && onRefresh ? (
-        <button className="ml-2 underline underline-offset-2" type="button" onClick={onRefresh}>
+        <Button className="ml-2" variant="link" type="button" onClick={onRefresh}>
           Обновить данные
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -111,9 +112,9 @@ export function ProjectCreateForm({ options }: { options: ProjectFormOptions }) 
       <form className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2 lg:grid-cols-3" onSubmit={submit}>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-slate-800">Организация</span>
-          <select className={fieldClassName} {...register("organizationId")}>
+          <NativeSelect className={fieldClassName} {...register("organizationId")}>
             {options.organizations.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
-          </select>
+          </NativeSelect>
           {errors.organizationId ? <span className="text-xs text-rose-700">{errors.organizationId.message}</span> : null}
         </label>
         <label className="space-y-1.5">
@@ -128,21 +129,21 @@ export function ProjectCreateForm({ options }: { options: ProjectFormOptions }) 
         </label>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-slate-800">Статус</span>
-          <select className={fieldClassName} {...register("status")}>
+          <NativeSelect className={fieldClassName} {...register("status")}>
             {PROJECT_STATUSES.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
-          </select>
+          </NativeSelect>
         </label>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-slate-800">Пороговый профиль</span>
-          <select className={fieldClassName} {...register("thresholdProfileId")}>
+          <NativeSelect className={fieldClassName} {...register("thresholdProfileId")}>
             {options.thresholdProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-          </select>
+          </NativeSelect>
         </label>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-slate-800">Кластерный профиль</span>
-          <select className={fieldClassName} {...register("clusterProfileId")}>
+          <NativeSelect className={fieldClassName} {...register("clusterProfileId")}>
             {options.clusterProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-          </select>
+          </NativeSelect>
         </label>
         <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-3">
           <Button disabled={isSubmitting} type="submit">{isSubmitting ? "Создаём…" : "Создать"}</Button>
@@ -207,9 +208,9 @@ export function ProjectRowActions({ project, options }: { project: ProjectListIt
       <form className="flex flex-wrap items-end gap-2" onSubmit={submitStatus}>
         <label className="min-w-40 space-y-1">
           <span className="block text-xs font-medium text-slate-600">Статус</span>
-          <select className={fieldClassName} {...statusForm.register("status")}>
+          <NativeSelect className={fieldClassName} {...statusForm.register("status")}>
             {PROJECT_STATUSES.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
-          </select>
+          </NativeSelect>
         </label>
         <Button className="min-h-11" disabled={statusForm.formState.isSubmitting} type="submit" variant="outline">
           {statusForm.formState.isSubmitting ? "Сохраняем…" : "Сохранить"}
@@ -228,15 +229,15 @@ export function ProjectRowActions({ project, options }: { project: ProjectListIt
           </label>
           <label className="space-y-1">
             <span className="block text-xs font-medium text-slate-600">Пороговый профиль</span>
-            <select className={fieldClassName} {...settingsForm.register("thresholdProfileId")}>
+            <NativeSelect className={fieldClassName} {...settingsForm.register("thresholdProfileId")}>
               {options.thresholdProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-            </select>
+            </NativeSelect>
           </label>
           <label className="space-y-1">
             <span className="block text-xs font-medium text-slate-600">Кластерный профиль</span>
-            <select className={fieldClassName} {...settingsForm.register("clusterProfileId")}>
+            <NativeSelect className={fieldClassName} {...settingsForm.register("clusterProfileId")}>
               {options.clusterProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-            </select>
+            </NativeSelect>
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <Button disabled={settingsForm.formState.isSubmitting} type="submit">

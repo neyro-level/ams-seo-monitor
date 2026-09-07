@@ -5,6 +5,7 @@ import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 import { Button } from "../../../components/ui/button.tsx";
 import { Card, CardContent, CardHeader } from "../../../components/ui/card.tsx";
 import { Input, Textarea } from "../../../components/ui/input.tsx";
+import { NativeSelect } from "../../../components/ui/native-select.tsx";
 import type { DefinedAction } from "../../../platform/actions/define-action.ts";
 import type { PlatformAdminActionFailure } from "../../../modules/platform-admin/index.ts";
 
@@ -41,9 +42,9 @@ export function FeedbackMessage({ feedback, onRefresh }: { feedback: Feedback; o
     >
       <span>{feedback.message}</span>
       {feedback.kind === "stale" && onRefresh ? (
-        <button className="ml-2 underline underline-offset-2" type="button" onClick={onRefresh}>
+        <Button className="ml-2" variant="link" type="button" onClick={onRefresh}>
           Обновить данные
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -106,30 +107,18 @@ export function SelectInput(
 ) {
   const { options, ...rest } = props;
   return (
-    <select className={fieldClassName} {...rest}>
+    <NativeSelect className={fieldClassName} {...rest}>
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   );
 }
 
 export function AreaInput(props: React.ComponentProps<typeof Textarea>) {
   return <Textarea {...props} />;
-}
-
-export function CheckboxInput(
-  props: React.InputHTMLAttributes<HTMLInputElement> & { label: string },
-) {
-  const { label, ...rest } = props;
-  return (
-    <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800">
-      <input type="checkbox" className="size-4 accent-slate-900" {...rest} />
-      {label}
-    </label>
-  );
 }
 
 export function SubmitRow({

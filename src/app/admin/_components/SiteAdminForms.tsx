@@ -3,8 +3,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { Controller, useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
+import { Checkbox } from "../../../components/ui/checkbox.tsx";
 import { createSiteAction, updateSiteAction } from "../_actions/sites.ts";
 import {
   applyFieldErrors,
@@ -84,7 +85,7 @@ function SiteEditCard({ item }: { item: SiteListItem }) {
           <TextInput {...form.register("timezone")} />
         </FormField>
         <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 sm:col-span-2">
-          <input type="checkbox" className="size-4 accent-slate-900" {...form.register("enabled")} />
+          <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
           Сбор данных включён
         </label>
         <div className="sm:col-span-2">
@@ -139,7 +140,7 @@ export function SitesAdminForms({ items, options }: { items: SiteListItem[]; opt
             <TextInput {...form.register("timezone")} />
           </FormField>
           <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 xl:self-end">
-            <input type="checkbox" className="size-4 accent-slate-900" {...form.register("enabled")} />
+            <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
             Сбор данных включён
           </label>
           <div className="sm:col-span-2 xl:col-span-3">
