@@ -5,15 +5,13 @@ import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 import { Button } from "../../../components/ui/button.tsx";
 import { Card, CardContent, CardHeader } from "../../../components/ui/card.tsx";
 import { Input, Textarea } from "../../../components/ui/input.tsx";
-import { NativeSelect } from "../../../components/ui/native-select.tsx";
+import { Select } from "../../../components/ui/select.tsx";
+import { Field, FieldDescription, FieldError, FieldLabel } from "../../../components/ui/field.tsx";
 import type { DefinedAction } from "../../../platform/actions/define-action.ts";
 import type { PlatformAdminActionFailure } from "../../../modules/platform-admin/index.ts";
 
 export type ActionResultLike<TResult> = DefinedAction<TResult> | PlatformAdminActionFailure;
 export type Feedback = { kind: "success" | "error" | "stale"; message: string } | null;
-
-export const fieldClassName =
-  "min-h-11 w-full rounded-xl border border-[var(--input)] bg-white px-3 pr-10 text-sm text-slate-900 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100";
 
 export function applyFieldErrors<TValues extends FieldValues>(
   fieldErrors: Record<string, string[]>,
@@ -37,7 +35,7 @@ export function FeedbackMessage({ feedback, onRefresh }: { feedback: Feedback; o
   if (!feedback) return null;
   return (
     <div
-      className={feedback.kind === "success" ? "text-sm font-medium text-emerald-700" : "text-sm font-medium text-rose-700"}
+      className={feedback.kind === "success" ? "text-sm font-medium text-[var(--success)]" : feedback.kind === "stale" ? "text-sm font-medium text-[var(--warning)]" : "text-sm font-medium text-[var(--destructive)]"}
       role={feedback.kind === "success" ? "status" : "alert"}
     >
       <span>{feedback.message}</span>
@@ -84,15 +82,14 @@ export function FormField({
   children: ReactNode;
 }) {
   return (
-    <label className="space-y-1.5">
-      <span className="block text-sm font-medium text-slate-800">
-        {label}
-        {required ? <span className="ml-1 text-rose-600">*</span> : null}
-      </span>
-      {children}
-      {helper ? <span className="block text-xs leading-5 text-slate-500">{helper}</span> : null}
-      {error ? <span className="block text-xs font-medium text-rose-700">{error}</span> : null}
-    </label>
+    <Field>
+      <FieldLabel className="grid gap-2">
+        <span>{label}{required ? <span className="ml-1 text-[var(--destructive)]">*</span> : null}</span>
+        {children}
+      </FieldLabel>
+      {helper ? <FieldDescription>{helper}</FieldDescription> : null}
+      <FieldError>{error}</FieldError>
+    </Field>
   );
 }
 
@@ -107,13 +104,13 @@ export function SelectInput(
 ) {
   const { options, ...rest } = props;
   return (
-    <NativeSelect className={fieldClassName} {...rest}>
+    <Select {...rest}>
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
         </option>
       ))}
-    </NativeSelect>
+    </Select>
   );
 }
 

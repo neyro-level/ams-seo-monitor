@@ -23,8 +23,9 @@ Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform Admin ena
 | Seed/config boundary | IMPLEMENTED | safe bootstrap, private-path dry-run/apply, no deployment import |
 | Environment validation | IMPLEMENTED | explicit DB target, isolated identities, safe target summary |
 | Provider integrations | PARTIAL | Webmaster and Metrika fresh on configured sites; one proven Topvisor mapping enabled with current positions, three unmapped connections remain disabled |
-| shadcn UI foundation | IMPLEMENTED | Base UI primitives wrap public/private controls; `theme-public` isolates `ch-*`, private UI uses Application Design System 2.0 semantic tokens |
-| Tables and charts | IMPLEMENTED | TanStack Table 9.2.4 + shadcn Table; shadcn Chart + Recharts |
+| shadcn UI foundation | IMPLEMENTED | Base UI primitives wrap public/private controls; isolated public/app themes; UI drift verifier is part of `verify:config` |
+| Application shell | IMPLEMENTED | shared private layout, server-built navigation, desktop 232/72 sidebar, desktop/mobile topbar and drawer |
+| Tables and charts | IMPLEMENTED | shared server-driven AdminDataTable + mobile cards; TanStack Table 9.2.4; tokenized shadcn Chart + Recharts |
 | SourceCraft verification | IMPLEMENTED | quick PR check; exact risky/release workflows; nightly daily |
 | SourceCraft secret scanning | REQUIRES_CHECK | platform-side enablement not independently confirmed |
 | Immutable image release and rollback | IMPLEMENTED | exact SHA/digest, single web/worker image, rollback contract |
