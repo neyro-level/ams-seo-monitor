@@ -71,7 +71,7 @@ test("opens the cabinet immediately after the first login", async ({ page }, tes
     .getByRole("dialog", { name: "Вход в кабинет" })
     .getByRole("button", { name: "Войти", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/client\/?$/);
+  await expect(page).toHaveURL(/\/dashboard\/?$/);
 });
 
 test.describe("Platform Admin", () => {
