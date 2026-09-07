@@ -1,9 +1,13 @@
 "use client";
 
-import { ArrowUpRight, Check, Loader2, Phone, UserRound, X } from "lucide-react";
+import { ArrowUpRight, Check, Loader2, Phone, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { Button } from "../ui/button.tsx";
+import { Checkbox } from "../ui/checkbox.tsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog.tsx";
+import { Input } from "../ui/input.tsx";
 import { sendLead } from "../../shared/leads/send-lead.ts";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
@@ -52,6 +56,7 @@ function getUtmPayload() {
 }
 
 export function LeadRequestDialog() {
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
@@ -60,10 +65,6 @@ export function LeadRequestDialog() {
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
-
-  function getDialog() {
-    return document.getElementById("impulse-lead-dialog") as HTMLDialogElement | null;
-  }
 
   function openDialog() {
     setName("");
@@ -74,12 +75,11 @@ export function LeadRequestDialog() {
     setSubmitState("idle");
     setSubmitError("");
     setErrors({});
-    const dialog = getDialog();
-    if (!dialog?.open) dialog?.showModal();
+    setOpen(true);
   }
 
   function closeDialog() {
-    if (submitState !== "loading") getDialog()?.close();
+    if (submitState !== "loading") setOpen(false);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -115,165 +115,82 @@ export function LeadRequestDialog() {
 
   return (
     <>
-      <button
-        type="button"
-        className="group inline-flex min-h-12 items-center gap-3 bg-[var(--ch-accent)] px-6 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[var(--ch-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--ch-bg-deepest)]"
-        onClick={openDialog}
-      >
+      <Button type="button" variant="marketing" size="lg" className="group gap-3" onClick={openDialog}>
         Бесплатный тест-драйв
-        <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={1.8} aria-hidden />
-      </button>
+        <ArrowUpRight className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={1.8} aria-hidden />
+      </Button>
 
-      <dialog
-        id="impulse-lead-dialog"
-        className="impulse-login-dialog m-auto w-[min(576px,calc(100%_-_32px))] border border-white/12 bg-[var(--ch-bg-deeper)] p-0 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] backdrop:bg-[#05080c]/78 backdrop:backdrop-blur-sm"
-        aria-labelledby="lead-dialog-title"
-        onCancel={(event) => {
-          if (submitState === "loading") event.preventDefault();
-        }}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) closeDialog();
-        }}
-      >
-        <div className="relative p-7 sm:p-10">
-          <button
-            type="button"
-            className="absolute right-4 top-4 grid size-11 place-items-center border border-white/10 text-white/65 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ch-accent)]"
-            onClick={closeDialog}
-            aria-label="Закрыть форму заявки"
-          >
-            <X className="size-5" strokeWidth={1.6} aria-hidden />
-          </button>
-
+      <Dialog open={open} onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeDialog())}>
+        <DialogContent
+          className="impulse-landing w-[min(576px,calc(100%_-_32px))] rounded-none border-white/12 bg-[var(--ch-bg-deeper)] p-7 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-10"
+          showCloseButton={submitState !== "loading"}
+        >
           {submitState === "success" ? (
             <div className="py-8 pr-10">
-              <span className="grid size-12 place-items-center bg-[var(--ch-accent)] text-white">
-                <Check className="size-6" strokeWidth={1.8} aria-hidden />
-              </span>
+              <span className="grid size-12 place-items-center bg-[var(--ch-accent)] text-white"><Check className="size-6" strokeWidth={1.8} aria-hidden /></span>
               <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ch-accent)]">AMS IMPULSE</p>
-              <h2 id="lead-dialog-title" className="mt-3 text-3xl font-extrabold tracking-[-0.035em] text-white">Заявка отправлена</h2>
+              <DialogTitle className="mt-3 text-3xl font-extrabold tracking-[-0.035em] text-white">Заявка отправлена</DialogTitle>
               <p className="mt-3 text-sm leading-6 text-[var(--ch-muted-ondark)]">Свяжемся с вами, уточним задачу и обсудим следующий шаг.</p>
-              <button type="button" className="mt-7 min-h-12 bg-white px-6 text-sm font-bold text-[var(--ch-bg-deeper)]" onClick={closeDialog}>Закрыть</button>
+              <Button type="button" variant="secondary" size="lg" className="mt-7 rounded-none bg-white text-[var(--ch-bg-deeper)] hover:bg-white/90" onClick={closeDialog}>Закрыть</Button>
             </div>
           ) : (
             <>
-              <div className="pr-12">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ch-accent)]">
-                  AMS IMPULSE
-                </p>
-                <h2 id="lead-dialog-title" className="mt-4 text-[32px] font-extrabold leading-tight tracking-[-0.04em] text-white sm:text-[34px]">
-                  Запустить бесплатный тест-драйв
-                </h2>
-                <p className="mt-4 max-w-md text-sm leading-6 text-[var(--ch-muted-ondark)]">
-                  Оставьте имя и телефон. Уточним задачу и запустим пробный период.
-                </p>
-              </div>
+              <DialogHeader>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ch-accent)]">AMS IMPULSE</p>
+                <DialogTitle className="mt-2 text-[32px] font-extrabold leading-tight tracking-[-0.04em] text-white sm:text-[34px]">Запустить бесплатный тест-драйв</DialogTitle>
+                <p className="mt-2 max-w-md text-sm leading-6 text-[var(--ch-muted-ondark)]">Оставьте имя и телефон. Уточним задачу и запустим пробный период.</p>
+              </DialogHeader>
 
               <form className="mt-8 border-t border-white/10 pt-8" onSubmit={handleSubmit} noValidate>
                 <div className="space-y-6">
                   <label className="block">
-                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">
-                      Имя
-                    </span>
-                    <span className="group relative flex min-h-14 items-center border border-white/14 bg-[#151e29]/72 transition duration-200 focus-within:border-[var(--ch-accent)] focus-within:bg-[#182331] focus-within:shadow-[0_0_0_3px_rgba(95,127,174,0.16)]">
-                      <UserRound
-                        className="pointer-events-none absolute left-4 size-[18px] text-white/34 transition group-focus-within:text-[var(--ch-accent)]"
-                        strokeWidth={1.6}
-                        aria-hidden
-                      />
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(event) => {
-                          setName(event.target.value);
-                          if (errors.name) setErrors((current) => ({ ...current, name: undefined }));
-                        }}
-                        className="min-h-14 w-full bg-transparent py-3 pl-12 pr-4 text-base font-medium text-white outline-none placeholder:text-white/24 focus-visible:outline-none"
-                        autoComplete="name"
-                        autoFocus
-                        aria-invalid={Boolean(errors.name)}
-                      />
+                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">Имя</span>
+                    <span className="group relative flex min-h-14 items-center">
+                      <UserRound className="pointer-events-none absolute left-4 z-10 size-[18px] text-white/34 group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
+                      <Input type="text" value={name} onChange={(event) => { setName(event.target.value); if (errors.name) setErrors((current) => ({ ...current, name: undefined })); }} className="min-h-14 rounded-none border-white/14 bg-[#151e29]/72 py-3 pl-12 pr-4 text-base font-medium text-white placeholder:text-white/24 focus-visible:border-[var(--ch-accent)]" autoComplete="name" autoFocus aria-invalid={Boolean(errors.name)} />
                     </span>
                     {errors.name ? <span className="mt-2 block text-xs text-rose-200">{errors.name}</span> : null}
                   </label>
 
                   <label className="block">
-                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">
-                      Телефон
-                    </span>
-                    <span className="group relative flex min-h-14 items-center border border-white/14 bg-[#151e29]/72 transition duration-200 focus-within:border-[var(--ch-accent)] focus-within:bg-[#182331] focus-within:shadow-[0_0_0_3px_rgba(95,127,174,0.16)]">
-                      <Phone
-                        className="pointer-events-none absolute left-4 size-[18px] text-white/34 transition group-focus-within:text-[var(--ch-accent)]"
-                        strokeWidth={1.6}
-                        aria-hidden
-                      />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(event) => {
-                          setPhone(formatPhone(event.target.value));
-                          if (errors.phone) setErrors((current) => ({ ...current, phone: undefined }));
-                        }}
-                        className="min-h-14 w-full bg-transparent py-3 pl-12 pr-4 text-base font-medium text-white outline-none placeholder:text-white/24 focus-visible:outline-none"
-                        autoComplete="tel"
-                        inputMode="tel"
-                        placeholder="+7 (999) 999-99-99"
-                        aria-invalid={Boolean(errors.phone)}
-                      />
+                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">Телефон</span>
+                    <span className="group relative flex min-h-14 items-center">
+                      <Phone className="pointer-events-none absolute left-4 z-10 size-[18px] text-white/34 group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
+                      <Input type="tel" value={phone} onChange={(event) => { setPhone(formatPhone(event.target.value)); if (errors.phone) setErrors((current) => ({ ...current, phone: undefined })); }} className="min-h-14 rounded-none border-white/14 bg-[#151e29]/72 py-3 pl-12 pr-4 text-base font-medium text-white placeholder:text-white/24 focus-visible:border-[var(--ch-accent)]" autoComplete="tel" inputMode="tel" placeholder="+7 (999) 999-99-99" aria-invalid={Boolean(errors.phone)} />
                     </span>
                     {errors.phone ? <span className="mt-2 block text-xs text-rose-200">{errors.phone}</span> : null}
                   </label>
                 </div>
 
                 <div className="absolute -left-[10000px] top-auto size-px overflow-hidden" aria-hidden="true">
-                  <label>
-                    Компания
-                    <input type="text" value={honeypot} onChange={(event) => setHoneypot(event.target.value)} tabIndex={-1} autoComplete="off" />
-                  </label>
+                  <label>Компания<Input type="text" value={honeypot} onChange={(event) => setHoneypot(event.target.value)} tabIndex={-1} autoComplete="off" /></label>
                 </div>
 
                 <div className="mt-6 flex items-start gap-3">
-                  <label className="relative mt-0.5 grid size-5 shrink-0 cursor-pointer place-items-center" aria-label="Даю согласие на обработку персональных данных">
-                    <input
-                      type="checkbox"
-                      checked={consent}
-                      onChange={(event) => {
-                        setConsent(event.target.checked);
-                        if (errors.consent) setErrors((current) => ({ ...current, consent: undefined }));
-                      }}
-                      className="peer sr-only"
-                    />
-                    <span className="absolute inset-0 border border-white/24 bg-white/[0.04] transition peer-checked:border-[var(--ch-accent)] peer-checked:bg-[var(--ch-accent)] peer-focus-visible:shadow-[0_0_0_3px_rgba(95,127,174,0.2)]" />
-                    <Check className="relative size-3.5 text-white opacity-0 transition peer-checked:opacity-100" strokeWidth={2.2} aria-hidden />
-                  </label>
-                  <p className="text-xs leading-5 text-white/52">
-                    Даю согласие на{" "}
-                    <Link href="/politika/" className="font-semibold text-white/82 underline decoration-[var(--ch-accent)]/70 underline-offset-3 transition hover:text-white">
-                      обработку персональных данных
-                    </Link>
-                  </p>
+                  <Checkbox
+                    checked={consent}
+                    onCheckedChange={(checked) => {
+                      setConsent(checked);
+                      if (errors.consent) setErrors((current) => ({ ...current, consent: undefined }));
+                    }}
+                    className="mt-0.5 rounded-none border-white/24 bg-white/[0.04] data-checked:border-[var(--ch-accent)] data-checked:bg-[var(--ch-accent)]"
+                    aria-label="Даю согласие на обработку персональных данных"
+                  />
+                  <p className="text-xs leading-5 text-white/52">Даю согласие на{" "}<Link href="/politika/" className="font-semibold text-white/82 underline decoration-[var(--ch-accent)]/70 underline-offset-3 transition hover:text-white">обработку персональных данных</Link></p>
                 </div>
                 {errors.consent ? <p className="mt-2 text-xs text-rose-200">{errors.consent}</p> : null}
 
-                {submitState === "error" ? (
-                  <p className="mt-6 border border-rose-300/20 bg-rose-950/25 px-4 py-3 text-sm leading-5 text-rose-100" role="alert">
-                    {submitError}
-                  </p>
-                ) : null}
+                {submitState === "error" ? <p className="mt-6 border border-rose-300/20 bg-rose-950/25 px-4 py-3 text-sm leading-5 text-rose-100" role="alert">{submitError}</p> : null}
 
-                <button
-                  type="submit"
-                  disabled={submitState === "loading"}
-                  className="mt-7 inline-flex min-h-14 w-full items-center justify-center gap-2.5 bg-[var(--ch-accent)] px-6 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[var(--ch-accent-hover)] disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--ch-bg-deeper)]"
-                >
-                  {submitState === "loading" ? <Loader2 className="size-4 animate-spin" strokeWidth={1.7} aria-hidden /> : null}
+                <Button type="submit" variant="marketing" size="lg" disabled={submitState === "loading"} className="mt-7 min-h-14 w-full focus-visible:ring-white focus-visible:ring-offset-[var(--ch-bg-deeper)]">
+                  {submitState === "loading" ? <Loader2 className="animate-spin" strokeWidth={1.7} aria-hidden /> : null}
                   {submitState === "loading" ? "Отправляем…" : "Запустить тест-драйв"}
-                </button>
+                </Button>
               </form>
             </>
           )}
-        </div>
-      </dialog>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
