@@ -100,12 +100,12 @@ export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
             className={[
               "h-10 min-h-10 shrink-0 gap-2 rounded-lg px-3",
               filter === item.key
-                ? "border-[var(--crm-primary)] bg-[var(--crm-primary)] text-white"
-                : "border-[var(--crm-border)] bg-white text-[var(--crm-text-secondary)] hover:border-[var(--crm-primary)]",
+                ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                : "border-[var(--border)] bg-white text-[var(--text-secondary)] hover:border-[var(--primary)]",
             ].join(" ")}
           >
             {item.label}
-            <span className={filter === item.key ? "text-white/75" : "text-[var(--crm-text-muted)]"}>
+            <span className={filter === item.key ? "text-white/75" : "text-[var(--muted-foreground)]"}>
               {item.count}
             </span>
           </Button>
@@ -119,12 +119,12 @@ export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
           key: query.query,
           cells: [
             <div key="query" className="min-w-[250px]">
-              <p className="font-semibold text-[var(--crm-text)]">{query.query}</p>
-              <p className="mt-1 text-xs text-[var(--crm-text-muted)]">
+              <p className="font-semibold text-[var(--foreground)]">{query.query}</p>
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 {query.cluster} · {movementLabels[query.movement]}
               </p>
             </div>,
-            <span key="position" className="font-semibold tabular-nums text-[var(--crm-text)]">
+            <span key="position" className="font-semibold tabular-nums text-[var(--foreground)]">
               {positionLabel(query.currentPosition)}
             </span>,
             <span key="previous" className="tabular-nums">
@@ -138,7 +138,7 @@ export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
                   ? "text-emerald-700"
                   : query.positionDelta !== null && query.positionDelta < 0
                     ? "text-rose-700"
-                    : "text-[var(--crm-text-muted)]",
+                    : "text-[var(--muted-foreground)]",
               ].join(" ")}
             >
               {deltaLabel(query.positionDelta)}
@@ -155,7 +155,7 @@ export function TrackedQueryTable({ ranking }: TrackedQueryTableProps) {
           type="button"
           variant="outline"
           onClick={() => setExpanded((value) => !value)}
-          className="rounded-lg border-[var(--crm-border)] text-[var(--crm-text)] hover:border-[var(--crm-primary)] hover:text-[var(--crm-primary)]"
+          className="rounded-lg border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]"
         >
           {expanded ? "Показать первые 20" : `Показать все ${filteredQueries.length}`}
         </Button>

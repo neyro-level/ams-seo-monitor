@@ -7,10 +7,10 @@ type KpiCardProps = {
 };
 
 const toneMap: Record<NonNullable<KpiCardProps["tone"]>, string> = {
-  default: "border-[var(--crm-border)] bg-white text-[var(--crm-text)]",
-  primary: "border-[var(--crm-primary)] bg-[var(--crm-primary)] text-white",
-  soft: "border-sky-100 bg-sky-50 text-sky-950",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-950",
+  default: "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
+  primary: "border-[var(--primary)] bg-[var(--primary)] text-white",
+  soft: "border-[var(--info)]/20 bg-[var(--info-soft)] text-[var(--foreground)]",
+  success: "border-[var(--success)]/20 bg-[var(--success-soft)] text-[var(--foreground)]",
 };
 
 export function KpiCard({
@@ -21,10 +21,10 @@ export function KpiCard({
   deltaTone = "neutral",
 }: KpiCardProps) {
   return (
-    <article className={`rounded-2xl border p-5 ${toneMap[tone]}`}>
+    <article className={`rounded-[var(--radius-card)] border p-5 shadow-[var(--shadow-surface)] ${toneMap[tone]}`}>
       <p
         className={`text-xs font-semibold uppercase ${
-          tone === "primary" ? "text-slate-300" : "text-[var(--crm-text-muted)]"
+          tone === "primary" ? "text-slate-300" : "text-[var(--muted-foreground)]"
         }`}
       >
         {label}
@@ -37,10 +37,10 @@ export function KpiCard({
             tone === "primary"
               ? "text-slate-200"
               : deltaTone === "positive"
-                ? "text-emerald-700"
+                ? "text-[var(--success)]"
                 : deltaTone === "negative"
-                  ? "text-rose-700"
-                  : "text-[var(--crm-text-muted)]",
+                  ? "text-[var(--destructive)]"
+                  : "text-[var(--muted-foreground)]",
           ].join(" ")}
         >
           {delta}

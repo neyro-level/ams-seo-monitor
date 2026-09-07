@@ -122,7 +122,7 @@ export function LeadRequestDialog() {
 
       <Dialog open={open} onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeDialog())}>
         <DialogContent
-          className="impulse-landing w-[min(576px,calc(100%_-_32px))] rounded-none border-white/12 bg-[var(--ch-bg-deeper)] p-7 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-10"
+          className="theme-public impulse-landing w-[min(576px,calc(100%_-_32px))] rounded-none border-white/12 bg-[var(--ch-bg-deeper)] p-7 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-10"
           showCloseButton={submitState !== "loading"}
         >
           {submitState === "success" ? (

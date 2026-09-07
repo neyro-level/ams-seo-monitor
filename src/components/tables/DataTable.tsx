@@ -12,17 +12,17 @@ type DataTableProps = {
 
 export function DataTable({ caption, columns, rows }: DataTableProps) {
   return (
-    <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-2xl border border-[var(--crm-border)] bg-white">
+    <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-2xl border border-[var(--border)] bg-white">
       <div className="inline-block min-w-full align-top [&_[data-slot=table-container]]:overflow-visible">
         <Table>
           <TableCaption className="sr-only">{caption}</TableCaption>
-          <TableHeader className="bg-[var(--crm-surface-muted)]">
+          <TableHeader className="bg-[var(--muted)]">
             <TableRow>
               {columns.map((column) => (
                 <TableHead
                   key={column}
                   scope="col"
-                  className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--crm-text-muted)]"
+                  className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--muted-foreground)]"
                 >
                   {column}
                 </TableHead>
@@ -31,9 +31,9 @@ export function DataTable({ caption, columns, rows }: DataTableProps) {
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.key} className="border-t border-[var(--crm-border)] align-top">
+              <TableRow key={row.key} className="border-t border-[var(--border)] align-top">
                 {row.cells.map((cell, index) => (
-                  <TableCell key={`${row.key}-${index}`} className="px-4 py-3 text-[var(--crm-text-secondary)]">
+                  <TableCell key={`${row.key}-${index}`} className="px-4 py-3 text-[var(--text-secondary)]">
                     {cell}
                   </TableCell>
                 ))}

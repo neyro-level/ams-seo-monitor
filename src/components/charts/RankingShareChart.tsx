@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import type { TrackedRankingReport } from "../../shared/schemas/report.ts";
 import { ChartContainer, ChartTooltip } from "../ui/chart.tsx";
+import { AnalyticsCard, ChartEmptyState } from "./AnalyticsCard.tsx";
 
 type RankingShareChartProps = {
   ranking: TrackedRankingReport;
@@ -17,33 +18,22 @@ type RankingShareChartProps = {
 export function RankingShareChart({ ranking }: RankingShareChartProps) {
   if (ranking.history.length < 2) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--crm-border)] bg-white p-5">
-        <h3 className="text-lg font-semibold text-[var(--crm-text)]">Динамика Топ-3 и Топ-10</h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--crm-text-secondary)]">
-          История начнёт формироваться после второго read-only съёма позиций Topvisor. Исходный снимок уже используется в текущих KPI.
-        </p>
-      </div>
+      <ChartEmptyState title="Динамика Топ-3 и Топ-10" description="История начнёт формироваться после второго read-only съёма позиций Topvisor. Исходный снимок уже используется в текущих KPI." />
     );
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--crm-border)] bg-white p-4 sm:p-5">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-[var(--crm-text)]">Доля запросов в Топ-3 и Топ-10</h3>
-        <p className="mt-1 text-sm text-[var(--crm-text-secondary)]">
-          Реальные даты съёмов позиций. Знаменатель — утверждённое ядро из {ranking.queryCount} запросов.
-        </p>
-      </div>
-      <ChartContainer className="h-[300px]" config={{ top10Share: { label: "Топ-10", color: "#3E5D86" }, top3Share: { label: "Топ-3", color: "#D97706" } }}>
+    <AnalyticsCard title="Доля запросов в Топ-3 и Топ-10" description={`Как меняется доля запросов в видимых зонах Яндекса. Ядро: ${ranking.queryCount} запросов.`} period={`${ranking.history[0]?.date} — ${ranking.history.at(-1)?.date}`} units="проценты и запросы" summary={<div className="flex flex-wrap gap-5 text-sm text-[var(--text-secondary)]"><span><span className="mr-2 inline-block size-2.5 rounded-full bg-[var(--chart-2)]" />Топ-10: <strong className="tabular-nums text-[var(--foreground)]">{ranking.top10Share.toFixed(1)}%</strong></span><span><span className="mr-2 inline-block size-2.5 rounded-full bg-[var(--chart-4)]" />Топ-3: <strong className="tabular-nums text-[var(--foreground)]">{ranking.top3Share.toFixed(1)}%</strong></span></div>}>
+      <ChartContainer className="h-[300px]" config={{ top10Share: { label: "Топ-10", color: "var(--chart-2)" }, top3Share: { label: "Топ-3", color: "var(--chart-4)" } }}>
           <LineChart data={ranking.history}>
-            <CartesianGrid vertical={false} stroke="#E3E3E1" />
-            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
-            <YAxis domain={[0, 100]} unit="%" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
+            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
+            <YAxis domain={[0, 100]} unit="%" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
             <ChartTooltip
               contentStyle={{
-                borderRadius: 8,
-                border: "1px solid #E3E3E1",
-                boxShadow: "0 12px 32px rgba(23,22,26,0.1)",
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--shadow-overlay)",
               }}
               formatter={(value, name, item) => {
                 const payload = item.payload as TrackedRankingReport["history"][number];
@@ -57,10 +47,6 @@ export function RankingShareChart({ ranking }: RankingShareChartProps) {
             <Line type="monotone" dataKey="top3Share" stroke="var(--color-top3Share)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
           </LineChart>
       </ChartContainer>
-      <div className="mt-3 flex flex-wrap gap-5 text-sm text-[var(--crm-text-secondary)]">
-        <span><span className="mr-2 inline-block size-2.5 rounded-full bg-blue-600" />Топ-10</span>
-        <span><span className="mr-2 inline-block size-2.5 rounded-full bg-amber-600" />Топ-3</span>
-      </div>
-    </div>
+    </AnalyticsCard>
   );
 }

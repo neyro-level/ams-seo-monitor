@@ -1,41 +1,15 @@
 import { AlertCircle, CheckCircle2, Info, TriangleAlert } from "lucide-react";
 
-type StatusBannerProps = {
-  tone: "success" | "info" | "warning" | "error";
-  title: string;
-  description: string;
-};
+type StatusBannerProps = { tone: "success" | "info" | "warning" | "error"; title: string; description: string };
 
 const toneMap = {
-  success: {
-    wrapper: "border-[#A7F3D0] bg-[#ECFDF5] text-[#022C22]",
-    Icon: CheckCircle2,
-  },
-  info: {
-    wrapper: "border-[#BAE6FD] bg-[#F0F9FF] text-[#082F49]",
-    Icon: Info,
-  },
-  warning: {
-    wrapper: "border-[#FDE68A] bg-[#FFFBEB] text-[#451A03]",
-    Icon: TriangleAlert,
-  },
-  error: {
-    wrapper: "border-[#FECDD3] bg-[#FFF1F2] text-[#4C0519]",
-    Icon: AlertCircle,
-  },
+  success: { wrapper: "border-[var(--success)]/25 bg-[var(--success-soft)] text-[var(--success)]", Icon: CheckCircle2 },
+  info: { wrapper: "border-[var(--info)]/25 bg-[var(--info-soft)] text-[var(--info)]", Icon: Info },
+  warning: { wrapper: "border-[var(--warning)]/25 bg-[var(--warning-soft)] text-[var(--warning)]", Icon: TriangleAlert },
+  error: { wrapper: "border-[var(--destructive)]/25 bg-[var(--destructive-soft)] text-[var(--destructive)]", Icon: AlertCircle },
 } as const;
 
 export function StatusBanner({ tone, title, description }: StatusBannerProps) {
-  const config = toneMap[tone];
-  const Icon = config.Icon;
-
-  return (
-    <div className={`flex gap-3 rounded-2xl border p-4 ${config.wrapper}`}>
-      <Icon className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.8} aria-hidden />
-      <div className="space-y-1">
-        <p className="text-sm font-semibold leading-5">{title}</p>
-        <p className="text-sm leading-5">{description}</p>
-      </div>
-    </div>
-  );
+  const { wrapper, Icon } = toneMap[tone];
+  return <div className={`flex gap-3 rounded-[var(--radius-panel)] border p-4 ${wrapper}`} role={tone === "error" ? "alert" : "status"}><Icon className="mt-0.5 size-5 shrink-0" strokeWidth={1.8} aria-hidden /><div className="space-y-1"><p className="text-sm font-semibold leading-5">{title}</p><p className="text-sm leading-5 text-[var(--foreground)]">{description}</p></div></div>;
 }

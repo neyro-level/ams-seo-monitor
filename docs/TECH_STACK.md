@@ -52,7 +52,7 @@
 
 ## Active stack decisions
 
-- все public/private controls используют project-owned shadcn primitives; собственный visual слой сохраняют `ch-*` и `crm-*` tokens;
+- все public/private controls используют project-owned shadcn primitives; public `ch-*` изолированы в `theme-public`, private UI использует единый semantic token layer;
 - private admin surfaces use React Hook Form, TanStack Table `9.2.4`, shadcn Table и `nuqs`;
 - report visualization uses shadcn Chart wrappers over Recharts;
 - Platform Admin uses typed route composition and shared primitives; Refine отсутствует;

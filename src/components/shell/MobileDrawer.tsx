@@ -9,9 +9,10 @@ import { ShellNav } from "./ShellNav.tsx";
 
 type MobileDrawerProps = {
   sections: NavigationSection[];
+  currentPath: string;
 };
 
-export function MobileDrawer({ sections }: MobileDrawerProps) {
+export function MobileDrawer({ sections, currentPath }: MobileDrawerProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -31,14 +32,14 @@ export function MobileDrawer({ sections }: MobileDrawerProps) {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           id="mobile-report-nav"
-          className="left-0 top-0 h-dvh w-[min(86vw,320px)] translate-x-0 translate-y-0 rounded-none border-r border-white/10 bg-[var(--crm-sidebar)] p-3 text-white data-ending-style:-translate-x-full data-starting-style:-translate-x-full lg:hidden"
+          className="left-0 top-0 h-dvh w-[min(86vw,320px)] translate-x-0 translate-y-0 rounded-none border-r border-white/10 bg-[var(--sidebar)] p-3 text-white data-ending-style:-translate-x-full data-starting-style:-translate-x-full lg:hidden"
         >
           <SheetHeader className="mb-4 rounded-2xl border border-white/10 bg-white/[0.055] p-3 pr-12">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-300">АМС</p>
             <SheetTitle className="text-sm font-semibold text-white">IMPULSE</SheetTitle>
             <SheetDescription className="sr-only">Навигация по отчётам и разделам кабинета</SheetDescription>
           </SheetHeader>
-          <ShellNav sections={sections} onNavigate={() => setOpen(false)} />
+          <ShellNav sections={sections} currentPath={currentPath} onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>
     </>

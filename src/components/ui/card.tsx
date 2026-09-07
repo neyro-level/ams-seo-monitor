@@ -2,7 +2,7 @@ import type { HTMLAttributes } from "react";
 import { cn } from "../../shared/lib/cn.ts";
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div data-slot="card" className={cn("rounded-2xl border border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)]", className)} {...props} />;
+  return <div data-slot="card" className={cn("rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] shadow-[var(--shadow-surface)]", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

@@ -12,6 +12,7 @@ import {
 import { ChartContainer, ChartTooltip } from "../ui/chart.tsx";
 import { formatInteger, formatPosition } from "../../shared/format/metrics.ts";
 import type { TrendPoint } from "../../shared/schemas/report.ts";
+import { AnalyticsCard, ChartEmptyState } from "./AnalyticsCard.tsx";
 
 function toDisplayNumber(value: unknown) {
   return typeof value === "number" ? value : null;
@@ -24,6 +25,7 @@ type MetricTrendChartProps = {
   metricLabel: string;
   secondaryMetricLabel?: string;
   tertiaryMetricLabel?: string;
+  period?: string;
 };
 
 export function MetricTrendChart({
@@ -33,16 +35,15 @@ export function MetricTrendChart({
   metricLabel,
   secondaryMetricLabel,
   tertiaryMetricLabel,
+  period,
 }: MetricTrendChartProps) {
   const gradientId = useId();
 
+  if (data.length === 0) return <ChartEmptyState title={title} description="За выбранный период нет точек для построения графика." />;
+
   return (
-    <div className="rounded-2xl border border-[var(--crm-border)] bg-white p-4 sm:p-5">
-      <div className="mb-4 space-y-1">
-        <h3 className="text-lg font-semibold leading-6 text-[var(--crm-text)]">{title}</h3>
-        <p className="text-sm leading-5 text-[var(--crm-text-secondary)]">{subtitle}</p>
-      </div>
-      <ChartContainer className="h-[280px]" config={{ value: { label: metricLabel, color: "#5F7FAE" }, secondaryValue: { label: secondaryMetricLabel ?? "", color: "#3E5D86" } }}>
+    <AnalyticsCard title={title} description={subtitle} period={period} units={secondaryMetricLabel ? `${metricLabel}, ${secondaryMetricLabel}` : metricLabel} summary={<div className="grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-3"><p>{metricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(data.at(-1)?.value)}</strong></p>{secondaryMetricLabel ? <p>{secondaryMetricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(data.at(-1)?.secondaryValue ?? null)}</strong></p> : null}{tertiaryMetricLabel ? <p>{tertiaryMetricLabel}: <strong className="tabular-nums text-[var(--foreground)]">{formatPosition(data.at(-1)?.tertiaryValue ?? null)}</strong></p> : null}</div>}>
+      <ChartContainer className="h-[280px]" config={{ value: { label: metricLabel, color: "var(--chart-1)" }, secondaryValue: { label: secondaryMetricLabel ?? "", color: "var(--chart-2)" } }}>
           <AreaChart data={data}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -50,16 +51,16 @@ export function MetricTrendChart({
                 <stop offset="100%" stopColor="var(--color-value)" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="#E3E3E1" />
-            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
-            <YAxis yAxisId="primary" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
+            <CartesianGrid vertical={false} stroke="var(--border)" />
+            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
+            <YAxis yAxisId="primary" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
             <ChartTooltip
               contentStyle={{
-                borderRadius: 8,
-                border: "1px solid #E3E3E1",
-                boxShadow: "0 12px 32px rgba(23,22,26,0.1)",
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--shadow-overlay)",
               }}
-              labelStyle={{ color: "#827F81", fontSize: 12 }}
+              labelStyle={{ color: "var(--muted-foreground)", fontSize: 12 }}
               formatter={(value, name) => [
                 formatInteger(toDisplayNumber(value)),
                 name === "secondaryValue" ? secondaryMetricLabel : metricLabel,
@@ -91,21 +92,6 @@ export function MetricTrendChart({
             ) : null}
           </AreaChart>
       </ChartContainer>
-      <div className="mt-4 grid gap-2 text-sm text-[var(--crm-text-secondary)] sm:grid-cols-3">
-        <p>
-          {metricLabel}: {formatInteger(data.at(-1)?.value)}
-        </p>
-        {secondaryMetricLabel ? (
-          <p>
-            {secondaryMetricLabel}: {formatInteger(data.at(-1)?.secondaryValue ?? null)}
-          </p>
-        ) : null}
-        {tertiaryMetricLabel ? (
-          <p>
-            {tertiaryMetricLabel}: {formatPosition(data.at(-1)?.tertiaryValue ?? null)}
-          </p>
-        ) : null}
-      </div>
-    </div>
+    </AnalyticsCard>
   );
 }

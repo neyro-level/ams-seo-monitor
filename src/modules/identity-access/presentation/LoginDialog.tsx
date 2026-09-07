@@ -79,7 +79,7 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="impulse-landing rounded-none border-white/12 bg-[var(--ch-bg-deeper)] p-7 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-10"
+          className="theme-public impulse-landing rounded-none border-white/12 bg-[var(--ch-bg-deeper)] p-7 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-10"
           showCloseButton={!pending}
         >
           <DialogHeader>

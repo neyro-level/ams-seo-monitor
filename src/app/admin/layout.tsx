@@ -3,12 +3,12 @@ import type { ReactNode } from "react";
 import { PrivateApplicationLayout } from "../../components/shell/PrivateApplicationLayout.tsx";
 
 export const metadata: Metadata = {
-  title: "Клиентский кабинет",
+  title: "Администрирование",
   robots: { index: false, follow: false, nocache: true },
 };
 
 export const viewport: Viewport = { colorScheme: "light", themeColor: "#eef2f5" };
 
-export default function ClientLayout({ children }: { children: ReactNode }) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return <PrivateApplicationLayout>{children}</PrivateApplicationLayout>;
 }
