@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "../../shared/lib/cn.ts";
 
 export function Alert({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div data-slot="alert" role="alert" className={cn("rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 text-sm", className)} {...props} />;
+  return <div data-slot="alert" role="alert" className={cn("rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--card)] p-4 text-sm", className)} {...props} />;
 }
 
 export function AlertTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {

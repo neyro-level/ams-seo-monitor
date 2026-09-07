@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "../ui/button.tsx";
+import { MarketingButton } from "./MarketingButton.tsx";
 import { Checkbox } from "../ui/checkbox.tsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog.tsx";
 import { Input } from "../ui/input.tsx";
@@ -115,50 +116,50 @@ export function LeadRequestDialog() {
 
   return (
     <>
-      <Button type="button" variant="marketing" size="lg" className="group gap-3" onClick={openDialog}>
+      <MarketingButton type="button" size="lg" className="group gap-3" onClick={openDialog}>
         Бесплатный тест-драйв
         <ArrowUpRight className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={1.8} aria-hidden />
-      </Button>
+      </MarketingButton>
 
       <Dialog open={open} onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : closeDialog())}>
         <DialogContent
-          className="theme-public impulse-landing w-[min(576px,calc(100%_-_32px))] rounded-none border-white/12 bg-[var(--ch-bg-deeper)] p-7 text-white shadow-[0_32px_100px_rgba(0,0,0,0.55)] sm:p-10"
+          className="theme-public impulse-landing w-[min(576px,calc(100%_-_32px))] rounded-none border-[var(--ch-border-control)] bg-[var(--ch-bg-deeper)] p-7 text-[var(--ch-white)] shadow-[var(--ch-overlay-shadow)] sm:p-10"
           showCloseButton={submitState !== "loading"}
         >
           {submitState === "success" ? (
             <div className="py-8 pr-10">
-              <span className="grid size-12 place-items-center bg-[var(--ch-accent)] text-white"><Check className="size-6" strokeWidth={1.8} aria-hidden /></span>
+              <span className="grid size-12 place-items-center bg-[var(--ch-accent)] text-[var(--ch-white)]"><Check className="size-6" strokeWidth={1.8} aria-hidden /></span>
               <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--ch-accent)]">AMS IMPULSE</p>
-              <DialogTitle className="mt-3 text-3xl font-extrabold tracking-[-0.035em] text-white">Заявка отправлена</DialogTitle>
+              <DialogTitle className="mt-3 text-3xl font-extrabold tracking-[-0.035em] text-[var(--ch-white)]">Заявка отправлена</DialogTitle>
               <p className="mt-3 text-sm leading-6 text-[var(--ch-muted-ondark)]">Свяжемся с вами, уточним задачу и обсудим следующий шаг.</p>
-              <Button type="button" variant="secondary" size="lg" className="mt-7 rounded-none bg-white text-[var(--ch-bg-deeper)] hover:bg-white/90" onClick={closeDialog}>Закрыть</Button>
+              <Button type="button" variant="secondary" size="lg" className="mt-7 rounded-none bg-[var(--ch-white)] text-[var(--ch-bg-deeper)] hover:bg-[var(--ch-soft-white)]" onClick={closeDialog}>Закрыть</Button>
             </div>
           ) : (
             <>
               <DialogHeader>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ch-accent)]">AMS IMPULSE</p>
-                <DialogTitle className="mt-2 text-[32px] font-extrabold leading-tight tracking-[-0.04em] text-white sm:text-[34px]">Запустить бесплатный тест-драйв</DialogTitle>
+                <DialogTitle className="mt-2 text-[32px] font-extrabold leading-tight tracking-[-0.04em] text-[var(--ch-white)] sm:text-[34px]">Запустить бесплатный тест-драйв</DialogTitle>
                 <p className="mt-2 max-w-md text-sm leading-6 text-[var(--ch-muted-ondark)]">Оставьте имя и телефон. Уточним задачу и запустим пробный период.</p>
               </DialogHeader>
 
-              <form className="mt-8 border-t border-white/10 pt-8" onSubmit={handleSubmit} noValidate>
+              <form className="mt-8 border-t border-[var(--ch-border-subtle)] pt-8" onSubmit={handleSubmit} noValidate>
                 <div className="space-y-6">
                   <label className="block">
-                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">Имя</span>
+                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ch-label-ondark)]">Имя</span>
                     <span className="group relative flex min-h-14 items-center">
-                      <UserRound className="pointer-events-none absolute left-4 z-10 size-[18px] text-white/34 group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
-                      <Input type="text" value={name} onChange={(event) => { setName(event.target.value); if (errors.name) setErrors((current) => ({ ...current, name: undefined })); }} className="min-h-14 rounded-none border-white/14 bg-[#151e29]/72 py-3 pl-12 pr-4 text-base font-medium text-white placeholder:text-white/24 focus-visible:border-[var(--ch-accent)]" autoComplete="name" autoFocus aria-invalid={Boolean(errors.name)} />
+                      <UserRound className="pointer-events-none absolute left-4 z-10 size-[18px] text-[var(--ch-icon-ondark)] group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
+                      <Input type="text" value={name} onChange={(event) => { setName(event.target.value); if (errors.name) setErrors((current) => ({ ...current, name: undefined })); }} className="min-h-14 rounded-none border-[var(--ch-border-control)] bg-[var(--ch-bg-dark)]/72 py-3 pl-12 pr-4 text-base font-medium text-[var(--ch-white)] placeholder:text-[var(--ch-placeholder-ondark)] focus-visible:border-[var(--ch-accent)]" autoComplete="name" autoFocus aria-invalid={Boolean(errors.name)} />
                     </span>
-                    {errors.name ? <span className="mt-2 block text-xs text-rose-200">{errors.name}</span> : null}
+                    {errors.name ? <span className="mt-2 block text-xs text-[var(--ch-error)]">{errors.name}</span> : null}
                   </label>
 
                   <label className="block">
-                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-white/58">Телефон</span>
+                    <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ch-label-ondark)]">Телефон</span>
                     <span className="group relative flex min-h-14 items-center">
-                      <Phone className="pointer-events-none absolute left-4 z-10 size-[18px] text-white/34 group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
-                      <Input type="tel" value={phone} onChange={(event) => { setPhone(formatPhone(event.target.value)); if (errors.phone) setErrors((current) => ({ ...current, phone: undefined })); }} className="min-h-14 rounded-none border-white/14 bg-[#151e29]/72 py-3 pl-12 pr-4 text-base font-medium text-white placeholder:text-white/24 focus-visible:border-[var(--ch-accent)]" autoComplete="tel" inputMode="tel" placeholder="+7 (999) 999-99-99" aria-invalid={Boolean(errors.phone)} />
+                      <Phone className="pointer-events-none absolute left-4 z-10 size-[18px] text-[var(--ch-icon-ondark)] group-focus-within:text-[var(--ch-accent)]" strokeWidth={1.6} aria-hidden />
+                      <Input type="tel" value={phone} onChange={(event) => { setPhone(formatPhone(event.target.value)); if (errors.phone) setErrors((current) => ({ ...current, phone: undefined })); }} className="min-h-14 rounded-none border-[var(--ch-border-control)] bg-[var(--ch-bg-dark)]/72 py-3 pl-12 pr-4 text-base font-medium text-[var(--ch-white)] placeholder:text-[var(--ch-placeholder-ondark)] focus-visible:border-[var(--ch-accent)]" autoComplete="tel" inputMode="tel" placeholder="+7 (999) 999-99-99" aria-invalid={Boolean(errors.phone)} />
                     </span>
-                    {errors.phone ? <span className="mt-2 block text-xs text-rose-200">{errors.phone}</span> : null}
+                    {errors.phone ? <span className="mt-2 block text-xs text-[var(--ch-error)]">{errors.phone}</span> : null}
                   </label>
                 </div>
 
@@ -173,19 +174,19 @@ export function LeadRequestDialog() {
                       setConsent(checked);
                       if (errors.consent) setErrors((current) => ({ ...current, consent: undefined }));
                     }}
-                    className="mt-0.5 rounded-none border-white/24 bg-white/[0.04] data-checked:border-[var(--ch-accent)] data-checked:bg-[var(--ch-accent)]"
+                    className="mt-0.5 rounded-none border-[var(--ch-border-strong)] bg-[var(--ch-surface-subtle)] data-checked:border-[var(--ch-accent)] data-checked:bg-[var(--ch-accent)]"
                     aria-label="Даю согласие на обработку персональных данных"
                   />
-                  <p className="text-xs leading-5 text-white/52">Даю согласие на{" "}<Link href="/politika/" className="font-semibold text-white/82 underline decoration-[var(--ch-accent)]/70 underline-offset-3 transition hover:text-white">обработку персональных данных</Link></p>
+                  <p className="text-xs leading-5 text-[var(--ch-body-ondark)]">Даю согласие на{" "}<Link href="/politika/" className="font-semibold text-[var(--ch-strong-ondark)] underline decoration-[var(--ch-accent)]/70 underline-offset-3 transition hover:text-[var(--ch-white)]">обработку персональных данных</Link></p>
                 </div>
-                {errors.consent ? <p className="mt-2 text-xs text-rose-200">{errors.consent}</p> : null}
+                {errors.consent ? <p className="mt-2 text-xs text-[var(--ch-error)]">{errors.consent}</p> : null}
 
-                {submitState === "error" ? <p className="mt-6 border border-rose-300/20 bg-rose-950/25 px-4 py-3 text-sm leading-5 text-rose-100" role="alert">{submitError}</p> : null}
+                {submitState === "error" ? <p className="mt-6 border border-[var(--ch-error-border)] bg-[var(--ch-error-soft)] px-4 py-3 text-sm leading-5 text-[var(--ch-error)]" role="alert">{submitError}</p> : null}
 
-                <Button type="submit" variant="marketing" size="lg" disabled={submitState === "loading"} className="mt-7 min-h-14 w-full focus-visible:ring-white focus-visible:ring-offset-[var(--ch-bg-deeper)]">
+                <MarketingButton type="submit" size="lg" disabled={submitState === "loading"} className="mt-7 min-h-14 w-full focus-visible:ring-[var(--ch-white)] focus-visible:ring-offset-[var(--ch-bg-deeper)]">
                   {submitState === "loading" ? <Loader2 className="animate-spin" strokeWidth={1.7} aria-hidden /> : null}
                   {submitState === "loading" ? "Отправляем…" : "Запустить тест-драйв"}
-                </Button>
+                </MarketingButton>
               </form>
             </>
           )}

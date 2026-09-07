@@ -6,7 +6,7 @@ import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { Button } from "../../../components/ui/button.tsx";
 import { Input } from "../../../components/ui/input.tsx";
-import { Select } from "../../../components/ui/select.tsx";
+import { NativeSelect, NativeSelectOption } from "../../../components/ui/native-select.tsx";
 import {
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
@@ -65,31 +65,31 @@ const defaultSortOptions: Array<{ field: PlatformAdminSortField; label: string }
 
 function Filters({ query, resource }: { query: PlatformAdminPageQuery; resource: string }) {
   return (
-    <form className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-[minmax(0,1fr)_180px_160px_auto]" method="get">
+    <form className="grid gap-3 rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--card)] p-4 sm:grid-cols-[minmax(0,1fr)_180px_160px_auto]" method="get">
       <label className="space-y-1.5">
-        <span className="block text-sm font-medium text-slate-800">Поиск</span>
+        <span className="block text-sm font-medium text-[var(--foreground)]">Поиск</span>
         <Input defaultValue={query.search} name="q" placeholder="Название, slug или ID" />
       </label>
       <label className="space-y-1.5">
-        <span className="block text-sm font-medium text-slate-800">Сортировка</span>
-        <Select defaultValue={query.sort} name="sort">
-          <option value="updatedAt">Обновлено</option>
-          <option value="createdAt">Создано</option>
-          <option value="name">Название</option>
-          <option value="status">Статус</option>
-        </Select>
+        <span className="block text-sm font-medium text-[var(--foreground)]">Сортировка</span>
+        <NativeSelect defaultValue={query.sort} name="sort">
+          <NativeSelectOption value="updatedAt">Обновлено</NativeSelectOption>
+          <NativeSelectOption value="createdAt">Создано</NativeSelectOption>
+          <NativeSelectOption value="name">Название</NativeSelectOption>
+          <NativeSelectOption value="status">Статус</NativeSelectOption>
+        </NativeSelect>
       </label>
       <label className="space-y-1.5">
-        <span className="block text-sm font-medium text-slate-800">Направление</span>
-        <Select defaultValue={query.direction} name="direction">
-          <option value="desc">По убыванию</option>
-          <option value="asc">По возрастанию</option>
-        </Select>
+        <span className="block text-sm font-medium text-[var(--foreground)]">Направление</span>
+        <NativeSelect defaultValue={query.direction} name="direction">
+          <NativeSelectOption value="desc">По убыванию</NativeSelectOption>
+          <NativeSelectOption value="asc">По возрастанию</NativeSelectOption>
+        </NativeSelect>
       </label>
       <div className="flex items-end gap-2">
         <Button type="submit">Применить</Button>
         {query.search || query.sort !== "updatedAt" || query.direction !== "desc" || query.page > 1 ? (
-          <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-slate-600 hover:text-slate-950" href={`/admin/${resource}/`}>
+          <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)]" href={`/admin/${resource}/`}>
             Сбросить
           </Link>
         ) : null}

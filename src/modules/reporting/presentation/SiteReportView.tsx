@@ -144,7 +144,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
               deltaTone={ranking.improvedCount > ranking.declinedCount ? "positive" : ranking.declinedCount > ranking.improvedCount ? "negative" : "neutral"}
             />
           </div>
-          <RankingShareChart ranking={ranking} />
+          <RankingShareChart ranking={ranking} timezone={site.timezone} />
           <SectionCard title="Поисковые запросы" note={`${ranking.measuredCount} из ${ranking.queryCount} с текущей позицией`}>
             <TrackedQueryTable ranking={ranking} />
           </SectionCard>
@@ -180,7 +180,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
               <KpiCard label="CTR" value={formatPercent(webmaster.summary.ctr, 2)} delta={ctrDelta.text} deltaTone={ctrDelta.tone} />
               <KpiCard label="Средняя позиция" value={formatPosition(webmaster.summary.avgPosition)} delta={positionDelta.text} deltaTone={positionDelta.tone} />
             </div>
-            <MetricTrendChart title="Динамика показов и кликов" subtitle="Как меняется поисковая видимость сайта по дням." period={periodLabel} data={webmaster.visibilityTrend} metricLabel="Показы" secondaryMetricLabel="Клики" tertiaryMetricLabel="Средняя позиция" />
+            <MetricTrendChart title="Динамика показов и кликов" subtitle="Как меняется поисковая видимость сайта по дням." period={periodLabel} timezone={site.timezone} data={webmaster.visibilityTrend} metricLabel="Показы" secondaryMetricLabel="Клики" tertiaryMetricLabel="Средняя позиция" />
           </>
         ) : <StatePanel state="empty" title="Нет данных Вебмастера" description="Источник не подключён или временно недоступен." />}
       </section>
@@ -198,7 +198,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
               <KpiCard label="Конверсия" value={formatPercent(metrica.summary.conversionRate)} tone="success" delta={conversionDelta.text} deltaTone={conversionDelta.tone} />
               <KpiCard label="Среднее время" value={formatDuration(metrica.summary.averageVisitDurationSeconds)} />
             </div>
-            <MetricTrendChart title="Органический трафик" subtitle="Как меняются визиты и целевые действия из поиска Яндекса." period={periodLabel} data={metrica.organicTrend} metricLabel="Визиты" secondaryMetricLabel="Целевые визиты" tertiaryMetricLabel="Конверсия" />
+            <MetricTrendChart title="Органический трафик" subtitle="Как меняются визиты и целевые действия из поиска Яндекса." period={periodLabel} timezone={site.timezone} data={metrica.organicTrend} metricLabel="Визиты" secondaryMetricLabel="Целевые визиты" tertiaryMetricLabel="Конверсия" />
             <SectionCard title="Посадочные страницы" note="Основные входы из органического поиска">
               <DataTable caption="Эффективность посадочных страниц" columns={["Страница", "Визиты", "Целевые визиты", "Конверсия", "Отказы"]} rows={metrica.landingPages.slice(0, 10).map((page) => ({ key: page.path, cells: [<span key="path" className="font-semibold text-[var(--foreground)]">{page.path}</span>, formatInteger(page.visits), formatInteger(page.targetVisits), formatPercent(page.conversionRate), formatPercent(page.bounceRate)] }))} />
             </SectionCard>

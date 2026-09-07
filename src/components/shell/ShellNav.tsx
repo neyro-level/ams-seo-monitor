@@ -15,7 +15,7 @@ type ShellNavProps = {
 function NavigationLink({ href, label, active, muted, collapsed, onNavigate, child = false }: { href: string; label: string; active: boolean; muted?: boolean; collapsed: boolean; onNavigate?: () => void; child?: boolean }) {
   const Icon = child ? Globe2 : href.startsWith("/c/") ? Building2 : ChartNoAxesCombined;
   const link = (
-    <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={`flex min-h-11 items-center rounded-[var(--radius-control)] text-sm transition-colors ${collapsed ? "justify-center px-2" : "gap-3 px-3"} ${active ? "bg-[var(--sidebar-accent)] font-semibold text-[var(--sidebar-accent-foreground)]" : muted ? "text-[var(--sidebar-muted)] hover:bg-white/6" : "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-hover)]"}`}>
+    <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={`flex min-h-11 items-center rounded-[var(--radius)] text-sm transition-colors ${collapsed ? "justify-center px-2" : "gap-3 px-3"} ${active ? "bg-[var(--sidebar-accent)] font-semibold text-[var(--sidebar-accent-foreground)]" : muted ? "text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-surface)]" : "text-[var(--sidebar-foreground)] hover:bg-[var(--sidebar-hover)]"}`}>
       <Icon className={`${child ? "size-4" : "size-5"} shrink-0`} strokeWidth={1.8} aria-hidden />
       {collapsed ? <span className="sr-only">{label}</span> : <span className="truncate">{label}</span>}
     </Link>

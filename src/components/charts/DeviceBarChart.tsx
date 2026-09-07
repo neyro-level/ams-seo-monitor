@@ -10,6 +10,7 @@ function toDisplayNumber(value: unknown) {
 }
 
 type DeviceBarChartProps = {
+  timezone: string;
   data: Array<{
     device: string;
     visits: number;
@@ -17,11 +18,11 @@ type DeviceBarChartProps = {
   }>;
 };
 
-export function DeviceBarChart({ data }: DeviceBarChartProps) {
+export function DeviceBarChart({ data, timezone }: DeviceBarChartProps) {
   if (data.length === 0) return <ChartEmptyState title="Устройства" description="За выбранный период нет данных по устройствам." />;
   const visitsTotal = data.reduce((total, item) => total + item.visits, 0);
   return (
-    <AnalyticsCard title="Устройства" description="Как распределяются визиты и конверсия между типами устройств." units="визиты и проценты" summary={<p className="text-sm text-[var(--text-secondary)]">Всего визитов: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(visitsTotal)}</strong></p>}>
+    <AnalyticsCard title="Устройства" description="Как распределяются визиты и конверсия между типами устройств." units="визиты и проценты" timezone={timezone} summary={<p className="text-sm text-[var(--text-secondary)]">Всего визитов: <strong className="tabular-nums text-[var(--foreground)]">{formatInteger(visitsTotal)}</strong></p>}>
       <ChartContainer className="h-[280px]" config={{ visits: { label: "Визиты", color: "var(--chart-1)" } }}>
           <BarChart data={data}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
@@ -29,7 +30,7 @@ export function DeviceBarChart({ data }: DeviceBarChartProps) {
             <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
             <ChartTooltip
               contentStyle={{
-                borderRadius: "var(--radius-control)",
+                borderRadius: "var(--radius)",
                 border: "1px solid var(--border)",
                 boxShadow: "var(--shadow-overlay)",
               }}
@@ -40,7 +41,7 @@ export function DeviceBarChart({ data }: DeviceBarChartProps) {
       </ChartContainer>
       <ul className="mt-4 grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-2">
         {data.map((item) => (
-          <li key={item.device} className="rounded-[8px] border border-[var(--border)] bg-[var(--muted)] px-3 py-2">
+          <li key={item.device} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--muted)] px-3 py-2">
             <span className="font-semibold text-[var(--foreground)]">{item.device}</span>: {formatInteger(item.visits)} визитов, {formatPercent(item.conversionRate)} конверсия
           </li>
         ))}

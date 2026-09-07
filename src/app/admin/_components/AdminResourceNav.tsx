@@ -14,10 +14,10 @@ export function AdminResourceNav({ currentPath }: { currentPath: string }) {
             key={item.key}
             href={item.href}
             className={cn(
-              "inline-flex min-h-11 shrink-0 items-center rounded-xl border px-4 text-sm font-semibold transition-colors",
+              "inline-flex min-h-11 shrink-0 items-center rounded-[var(--radius)] border px-4 text-sm font-semibold transition-colors",
               active
-                ? "border-slate-900 bg-slate-900 text-white"
-                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                : "border-[var(--border)] bg-[var(--card)] text-[var(--text-secondary)] hover:bg-[var(--muted)]",
             )}
           >
             {item.label}

@@ -1,8 +1,8 @@
 # AMS IMPULSE Application Design System
 
-Статус: канон приватного интерфейса AMS IMPULSE. Версия проектного профиля: 2.0.
+Статус: канон приватного интерфейса AMS IMPULSE. Версия проектного профиля: 2.1.
 
-Документ конкретизирует `AMS UI Development Constitution 1.0` и `AMS Application Design System 2.0` для кабинета, Platform Admin, аналитики и отчётов. Архитектурные и security-границы определяет Application Platform Core 3.4.
+Документ конкретизирует `AMS UI Development Constitution 3.1` и `AMS Application Design System 2.1` для кабинета, Platform Admin, аналитики и отчётов. Архитектурные и security-границы определяет Application Platform Core 3.4. Палитра AMS IMPULSE является утверждённым project override и не заменяется default-палитрой Design System.
 
 ## Область действия
 
@@ -67,7 +67,7 @@ Reusable UI обращается только к семантическим пе
 --sidebar-*
 --success / --warning / --info / --destructive
 --chart-1 ... --chart-5
---radius-control / --radius-panel / --radius-card
+--radius / --radius-panel / --radius-card
 --shadow-surface / --shadow-overlay
 ```
 
@@ -82,7 +82,7 @@ Reusable UI обращается только к семантическим пе
 - card: радиус `18px`;
 - spacing scale: `4, 8, 12, 16, 20, 24, 32, 40px`;
 - обычные поверхности разделяются фоном и border; постоянные тяжёлые тени запрещены;
-- motion: `150–200ms`, modal/drawer до `250ms`, с `prefers-reduced-motion`.
+- локальный motion: `120–180ms`, modal/navigation: `180–240ms`, с обязательным `prefers-reduced-motion`.
 
 ## Application shell
 
@@ -91,7 +91,7 @@ Reusable UI обращается только к семантическим пе
 - collapse хранится локально, без новой state-библиотеки;
 - desktop topbar содержит только контекст экрана и глобальные действия;
 - mobile использует topbar и drawer;
-- пользовательский блок и безопасный выход компактны;
+- пользовательский блок показывает понятные имя и роль; безопасный выход остаётся компактным;
 - навигация строится на сервере из `PrincipalContext`; скрытый пункт не заменяет authorization;
 - несуществующие маршруты не показываются.
 
@@ -103,7 +103,7 @@ Reusable UI обращается только к семантическим пе
 
 ## Формы и действия
 
-Сложная форма использует RHF + Zod, одинаковый field contract и обязательную server validation. Label не заменяется placeholder. Ошибка объясняет исправление и сохраняет ввод. Pending блокирует повторную отправку.
+Сложная форма использует RHF + Zod, одинаковый field contract и обязательную server validation. Label не заменяется placeholder. Ошибка объясняет исправление и сохраняет ввод. Pending блокирует повторную отправку. Обычный системный HTML-select оформляется через shadcn `NativeSelect`; popup Select применяется только при фактической потребности в поиске, группировке или сложном выборе. Раскрывающиеся секции используют Base UI/shadcn Accordion, а не ручной `details/summary`.
 
 Destructive action отделяется визуально и подтверждается именем объекта. После mutation пользователь получает явный success/error feedback. Пароль, provider secret и другие чувствительные значения не возвращаются в browser-safe result.
 
@@ -119,7 +119,7 @@ Destructive action отделяется визуально и подтвержд
 
 ## Аналитика и графики
 
-Основной рабочий объект важнее декоративного набора KPI. Каждый график отвечает на конкретный вопрос и показывает период, единицы и числовой итог. Цвета, grid, tooltip и legend используют `chart-*` и semantic tokens. Семантика данных остаётся во владельце домена `report-compiler`.
+Основной рабочий объект важнее декоративного набора KPI. Каждый график отвечает на конкретный вопрос и показывает период, единицы, timezone и числовой итог. Цвета, grid, tooltip и legend используют `chart-*` и semantic tokens. Семантика данных остаётся во владельце домена `report-compiler`.
 
 ## Responsive и доступность
 
@@ -155,3 +155,4 @@ Destructive action отделяется визуально и подтвержд
 - формы, таблицы, графики и все состояния имеют browser proof;
 - keyboard, focus, dialog/drawer и overflow проверены;
 - публичный лендинг, legal pages и login modal визуально не изменены.
+- для RISKY UI-потока выполнены impact review и независимый read-only review через OMP; каждое замечание подтверждено или отклонено по коду.

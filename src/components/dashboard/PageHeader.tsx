@@ -32,19 +32,19 @@ export function PageHeader({
           >
             <Link
               href={cabinetHref}
-              className="rounded-sm transition-colors hover:text-[var(--link)] hover:underline focus-visible:text-[var(--link)]"
+              className="rounded-[var(--radius)] transition-colors hover:text-[var(--link)] hover:underline focus-visible:text-[var(--link)]"
             >
               Кабинет
             </Link>
             {eyebrow ? (
               <>
-                <span aria-hidden className="text-slate-300">
+                <span aria-hidden className="text-[var(--border)]">
                   ›
                 </span>
                 {resolvedEyebrowHref ? (
                   <Link
                     href={resolvedEyebrowHref}
-                    className="rounded-sm transition-colors hover:text-[var(--link)] hover:underline focus-visible:text-[var(--link)]"
+                    className="rounded-[var(--radius)] transition-colors hover:text-[var(--link)] hover:underline focus-visible:text-[var(--link)]"
                   >
                     {eyebrow}
                   </Link>
@@ -60,7 +60,7 @@ export function PageHeader({
                 href={backHref}
                 aria-label="Назад"
                 title="Назад"
-                className="group inline-flex h-10 shrink-0 items-center pr-1 text-slate-500 transition hover:text-[var(--primary)]"
+                className="group inline-flex h-10 shrink-0 items-center pr-1 text-[var(--muted-foreground)] transition hover:text-[var(--primary)]"
               >
                 <ArrowLeft
                   className="h-5 w-5 transition-transform group-hover:-translate-x-0.5"

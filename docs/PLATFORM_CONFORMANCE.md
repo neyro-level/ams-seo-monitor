@@ -23,9 +23,10 @@ Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform Admin ena
 | Seed/config boundary | IMPLEMENTED | safe bootstrap, private-path dry-run/apply, no deployment import |
 | Environment validation | IMPLEMENTED | explicit DB target, isolated identities, safe target summary |
 | Provider integrations | PARTIAL | Webmaster and Metrika fresh on configured sites; one proven Topvisor mapping enabled with current positions, three unmapped connections remain disabled |
-| shadcn UI foundation | IMPLEMENTED | Base UI primitives wrap public/private controls; isolated public/app themes; UI drift verifier is part of `verify:config` |
-| Application shell | IMPLEMENTED | shared private layout, server-built navigation, desktop 232/72 sidebar, desktop/mobile topbar and drawer |
-| Tables and charts | IMPLEMENTED | shared server-driven AdminDataTable + mobile cards; TanStack Table 9.2.4; tokenized shadcn Chart + Recharts |
+| UI Constitution 3.1 / Design System 2.1 | IMPLEMENTED | project profile preserves the AMS IMPULSE palette as an isolated override; old token/version aliases are rejected by the UI verifier |
+| shadcn UI foundation | IMPLEMENTED | Base UI primitives wrap public/private controls; NativeSelect and Accordion replace manual native/disclosure styling; public/app themes are isolated |
+| Application shell | IMPLEMENTED | shared private layout, server-built navigation, desktop 232/72 sidebar, desktop/mobile topbar and drawer; user name and understandable role are visible |
+| Tables and charts | IMPLEMENTED | shared server-driven AdminDataTable + mobile cards; TanStack Table 9.2.4; tokenized shadcn Chart + Recharts with explicit period, units and timezone |
 | SourceCraft verification | IMPLEMENTED | quick PR check; exact risky/release workflows; nightly daily |
 | SourceCraft secret scanning | REQUIRES_CHECK | platform-side enablement not independently confirmed |
 | Immutable image release and rollback | IMPLEMENTED | exact SHA/digest, single web/worker image, rollback contract |

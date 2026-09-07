@@ -61,7 +61,7 @@ DATABASE = self-managed-postgresql
 13. Пароль ровно из 8 печатных символов назначает Platform Admin через protected UI или stdin-only CLI; fresh session и active User обязательны.
 14. Secrets/PII не попадают в Git, browser, argv, docs или logs; provider calls только read-only.
 15. Production использует exact reviewed SHA и immutable image; merge не равен release.
-16. Private UI использует Application Design System 2.0 semantic tokens и PT Root UI; `crm-*`, системный HEX в reusable UI и business CSS в `globals.css` запрещены.
+16. Private UI следует AMS UI Development Constitution 3.1 и Application Design System 2.1, использует semantic tokens и PT Root UI; `crm-*`, системный HEX в reusable UI и business CSS в `globals.css` запрещены.
 17. Public UI остаётся в изолированной `theme-public` с Manrope; landing, legal и modal-вход не редизайнятся без отдельного решения владельца.
 
 ## Architecture map

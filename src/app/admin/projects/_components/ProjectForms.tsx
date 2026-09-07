@@ -11,8 +11,9 @@ import {
   type UseFormSetError,
 } from "react-hook-form";
 import { Button } from "../../../../components/ui/button.tsx";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../../../components/ui/accordion.tsx";
 import { Input } from "../../../../components/ui/input.tsx";
-import { Select } from "../../../../components/ui/select.tsx";
+import { NativeSelect, NativeSelectOption } from "../../../../components/ui/native-select.tsx";
 import {
   changeProjectStatusInputSchema,
   createProjectInputSchema,
@@ -53,7 +54,7 @@ function FeedbackMessage({ feedback, onRefresh }: { feedback: Feedback; onRefres
   if (!feedback) return null;
   return (
     <div
-      className={feedback.kind === "success" ? "text-sm font-medium text-emerald-700" : "text-sm font-medium text-rose-700"}
+      className={feedback.kind === "success" ? "text-sm font-medium text-[var(--success)]" : "text-sm font-medium text-[var(--destructive)]"}
       role={feedback.kind === "success" ? "status" : "alert"}
     >
       <span>{feedback.message}</span>
@@ -102,52 +103,56 @@ export function ProjectCreateForm({ options }: { options: ProjectFormOptions }) 
   });
 
   return (
-    <details className="rounded-2xl border border-slate-200 bg-white">
-      <summary className="min-h-11 cursor-pointer list-none px-5 py-3 text-sm font-semibold text-slate-900">
+    <Accordion className="rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--card)]">
+      <AccordionItem value="create-project">
+      <AccordionTrigger className="px-5">
         Создать проект
-      </summary>
-      <form className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2 lg:grid-cols-3" onSubmit={submit}>
+      </AccordionTrigger>
+      <AccordionContent className="p-0">
+      <form className="grid gap-4 border-t border-[var(--border)] p-5 sm:grid-cols-2 lg:grid-cols-3" onSubmit={submit}>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-800">Организация</span>
-          <Select {...register("organizationId")}>
-            {options.organizations.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
-          </Select>
-          {errors.organizationId ? <span className="text-xs text-rose-700">{errors.organizationId.message}</span> : null}
+          <span className="block text-sm font-medium text-[var(--foreground)]">Организация</span>
+          <NativeSelect {...register("organizationId")}>
+            {options.organizations.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.name}</NativeSelectOption>)}
+          </NativeSelect>
+          {errors.organizationId ? <span className="text-xs text-[var(--destructive)]">{errors.organizationId.message}</span> : null}
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-800">Название</span>
+          <span className="block text-sm font-medium text-[var(--foreground)]">Название</span>
           <Input {...register("name")} />
-          {errors.name ? <span className="text-xs text-rose-700">{errors.name.message}</span> : null}
+          {errors.name ? <span className="text-xs text-[var(--destructive)]">{errors.name.message}</span> : null}
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-800">Slug</span>
+          <span className="block text-sm font-medium text-[var(--foreground)]">Slug</span>
           <Input placeholder="project-slug" {...register("slug")} />
-          {errors.slug ? <span className="text-xs text-rose-700">{errors.slug.message}</span> : null}
+          {errors.slug ? <span className="text-xs text-[var(--destructive)]">{errors.slug.message}</span> : null}
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-800">Статус</span>
-          <Select {...register("status")}>
-            {PROJECT_STATUSES.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
-          </Select>
+          <span className="block text-sm font-medium text-[var(--foreground)]">Статус</span>
+          <NativeSelect {...register("status")}>
+            {PROJECT_STATUSES.map((status) => <NativeSelectOption key={status} value={status}>{statusLabels[status]}</NativeSelectOption>)}
+          </NativeSelect>
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-800">Пороговый профиль</span>
-          <Select {...register("thresholdProfileId")}>
-            {options.thresholdProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-          </Select>
+          <span className="block text-sm font-medium text-[var(--foreground)]">Пороговый профиль</span>
+          <NativeSelect {...register("thresholdProfileId")}>
+            {options.thresholdProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
+          </NativeSelect>
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-800">Кластерный профиль</span>
-          <Select {...register("clusterProfileId")}>
-            {options.clusterProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-          </Select>
+          <span className="block text-sm font-medium text-[var(--foreground)]">Кластерный профиль</span>
+          <NativeSelect {...register("clusterProfileId")}>
+            {options.clusterProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
+          </NativeSelect>
         </label>
         <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-3">
           <Button disabled={isSubmitting} type="submit">{isSubmitting ? "Создаём…" : "Создать"}</Button>
           <FeedbackMessage feedback={feedback} />
         </div>
       </form>
-    </details>
+      </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 
@@ -204,37 +209,39 @@ export function ProjectRowActions({ project, options }: { project: ProjectListIt
     <div className="space-y-3">
       <form className="flex flex-wrap items-end gap-2" onSubmit={submitStatus}>
         <label className="min-w-40 space-y-1">
-          <span className="block text-xs font-medium text-slate-600">Статус</span>
-          <Select {...statusForm.register("status")}>
-            {PROJECT_STATUSES.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
-          </Select>
+          <span className="block text-xs font-medium text-[var(--text-secondary)]">Статус</span>
+          <NativeSelect {...statusForm.register("status")}>
+            {PROJECT_STATUSES.map((status) => <NativeSelectOption key={status} value={status}>{statusLabels[status]}</NativeSelectOption>)}
+          </NativeSelect>
         </label>
         <Button className="min-h-11" disabled={statusForm.formState.isSubmitting} type="submit" variant="outline">
           {statusForm.formState.isSubmitting ? "Сохраняем…" : "Сохранить"}
         </Button>
         <FeedbackMessage feedback={statusFeedback} onRefresh={() => router.refresh()} />
       </form>
-      <details className="rounded-xl border border-slate-200 bg-slate-50/60">
-        <summary className="min-h-11 cursor-pointer list-none px-3 py-3 text-sm font-medium text-slate-700">
+      <Accordion className="rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--muted)]/60">
+        <AccordionItem value={project.id}>
+        <AccordionTrigger className="px-3 font-medium text-[var(--text-secondary)]">
           Настройки
-        </summary>
-        <form className="grid gap-3 border-t border-slate-200 p-3" onSubmit={submitSettings}>
+        </AccordionTrigger>
+        <AccordionContent className="p-0">
+        <form className="grid gap-3 border-t border-[var(--border)] p-3" onSubmit={submitSettings}>
           <label className="space-y-1">
-            <span className="block text-xs font-medium text-slate-600">Название</span>
+            <span className="block text-xs font-medium text-[var(--text-secondary)]">Название</span>
             <Input {...settingsForm.register("name")} />
-            {settingsForm.formState.errors.name ? <span className="text-xs text-rose-700">{settingsForm.formState.errors.name.message}</span> : null}
+            {settingsForm.formState.errors.name ? <span className="text-xs text-[var(--destructive)]">{settingsForm.formState.errors.name.message}</span> : null}
           </label>
           <label className="space-y-1">
-            <span className="block text-xs font-medium text-slate-600">Пороговый профиль</span>
-            <Select {...settingsForm.register("thresholdProfileId")}>
-              {options.thresholdProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-            </Select>
+            <span className="block text-xs font-medium text-[var(--text-secondary)]">Пороговый профиль</span>
+            <NativeSelect {...settingsForm.register("thresholdProfileId")}>
+              {options.thresholdProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
+            </NativeSelect>
           </label>
           <label className="space-y-1">
-            <span className="block text-xs font-medium text-slate-600">Кластерный профиль</span>
-            <Select {...settingsForm.register("clusterProfileId")}>
-              {options.clusterProfiles.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-            </Select>
+            <span className="block text-xs font-medium text-[var(--text-secondary)]">Кластерный профиль</span>
+            <NativeSelect {...settingsForm.register("clusterProfileId")}>
+              {options.clusterProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
+            </NativeSelect>
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <Button disabled={settingsForm.formState.isSubmitting} type="submit">
@@ -243,7 +250,9 @@ export function ProjectRowActions({ project, options }: { project: ProjectListIt
             <FeedbackMessage feedback={settingsFeedback} onRefresh={() => router.refresh()} />
           </div>
         </form>
-      </details>
+        </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

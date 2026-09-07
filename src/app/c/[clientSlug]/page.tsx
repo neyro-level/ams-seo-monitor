@@ -75,7 +75,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
             {overview.sites.map((site) => (
               <article
                 key={site.siteSlug}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4"
+                className="rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--muted)] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -84,7 +84,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
                       {site.enabled ? site.siteUrl : "Не подключён"}
                     </p>
                   </div>
-                  <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                  <span className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                     {site.enabled
                       ? `${site.enabledSourceCount} ${
                           site.enabledSourceCount === 1 ? "источник" : "источника"
@@ -94,7 +94,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
                 </div>
                 <Link
                   href={`/c/${overview.client.clientSlug}/${site.siteSlug}/`}
-                  className="mt-4 inline-flex rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white"
+                  className="mt-4 inline-flex rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
                 >
                   Открыть сайт
                 </Link>

@@ -4,9 +4,22 @@ import { getCurrentPrincipalState } from "../../modules/identity-access/server.t
 import { buildNavigation } from "../../modules/project-registry/presentation.ts";
 import { AppShell } from "./AppShell.tsx";
 
+function getRoleLabel(state: NonNullable<Awaited<ReturnType<typeof getCurrentPrincipalState>>>) {
+  if (state.principal.kind === "platform-admin") return "Platform Admin";
+  if (state.principal.kind === "platform-analyst") return "SEO-аналитик";
+  if (state.principal.kind === "tenant-user") {
+    return state.principal.role === "ORG_OWNER"
+      ? "Владелец организации"
+      : state.principal.role === "ORG_MEMBER"
+        ? "Участник организации"
+        : "Наблюдатель";
+  }
+  return "Системный пользователь";
+}
+
 export async function PrivateApplicationLayout({ children }: { children: ReactNode }) {
   const state = await getCurrentPrincipalState();
   if (!state) redirect("/?login=1");
   const sections = await buildNavigation("/", state.principal);
-  return <AppShell sections={sections} displayName={state.displayName}>{children}</AppShell>;
+  return <AppShell sections={sections} displayName={state.displayName} roleLabel={getRoleLabel(state)}>{children}</AppShell>;
 }

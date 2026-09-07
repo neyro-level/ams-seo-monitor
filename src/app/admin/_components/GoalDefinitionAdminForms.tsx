@@ -111,7 +111,7 @@ function GoalDefinitionEditCard({ item }: { item: GoalDefinitionListItem }) {
         <FormField error={form.formState.errors.direction?.message} label="Направление" required>
           <SelectInput options={goalDirectionOptions} {...form.register("direction")} />
         </FormField>
-        <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 xl:self-end">
+        <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)] xl:self-end">
           <Controller control={form.control} name="includeInSeoConversion" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
           Учитывать в SEO-конверсии
         </label>
@@ -181,7 +181,7 @@ export function GoalDefinitionsAdminForms({ items, options }: { items: GoalDefin
           <FormField error={form.formState.errors.direction?.message} label="Направление" required>
             <SelectInput options={goalDirectionOptions} {...form.register("direction")} />
           </FormField>
-          <label className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 text-sm font-medium text-slate-800 xl:self-end">
+          <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)] xl:self-end">
             <Controller control={form.control} name="includeInSeoConversion" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
             Учитывать в SEO-конверсии
           </label>
