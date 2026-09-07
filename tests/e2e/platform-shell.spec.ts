@@ -88,6 +88,14 @@ test.describe("Platform Admin", () => {
     await expect(page.getByRole("button", { name: "Создать организацию" })).toBeVisible();
     await expect(page.getByText(/Страница 1 из/i)).toBeVisible();
 
+    if ((page.viewportSize()?.width ?? 0) >= 1024) {
+      const collapseButton = page.getByRole("button", { name: "Свернуть боковую панель" });
+      await expect(collapseButton).toBeVisible();
+      await collapseButton.click();
+      await expect(page.getByRole("button", { name: "Развернуть боковую панель" })).toBeVisible();
+      await expect(page.locator("aside")).toHaveCSS("width", "72px");
+    }
+
     await page.goto("/admin/providers/");
     await expect(page.getByRole("heading", { level: 1, name: "Подключения источников" })).toBeVisible();
     await expect(page.getByLabel("Сайт")).toBeVisible();

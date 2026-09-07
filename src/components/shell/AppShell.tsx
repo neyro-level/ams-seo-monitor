@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, LogOut, ShieldCheck } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import type { NavigationSection } from "../../modules/project-registry/presentation.ts";
 import { authClient } from "../../platform/auth/client.ts";
@@ -18,6 +18,7 @@ type AppShellProps = {
 
 export function AppShell({ sections, displayName, children }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -28,7 +29,8 @@ export function AppShell({ sections, displayName, children }: AppShellProps) {
   async function signOut() {
     setSigningOut(true);
     await authClient.signOut();
-    window.location.assign("/");
+    router.replace("/");
+    router.refresh();
   }
 
   return (
