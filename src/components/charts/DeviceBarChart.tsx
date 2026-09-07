@@ -1,7 +1,8 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { formatInteger, formatPercent } from "../../shared/format/metrics.ts";
+import { ChartContainer, ChartTooltip } from "../ui/chart.tsx";
 
 function toDisplayNumber(value: unknown) {
   return typeof value === "number" ? value : null;
@@ -24,13 +25,12 @@ export function DeviceBarChart({ data }: DeviceBarChartProps) {
           Synthetic split нужен для проверки layout, local overflow и text fallback.
         </p>
       </div>
-      <div className="h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
+      <ChartContainer className="h-[280px]" config={{ visits: { label: "Визиты", color: "#101720" } }}>
           <BarChart data={data}>
             <CartesianGrid vertical={false} stroke="#E3E3E1" />
             <XAxis dataKey="device" axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
             <YAxis axisLine={false} tickLine={false} tick={{ fill: "#827F81", fontSize: 11 }} />
-            <Tooltip
+            <ChartTooltip
               contentStyle={{
                 borderRadius: 8,
                 border: "1px solid #E3E3E1",
@@ -38,10 +38,9 @@ export function DeviceBarChart({ data }: DeviceBarChartProps) {
               }}
               formatter={(value) => [formatInteger(toDisplayNumber(value)), "Визиты"]}
             />
-            <Bar dataKey="visits" fill="#17161A" radius={[6, 6, 0, 0]} maxBarSize={28} />
+            <Bar dataKey="visits" fill="var(--color-visits)" radius={[6, 6, 0, 0]} maxBarSize={28} />
           </BarChart>
-        </ResponsiveContainer>
-      </div>
+      </ChartContainer>
       <ul className="mt-4 grid gap-2 text-sm text-[var(--crm-text-secondary)] sm:grid-cols-2">
         {data.map((item) => (
           <li key={item.device} className="rounded-[8px] border border-[var(--crm-border)] bg-[var(--crm-surface-muted)] px-3 py-2">
