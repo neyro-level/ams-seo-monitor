@@ -54,7 +54,7 @@ Role/capability и protected Platform Admin реализованы. Public signu
 
 - до 50 клиентских организаций;
 - несколько projects/sites на organization;
-- code-first internal mini CMS для повторяемого onboarding и настроек;
+- code-first internal mini CMS для повторяемого создания клиентов и настроек;
 - server pagination/filter/sort для растущих списков;
 - jobs/audit/idempotency для безопасных массовых и внешних операций;
 - публичный landing сохраняется как готовый project-specific UI.
@@ -97,10 +97,10 @@ CMS управляет только разрешёнными полями и к�
 4. Переключает `week`, `month`, `quarter`, `halfYear`.
 5. Читает единый отчёт без доступа к внутренним данным.
 
-### Onboarding проекта
+### Создание клиента и проекта
 
 1. Оператор подтверждает URL, timezone и provider access.
-2. Через protected Platform Admin создаёт organization, membership, project, site и nonsecret provider mapping.
+2. Через единый protected Platform Admin wizard атомарно создаёт organization, project, credential user и membership; пароль назначает администратор.
 3. Настраивает goals, tracked query set, thresholds и clusters через typed audited commands.
 4. Repeatable bootstrap создаёт только default/reference records; operator configuration импортируется отдельно из private path и не входит в deployment.
 5. Production credentials настраиваются отдельным operator step вне browser и Git.

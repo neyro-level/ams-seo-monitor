@@ -1,51 +1,23 @@
 # MASTER PLAN
 
-Только незавершённая работа. Выполненные этапы и прежние планы не хранятся здесь — их история остаётся в Git/SourceCraft.
+Только незавершённая работа; завершённые этапы остаются в Git/SourceCraft.
 
-## Platform contract completion
+## GitHub sanitation
 
-### GitHub sanitation closure
+- держать зеркало private, пока старый pre-rewrite SHA доступен;
+- пройти официальный purge process GitHub;
+- вернуть public visibility только после недоступности старого SHA, полного signature scan и exact-SHA equality с SourceCraft `main`.
 
-- зеркалировать очищенный canonical `main`, сохраняя GitHub private;
-- добиться удаления доступного старого pre-rewrite SHA через официальный GitHub purge process;
-- вернуть public visibility только после недоступности старого SHA и exact-SHA equality зеркал.
+## Provider mappings
 
-## Product backlog
+- для трёх выключенных Topvisor connections получить подтверждённые project/region mappings;
+- выполнить read-only preflight и включать каждое подключение только при свежих непустых position rows;
+- отсутствие данных не маскировать как нулевые позиции; paid checks и provider mutations не выполнять.
 
-### New tenant onboarding
+## Platform controls
 
-- зарегистрировать organization/project/sites и memberships;
-- подтвердить read-only provider mappings/access;
-- выполнить первый sync, четыре report periods и tenant-isolation proof без публикации credentials.
+- независимо подтвердить SourceCraft secret scanning;
+- сузить `CREATEDB` production migrator role после owner-approved impact scope;
+- добавить внешний monitor только для landing/public health и alert на stale integration/worker/queue без публикации readiness body.
 
-### Analyst detail views
-
-- добавить bounded diagnostic views поверх существующих snapshots;
-- сохранить server filtering/pagination и browser-safe DTO;
-- не создавать второй report compiler.
-
-### Optional Topvisor activation
-
-- credential names в project Doppler подготовлены; перед runtime activation материализовать их только в protected worker env и выполнить restart/preflight;
-- для текущего production registry подтвердить project/region mapping каждого сайта: часть доменов найдена в Topvisor, один mapping отсутствует, найденные проекты выключены и не имеют свежей истории;
-- включать `ProviderConnection` только после появления свежих непустых position rows;
-- отсутствие данных не маскировать как нулевые позиции;
-- paid checks и provider mutations оставить запрещёнными.
-
-### Availability and freshness monitoring
-
-- внешний monitor ограничить public health/landing;
-- alert-ить stale integration data и worker/queue degradation;
-- readiness body, PII и provider tokens наружу не передавать.
-
-### Private UI normalization
-
-- привести private routes к общим `crm-*` tokens и одинаковым table/action patterns;
-- сохранить data/auth/report contracts;
-- подтвердить `375 / 768 / 1280 / 1440`.
-
-## Release boundary
-
-До production: final conformance audit → exact-head `release-check` → backup/checksum/offsite proof → isolated restore smoke → reviewed migrations → immutable image exact SHA → live auth/tenant/outbox/heartbeat/sync proof.
-
-Managed PostgreSQL: `NOT_APPLICABLE`. Действующий contract — self-managed PostgreSQL; topology/roles/backups проверяются read-only перед финальным release.
+Managed PostgreSQL: `NOT_APPLICABLE`. Текущий contract — self-managed PostgreSQL с release-time backup/restore и read-only operational audit.

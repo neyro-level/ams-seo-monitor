@@ -1,72 +1,46 @@
-# CLIENT ONBOARDING
+# CLIENT PROVISIONING
 
 ## Цель
 
-Подключить новый Project/Site к PostgreSQL runtime, provider sync и tenant access без нового report format, frontend или auth system.
+Подключить новый клиентский tenant, проект, пользователя и read-only SEO-источники без ручных записей в БД и без второго auth contract.
 
-## Обязательные подтверждённые данные
+## Обязательные данные
 
-- project и organization names/slugs;
-- exact HTTPS site URL;
-- timezone;
-- verified Webmaster host access;
-- Metrika counter access;
-- goal list и `includeInSeoConversion` policy;
+- organization/project names и уникальные slugs;
+- имя и уникальный lowercase login пользователя;
+- назначенный Platform Admin пароль ровно из 8 печатных символов;
+- tenant role: `VIEWER` по умолчанию;
+- exact HTTPS site URL и timezone;
+- подтверждённые Webmaster host, Metrika counter/goals;
 - optional Topvisor project/region mapping;
-- tracked query set/baseline;
-- CLIENT_VIEWER username и organization membership delivery method.
+- tracked query set, thresholds и clusters.
 
-Не переносить credentials/provider IDs между проектами по аналогии.
+Credentials и provider IDs нельзя переносить между проектами по аналогии.
 
-## Private configuration preparation
+## Порядок
 
-```bash
-pnpm project:add -- --source <private-path>
-```
+1. В `/admin/` запустить единый мастер создания клиента.
+2. Создать одной командой Organization → Project → User credential → Membership → AuditEvent.
+3. Передать назначенный пароль пользователю приватным каналом; не сохранять его в документах или сообщениях команды.
+4. Проверить вход: пользователь сразу попадает в `/dashboard/` и видит только назначенную organization.
+5. Создать Site и nonsecret ProviderConnection mappings через typed admin forms.
+6. Выполнить read-only preflight каждого провайдера.
+7. Включать connection только после подтверждения access и mapping; Topvisor дополнительно требует свежие непустые позиции.
+8. Выполнить worker sync и проверить четыре report periods.
+9. Release/deploy выполнять отдельной owner-командой.
 
-Wizard создаёт nonsecret operator files в подготовленном private working directory и не:
-
-- принимает token/password/client secret;
-- пишет PostgreSQL;
-- создаёт auth user/membership;
-- запускает provider mutation;
-- делает commit/push/deploy.
-
-Dry run:
-
-```bash
-pnpm project:add -- --source <private-path> --project-name "Новый проект" --project-slug new-project --site-name "Основной сайт" --site-slug main --site-url https://example.ru --dry-run --yes
-```
-
-После создания дополнить goals, cluster/tracked query и provider mapping только подтверждёнными значениями.
-
-## Review и DB onboarding
-
-1. `pnpm verify:config`;
-2. проверить private config на secrets/placeholders/route collisions;
-3. provider preflight read-only;
-4. выполнить `config:sync --source <private-path>` и проверить dry-run;
-5. отдельно подтвердить `config:sync --source <private-path> --apply` в безопасном environment;
-6. проверить Project/Site/ProviderConnection/Goal/TrackedQuery records;
-7. создать user через operator CLI и передать одноразовую `/setup/#<token>` ссылку по согласованному приватному каналу;
-8. пользователь задаёт password через setup route; raw token не сохраняется и не повторяется;
-9. добавить membership;
-10. проверить analyst/client isolation;
-11. выполнить worker sync и четыре periods;
-12. release/deploy — отдельная owner-команда.
+Private operator config при необходимости синхронизируется только явным `config:sync --source <private-path>`: сначала dry-run, затем отдельный `--apply`. Deployment config sync не вызывает.
 
 ## Acceptance
 
-- config schema valid;
-- bootstrap idempotent, config sync не удаляет business records физически;
-- enabled site не использует placeholder;
-- web/worker provider configuration совпадает;
-- только goals с `includeInSeoConversion=true` входят в unique SEO conversion;
-- four valid ReportSnapshots на site;
-- source/freshness labels честны;
+- создание клиента атомарно; duplicate login/slug возвращает safe error;
+- пароль отсутствует в logs, AuditEvent, URL и Git;
+- public signup недоступен;
 - client видит только свою organization;
-- analyst видит project;
+- enabled sources имеют подтверждённый mapping и свежий успешный SourceRun;
+- four valid ReportSnapshots на site;
+- `partial`, `stale` и missing values отображаются честно;
 - secrets/raw provider data отсутствуют в Git/browser/logs;
 - backup/recovery contract не ослаблен.
 
-Live access и onboarding status подтверждаются preflight/production evidence, а не этим runbook.
+Live access и integration state подтверждаются runtime evidence, а не этим runbook.

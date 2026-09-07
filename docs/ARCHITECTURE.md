@@ -47,7 +47,7 @@ Vertical modules содержат `domain / application / infrastructure / prese
 
 ## Platform
 
-- `src/platform/auth` — Better Auth adapters, principal session, onboarding и 2FA policy;
+- `src/platform/auth` — Better Auth identity/password/session adapters и principal session;
 - `src/platform/authorization` — discriminated `PrincipalContext`, permissions и factories;
 - `src/platform/database` — Prisma client/pool, transaction, scopedDb и tenant registry;
 - `src/platform/commands` — business transaction boundary `defineCommand`;
@@ -62,7 +62,7 @@ Vertical modules содержат `domain / application / infrastructure / prese
 
 ### Identity Access
 
-Better Auth владеет identity/password/session/2FA. AMS владеет Organization, Membership, permissions, resource authorization и onboarding state.
+Better Auth владеет identity/password/session. AMS владеет Organization, Membership, permissions, resource authorization и административным provisioning.
 
 Все private reads и mutations используют только `PrincipalContext`; compatibility authorization facade удалён и запрещён статическим guard.
 

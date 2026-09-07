@@ -1,6 +1,6 @@
 # AMS IMPULSE Internal Dashboard Design System
 
-Дизайн-система приватного кабинета, директорских отчётов и внутренних аналитических экранов AMS IMPULSE.
+Дизайн-система приватного кабинета, директорских отчётов и внутренних аналитических экранов AMS IMPULSE. Базовые controls — project-owned shadcn components поверх Base UI; визуальный язык задают `crm-*` tokens, а не default theme библиотеки.
 
 Статус: **канон внутренних маршрутов `/dashboard/*`, `/analyst/*` и `/c/*`**.
 
@@ -401,16 +401,10 @@ AI не должен копировать публичный стиль сайт
 - [ ] Удалены повторяющие и технические пояснения.
 - [ ] Проверены 375, 768, 1280 и 1440px.
 
-## 21. Текущее соответствие
+## 21. Реализованный UI contract
 
-Dashboard routes используют общий shell и базовые primitives. Полное соответствие каждого экрана токенам требует отдельного browser/UI proof; непроверенные экраны не считаются соответствующими по умолчанию.
-
-Следующий отдельный UI-pass должен:
-
-- перевести повторяющиеся HEX/Tailwind-цвета на CRM-токены;
-- унифицировать H2, таблицы, primary/secondary/text actions;
-- сохранить PT Root UI без переноса Manrope из внешнего сайта;
-- выровнять плотность таблиц и удалить технические пояснения;
-- проверить все приватные маршруты на desktop, laptop, tablet и mobile.
-
-До такого proof текущий код не является доказательством полного визуального соответствия.
+- shell, navigation, dialogs, forms, buttons, inputs, selects, checkbox, sheet, toast и states используют общий shadcn foundation;
+- private typography остаётся PT Root UI; Manrope не переносится из внешнего сайта;
+- operational tables используют shadcn Table и TanStack Table `9.2.4`;
+- report charts используют shadcn Chart wrappers поверх Recharts и сохраняют прежние метрики/семантику;
+- visual acceptance выполняется на `375 / 768 / 1280 / 1440`; код не считается доказательством browser-поведения без соответствующего proof.

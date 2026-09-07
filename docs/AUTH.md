@@ -1,123 +1,75 @@
 # AUTH
 
-## Статус
+## Контракт
 
-Canonical auth/authorization code использует только `PrincipalContext`.
+Better Auth `1.7.2` владеет identity, credential password и session lifecycle. AMS владеет Organization, Membership, tenant role, permissions, resource authorization и AuditEvent. Better Auth Organization Plugin и public signup выключены.
 
-## Ownership
-
-Better Auth `1.7.2` owns:
-
-- identity, credential password and session lifecycle;
-- username sign-in;
-- TOTP two-factor authentication and backup codes.
-
-AMS owns:
-
-- Organization;
-- Membership and tenant role;
-- business permissions;
-- resource visibility;
-- onboarding state;
-- audit of AMS business state.
-
-Better Auth Organization Plugin отсутствует в runtime и schema. Tenant scope определяется только свежим AMS Membership.
-
-## PrincipalContext
+Единственный authorization contract — server-generated `PrincipalContext`:
 
 ```text
-platform-admin    → PLATFORM_ADMIN, no organizationId
-a platform-analyst → SEO_ANALYST, no fake tenant context
-tenant-user       → userId + membershipId + organizationId + ORG_OWNER|ORG_MEMBER|VIEWER
-job               → jobName + explicit organizationId
-api-client        → reserved until external /api/v1 exists
+platform-admin   → PLATFORM_ADMIN без organizationId
+platform-analyst → SEO_ANALYST без фиктивного tenant
+tenant-user      → userId + membershipId + organizationId + tenantRole
+job              → jobName + явный organizationId
 ```
 
-Factories are server-only:
+Browser, URL, form и cookie не создают tenant scope. На каждом приватном запросе сервер перечитывает session, активного User и Membership. Отключённый пользователь не входит; удалённый Membership перестаёт давать доступ со следующего запроса.
+
+## Вход
+
+- вход — по уникальному lowercase-логину и паролю;
+- пароль содержит ровно 8 печатных ASCII-символов без пробелов;
+- пароль назначает и меняет только Platform Admin;
+- первый успешный вход сразу ведёт в `/dashboard/`;
+- самостоятельная регистрация, восстановление пароля и изменение пароля пользователем отсутствуют;
+- после смены пароля все существующие sessions пользователя отзываются;
+- password hash хранится только в Better Auth `Account`; открытый пароль не возвращается, не логируется и не попадает в AuditEvent.
+
+Решение работать без дополнительного фактора подтверждено владельцем как `APPROVED_PROJECT_EXCEPTION`. Компенсирующие меры: HTTPS, встроенный Better Auth rate limiting, закрытая регистрация, server-side authorization, отключение пользователей, отзыв sessions и аудит административных операций.
+
+## Создание клиента
+
+В `/admin/` Platform Admin выполняет одну атомарную команду:
 
 ```text
-getPrincipalStateByUserId()
-getCurrentPrincipalState()
-requirePlatformAdmin()
-requirePlatformAnalyst()
-requireTenantUser()
-createJobPrincipal()
+Organization
+→ Project
+→ User
+→ Better Auth credential Account
+→ Membership
+→ AuditEvent
 ```
 
-Browser values never construct a principal. Для tenant user сервер выбирает свежий Membership детерминированно по `organizationId`; смена organization выполняется только через отдельный server-owned flow.
+При любой ошибке транзакция откатывается целиком. Начальная tenant role — `VIEWER`; допустимы `ORG_OWNER`, `ORG_MEMBER`, `VIEWER`. Duplicate login или slug возвращает безопасную ошибку без раскрытия данных.
 
-## Roles and permissions
+Platform Admin также может:
 
-- `PLATFORM_ADMIN` is an internal non-tenant principal. Cross-tenant action must name a target organization and record audit.
-- `SEO_ANALYST` is project-specific `platform-analyst`: global project/report/sync read, not Platform Admin.
-- client users become `tenant-user` through `Member.tenantRole`:
-  - `ORG_OWNER`;
-  - `ORG_MEMBER`;
-  - `VIEWER`.
+- просмотреть пользователей и memberships;
+- назначить новый пароль с отзывом sessions;
+- включить или отключить пользователя;
+- изменить tenant role;
+- отозвать доступ к organization.
 
-Permission answers whether an action class is permitted. Module resource authorization answers whether the principal may act on the particular project/site/report. Both are required in migrated modules.
-
-## First password and 2FA
-
-`user:create` creates a user without a credential account and issues a 32-byte one-time setup token. PostgreSQL stores only its SHA-256 hash, 24-hour expiry, used/revoked timestamps and explicit operator identity. The CLI prints the raw token once as `/setup/#<token>`; the URL fragment is removed by the browser before submission and is never sent in an HTTP request or access-log path.
-
-The server-only Better Auth setup endpoint applies the installed password policy and Better Auth password hashing. Credential account creation, atomic token consumption, `mustChangePassword=false` and a token-free `AuditEvent` commit in one database transaction. Expired, revoked, replayed, disabled-user and already-provisioned tokens return the same safe failure.
-
-`/onboarding/password/` remains only for existing compatibility users who already have a temporary credential. Until onboarding completes, private cabinet routes stay blocked.
-
-`PLATFORM_ADMIN` has TOTP enrollment at `/onboarding/two-factor/`. The policy requires 2FA only for the explicit `APP_ENV=production` identity; test runners use `APP_ENV=test`. There is no feature flag or environment bypass that can disable production 2FA.
-
-Каждая Server Action кабинета проходит `requireCurrentCabinetPrincipal()`: Better Auth session перечитывается без cookie cache, AMS User должен быть активен, password onboarding завершён, а production Platform Admin иметь включённую 2FA. Better Auth 1.7.2 выдаёт credential session только после успешного второго фактора, поэтому свежая session вместе с `twoFactorEnabled` является session-level proof.
-
-Two-factor plugin schema:
-
-- `User.twoFactorEnabled`;
-- `TwoFactor.secret`;
-- encrypted `backupCodes`;
-- verification and account-lockout state.
-
-Better Auth backup codes are the only supported 2FA recovery path. Each code is single-use. Public password reset, public 2FA reset and environment bypass are not configured.
-
-Built-in Better Auth rate limiting is explicitly enabled. The exact installed `1.7.2` login paths `/sign-in/email` and `/sign-in/username` are limited to 5 attempts per 60 seconds; all installed `/two-factor/*` enrollment, verification and recovery paths have stricter per-endpoint rules in `src/platform/auth/security-config.ts`. The existing Better Auth two-factor challenge lockout remains authoritative; no second limiter is implemented.
-
-## Provisioning commands
+## Operator CLI
 
 ```bash
-pnpm user:create -- --username <name> --name <display-name> --system-role PLATFORM_ADMIN --created-by <operator-id>
-pnpm user:revoke-setup-token -- --token-id <id>
+pnpm user:create -- --username <name> --name <display-name> --system-role CLIENT_VIEWER
+pnpm user:reset-password -- --username <name>
 pnpm user:disable -- --username <name>
 pnpm user:set-system-role -- --username <name> --system-role SEO_ANALYST
 pnpm user:add-to-organization -- --username <name> --organization <slug> --tenant-role VIEWER
 pnpm user:remove-from-organization -- --username <name> --organization <slug>
 ```
 
-The setup token is emitted once to stdout and is never accepted through argv. `--tenant-role` accepts `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
+`user:create` и `user:reset-password` принимают пароль только через stdin. `--password`, environment, URL и документация для передачи пароля запрещены.
 
-## Current schema contract
-
-- `Member.tenantRole` is the AMS tenant role;
-- `User.mustChangePassword` owns first-access gating;
-- Better Auth owns `TwoFactor` fields and lifecycle;
-- tenant ownership fields and composite constraints are required;
-- Better Auth Organization Plugin compatibility columns and `Invitation` table are absent.
-
-## Entry points
+## Точки входа и proof
 
 - `src/platform/auth/auth.ts` — Better Auth server adapter;
-- `src/platform/auth/client.ts` — Better Auth client adapter;
-- `src/platform/auth/principal-session.ts` — current session → PrincipalContext;
-- `src/platform/authorization/principal.ts` — discriminated types and permissions;
-- `src/platform/authorization/principal-factories.ts` — server factories;
-- `src/platform/auth/complete-password-onboarding.ts` — audited onboarding command;
-- `src/platform/auth/setup-token-plugin.ts` — server-only Better Auth setup endpoint;
-- `src/platform/auth/security-config.ts` — explicit built-in login/2FA rate-limit rules;
-- `src/app/setup/*` — one-time password setup surface;
-- `src/app/onboarding/*` — first-password and TOTP surfaces;
-- `src/modules/identity-access/domain/system-role.ts` — bounded parser для operator CLI roles, без отдельной permission model.
+- `src/platform/auth/principal-session.ts` — fresh session → PrincipalContext;
+- `src/platform/authorization/*` — principal types, permissions и factories;
+- `src/modules/identity-access/*` — AMS identity administration;
+- `src/app/admin/_actions/users.ts` — thin action adapter;
+- `scripts/auth-admin.ts` — bounded operator CLI.
 
-## Proof
-
-- unit: principal kind/permission/type guards;
-- integration: migrations, platform/analyst/tenant/no-membership principal factories;
-- E2E: login, first-password redirect/completion and private cabinet access at 375/768/1280/1440;
-- required before production: real TOTP controlled enrollment/login proof with a provisioned test Platform Admin.
+Проверки покрывают Platform Admin/analyst/tenant/disabled-user matrix, direct action call, atomic provisioning, exact password length, duplicate login/slug, session revocation, tenant isolation, закрытый signup и прямой переход первого входа в кабинет.

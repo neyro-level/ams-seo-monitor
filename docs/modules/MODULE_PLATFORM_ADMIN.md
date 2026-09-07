@@ -18,7 +18,7 @@ Static route resources, page query contract and dashboard summary only. Identity
 
 ## Roles and permissions
 
-Requires platform management permissions and production 2FA. Analyst, tenant-user and anonymous principals are denied.
+Requires fresh active `platform-admin` principal and platform management permissions. Analyst, tenant-user and anonymous principals are denied.
 
 ## Commands
 
@@ -37,7 +37,7 @@ Browser-safe resource rows, form options, pagination and action results; no Pris
 - only fresh PrincipalContext authorizes;
 - browser state does not own tenant, audit or correlation metadata;
 - client components import browser-safe contracts only;
-- TanStack Table + nuqs own list presentation/URL state;
+- shadcn Table + TanStack Table `9.2.4` + nuqs own list presentation/URL state;
 - React Hook Form + Zod own form UX; server command validates again;
 - provider settings reject sensitive keys;
 - public landing does not import admin UI.
