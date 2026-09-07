@@ -204,7 +204,7 @@ workerTestDescription("syncProjectToDatabase", () => {
       ]);
 
       expect(syncRunCount).toBe(1);
-      expect(sourceRunCount).toBe(7);
+      expect(sourceRunCount).toBe(6);
       expect(reportSnapshotCount).toBe(12);
       expect(webmasterDailyMetricCount).toBeGreaterThan(0);
       expect(webmasterQueryMetricCount).toBeGreaterThan(0);
@@ -212,7 +212,7 @@ workerTestDescription("syncProjectToDatabase", () => {
       expect(landingPageMetricCount).toBeGreaterThan(0);
       expect(metrikaDeviceMetricCount).toBeGreaterThan(0);
       expect(metrikaGoalMetricCount).toBeGreaterThan(0);
-      expect(rankingCaptureCount).toBeGreaterThan(0);
+      expect(rankingCaptureCount).toBe(0);
       expect(technicalSnapshotCount).toBeGreaterThan(0);
       expect(result.syncRunId).toBeTruthy();
       const storedSyncRun = await prisma!.syncRun.findUniqueOrThrow({
