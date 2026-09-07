@@ -20,8 +20,8 @@ type ClientOverviewPageProps = {
 };
 
 export default async function ClientOverviewPage({ params }: ClientOverviewPageProps) {
-  const onboardingRedirect = await getCurrentCabinetRedirect();
-  if (onboardingRedirect) redirect(onboardingRedirect);
+  const cabinetRedirect = await getCurrentCabinetRedirect();
+  if (cabinetRedirect) redirect(cabinetRedirect);
   const state = await getCurrentPrincipalState();
   if (!state) redirect("/?login=1");
 

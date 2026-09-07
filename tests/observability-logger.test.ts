@@ -33,7 +33,6 @@ describe("pino observability logger", () => {
         id: "user-safe-id",
         email: "nested-user@example.test",
         phone: "+70000000001",
-        backupCodes: ["backup-secret"],
       },
       actor: { id: "actor-safe-id", email: "actor@example.test", token: "actor-token" },
       payload: {

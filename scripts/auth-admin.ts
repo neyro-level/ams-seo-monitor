@@ -1,18 +1,14 @@
 import { MembershipRole, SystemRole } from "../src/generated/prisma/client.ts";
 import { createPrismaContext } from "../src/platform/database/prisma/context.ts";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { hashPassword } from "better-auth/crypto";
+import { createLocalAccountIssuer } from "better-auth/db";
 import { parseSystemRole } from "../src/modules/identity-access/index.ts";
-import {
-  createUserSetupToken,
-  getUserSetupTokenExpiry,
-  hashUserSetupToken,
-} from "../src/platform/auth/setup-token.ts";
 
 type AuthAdminCommand =
   | "create"
   | "disable"
-  | "revoke-setup-token"
   | "set-system-role"
   | "add-to-organization"
   | "remove-from-organization";
@@ -71,14 +67,6 @@ function requireUsername() {
   return normalizeUsername(requireOption("username"));
 }
 
-function requireCreatorId() {
-  const value = requireOption("created-by").trim();
-  if (!/^[a-zA-Z0-9_.:@-]{2,120}$/.test(value)) {
-    throw new Error("--created-by must be a 2-120 character nonsecret operator identifier");
-  }
-  return value;
-}
-
 async function findUserByUsername(username: string) {
   const user = await prisma.user.findUnique({ where: { username } });
   if (!user) {
@@ -98,9 +86,12 @@ async function createUser() {
   const username = requireUsername();
   const email = (options.email ?? `${username}@users.impulse.invalid`).toLowerCase();
   const name = requireOption("name");
-  const createdBy = requireCreatorId();
   if (options.password !== undefined) {
-    throw new Error("--password is forbidden; user:create issues a one-time setup token");
+    throw new Error("--password is forbidden; provide the password through stdin");
+  }
+  const password = readFileSync(0, "utf8").replace(/\r?\n$/, "");
+  if (!/^[\x21-\x7e]{8}$/.test(password)) {
+    throw new Error("Password from stdin must contain exactly 8 printable characters without spaces");
   }
   const systemRole = parseSystemRole(options["system-role"] ?? SystemRole.CLIENT_VIEWER);
   const existingUser = await prisma.user.findFirst({
@@ -114,9 +105,8 @@ async function createUser() {
   }
 
   const userId = randomUUID();
-  const rawSetupToken = createUserSetupToken();
-  const setupTokenId = randomUUID();
-  const expiresAt = getUserSetupTokenExpiry();
+  const passwordHash = await hashPassword(password);
+  const issuer = createLocalAccountIssuer("credential");
 
   await prisma.$transaction([
     prisma.user.create({
@@ -127,37 +117,23 @@ async function createUser() {
         name,
         emailVerified: false,
         systemRole,
-        mustChangePassword: true,
+        mustChangePassword: false,
+        twoFactorEnabled: false,
       },
     }),
-    prisma.userSetupToken.create({
+    prisma.account.create({
       data: {
-        id: setupTokenId,
+        id: randomUUID(),
         userId,
-        tokenHash: hashUserSetupToken(rawSetupToken),
-        expiresAt,
-        createdBy,
+        providerId: "credential",
+        issuer,
+        accountId: userId,
+        password: passwordHash,
       },
     }),
   ]);
 
   console.log(`created_user=${username}`);
-  console.log(`setup_token_id=${setupTokenId}`);
-  console.log(`setup_path=/setup/#${rawSetupToken}`);
-  console.log(`setup_expires_at=${expiresAt.toISOString()}`);
-}
-
-async function revokeSetupToken() {
-  const tokenId = requireOption("token-id");
-  const revokedAt = new Date();
-  const result = await prisma.userSetupToken.updateMany({
-    where: { id: tokenId, usedAt: null, revokedAt: null },
-    data: { revokedAt },
-  });
-  if (result.count !== 1) {
-    throw new Error("Setup token not found or already unavailable");
-  }
-  console.log(`revoked_setup_token=${tokenId}`);
 }
 
 async function disableUser() {
@@ -167,10 +143,6 @@ async function disableUser() {
 
   await prisma.$transaction([
     prisma.session.deleteMany({ where: { userId: user.id } }),
-    prisma.userSetupToken.updateMany({
-      where: { userId: user.id, usedAt: null, revokedAt: null },
-      data: { revokedAt: new Date() },
-    }),
     prisma.account.updateMany({
       where: {
         userId: user.id,
@@ -258,9 +230,6 @@ async function main() {
       return;
     case "disable":
       await disableUser();
-      return;
-    case "revoke-setup-token":
-      await revokeSetupToken();
       return;
     case "set-system-role":
       await setSystemRole();

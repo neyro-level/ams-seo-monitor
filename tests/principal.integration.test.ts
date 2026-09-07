@@ -44,29 +44,24 @@ integrationDescription("PrincipalContext factories", () => {
           email: `admin.${suffix}@example.invalid`,
           name: "Admin",
           systemRole: "PLATFORM_ADMIN",
-          mustChangePassword: false,
-          twoFactorEnabled: true,
         },
         {
           id: `${suffix}-analyst`,
           email: `analyst.${suffix}@example.invalid`,
           name: "Analyst",
           systemRole: "SEO_ANALYST",
-          mustChangePassword: false,
         },
         {
           id: `${suffix}-viewer`,
           email: `viewer.${suffix}@example.invalid`,
           name: "Viewer",
           systemRole: "CLIENT_VIEWER",
-          mustChangePassword: false,
         },
         {
           id: `${suffix}-nomember`,
           email: `nomember.${suffix}@example.invalid`,
           name: "No member",
           systemRole: "CLIENT_VIEWER",
-          mustChangePassword: false,
         },
       ],
     });
@@ -95,7 +90,6 @@ integrationDescription("PrincipalContext factories", () => {
       getPrincipalStateByUserId(`${suffix}-admin`, { correlationId }),
     ).resolves.toMatchObject({
       principal: { kind: "platform-admin", userId: `${suffix}-admin`, correlationId },
-      twoFactorEnabled: true,
     });
     await expect(
       getPrincipalStateByUserId(`${suffix}-analyst`, { correlationId }),

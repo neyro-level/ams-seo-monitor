@@ -15,8 +15,6 @@ export interface PrincipalFactoryOptions {
 export interface PrincipalState {
   principal: PrincipalContext;
   displayName: string;
-  mustChangePassword: boolean;
-  twoFactorEnabled: boolean;
 }
 
 function parseTenantRole(value: string): TenantRole {
@@ -37,8 +35,6 @@ export async function getPrincipalStateByUserId(
       name: true,
       systemRole: true,
       disabledAt: true,
-      mustChangePassword: true,
-      twoFactorEnabled: true,
       members: {
         orderBy: { organizationId: "asc" },
         select: { id: true, organizationId: true, tenantRole: true },
@@ -73,8 +69,6 @@ export async function getPrincipalStateByUserId(
   return {
     principal,
     displayName: user.name,
-    mustChangePassword: user.mustChangePassword,
-    twoFactorEnabled: user.twoFactorEnabled === true,
   };
 }
 
