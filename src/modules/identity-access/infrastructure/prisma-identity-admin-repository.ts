@@ -1,4 +1,6 @@
 import { Prisma, type PrismaClient } from "../../../generated/prisma/client.ts";
+import { randomUUID } from "node:crypto";
+import { createLocalAccountIssuer } from "better-auth/db";
 import type { DatabaseTransaction } from "../../../platform/database/transaction.ts";
 import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 import {
@@ -7,6 +9,7 @@ import {
   type CreateOrganizationInput,
   type IdentityAdminFormOptions,
   type IdentityAdminListQuery,
+  type IdentityAdminUserListItem,
   type MembershipListItem,
   type MembershipListResult,
   type OrganizationListItem,
@@ -17,6 +20,7 @@ import {
 import type {
   IdentityAdminAuditInput,
   IdentityAdminRepository,
+  ProvisionClientPersistenceInput,
 } from "../application/ports/identity-admin-repository.ts";
 
 const organizationSelect = {
@@ -208,6 +212,116 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
       organizations,
       users: users.map((user) => ({ id: user.id, label: `${user.name} · ${user.email}` })),
     };
+  }
+
+  async listUsers(): Promise<IdentityAdminUserListItem[]> {
+    const users = await this.prisma.user.findMany({
+      where: { username: { not: null } },
+      orderBy: { name: "asc" },
+      take: 200,
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        disabledAt: true,
+        members: {
+          orderBy: { organization: { name: "asc" } },
+          select: { id: true, tenantRole: true, organization: { select: { name: true } } },
+        },
+      },
+    });
+    return users.flatMap((user) => user.username ? [{
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      disabled: user.disabledAt !== null,
+      memberships: user.members.map((member) => ({
+        id: member.id,
+        organizationName: member.organization.name,
+        tenantRole: member.tenantRole,
+      })),
+    }] : []);
+  }
+
+  async provisionClient(input: ProvisionClientPersistenceInput) {
+    try {
+      const organization = await this.prisma.organization.create({
+        data: { name: input.organizationName, slug: input.organizationSlug },
+        select: { id: true },
+      });
+      const project = await this.prisma.project.create({
+        data: {
+          organizationId: organization.id,
+          name: input.projectName,
+          slug: input.projectSlug,
+          status: "ACTIVE",
+          thresholdProfileId: input.thresholdProfileId,
+          clusterProfileId: input.clusterProfileId,
+        },
+        select: { id: true },
+      });
+      const userId = randomUUID();
+      const user = await this.prisma.user.create({
+        data: {
+          id: userId,
+          name: input.userName,
+          username: input.username,
+          email: `${input.username}@users.impulse.invalid`,
+          emailVerified: false,
+          systemRole: "CLIENT_VIEWER",
+          mustChangePassword: false,
+          twoFactorEnabled: false,
+        },
+        select: { id: true },
+      });
+      await this.prisma.account.create({
+        data: {
+          id: randomUUID(),
+          userId: user.id,
+          issuer: createLocalAccountIssuer("credential"),
+          accountId: user.id,
+          providerId: "credential",
+          password: input.passwordHash,
+        },
+      });
+      const membership = await this.prisma.member.create({
+        data: { organizationId: organization.id, userId: user.id, tenantRole: input.tenantRole },
+        select: { id: true },
+      });
+      return { organizationId: organization.id, projectId: project.id, userId: user.id, membershipId: membership.id };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          const target = String(error.meta?.target ?? "");
+          const modelName = String(error.meta?.modelName ?? "");
+          if (target.includes("username") || target.includes("email")) throw new IdentityAdminError("USER_LOGIN_CONFLICT");
+          if (modelName === "Project") throw new IdentityAdminError("PROJECT_SLUG_CONFLICT");
+          throw new IdentityAdminError("ORGANIZATION_SLUG_CONFLICT");
+        }
+        if (error.code === "P2003") throw new IdentityAdminError("PROJECT_REFERENCE_INVALID");
+      }
+      throw error;
+    }
+  }
+
+  async resetUserPassword(userId: string, passwordHash: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) return false;
+    const account = await this.prisma.account.updateMany({
+      where: { userId, providerId: "credential" },
+      data: { password: passwordHash },
+    });
+    await this.prisma.session.deleteMany({ where: { userId } });
+    return account.count === 1;
+  }
+
+  async setUserEnabled(userId: string, enabled: boolean): Promise<boolean> {
+    const result = await this.prisma.user.updateMany({
+      where: { id: userId },
+      data: { disabledAt: enabled ? null : new Date() },
+    });
+    if (!enabled) await this.prisma.session.deleteMany({ where: { userId } });
+    return result.count === 1;
   }
 
   async createOrganization(input: CreateOrganizationInput) {

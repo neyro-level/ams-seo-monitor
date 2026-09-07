@@ -4,8 +4,11 @@ import type {
   CreateOrganizationInput,
   IdentityAdminFormOptions,
   IdentityAdminListQuery,
+  IdentityAdminUserListItem,
   MembershipListResult,
   OrganizationListResult,
+  ProvisionClientInput,
+  ProvisionClientResult,
   UpdateMembershipInput,
   UpdateOrganizationInput,
 } from "../../domain/admin-identity.ts";
@@ -28,18 +31,26 @@ export interface MembershipActionRecord {
 export interface IdentityAdminAuditInput {
   actorId: string;
   action: string;
-  entityType: "Organization" | "Member";
+  entityType: "Organization" | "Member" | "User";
   entityId: string;
-  organizationId: string;
+  organizationId: string | null;
   beforeMarker: Record<string, string | number | boolean | null> | null;
   afterMarker: Record<string, string | number | boolean | null> | null;
   correlationId: string;
 }
 
+export type ProvisionClientPersistenceInput = Omit<ProvisionClientInput, "password"> & {
+  passwordHash: string;
+};
+
 export interface IdentityAdminRepository {
   listOrganizations(query: IdentityAdminListQuery): Promise<OrganizationListResult>;
   listMemberships(query: IdentityAdminListQuery): Promise<MembershipListResult>;
   listFormOptions(): Promise<IdentityAdminFormOptions>;
+  listUsers(): Promise<IdentityAdminUserListItem[]>;
+  provisionClient(input: ProvisionClientPersistenceInput): Promise<ProvisionClientResult>;
+  resetUserPassword(userId: string, passwordHash: string): Promise<boolean>;
+  setUserEnabled(userId: string, enabled: boolean): Promise<boolean>;
   createOrganization(input: CreateOrganizationInput): Promise<{ id: string; version: number }>;
   findOrganizationForAction(organizationId: string): Promise<OrganizationActionRecord | null>;
   updateOrganization(input: UpdateOrganizationInput): Promise<boolean>;
