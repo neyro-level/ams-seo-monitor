@@ -1,11 +1,12 @@
 import { consentHtml, cookiesHtml, privacyHtml, termsHtml } from "./legal-html.ts";
+import styles from "../LegalDocument.module.css";
 
 type StaticLegalContentProps = {
   html: string;
 };
 
 function StaticLegalContent({ html }: StaticLegalContentProps) {
-  return <div className="legal-source-content" dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div className={styles.source} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 export function PrivacyContent() {

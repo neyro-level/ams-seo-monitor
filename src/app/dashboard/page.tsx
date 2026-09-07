@@ -32,7 +32,7 @@ export default async function DashboardPage() {
             hasPermission(state.principal, "project:read:any") ? (
               <Link
                 href="/analyst/"
-                className="rounded-xl bg-[var(--crm-primary)] px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white"
               >
                 Все проекты
               </Link>
@@ -48,11 +48,11 @@ export default async function DashboardPage() {
         </section>
 
         <SectionCard title="Текущий контур" note="Production runtime active">
-          <ul className="grid gap-3 text-sm text-[var(--crm-text-secondary)] md:grid-cols-2">
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Авторизация работает через Better Auth и organization membership.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Webmaster, Metrica и Topvisor остаются read-only provider adapters.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">Runtime уже работает как Next.js server + PostgreSQL + Worker behind Nginx.</li>
-            <li className="rounded-2xl bg-[var(--crm-surface-muted)] p-4">SiteReportSnapshot и SEO semantics остаются browser-safe контрактом отчёта.</li>
+          <ul className="grid gap-3 text-sm text-[var(--text-secondary)] md:grid-cols-2">
+            <li className="rounded-2xl bg-[var(--muted)] p-4">Авторизация работает через Better Auth и organization membership.</li>
+            <li className="rounded-2xl bg-[var(--muted)] p-4">Webmaster, Metrica и Topvisor остаются read-only provider adapters.</li>
+            <li className="rounded-2xl bg-[var(--muted)] p-4">Runtime уже работает как Next.js server + PostgreSQL + Worker behind Nginx.</li>
+            <li className="rounded-2xl bg-[var(--muted)] p-4">SiteReportSnapshot и SEO semantics остаются browser-safe контрактом отчёта.</li>
           </ul>
         </SectionCard>
       </div>

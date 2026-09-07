@@ -24,7 +24,7 @@ export function ChartContainer({
   return (
     <div
       data-slot="chart"
-      className={cn("w-full min-w-0 text-xs [&_.recharts-cartesian-axis-tick_text]:fill-[var(--crm-text-muted)]", className)}
+      className={cn("w-full min-w-0 text-xs [&_.recharts-cartesian-axis-tick_text]:fill-[var(--muted-foreground)]", className)}
       style={style}
     >
       <ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer>

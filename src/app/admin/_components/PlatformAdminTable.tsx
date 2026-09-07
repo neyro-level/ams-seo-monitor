@@ -118,7 +118,7 @@ export function PlatformAdminTable({
     <section aria-label="Список записей" className="space-y-4">
       <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white md:block">
         <Table className="min-w-[860px] text-left">
-          <TableHeader className="bg-[var(--crm-surface-muted)]">
+          <TableHeader className="bg-[var(--muted)]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (

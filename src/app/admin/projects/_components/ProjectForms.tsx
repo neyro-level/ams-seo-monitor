@@ -67,7 +67,7 @@ function FeedbackMessage({ feedback, onRefresh }: { feedback: Feedback; onRefres
 }
 
 const fieldClassName =
-  "min-h-11 w-full rounded-xl border border-[var(--crm-border-strong)] bg-white px-3 pr-10 text-sm text-slate-900 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100";
+  "min-h-11 w-full rounded-xl border border-[var(--input)] bg-white px-3 pr-10 text-sm text-slate-900 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100";
 
 export function ProjectCreateForm({ options }: { options: ProjectFormOptions }) {
   const router = useRouter();

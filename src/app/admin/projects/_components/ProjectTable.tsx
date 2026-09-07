@@ -151,7 +151,7 @@ export function ProjectTable({
     <section aria-label="Список проектов" className="space-y-4">
       <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white md:block">
         <Table className="min-w-[980px] text-left">
-          <TableHeader className="bg-[var(--crm-surface-muted)]">
+          <TableHeader className="bg-[var(--muted)]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (

@@ -7,11 +7,11 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--crm-primary-hover)]",
+        default: "bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)]",
         secondary: "bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-slate-200",
         outline: "border border-[var(--input)] bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--accent)]",
         ghost: "text-[var(--foreground)] hover:bg-[var(--accent)]",
-        link: "min-h-0 rounded-none px-0 text-[var(--crm-link)] underline-offset-4 hover:underline",
+        link: "min-h-0 rounded-none px-0 text-[var(--link)] underline-offset-4 hover:underline",
         destructive: "bg-[var(--destructive)] text-[var(--destructive-foreground)] hover:bg-rose-800",
         marketing: "rounded-none bg-[var(--ch-accent)] text-white hover:-translate-y-0.5 hover:bg-[var(--ch-accent-hover)]",
         marketingOutline: "rounded-none border border-white/16 bg-white/[0.045] text-white hover:border-white/30 hover:bg-white/[0.09]",

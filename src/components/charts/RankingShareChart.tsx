@@ -17,9 +17,9 @@ type RankingShareChartProps = {
 export function RankingShareChart({ ranking }: RankingShareChartProps) {
   if (ranking.history.length < 2) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--crm-border)] bg-white p-5">
-        <h3 className="text-lg font-semibold text-[var(--crm-text)]">Динамика Топ-3 и Топ-10</h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--crm-text-secondary)]">
+      <div className="rounded-2xl border border-dashed border-[var(--border)] bg-white p-5">
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Динамика Топ-3 и Топ-10</h3>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
           История начнёт формироваться после второго read-only съёма позиций Topvisor. Исходный снимок уже используется в текущих KPI.
         </p>
       </div>
@@ -27,10 +27,10 @@ export function RankingShareChart({ ranking }: RankingShareChartProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--crm-border)] bg-white p-4 sm:p-5">
+    <div className="rounded-2xl border border-[var(--border)] bg-white p-4 sm:p-5">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-[var(--crm-text)]">Доля запросов в Топ-3 и Топ-10</h3>
-        <p className="mt-1 text-sm text-[var(--crm-text-secondary)]">
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">Доля запросов в Топ-3 и Топ-10</h3>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
           Реальные даты съёмов позиций. Знаменатель — утверждённое ядро из {ranking.queryCount} запросов.
         </p>
       </div>
@@ -57,7 +57,7 @@ export function RankingShareChart({ ranking }: RankingShareChartProps) {
             <Line type="monotone" dataKey="top3Share" stroke="var(--color-top3Share)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
           </LineChart>
       </ChartContainer>
-      <div className="mt-3 flex flex-wrap gap-5 text-sm text-[var(--crm-text-secondary)]">
+      <div className="mt-3 flex flex-wrap gap-5 text-sm text-[var(--text-secondary)]">
         <span><span className="mr-2 inline-block size-2.5 rounded-full bg-blue-600" />Топ-10</span>
         <span><span className="mr-2 inline-block size-2.5 rounded-full bg-amber-600" />Топ-3</span>
       </div>

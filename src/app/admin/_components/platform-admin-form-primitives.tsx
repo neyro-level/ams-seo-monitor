@@ -13,7 +13,7 @@ export type ActionResultLike<TResult> = DefinedAction<TResult> | PlatformAdminAc
 export type Feedback = { kind: "success" | "error" | "stale"; message: string } | null;
 
 export const fieldClassName =
-  "min-h-11 w-full rounded-xl border border-[var(--crm-border-strong)] bg-white px-3 pr-10 text-sm text-slate-900 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100";
+  "min-h-11 w-full rounded-xl border border-[var(--input)] bg-white px-3 pr-10 text-sm text-slate-900 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100";
 
 export function applyFieldErrors<TValues extends FieldValues>(
   fieldErrors: Record<string, string[]>,

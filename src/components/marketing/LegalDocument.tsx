@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { legalOperator } from "../../shared/legal/legal-config.ts";
 import { SiteFooter } from "./SiteFooter.tsx";
+import styles from "./LegalDocument.module.css";
 
 type LegalDocumentProps = {
   eyebrow: string;
@@ -15,7 +16,7 @@ type LegalDocumentProps = {
 
 export function LegalDocument({ eyebrow, title, description, version, effectiveDate, children }: LegalDocumentProps) {
   return (
-    <main className="impulse-landing min-h-screen bg-[var(--ch-bg-page)] text-[var(--ch-text-primary)]">
+    <main className="theme-public impulse-landing min-h-screen bg-[var(--ch-bg-page)] text-[var(--ch-text-primary)]">
       <header className="bg-[var(--ch-bg-deepest)] text-white">
         <div className="mx-auto w-full max-w-[1120px] px-5 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8">
           <div className="flex items-center justify-between gap-6">
@@ -42,7 +43,7 @@ export function LegalDocument({ eyebrow, title, description, version, effectiveD
         </div>
       </header>
 
-      <article className="legal-prose mx-auto w-full max-w-[1120px] px-5 py-14 text-left sm:px-6 sm:py-20">
+      <article className={`${styles.prose} mx-auto w-full max-w-[1120px] px-5 py-14 text-left sm:px-6 sm:py-20`}>
         <div className="max-w-[920px]">{children}</div>
       </article>
 

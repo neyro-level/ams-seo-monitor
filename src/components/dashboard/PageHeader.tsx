@@ -28,11 +28,11 @@ export function PageHeader({
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <nav
             aria-label="Хлебные крошки"
-            className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--crm-text-muted)]"
+            className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--muted-foreground)]"
           >
             <Link
               href={cabinetHref}
-              className="rounded-sm transition-colors hover:text-[var(--crm-link)] hover:underline focus-visible:text-[var(--crm-link)]"
+              className="rounded-sm transition-colors hover:text-[var(--link)] hover:underline focus-visible:text-[var(--link)]"
             >
               Кабинет
             </Link>
@@ -44,7 +44,7 @@ export function PageHeader({
                 {resolvedEyebrowHref ? (
                   <Link
                     href={resolvedEyebrowHref}
-                    className="rounded-sm transition-colors hover:text-[var(--crm-link)] hover:underline focus-visible:text-[var(--crm-link)]"
+                    className="rounded-sm transition-colors hover:text-[var(--link)] hover:underline focus-visible:text-[var(--link)]"
                   >
                     {eyebrow}
                   </Link>
@@ -60,7 +60,7 @@ export function PageHeader({
                 href={backHref}
                 aria-label="Назад"
                 title="Назад"
-                className="group inline-flex h-10 shrink-0 items-center pr-1 text-slate-500 transition hover:text-[var(--crm-primary)]"
+                className="group inline-flex h-10 shrink-0 items-center pr-1 text-slate-500 transition hover:text-[var(--primary)]"
               >
                 <ArrowLeft
                   className="h-5 w-5 transition-transform group-hover:-translate-x-0.5"
@@ -68,11 +68,11 @@ export function PageHeader({
                 />
               </Link>
             ) : null}
-            <h1 className="truncate text-xl font-semibold leading-tight tracking-tight text-[var(--crm-text)] sm:text-2xl">
+            <h1 className="truncate text-xl font-semibold leading-tight tracking-tight text-[var(--foreground)] sm:text-2xl">
               {title}
             </h1>
           </div>
-          <p className="max-w-4xl break-words text-sm leading-6 text-[var(--crm-text-secondary)]">
+          <p className="max-w-4xl break-words text-sm leading-6 text-[var(--text-secondary)]">
             {description}
           </p>
         </div>

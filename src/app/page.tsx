@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LoginDialog } from "../modules/identity-access/client.ts";
 import { LeadRequestDialog } from "../components/marketing/LeadRequestDialog.tsx";
 import { SiteFooter } from "../components/marketing/SiteFooter.tsx";
+import styles from "./landing.module.css";
 
 type HomePageProps = {
   searchParams: Promise<{ login?: string | string[] }>;
@@ -11,10 +12,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const loginRequested = params.login === "1";
   return (
-    <main className="impulse-landing min-h-screen overflow-hidden bg-[var(--ch-bg-deepest)] text-[var(--ch-white)]">
+    <main className="theme-public impulse-landing min-h-screen overflow-hidden bg-[var(--ch-bg-deepest)] text-[var(--ch-white)]">
       <section className="relative isolate min-h-screen">
-        <div className="impulse-grid absolute inset-0 -z-20" aria-hidden />
-        <div className="impulse-atmosphere absolute inset-0 -z-10" aria-hidden />
+        <div className={`${styles.grid} absolute inset-0 -z-20`} aria-hidden />
+        <div className={`${styles.atmosphere} absolute inset-0 -z-10`} aria-hidden />
 
         <header className="mx-auto flex w-full max-w-[1360px] items-center justify-between px-5 py-5 sm:px-6 lg:py-7">
           <Link
@@ -60,7 +61,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
 
           <div className="relative min-h-[420px] lg:min-h-[620px]" aria-hidden>
-            <div className="impulse-visual absolute inset-0 overflow-hidden border border-white/10 bg-[#101720]/55">
+            <div className={`${styles.visual} absolute inset-0 overflow-hidden border border-white/10 bg-[#101720]/55`}>
               <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(95,127,174,0.09),transparent_38%,rgba(95,127,174,0.06))]" />
               <svg className="absolute inset-0 h-full w-full" viewBox="0 0 560 680" fill="none">
                 <path d="M-20 586C115 498 178 529 268 403C351 288 406 184 596 106" stroke="rgba(95,127,174,0.62)" strokeWidth="2" />

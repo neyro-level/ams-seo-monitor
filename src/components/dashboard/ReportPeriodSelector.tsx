@@ -22,7 +22,7 @@ export function ReportPeriodSelector({ active, onChange, basePath }: ReportPerio
 
   return (
     <div
-      className="inline-flex max-w-full overflow-x-auto rounded-xl border border-[var(--crm-border)] bg-white p-1 shadow-sm"
+      className="inline-flex max-w-full overflow-x-auto rounded-xl border border-[var(--border)] bg-white p-1 shadow-sm"
       aria-label="Период отчёта"
     >
       {periods.map((period) => {
@@ -35,8 +35,8 @@ export function ReportPeriodSelector({ active, onChange, basePath }: ReportPerio
             className={[
               "h-10 min-h-10 shrink-0 rounded-lg px-2 sm:px-4",
               selected
-                ? "bg-[var(--crm-primary)] text-white"
-                : "text-[var(--crm-text-secondary)]",
+                ? "bg-[var(--primary)] text-white"
+                : "text-[var(--text-secondary)]",
             ].join(" ")}
             aria-pressed={selected}
             onClick={() => {

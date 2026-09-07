@@ -1,410 +1,157 @@
-# AMS IMPULSE Internal Dashboard Design System
+# AMS IMPULSE Application Design System
 
-Дизайн-система приватного кабинета, директорских отчётов и внутренних аналитических экранов AMS IMPULSE. Базовые controls — project-owned shadcn components поверх Base UI; визуальный язык задают `crm-*` tokens, а не default theme библиотеки.
+Статус: канон приватного интерфейса AMS IMPULSE. Версия проектного профиля: 2.0.
 
-Статус: **канон внутренних маршрутов `/dashboard/*`, `/analyst/*` и `/c/*`**.
+Документ конкретизирует `AMS UI Development Constitution 1.0` и `AMS Application Design System 2.0` для кабинета, Platform Admin, аналитики и отчётов. Архитектурные и security-границы определяет Application Platform Core 3.4.
 
-## 1. Роль Документа
+## Область действия
 
-Документ задаёт общий визуальный и поведенческий язык рабочего кабинета: оболочку, навигацию, цвета, типографику, размеры, дашборды, таблицы, фильтры, формы, тумблеры, состояния и адаптивность.
+Система применяется к приватным маршрутам `/dashboard/*`, `/admin/*`, `/analyst/*` и `/c/*`: shell, навигации, таблицам, формам, графикам и рабочим состояниям.
 
-Эталон текущего проекта — `AppShell`, analyst overview, project overview и единый site report. Профильные page/module-документы определяют смысл и данные, а этот файл — их представление.
+Публичный лендинг, юридические страницы и модальное окно входа используют отдельную тему `theme-public`, Manrope и существующий внешний визуальный язык. Вход остаётся кнопкой на главной, modal `Вход в кабинет` и deep link `/?login=1`; отдельный `/login` не создаётся.
 
-При конфликте действует приоритет:
+## Иерархия UI
 
-1. security, роли и доменные ограничения;
-2. профильный документ модуля;
-3. этот Internal Dashboard Design System для приватного кабинета;
-4. [`EXTERNAL_SITE_DESIGN_SYSTEM.md`](EXTERNAL_SITE_DESIGN_SYSTEM.md) только для публичных маршрутов;
-5. текущая реализация компонента, только если она не противоречит канону выше.
-
-## 2. Переносимость: CRM Core И Tenant Theme
-
-### CRM Core
-
-Переносится между проектами без изменений:
-
-- информационная архитектура и композиция экранов;
-- сетка, плотность, размеры, радиусы и типографика;
-- семантика цветов;
-- паттерны KPI, таблиц, фильтров, форм и состояний;
-- responsive, motion и accessibility.
-
-### Tenant Theme
-
-Меняется под клиента:
-
-- короткая марка и подпись в бренд-капсуле;
-- `crm-sidebar`, `crm-primary` и необязательный `crm-brand-accent`;
-- знак клиента, только если он остаётся компактным.
-
-Бизнес-логика, права и данные не зависят от визуальной темы.
-
-## 3. Характер Интерфейса
-
-Ключевая формула: **операционный premium** — спокойно, точно, плотно, но не тесно. Дорогой вид создаётся пропорциями, воздухом и типографикой, а не декором.
-
-Не использовать:
-
-- маркетинговые hero-блоки внутри кабинета;
-- glassmorphism, glow и декоративные градиенты;
-- гигантские кнопки и заголовки;
-- случайный новый цвет для одной карточки;
-- пояснения, повторяющие заголовок;
-- полностью круглые pills для каждого control;
-- горизонтальный scroll всей страницы;
-- темы пользователя и dashboard-builder.
-
-## 4. Семантические Цвета
-
-Компоненты используют токены по роли, а не случайные HEX.
-
-| Токен | AMS IMPULSE | Использование |
-|---|---:|---|
-| `crm-page` | `#EEF2F5` | фон рабочей области |
-| `crm-surface` | `#FFFFFF` | панели, таблицы, формы, modal |
-| `crm-surface-muted` | `#F8FAFC` | шапки таблиц, вложенные карточки, hover |
-| `crm-border` | `#E2E8F0` | обычные границы, `slate-200` |
-| `crm-border-strong` | `#CBD5E1` | поля и сильные разделители, `slate-300` |
-| `crm-text` | `#020617` | основной текст, `slate-950` |
-| `crm-text-secondary` | `#475569` | вторичный текст, `slate-600` |
-| `crm-text-muted` | `#64748B` | подписи, `slate-500` |
-| `crm-text-disabled` | `#94A3B8` | disabled, `slate-400` |
-| `crm-sidebar` | `#101720` | sidebar и главное тёмное состояние |
-| `crm-primary` | `#101720` | primary action, активный preset |
-| `crm-primary-hover` | `#1B2633` | hover primary |
-| `crm-link` | `#3E5D86` | текстовые ссылки и inline-действия |
-| `crm-interactive` | `#5F7FAE` | включённый switch и controlled accent |
-| `crm-focus` | `#CBD5E1` | холодный focus-ring |
-
-### Статусы
-
-| Роль | Фон | Граница | Текст |
-|---|---:|---:|---:|
-| Успех | `#ECFDF5` | `#A7F3D0` | `#022C22` |
-| Информация | `#F0F9FF` | `#BAE6FD` | `#082F49` |
-| Внимание | `#FFFBEB` | `#FDE68A` | `#451A03` |
-| Ошибка | `#FFF1F2` | `#FECDD3` | `#4C0519` |
-
-Статусный цвет сообщает смысл, а не украшает. Рядом всегда остаются текст, число или иконка.
-
-### Брендовый Акцент
-
-`crm-brand-accent: #5F7FAE` связывает кабинет с публичной системой AMS Northline. Акцент используется редко и не заменяет статусные success/warning/error цвета.
-
-### CSS-Контракт
-
-```css
-.admin-root {
-  --crm-page: #eef2f5;
-  --crm-surface: #fff;
-  --crm-surface-muted: #f8fafc;
-  --crm-border: #e2e8f0;
-  --crm-border-strong: #cbd5e1;
-  --crm-text: #020617;
-  --crm-text-secondary: #475569;
-  --crm-text-muted: #64748b;
-  --crm-sidebar: #101720;
-  --crm-primary: #101720;
-  --crm-primary-hover: #1b2633;
-  --crm-link: #3e5d86;
-  --crm-interactive: #5f7fae;
-  --crm-focus: #cbd5e1;
-  --crm-brand-accent: #5f7fae;
-}
+```text
+semantic tokens
+→ shadcn primitives на Base UI
+→ shared application components
+→ module presentation
+→ route composition
 ```
 
-## 5. Типографика
+- `src/components/ui` — generic shadcn-compatible primitives;
+- `src/components/shell`, `dashboard`, `tables`, `charts`, `states` — переиспользуемый application UI;
+- `src/modules/*/presentation` — компоненты с бизнес-смыслом;
+- `src/app` — композиция маршрутов, без собственного data access.
 
-Основной шрифт — self-hosted **PT Root UI**: Regular `400`, Medium `500`, Semibold `600`, Bold `700`. Fallback: `"Segoe UI", ui-sans-serif, system-ui, sans-serif`.
+Новый общий компонент создаётся только при фактическом повторении. UI не импортирует Prisma, repositories и provider adapters.
 
-| Роль | Desktop | Mobile | Вес |
-|---|---|---|---:|
-| H1 страницы | 24/30 px | 20/26 px | 600 |
-| H2 раздела | 20/26 px | 18/24 px | 600 |
-| H3 панели | 16/22 px | 16/22 px | 600 |
-| KPI value | 30/36 px | 28/34 px | 600 |
-| Body | 14/22 px | 14/21 px | 400 |
-| Control | 14/20 px | 14/20 px | 600 |
-| Caption | 12/16 px | 12/16 px | 500 |
-| Micro label | 10–11/14 px | 10–11/14 px | 600–700 |
+## Технический UI-стек
 
-Правила:
+- Tailwind CSS 4;
+- shadcn-compatible project-owned components поверх Base UI;
+- Lucide Icons;
+- TanStack Table 9 для рабочих таблиц;
+- React Hook Form + Zod для сложных форм;
+- nuqs для URL-state;
+- Sonner для уведомлений;
+- shadcn Chart + Recharts 3 для графиков;
+- self-hosted PT Root UI Variable.
 
-- H1/H2/H3 одного уровня одинаковы на всех страницах и выровнены влево;
-- uppercase — только для коротких KPI-label и системных меток;
-- числа в KPI и таблицах используют `tabular-nums`;
-- длинная подпись меняет компоновку, а не уменьшается до нечитаемого размера.
+Второй UI, table, chart, icon или client-state framework без отдельного решения не добавляется.
 
-## 6. Сетка, Воздух И Радиусы
+## Визуальный профиль
 
-### Оболочка
+Характер: строгий, спокойный, технологичный, информационно плотный. Рабочая зона светлая; shell графитовый; steel-blue используется дозированно для focus, selection и интерактивных состояний.
 
-- desktop sidebar: `260px`, фиксирован слева и не сворачивается;
-- mobile topbar: `56px`, drawer: `min(86vw, 320px)`;
-- sticky page header: минимум `96px` на desktop;
-- внешние отступы: `16px` mobile, `24px` tablet, `32px` desktop;
-- вертикальный отступ main: `24px` mobile, `32px` desktop;
-- рабочая область использует всю оставшуюся ширину.
+Канонические значения:
 
-Шкала отступов: `4, 8, 12, 16, 20, 24, 32, 40px`. Между панелями одного блока — `12–16px`, между крупными разделами — `32px`.
-
-| Элемент | Радиус |
-|---|---:|
-| Панель, таблица, KPI | `16px` |
-| Поле, кнопка, navigation item | `12px` |
-| Иконка-подложка | `8px` |
-| Segmented control | максимум `15px` |
-| Badge | `6–8px`, pill только для короткой метки |
-| Avatar и knob switch | полный круг |
-
-Панели держатся на фоне и границе без постоянной тени. Hover-card — `shadow-sm/md`, drawer/modal — `shadow-2xl`.
-
-## 7. Оболочка Кабинета
-
-### Sidebar
-
-- фон `crm-sidebar`;
-- сверху компактная капсула `АМС · Управление сайтом`, без длинного названия клиента;
-- меню начинается после заметного воздуха;
-- Lucide-иконки `20px`, stroke `1.8`;
-- пункт минимум `44px`, радиус `12px`;
-- обычный пункт светлый и прозрачный, hover — белый около 9%;
-- активный пункт белый с navy-текстом и `shadow-sm`;
-- пользователь и выход закреплены внизу в одной компактной строке: иконка, отображаемое имя и отдельная иконка выхода; логин, роль и служебные подписи не дублируются;
-- desktop-collapse отсутствует, mobile использует drawer.
-
-Бренд-капсула: радиус 16px, тонкая белая граница, полупрозрачный фон. Знак `АМС` допускает единственный небольшой sky-to-blue градиент; подпись — 12px, лёгкая, с увеличенным tracking.
-
-### Page Header
-
-Порядок: breadcrumbs → лёгкая стрелка назад → один H1 → глобальное действие справа.
-
-Стрелка назад не имеет подложки: 20px, stroke `1.7`, muted по умолчанию, navy на hover, сдвиг влево на 2px за 150–200ms. Она ведёт к ближайшему родительскому уровню.
-
-Header sticky и не перекрывается mobile topbar или локальными sticky-элементами.
-
-## 8. Композиция Раздела
-
-Стандарт страницы списка:
-
-1. page header;
-2. KPI/аналитика, если помогает принять решение;
-3. уникальный разрез раздела;
-4. H2 списка и основное действие;
-5. фильтры;
-6. таблица или mobile-карточки;
-7. pagination;
-8. empty/error state.
-
-Аналитика не дублируется: `Посетители` — аудитория, `Заявки` — обращения, `Объекты` — каталог, `Сотрудники` — команда.
-
-## 9. Дашборды И KPI
-
-- grid: 1 колонка mobile, 2 tablet, 4 desktop;
-- gap 12px; карточка радиус 16px, border, padding 20px;
-- label 12px uppercase, число 30px через 12px;
-- вторичные пояснения внутри KPI по умолчанию удаляются;
-- главная карточка navy: белое число, label `slate-300`;
-- остальные только по смыслу: green — активно, sky — новое/информация, amber — внимание, rose — негатив;
-- не превращать четыре KPI в декоративную радугу;
-- кликабельная KPI целиком является ссылкой, hover поднимает максимум на 2px и хранит фильтр в URL.
-
-### Состав Базы
-
-Белая панель с H3 и компактными карточками высотой от 80px. Иконка в подложке 36px, значение 20px, label 12px. Сетка: 2 колонки mobile/tablet, 3 laptop, до 6 desktop. Выбор типа меняет список ниже или открывает явный filtered URL.
-
-## 10. Presets И Фильтры
-
-### Периоды
-
-Группа `Неделя / Месяц / 3 месяца / Полгода`: muted-контейнер, border, радиус 12px, padding 6px. `Месяц` активен по умолчанию. Пункт минимум 40px, горизонтальный padding 16px. Active — navy/white, inactive — white/slate. Группа переносится, но не ужимает текст. Sticky не является стандартом.
-
-### Панель Фильтров
-
-- белая панель, border, радиус 16px, padding 16px;
-- 1 колонка mobile, 2 tablet, до 4 desktop;
-- поля одинаковой высоты 44px;
-- select имеет минимум 48px правого padding под стрелку;
-- state отражается в URL;
-- reset виден только при активных фильтрах;
-- placeholder предметный: что именно можно найти.
-
-## 11. Таблицы
-
-### Desktop
-
-- белый контейнер, border, радиус 16px;
-- `overflow-x-auto` только внутри контейнера;
-- header `crm-surface-muted`, 12px uppercase для коротких подписей;
-- padding ячейки обычно `12px 12–16px`;
-- строки разделены `slate-100`, hover — мягкий `slate-50`;
-- главное имя semibold, метаданные 11–12px muted;
-- текст влево, числа/действия центр или вправо по единому правилу страницы;
-- фото заметно, выровнено по тексту, но не превращает таблицу в каталог.
-
-### Сортировка
-
-Весь заголовок кликабелен. `ChevronUp/Down` 14px, active navy, inactive видим с пониженной opacity. Поле и направление находятся в URL; числа по умолчанию обычно `desc`.
-
-### Действия
-
-Простой переход `На сайте` — текстовая ссылка `crm-link` с плавным подчёркиванием слева направо за 200ms. Иконка нужна только если смысл без неё неясен. Меню появляется при трёх и более действиях.
-
-### Mobile
-
-Сложная operational-таблица становится карточками: identity → главное действие → метрики в 2 колонки → вторичные ссылки. Аналитическая таблица может сохранить локальный горизонтальный scroll, если карточки разрушат сравнение столбцов.
-
-## 12. Формы И Карточки Сущностей
-
-### Поля
-
-- label 14px medium, обязательность — компактная rose-звёздочка;
-- input/select минимум 44px, радиус 12px, `crm-border-strong`;
-- focus: контрастная граница и ring `crm-focus`;
-- select имеет безопасную правую зону 48px;
-- placeholder не заменяет label;
-- helper text используется только для предотвращения ошибки;
-- error объясняет способ исправления и не стирает ввод.
-
-### Длинная Форма
-
-Форма делится на смысловые секции. Сверху отдельная капсула `Раздел №N`, затем 16–20px воздуха, строка с Lucide-иконкой и заголовком. Зависимые поля меняются по типу сущности. Primary action находится в контексте последнего раздела и не создаёт отдельную огромную пустую полосу.
-
-### Create = View
-
-Создание максимально повторяет будущую карточку: те же портрет/галерея, порядок полей, панели и отступы. Различается доступность редактирования, а не композиция. После сохранения пользователь видит `Данные сохранены`; переход происходит только если этого требует сценарий.
-
-### Inline Edit
-
-Read-state выглядит как компактная строка, карандаш стоит в конце. Edit открывает поле на том же месте; save/cancel — иконки 36px. Save navy, cancel neutral. Read-only поле не показывает карандаш.
-
-## 13. Segmented Controls И Switch
-
-### Segmented Choice
-
-Для короткого взаимоисключающего выбора. Радиус максимум 15px, высота 40–44px. Default: white/slate; selected: navy/white. Элементы переносятся по строкам. Обязательность проверяется клиентом и сервером.
-
-### Publication Switch
-
-- внешний control: белый, border, радиус 12px;
-- track: 44×24px или compact 36×20px;
-- on `crm-interactive`, off `slate-300`;
-- knob белый круг с лёгкой тенью;
-- рядом текст текущего состояния;
-- `role="switch"`, `aria-checked`, pending блокирует повторное нажатие;
-- optimistic update допустим только с rollback при ошибке.
-
-Яркий голубой означает включённое/активное интерактивное состояние. Им не заливают крупные нейтральные панели.
-
-## 14. Кнопки И Ссылки
-
-| Тип | Правило |
+| Роль | Значение |
 |---|---|
-| Primary | navy/white, hover `crm-primary-hover`, 40–44px, radius 12–15px, не растягивать на весь desktop |
-| Secondary | white, slate-border/text, muted hover |
-| Ghost/Icon | transparent, 36px минимум, 40px для самостоятельного действия, обязательный `aria-label` |
-| Destructive | системный rose/red, не tenant accent; необратимое действие требует подтверждения |
-| Text link | `crm-link`, underline-animation 200ms, не превращать переход в тяжёлую кнопку |
+| Shell и primary action | `#101720` |
+| Shell hover | `#1B2633` |
+| Interactive accent и ring | `#5F7FAE` |
+| Link | `#3E5D86` |
+| Page | `#EEF2F5` |
+| Surface | `#FFFFFF` |
+| Main text | `#020617` |
 
-## 15. Иконки, Медиа И Feedback
+Reusable UI обращается только к семантическим переменным:
 
-### Иконки
+```text
+--background / --foreground
+--card / --popover
+--primary / --secondary / --accent
+--border / --input / --ring
+--sidebar-*
+--success / --warning / --info / --destructive
+--chart-1 ... --chart-5
+--radius-control / --radius-panel / --radius-card
+--shadow-surface / --shadow-overlay
+```
 
-Lucide React: 16px inline, 20px navigation/action, 24px только для крупного состояния; stroke 1.7–1.8. Подложка допустима у аналитической категории, но не у стрелки назад.
+Параллельные aliases по названию продукта или цвета запрещены. Публичные `ch-*` переменные существуют только внутри `.theme-public` и не используются в кабинете.
 
-### Галерея
+## Типографика и геометрия
 
-Preview появляется сразу. Сетка: 2 mobile, 3 tablet, 5–6 desktop; карточка 4:3, radius 12px. У каждой виден статус loading/ready/error, общий счётчик показывает выбранные и загруженные файлы.
+Приватный интерфейс использует PT Root UI Variable. Базовый текст — `14/22`, H1 — `24/30`, H2 — `20/26`, H3 — `16/22`, caption — `12/16`. Числовые показатели используют `tabular-nums`.
 
-### Портрет
+- control: радиус `10px`, высота не меньше `40px`, целевая `44px`;
+- panel: радиус `14px`;
+- card: радиус `18px`;
+- spacing scale: `4, 8, 12, 16, 20, 24, 32, 40px`;
+- обычные поверхности разделяются фоном и border; постоянные тяжёлые тени запрещены;
+- motion: `150–200ms`, modal/drawer до `250ms`, с `prefers-reduced-motion`.
 
-Портрет является частью карточки. Загрузка располагается на фото или сразу под ним. Без фото — единый neutral placeholder. Mobile складывает портрет и данные в одну колонку.
+## Application shell
 
-### Состояния
+- desktop sidebar: `232px`, collapsed `72px`;
+- expanded — состояние по умолчанию;
+- collapse хранится локально, без новой state-библиотеки;
+- desktop topbar содержит только контекст экрана и глобальные действия;
+- mobile использует topbar и drawer;
+- пользовательский блок и безопасный выход компактны;
+- навигация строится на сервере из `PrincipalContext`; скрытый пункт не заменяет authorization;
+- несуществующие маршруты не показываются.
 
-- loading сохраняет геометрию, кнопка пишет `Сохраняем…`, повтор блокируется;
-- success — compact toast/inline-status с emerald и текстом `Данные сохранены`;
-- error объясняет причину и следующий шаг, сохраняет ввод, критичный получает `role="alert"`;
-- empty — white/dashed panel, короткий текст и одно следующее действие;
-- warning modal — заголовок, один короткий абзац, `Назад` и понятное продолжение.
+## Таблицы
 
-## 16. Motion И Responsive
+Рабочая таблица строится на TanStack Table и shadcn Table. Filter, sort, count и page остаются server-side и отражаются в URL. Header sticky, строка `48–52px`, числовые колонки выравниваются вправо. Горизонтальный scroll допускается только внутри table container.
 
-Motion: 150–200ms, modal/drawer до 250ms. Анимируются opacity, transform, color, shadow. Hover-подъём максимум 2px. Учитывается `prefers-reduced-motion`.
+На mobile operational table превращается в карточки. Состояние `данных ещё нет` отличается от `фильтр ничего не нашёл`. Saved views, selection, virtualization и pinned columns добавляются только под реальный сценарий.
 
-| Диапазон | Контракт |
-|---|---|
-| `<640px` | 1 колонка, padding 16px, KPI по одному, drawer, operational tables → cards |
-| `640–1023px` | 2 KPI, формы 1–2 колонки, локальный table scroll, drawer |
-| `≥1024px` | sidebar 260px, KPI до 4, полные формы и таблицы |
+## Формы и действия
 
-Минимальная visual QA-матрица: `375`, `768`, `1280`, `1440px`.
+Сложная форма использует RHF + Zod, одинаковый field contract и обязательную server validation. Label не заменяется placeholder. Ошибка объясняет исправление и сохраняет ввод. Pending блокирует повторную отправку.
 
-## 17. Доступность
+Destructive action отделяется визуально и подтверждается именем объекта. После mutation пользователь получает явный success/error feedback. Пароль, provider secret и другие чувствительные значения не возвращаются в browser-safe result.
 
-- контраст WCAG AA;
-- touch-target минимум 40px, целевой 44px;
-- поле связано с label;
-- icon-only action имеет `aria-label`;
-- switch — `role="switch"` и `aria-checked`;
-- active navigation/preset — `aria-current`;
-- `focus-visible` не удаляется;
-- Tab-порядок соответствует визуальному;
-- таблица сохраняет `thead/th/scope`;
-- цвет не является единственным носителем статуса.
+## Состояния и статусы
 
-## 18. Эталонные Компоненты AMS IMPULSE
+Канонические состояния: loading, empty, filtered-empty, error, permission-denied, partial и stale. Loading сохраняет геометрию будущего экрана. Status всегда выражается текстом; цвет и иконка только усиливают значение.
 
-| Паттерн | Файл |
-|---|---|
-| Оболочка/sidebar | `src/components/shell/AppShell.tsx` |
-| Desktop navigation | `src/components/shell/ShellNav.tsx` |
-| Mobile navigation | `src/components/shell/MobileDrawer.tsx` |
-| KPI | `src/components/dashboard/KpiCard.tsx` |
-| Header | `src/components/dashboard/PageHeader.tsx` |
-| Section panel | `src/components/dashboard/SectionCard.tsx` |
-| Analyst overview | `src/app/analyst/page.tsx` |
-| Project overview | `src/app/c/[clientSlug]/page.tsx` |
-| Site report | `src/app/c/[clientSlug]/[siteSlug]/page.tsx` |
+- success — завершённое корректное состояние;
+- warning — требуется внимание;
+- info — нейтральная системная информация;
+- destructive — ошибка или опасное действие;
+- partial и stale не маскируются под success.
 
-Код показывает фактический рабочий паттерн, но этот документ имеет приоритет при visual drift.
+## Аналитика и графики
 
-## 19. Правила Для AI
+Основной рабочий объект важнее декоративного набора KPI. Каждый график отвечает на конкретный вопрос и показывает период, единицы и числовой итог. Цвета, grid, tooltip и legend используют `chart-*` и semantic tokens. Семантика данных остаётся во владельце домена `report-compiler`.
 
-Перед правкой внутреннего UI AI обязан:
+## Responsive и доступность
 
-1. прочитать этот файл и профильный page/module brief;
-2. найти существующий компонент того же типа;
-3. использовать semantic token, а не новый HEX;
-4. сохранить стандартную композицию;
-5. реализовать реальные loading/success/error/empty states;
-6. проверить desktop и mobile;
-7. не вводить новый паттерн, если подходит существующий;
-8. синхронизировать профильный документ, если меняется повторяемый contract.
+Минимальная visual QA-матрица: `375 / 768 / 1280 / 1440px`.
 
-AI не должен копировать публичный стиль сайта, делать все KPI цветными, превращать text link в тяжёлую кнопку, менять порядок данных между create/view или показывать внутренние термины без пользы.
+- без горизонтального overflow страницы;
+- keyboard flow соответствует визуальному порядку;
+- focus-visible не скрывается;
+- dialog и drawer удерживают focus и корректно закрываются;
+- icon-only action имеет accessible name;
+- table сохраняет `table/thead/th/scope`;
+- touch target не меньше `40px`;
+- цвет не является единственным носителем смысла.
 
-## 20. Checklist Приёмки
+## Запрещённый drift
 
-- [ ] H1/H2/H3 соответствуют шкале и выровнены влево.
-- [ ] Page использует `crm-page`, панели — `crm-surface`.
-- [ ] Primary использует общий графитово-синий, controlled accent — steel-blue.
-- [ ] Статусные цвета не подменяются брендовым акцентом.
-- [ ] Панели 16px, controls 12px, segmented не более 15px.
-- [ ] Touch-target не меньше 40px.
-- [ ] Числа используют `tabular-nums`.
-- [ ] Таблица не создаёт scroll всей страницы.
-- [ ] Mobile — осознанная композиция, не просто уменьшенный desktop.
-- [ ] После mutation есть понятная обратная связь.
-- [ ] Focus и aria-семантика сохранены.
-- [ ] Удалены повторяющие и технические пояснения.
-- [ ] Проверены 375, 768, 1280 и 1440px.
+- системный HEX в reusable TSX;
+- business-specific CSS в `globals.css`;
+- новый параллельный token layer;
+- ручной table/form/state pattern при наличии общего компонента;
+- декоративные градиенты, glassmorphism и glow в кабинете;
+- маркетинговый hero внутри приложения;
+- полная загрузка server dataset в browser;
+- перенос `ch-*` в private UI;
+- визуальный редизайн текущего login modal без отдельного решения владельца.
 
-## 21. Реализованный UI contract
+## Приёмка UI-потока
 
-- shell, navigation, dialogs, forms, buttons, inputs, selects, checkbox, sheet, toast и states используют общий shadcn foundation;
-- private typography остаётся PT Root UI; Manrope не переносится из внешнего сайта;
-- operational tables используют shadcn Table и TanStack Table `9.2.4`;
-- report charts используют shadcn Chart wrappers поверх Recharts и сохраняют прежние метрики/семантику;
-- visual acceptance выполняется на `375 / 768 / 1280 / 1440`; код не считается доказательством browser-поведения без соответствующего proof.
+- component ownership соответствует слоям;
+- route/DTO/permission contracts не изменены скрыто;
+- semantic tokens используются последовательно;
+- expanded, collapsed и mobile shell проверены;
+- формы, таблицы, графики и все состояния имеют browser proof;
+- keyboard, focus, dialog/drawer и overflow проверены;
+- публичный лендинг, legal pages и login modal визуально не изменены.

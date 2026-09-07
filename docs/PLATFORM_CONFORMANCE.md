@@ -23,7 +23,7 @@ Profile: `multi-tenant / outbox-plus-queue / pii / own-saas / Platform Admin ena
 | Seed/config boundary | IMPLEMENTED | safe bootstrap, private-path dry-run/apply, no deployment import |
 | Environment validation | IMPLEMENTED | explicit DB target, isolated identities, safe target summary |
 | Provider integrations | PARTIAL | Webmaster and Metrika fresh on configured sites; one proven Topvisor mapping enabled with current positions, three unmapped connections remain disabled |
-| shadcn UI foundation | IMPLEMENTED | Base UI primitives wrap public/private controls while `ch-*` and `crm-*` preserve visual identity |
+| shadcn UI foundation | IMPLEMENTED | Base UI primitives wrap public/private controls; `theme-public` isolates `ch-*`, private UI uses Application Design System 2.0 semantic tokens |
 | Tables and charts | IMPLEMENTED | TanStack Table 9.2.4 + shadcn Table; shadcn Chart + Recharts |
 | SourceCraft verification | IMPLEMENTED | quick PR check; exact risky/release workflows; nightly daily |
 | SourceCraft secret scanning | REQUIRES_CHECK | platform-side enablement not independently confirmed |
