@@ -86,6 +86,9 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
   const topOpportunity = snapshot.combined.opportunities[0] ?? null;
   const healthTone = health?.status === "critical" ? "error" : health?.status === "attention" ? "warning" : "success";
   const healthTitle = health?.status === "critical" ? "Есть критичные проблемы" : health?.status === "attention" ? "Сайт требует внимания" : "Сайт работает стабильно";
+  const integrationErrors = Object.entries(snapshot.sources)
+    .filter((entry): entry is [string, NonNullable<(typeof snapshot.sources)[keyof typeof snapshot.sources]>] => Boolean(entry[1]))
+    .filter(([, source]) => ["failed", "access_denied", "quota_limited"].includes(source.status));
 
   return (
     <div className="w-[calc(100vw-2rem)] min-w-0 max-w-full space-y-8 sm:w-[calc(100vw-3rem)] lg:w-auto">
@@ -94,6 +97,11 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
         {periodControl}
         <p className="text-xs text-[var(--muted-foreground)]">{mode === "live" ? "Live-данные" : "Демонстрационные данные"}</p>
       </div>
+
+      {snapshot.freshness === "partial" ? <StatusBanner tone="warning" title="Отчёт собран частично" description="Часть источников не вернула полный набор данных. Доступные показатели показаны без подмены отсутствующих значений нулями." /> : null}
+      {snapshot.freshness === "stale" ? <StatusBanner tone="warning" title="Данные устарели" description="Последний опубликованный snapshot старше допустимого периода. Показатели сохранены для сравнения, но не считаются текущими." /> : null}
+      {snapshot.freshness === "unavailable" ? <StatusBanner tone="error" title="Отчёт временно недоступен" description="Ни один обязательный источник не предоставил актуальные данные." /> : null}
+      {integrationErrors.length > 0 ? <StatusBanner tone="error" title="Ошибка интеграции" description={`Проверьте доступ к источникам: ${integrationErrors.map(([name]) => name).join(", ")}.`} /> : null}
 
       {ranking ? (
         <section className="space-y-4" aria-labelledby="ranking-title">
@@ -172,7 +180,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
               <KpiCard label="CTR" value={formatPercent(webmaster.summary.ctr, 2)} delta={ctrDelta.text} deltaTone={ctrDelta.tone} />
               <KpiCard label="Средняя позиция" value={formatPosition(webmaster.summary.avgPosition)} delta={positionDelta.text} deltaTone={positionDelta.tone} />
             </div>
-            <MetricTrendChart title="Динамика показов и кликов" subtitle="Ежедневные значения по всем запросам сайта." data={webmaster.visibilityTrend} metricLabel="Показы" secondaryMetricLabel="Клики" tertiaryMetricLabel="Средняя позиция" />
+            <MetricTrendChart title="Динамика показов и кликов" subtitle="Как меняется поисковая видимость сайта по дням." period={periodLabel} data={webmaster.visibilityTrend} metricLabel="Показы" secondaryMetricLabel="Клики" tertiaryMetricLabel="Средняя позиция" />
           </>
         ) : <StatePanel state="empty" title="Нет данных Вебмастера" description="Источник не подключён или временно недоступен." />}
       </section>
@@ -190,7 +198,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
               <KpiCard label="Конверсия" value={formatPercent(metrica.summary.conversionRate)} tone="success" delta={conversionDelta.text} deltaTone={conversionDelta.tone} />
               <KpiCard label="Среднее время" value={formatDuration(metrica.summary.averageVisitDurationSeconds)} />
             </div>
-            <MetricTrendChart title="Органический трафик" subtitle="Визиты и целевые визиты из поиска Яндекса." data={metrica.organicTrend} metricLabel="Визиты" secondaryMetricLabel="Целевые визиты" tertiaryMetricLabel="Конверсия" />
+            <MetricTrendChart title="Органический трафик" subtitle="Как меняются визиты и целевые действия из поиска Яндекса." period={periodLabel} data={metrica.organicTrend} metricLabel="Визиты" secondaryMetricLabel="Целевые визиты" tertiaryMetricLabel="Конверсия" />
             <SectionCard title="Посадочные страницы" note="Основные входы из органического поиска">
               <DataTable caption="Эффективность посадочных страниц" columns={["Страница", "Визиты", "Целевые визиты", "Конверсия", "Отказы"]} rows={metrica.landingPages.slice(0, 10).map((page) => ({ key: page.path, cells: [<span key="path" className="font-semibold text-[var(--foreground)]">{page.path}</span>, formatInteger(page.visits), formatInteger(page.targetVisits), formatPercent(page.conversionRate), formatPercent(page.bounceRate)] }))} />
             </SectionCard>

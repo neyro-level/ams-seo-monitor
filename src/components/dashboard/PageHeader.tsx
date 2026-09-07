@@ -23,7 +23,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   const resolvedEyebrowHref = eyebrowHref ?? backHref;
   return (
-    <header className="sticky top-14 z-20 -mx-4 -mt-6 border-b border-slate-200/90 bg-white/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-8 lg:-mt-8 lg:px-8">
+    <header className="sticky top-14 z-20 -mx-4 -mt-6 border-b border-[var(--border)] bg-[var(--card)]/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6 lg:top-16 lg:-mx-8 lg:-mt-8 lg:px-8">
       <div className="flex min-h-[64px] items-center gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <nav
