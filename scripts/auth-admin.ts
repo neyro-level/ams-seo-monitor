@@ -9,7 +9,6 @@ import { parseSystemRole } from "../src/modules/identity-access/index.ts";
 type AuthAdminCommand =
   | "create"
   | "disable"
-  | "prepare-simple-auth"
   | "reset-password"
   | "set-system-role"
   | "add-to-organization"
@@ -124,8 +123,6 @@ async function createUser() {
         name,
         emailVerified: false,
         systemRole,
-        mustChangePassword: false,
-        twoFactorEnabled: false,
       },
     }),
     prisma.account.create({
@@ -143,7 +140,7 @@ async function createUser() {
   console.log(`created_user=${username}`);
 }
 
-async function resetPassword({ prepareSimpleAuth = false } = {}) {
+async function resetPassword() {
   const username = requireUsername();
   const password = readPasswordFromStdin();
   const user = await findUserByUsername(username);
@@ -167,20 +164,9 @@ async function resetPassword({ prepareSimpleAuth = false } = {}) {
       create: { id: randomUUID(), ...credential, password: passwordHash },
     });
     await transaction.session.deleteMany({ where: { userId: user.id } });
-    if (prepareSimpleAuth) {
-      await transaction.userSetupToken.updateMany({
-        where: { userId: user.id, usedAt: null, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      await transaction.twoFactor.deleteMany({ where: { userId: user.id } });
-      await transaction.user.update({
-        where: { id: user.id },
-        data: { mustChangePassword: false, twoFactorEnabled: false, disabledAt: null },
-      });
-    }
   });
 
-  console.log(`${prepareSimpleAuth ? "prepared_simple_auth" : "reset_password"}=${username}`);
+  console.log(`reset_password=${username}`);
 }
 
 async function disableUser() {
@@ -277,9 +263,6 @@ async function main() {
       return;
     case "disable":
       await disableUser();
-      return;
-    case "prepare-simple-auth":
-      await resetPassword({ prepareSimpleAuth: true });
       return;
     case "reset-password":
       await resetPassword();

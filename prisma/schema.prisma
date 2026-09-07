@@ -156,31 +156,11 @@ model User {
   image         String?
   systemRole        SystemRole  @default(CLIENT_VIEWER)
   disabledAt        DateTime?   @db.Timestamptz(3)
-  mustChangePassword Boolean    @default(false)
-  twoFactorEnabled  Boolean?    @default(false)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
   sessions          Session[]
   accounts          Account[]
   members           Member[]
-  twoFactors        TwoFactor[]
-  setupTokens       UserSetupToken[]
-}
-
-model UserSetupToken {
-  id          String    @id @default(cuid())
-  tokenHash   String    @unique @db.VarChar(64)
-  userId      String
-  expiresAt   DateTime  @db.Timestamptz(3)
-  usedAt      DateTime? @db.Timestamptz(3)
-  revokedAt   DateTime? @db.Timestamptz(3)
-  createdBy   String    @db.VarChar(120)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@index([userId, createdAt])
-  @@index([expiresAt])
 }
 
 model Session {
@@ -217,19 +197,6 @@ model Account {
 
   @@unique([issuer, accountId])
   @@index([userId])
-}
-
-model TwoFactor {
-  id                      String   @id @default(cuid())
-  userId                  String
-  secret                  String
-  backupCodes             String
-  verified                Boolean  @default(true)
-  failedVerificationCount Int      @default(0)
-  lockedUntil             DateTime?
-  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@unique([userId])
 }
 
 model Verification {
