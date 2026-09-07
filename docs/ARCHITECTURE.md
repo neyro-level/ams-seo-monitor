@@ -90,6 +90,21 @@ Better Auth владеет identity/password/session. AMS владеет Organiz
 
 `/admin/*` агрегирует typed queries/commands владельцев данных. Forms и Next action adapters разделены по bounded resources: sites, providers, goals, tracked queries, thresholds и query clusters; общий слой содержит только transport primitives и safe error mapping. Generic form framework, generic dispatcher, Refine registry и arbitrary Prisma CRUD отсутствуют.
 
+## UI architecture
+
+UI следует `tokens → shadcn primitives → shared application components → module presentation → route composition`.
+
+- `.theme-app` изолирует светлый приватный интерфейс на PT Root UI и Application Design System 2.0 semantic tokens;
+- `.theme-public` изолирует Manrope и `ch-*` только для landing, legal и modal-входа;
+- `src/components/ui` содержит generic project-owned primitives поверх Base UI;
+- `src/components/shell`, `dashboard`, `tables`, `charts`, `states` содержат reusable application patterns;
+- `src/modules/*/presentation` владеет бизнес-компонентами; `src/app` только композирует route;
+- единый private layout получает свежий principal и server-built navigation, а client state владеет только collapse/drawer;
+- administrative tables используют общий `AdminDataTable`, server-side URL filter/sort/page и mobile renderer;
+- графики используют `AnalyticsCard`, shadcn Chart/Recharts и `chart-*`; report semantics остаётся в reporting domain.
+
+`scripts/verify-ui-conformance.mjs` запрещает возврат `crm-*`, системный HEX в reusable components и business selectors в `globals.css`.
+
 ## Canonical data paths
 
 Read:

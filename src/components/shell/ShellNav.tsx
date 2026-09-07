@@ -26,9 +26,16 @@ function NavigationLink({ href, label, active, muted, collapsed, onNavigate, chi
 }
 
 export function ShellNav({ sections, currentPath, collapsed = false, onNavigate }: ShellNavProps) {
+  const activeProjectHref = currentPath.match(/^\/c\/[^/]+\//)?.[0];
+  const visibleSections = sections.map((section) =>
+    section.title === "Проекты" && activeProjectHref
+      ? { ...section, items: section.items.filter((item) => item.href === activeProjectHref) }
+      : section,
+  );
+
   return (
     <nav className="space-y-6" aria-label="Навигация по отчётам">
-      {sections.map((section) => (
+      {visibleSections.map((section) => (
         <div key={section.title} className="space-y-2">
           {section.title && !collapsed ? <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--sidebar-muted)]">{section.title}</p> : null}
           <ul className="space-y-1">
