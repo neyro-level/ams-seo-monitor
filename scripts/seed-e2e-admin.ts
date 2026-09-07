@@ -41,9 +41,7 @@ async function main() {
           name: input.name,
           username: input.username,
           systemRole: input.systemRole,
-          mustChangePassword: false,
           disabledAt: null,
-          twoFactorEnabled: false,
         },
         create: {
           id: userId,
@@ -51,8 +49,6 @@ async function main() {
           username: input.username,
           name: input.name,
           systemRole: input.systemRole,
-          mustChangePassword: false,
-          twoFactorEnabled: false,
           emailVerified: false,
         },
       });
