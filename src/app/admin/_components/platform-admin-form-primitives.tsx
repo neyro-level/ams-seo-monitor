@@ -84,7 +84,7 @@ export function FormField({
   return (
     <Field>
       <FieldLabel className="grid gap-2">
-        <span>{label}{required ? <span className="ml-1 text-[var(--destructive)]" aria-hidden>*</span> : null}</span>
+        <span>{label}{required ? <span className="ml-1 text-[var(--destructive)]">*</span> : null}</span>
         {children}
       </FieldLabel>
       {helper ? <FieldDescription>{helper}</FieldDescription> : null}
