@@ -69,4 +69,31 @@ export class PrismaReportRepository implements ReportRepository {
       payload: siteReportSnapshotSchema.parse(report.payload),
     };
   }
+
+  async findDirectorAnalytics(siteId: string, periodKey: ReportPeriodKey) {
+    const prismaPeriod = PRISMA_PERIOD_KEY_BY_APP_PERIOD[periodKey];
+    const prisma = getPrismaClient();
+    const [engineDate, phraseDate, regionDate, webmasterDate, competitorDate] = await Promise.all([
+      prisma.metrikaSearchEngineDailyMetric.findFirst({ where: { siteId, periodKey: prismaPeriod }, orderBy: { date: "desc" }, select: { date: true } }),
+      prisma.metrikaSearchPhraseDailyMetric.findFirst({ where: { siteId, periodKey: prismaPeriod }, orderBy: { date: "desc" }, select: { date: true } }),
+      prisma.metrikaGeoDailyMetric.findFirst({ where: { siteId, periodKey: prismaPeriod }, orderBy: { date: "desc" }, select: { date: true } }),
+      prisma.webmasterQueryDailyMetric.findFirst({ where: { siteId, periodKey: prismaPeriod }, orderBy: { date: "desc" }, select: { date: true } }),
+      prisma.competitorSnapshot.findFirst({ where: { siteId }, orderBy: { capturedAt: "desc" }, select: { capturedAt: true } }),
+    ]);
+    const [engines, phrases, regions, webmasterQueries, competitors] = await Promise.all([
+      engineDate ? prisma.metrikaSearchEngineDailyMetric.findMany({ where: { siteId, periodKey: prismaPeriod, date: engineDate.date }, orderBy: { engine: "asc" } }) : [],
+      phraseDate ? prisma.metrikaSearchPhraseDailyMetric.findMany({ where: { siteId, periodKey: prismaPeriod, date: phraseDate.date }, orderBy: { visits: "desc" }, take: 100 }) : [],
+      regionDate ? prisma.metrikaGeoDailyMetric.findMany({ where: { siteId, periodKey: prismaPeriod, date: regionDate.date }, orderBy: { visits: "desc" }, take: 5 }) : [],
+      webmasterDate ? prisma.webmasterQueryDailyMetric.findMany({ where: { siteId, periodKey: prismaPeriod, date: webmasterDate.date, orderBy: "TOTAL_SHOWS", device: { in: ["ALL", "DESKTOP", "MOBILE"] } }, orderBy: { shows: "desc" }, take: 100 }) : [],
+      competitorDate ? prisma.competitorSnapshot.findMany({ where: { siteId, capturedAt: competitorDate.capturedAt }, orderBy: [{ engine: "asc" }, { device: "asc" }, { visibility: "desc" }] }) : [],
+    ]);
+    return {
+      engines: engines.map((row) => ({ engine: row.engine, visits: row.visits, users: row.users, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits, conversionRate: row.conversionRate === null ? null : Number(row.conversionRate) })),
+      phrases: phrases.map((row) => ({ engine: row.engine, phrase: row.phrase, visits: row.visits, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits })),
+      regions: regions.map((row) => ({ regionKey: row.regionKey, regionName: row.regionName, visits: row.visits, uniqueTargetVisits: row.uniqueTargetVisits })),
+      webmasterQueries: webmasterQueries.map((row) => ({ query: row.query, device: row.device, shows: Number(row.shows), clicks: Number(row.clicks), ctr: row.ctr === null ? null : Number(row.ctr), averagePosition: row.averagePosition === null ? null : Number(row.averagePosition), demand: row.demand === null ? null : Number(row.demand), relevantUrl: row.relevantUrl })),
+      competitors: competitors.map((row) => ({ engine: row.engine, device: row.device, regionName: row.regionName, domain: row.domain, visibility: row.visibility === null ? null : Number(row.visibility), averagePosition: row.averagePosition === null ? null : Number(row.averagePosition), top3: row.top3, top10: row.top10, top30: row.top30, top50: row.top50, top100: row.top100 })),
+      competitorCapturedAt: competitorDate?.capturedAt.toISOString() ?? null,
+    };
+  }
 }

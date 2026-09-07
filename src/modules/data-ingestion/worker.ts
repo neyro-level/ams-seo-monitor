@@ -3,6 +3,7 @@ import type { CreateSyncRunInput } from "./application/ports/sync-repository.ts"
 import { createLiveSiteCollectors } from "../../../collector/orchestration/live-collectors.ts";
 import { getWorkerSyncService } from "../../infrastructure/worker-service-container.ts";
 import type { ReportPeriodKey, SiteReportSnapshot } from "../../shared/schemas/report.ts";
+export { setupSiteIntegrations, startScheduledTopvisorChecks, syncSiteCompetitors, syncAllConfiguredCompetitors } from "./infrastructure/site-integration-setup.ts";
 
 export interface SyncProjectToDatabaseArgs {
   projectSlug: string;

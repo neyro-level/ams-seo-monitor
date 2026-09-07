@@ -1,6 +1,6 @@
 import { getWorkerMonitoringService } from "../infrastructure/worker-service-container.ts";
 import type { CreateSyncRunInput } from "../modules/data-ingestion/index.ts";
-import { syncProjectToDatabase } from "../modules/data-ingestion/worker.ts";
+import { startScheduledTopvisorChecks, syncAllConfiguredCompetitors, syncProjectToDatabase } from "../modules/data-ingestion/worker.ts";
 import {
   drainOutbox,
   runReliabilityRetention,
@@ -61,9 +61,23 @@ async function main() {
     return;
   }
 
+  if (command === "competitors-sync") {
+    const results = await syncAllConfiguredCompetitors(process.env);
+    logger.info({ event: "competitors_sync_finished", sitesProcessed: results.length, sitesFailed: results.filter((item) => !item.ok).length }, "competitors sync finished");
+    if (results.some((item) => !item.ok)) process.exitCode = 1;
+    return;
+  }
+
+  if (command === "topvisor-checks") {
+    const results = await startScheduledTopvisorChecks(process.env);
+    logger.info({ event: "topvisor_checks_finished", sitesProcessed: results.length, sitesFailed: results.filter((item) => !item.ok).length }, "Topvisor checks finished");
+    if (results.some((item) => !item.ok)) process.exitCode = 1;
+    return;
+  }
+
   if (command !== "project-sync" || !argument) {
     throw new Error(
-      "Usage: worker projects-sync [trigger] | project-sync <project-slug> [trigger] | outbox-drain [worker-id] | outbox-retention",
+      "Usage: worker projects-sync [trigger] | topvisor-checks | competitors-sync | project-sync <project-slug> [trigger] | outbox-drain [worker-id] | outbox-retention",
     );
   }
   if (!allowedTriggers.includes(requestedTrigger as CreateSyncRunInput["trigger"])) {

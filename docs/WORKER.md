@@ -19,7 +19,7 @@ systemd timer / operator command / outbox handler
 → acquire PostgreSQL advisory full-sync lock
 → load project/site/provider config from PostgreSQL
 → create SyncRun + SourceRuns
-→ call read-only provider adapters
+→ call read-only Yandex adapters or bounded Topvisor onboarding/checker API
 → normalize DTOs
 → calculate equal periods and comparisons
 → compile SiteReportSnapshot
@@ -32,13 +32,13 @@ systemd timer / operator command / outbox handler
 ## Provider policy
 
 - Webmaster: verified host, summary, query history/detail and technical endpoints;
-- Metrika: counter/goals, traffic, landing/device/goal data and unique target visits;
-- Topvisor: optional read-only position history;
+- Metrika: Яндекс/Google organic, counter/goals, traffic, phrases, geography, landing/device/goal data and unique target visits;
+- Topvisor: project discovery/create, four search targets, core import, price-check, positions and competitors;
 - browser never calls providers;
-- mutations, keyword import and paid checks prohibited;
+- browser mutations prohibited; Topvisor writes выполняет только idempotent worker после durable operation reservation;
 - HTTP/token/raw sensitive bodies not persisted or logged.
 
-Topvisor считается готовым к включению только после read-only proof project/region mapping и непустой свежей истории. Валидный credential при выключенном `ProviderConnection` означает «доступ подготовлен», а не «источник подключён». Пустой history возвращает failed/partial source state и не превращается в нулевые позиции.
+Topvisor считается готовым после четырёх search targets, импорта 20–100 запросов, доступного price-check и запуска первого съёма. `DISPATCHING` после неоднозначного ответа автоматически не повторяется. Пустой history не превращается в нулевые позиции.
 
 ## Period contract
 
@@ -69,6 +69,9 @@ Worker writes:
 - `SyncRun`, `SourceRun` with organization/project/correlation stats;
 - pg-boss jobs in schema `pgboss`;
 - `RankingCapture`;
+- `SearchTarget`, `ProviderOperation`, `CompetitorSnapshot`;
+- Metrica engine/phrase/geo metrics и Webmaster demand/relevant URL;
+- пользовательские `Notification` projections;
 - `TechnicalSnapshot`;
 - append-only `ReportSnapshot`;
 - one throttled `RuntimeHeartbeat` row per runtime/worker identity;
@@ -110,11 +113,13 @@ Upserts use natural unique keys. Snapshot `generatedAt` is stable for one sync; 
 pnpm build:collector
 pnpm worker:sync:project -- <project-slug>
 pnpm worker:sync:all
+pnpm worker:topvisor:checks
+pnpm worker:sync:competitors
 pnpm worker:outbox:drain
 pnpm worker:outbox:retention
 ```
 
-Commands require a safe DB environment and provider secrets. The scheduled `projects-sync` command reads all active project slugs from PostgreSQL; no client slug is embedded in the release artifact.
+Commands require a safe DB environment and provider secrets. The scheduled `topvisor-checks` command runs on Monday before `projects-sync`, obtains the checker price, reserves a unique `ProviderOperation`, and only then starts the paid rank check. The scheduled `projects-sync` command reads all active project slugs from PostgreSQL; no client slug is embedded in the release artifact.
 
 ## Проверки
 

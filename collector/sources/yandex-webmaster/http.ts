@@ -182,3 +182,27 @@ export async function getWebmasterJson(args: {
     message: `Yandex Webmaster GET failed for ${args.endpoint}`,
   });
 }
+
+export async function postWebmasterJson(args: {
+  baseUrl: string; token: string; endpoint: string; body: unknown; fetchImpl?: FetchLike; retryDelayMs?: number;
+}) {
+  const fetchImpl = args.fetchImpl ?? fetch;
+  const retryDelayMs = args.retryDelayMs ?? 250;
+  const url = buildUrl(args.baseUrl, args.endpoint);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetchImpl(url, { method: "POST", headers: { Authorization: `OAuth ${args.token}`, Accept: "application/json", "Content-Type": "application/json; charset=UTF-8" }, body: JSON.stringify(args.body) });
+      if (!response.ok) {
+        const mapped = await mapResponseError(response, args.endpoint);
+        if (mapped.retryable && attempt === 0) { await new Promise((resolve) => setTimeout(resolve, retryDelayMs)); continue; }
+        throw mapped;
+      }
+      return (await response.json()) as unknown;
+    } catch (error) {
+      if (error instanceof WebmasterSafeError) throw error;
+      if (attempt === 0) { await new Promise((resolve) => setTimeout(resolve, retryDelayMs)); continue; }
+      throw new WebmasterSafeError({ code: "NETWORK_ERROR", endpoint: args.endpoint, message: `Yandex Webmaster POST failed for ${args.endpoint}`, retryable: false });
+    }
+  }
+  throw new WebmasterSafeError({ code: "NETWORK_ERROR", endpoint: args.endpoint, message: `Yandex Webmaster POST failed for ${args.endpoint}` });
+}

@@ -6,10 +6,12 @@ import { useState } from "react";
 import { Controller, useForm, type Resolver, type FieldValues, type UseFormSetError } from "react-hook-form";
 import { z } from "zod";
 import { Checkbox } from "../../../components/ui/checkbox.tsx";
+import { Button } from "../../../components/ui/button.tsx";
 import {
   createProviderConnectionAction,
   updateProviderConnectionAction,
 } from "../_actions/providers.ts";
+import { confirmMetricaGoalsAction } from "../_actions/metrica-goals.ts";
 import {
   AreaInput,
   applyFieldErrors,
@@ -104,9 +106,28 @@ function ProviderConnectionEditCard({ item }: { item: ProviderConnectionListItem
       setFeedback({ kind: "error", message });
     }
   });
+  const leadCandidates = item.goalSuggestions.find((suggestion) => suggestion.category === "LEAD_SUBMIT")?.candidates ?? [];
+  const phoneCandidates = item.goalSuggestions.find((suggestion) => suggestion.category === "PHONE_CLICK")?.candidates ?? [];
+  const [leadGoalId, setLeadGoalId] = useState(leadCandidates.length === 1 ? leadCandidates[0]!.goalId : "");
+  const [phoneGoalId, setPhoneGoalId] = useState(phoneCandidates.length === 1 ? phoneCandidates[0]!.goalId : "");
+  const [confirmingGoals, setConfirmingGoals] = useState(false);
+  async function confirmGoals() {
+    setConfirmingGoals(true);
+    const result = await confirmMetricaGoalsAction({ siteId: item.siteId, leadGoalId, phoneGoalId });
+    setConfirmingGoals(false);
+    if (!result.ok) { setFeedback(feedbackFrom(result)); return; }
+    setFeedback({ kind: "success", message: "Цели Метрики подтверждены" });
+    router.refresh();
+  }
 
   return (
     <SectionCard title={`${item.siteName} · ${item.provider}`} description={`${item.projectName} · ${item.siteSlug}`}>
+      {item.provider === "YANDEX_METRIKA" && item.status === "ACTION_REQUIRED" ? <div className="mb-4 grid gap-3 rounded-[var(--radius-panel)] border border-[var(--warning)]/40 bg-[var(--warning)]/10 p-4">
+        <p className="text-sm font-semibold text-[var(--foreground)]">Подтвердите две цели Метрики</p>
+        <FormField label="Основная заявка" required><SelectInput value={leadGoalId} onChange={(event) => setLeadGoalId(event.target.value)} options={[{ value: "", label: "Выберите цель" }, ...leadCandidates.map((goal) => ({ value: goal.goalId, label: goal.name }))]} /></FormField>
+        <FormField label="Раскрытие телефона" required><SelectInput value={phoneGoalId} onChange={(event) => setPhoneGoalId(event.target.value)} options={[{ value: "", label: "Выберите цель" }, ...phoneCandidates.map((goal) => ({ value: goal.goalId, label: goal.name }))]} /></FormField>
+        <Button disabled={confirmingGoals || !leadGoalId || !phoneGoalId || leadGoalId === phoneGoalId} onClick={confirmGoals} type="button">{confirmingGoals ? "Подтверждаем…" : "Подтвердить цели"}</Button>
+      </div> : null}
       <form className="grid gap-4" onSubmit={submit}>
         <input type="hidden" {...form.register("id")} />
         <input type="hidden" {...form.register("version", { valueAsNumber: true })} />

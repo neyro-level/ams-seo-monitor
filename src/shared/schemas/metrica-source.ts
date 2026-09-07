@@ -114,6 +114,33 @@ export const metricaGoalStatSchema = z.object({
   conversionRate: z.number().nonnegative().nullable(),
 });
 
+export const metricaOrganicEngineRowSchema = z.object({
+  engine: z.enum(["YANDEX", "GOOGLE"]),
+  visits: z.number().nonnegative(),
+  users: z.number().nonnegative(),
+  goalReaches: z.number().nonnegative(),
+  uniqueTargetVisits: z.number().nonnegative(),
+  conversionRate: z.number().nonnegative().nullable(),
+});
+
+export const metricaSearchPhraseRowSchema = z.object({
+  engine: z.enum(["YANDEX", "GOOGLE"]),
+  phrase: z.string().min(1),
+  visits: z.number().nonnegative(),
+  users: z.number().nonnegative(),
+  goalReaches: z.number().nonnegative(),
+  uniqueTargetVisits: z.number().nonnegative(),
+});
+
+export const metricaGeoRowSchema = z.object({
+  regionKey: z.string().min(1),
+  regionName: z.string().min(1),
+  visits: z.number().nonnegative(),
+  users: z.number().nonnegative(),
+  goalReaches: z.number().nonnegative(),
+  uniqueTargetVisits: z.number().nonnegative(),
+});
+
 export const metricaPreflightSchema = z.object({
   schemaVersion: z.literal(1),
   checkedAt: z.string().datetime({ offset: true }),
@@ -122,7 +149,7 @@ export const metricaPreflightSchema = z.object({
 });
 
 export const metricaSiteAuditSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   fetchedAt: z.string().datetime({ offset: true }),
   access: metricaCounterAccessSchema,
   goals: z.array(metricaGoalSchema),
@@ -142,6 +169,9 @@ export const metricaSiteAuditSchema = z.object({
     meta: metricaSampleMetaSchema,
     items: z.array(metricaGoalStatSchema),
   }),
+  organicEngines: z.array(metricaOrganicEngineRowSchema).optional(),
+  searchPhrases: z.array(metricaSearchPhraseRowSchema).optional(),
+  geography: z.array(metricaGeoRowSchema).optional(),
 });
 
 export type MetricaSafeErrorCode = z.infer<typeof metricaSafeErrorCodeSchema>;
@@ -154,5 +184,8 @@ export type MetricaTrendPoint = z.infer<typeof metricaTrendPointSchema>;
 export type MetricaLandingPage = z.infer<typeof metricaLandingPageSchema>;
 export type MetricaDeviceRow = z.infer<typeof metricaDeviceRowSchema>;
 export type MetricaGoalStat = z.infer<typeof metricaGoalStatSchema>;
+export type MetricaOrganicEngineRow = z.infer<typeof metricaOrganicEngineRowSchema>;
+export type MetricaSearchPhraseRow = z.infer<typeof metricaSearchPhraseRowSchema>;
+export type MetricaGeoRow = z.infer<typeof metricaGeoRowSchema>;
 export type MetricaPreflight = z.infer<typeof metricaPreflightSchema>;
 export type MetricaSiteAudit = z.infer<typeof metricaSiteAuditSchema>;

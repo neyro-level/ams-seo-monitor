@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Компилирует и выдаёт единый browser-safe SEO-отчёт сайта по четырём периодам.
+Компилирует и выдаёт единый browser-safe директорский SEO-отчёт сайта по четырём периодам и пяти вкладкам.
 
 ## Не входит в scope
 
@@ -26,11 +26,11 @@ No browser business mutations. Snapshot persistence is invoked from Data Ingesti
 
 ## Queries
 
-`ReportService.getSiteReportForUser` and repository latest-snapshot read by site/period/generatedAt.
+`ReportService.getSiteReportForUser` читает latest snapshot; `getSiteDirectorAnalyticsForUser` после того же tenant authorization читает engine/phrase/geo/demand/competitor projections.
 
 ## DTO
 
-`SiteReportSnapshot` from `src/shared/schemas/report.ts` is the only browser contract.
+`SiteReportSnapshot` v2 — основной browser contract; v1 читается compatibility schema. Дополнительная `DirectorAnalytics` projection содержит только нормализованные агрегаты, без raw provider payload.
 
 ## Invariants
 
@@ -42,6 +42,9 @@ No browser business mutations. Snapshot persistence is invoked from Data Ingesti
 - Top-3 is a subset of Top-10;
 - direct query-to-lead attribution is prohibited;
 - sites and periods are never mixed.
+- вкладки: overview, queries/ranks, pages/leads, technical, competitors;
+- Яндекс default, Google и desktop/mobile остаются явными измерениями;
+- Webmaster → Metrica funnel всегда помечена сводкой разных источников.
 
 ## Tenant behavior
 

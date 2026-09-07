@@ -9,7 +9,7 @@ AMS IMPULSE объединяет две связанные поверхност�
 1. публичный сайт услуги SEO-продвижения;
 2. приватный кабинет регулярной SEO-отчётности по нескольким проектам и сайтам.
 
-Кабинет заменяет ручную сборку управленческого отчёта повторяемым read-only контуром. Система не изменяет клиентские сайты и не выполняет mutations во внешних SEO-сервисах.
+Кабинет заменяет ручную сборку управленческого отчёта повторяемым контуром. Система не изменяет клиентские сайты; Яндекс-интеграции остаются read-only, а Topvisor автоматически настраивается только через idempotent worker.
 
 ## Пользователи и роли
 
@@ -24,7 +24,7 @@ AMS IMPULSE объединяет две связанные поверхност�
 
 - внутренний оператор АМС, не клиентская роль;
 - управляет organizations, memberships, projects, sites и безопасными SEO-настройками в `/admin/*`;
-- не получает secret values и не выполняет provider mutations;
+- не получает secret values; запускает только типизированный onboarding, а Topvisor mutations выполняет worker;
 - каждая browser mutation проходит fresh server permission, named command, transaction и AuditEvent.
 
 Role/capability и protected Platform Admin реализованы. Public signup и client self-service admin остаются вне scope.
@@ -99,23 +99,17 @@ CMS управляет только разрешёнными полями и к�
 
 ### Создание клиента и проекта
 
-1. Оператор подтверждает URL, timezone и provider access.
-2. Через единый protected Platform Admin wizard атомарно создаёт organization, project, credential user и membership; пароль назначает администратор.
-3. Настраивает goals, tracked query set, thresholds и clusters через typed audited commands.
-4. Repeatable bootstrap создаёт только default/reference records; operator configuration импортируется отдельно из private path и не входит в deployment.
-5. Production credentials настраиваются отдельным operator step вне browser и Git.
+1. Через единый protected wizard оператор задаёт organization, project, 1–50 сайтов, пользователя и доступ.
+2. Для каждого сайта указывает exact HTTPS URL, timezone, регион Topvisor и 20–100 уникальных запросов.
+3. Одна транзакция создаёт organization, project, sites, credential user, membership, four search targets, ядро, AuditEvent и outbox-задания.
+4. Worker находит Метрику/Вебмастер, предлагает две цели для подтверждения и находит либо создаёт Topvisor project.
+5. После price-check worker импортирует ядро, запускает первый rank-check и формирует первый отчёт; повторная доставка не создаёт повторного платного запуска.
 
 ## Директорский отчёт
 
-Один report route показывает:
+Один report route имеет вкладки `Обзор`, `Запросы и позиции`, `Страницы и заявки`, `Техническое состояние`, `Конкуренты`. По умолчанию показывается Яндекс; Google и desktop/mobile доступны как отдельные измерения. Воронка Webmaster → Metrica явно помечена сводкой разных источников.
 
-1. ranking утверждённого ядра;
-2. Top-3, Top-10 и динамику tracked queries;
-3. техническое состояние и индексацию;
-4. показы, клики, CTR и среднюю позицию показов Webmaster;
-5. органические визиты, уникальные целевые визиты и конверсию;
-6. посадочные страницы, устройства и цели;
-7. alerts и opportunities.
+Platform Admin и SEO Analyst получают `/notifications/`, колокольчик и персональный unread count. CLIENT_VIEWER не получает маршрут. Ежедневный sync агрегируется в одно уведомление на проект; retries подавляются, финальные ошибки и восстановление источника видимы отдельно.
 
 Разные сайты не объединяются в искусственный общий ranking KPI.
 
@@ -139,7 +133,8 @@ CMS управляет только разрешёнными полями и к�
 - PostgreSQL/Prisma runtime;
 - DB-backed worker и report routes;
 - Webmaster и Metrica read-only adapters;
-- optional Topvisor read-only history;
+- Topvisor Яндекс/Google × desktop/mobile, weekly positions и monthly competitors;
+- персональный центр уведомлений и multi-site onboarding;
 - four-period director report;
 - immutable standalone release, backup и recovery tooling.
 
@@ -148,7 +143,7 @@ CMS управляет только разрешёнными полями и к�
 - CRM, billing или task tracker;
 - public client reports;
 - self-service signup и клиентский browser admin;
-- provider write access, keyword import или paid rank checks;
+- произвольный provider write access вне контролируемого Topvisor worker;
 - raw user-level Metrica Logs API;
 - автоматическое изменение клиентских сайтов;
 - второй параллельный backend/storage/auth contract.

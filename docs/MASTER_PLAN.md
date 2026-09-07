@@ -10,9 +10,9 @@
 
 ## Provider mappings
 
-- для трёх выключенных Topvisor connections получить подтверждённые project/region mappings;
-- выполнить read-only preflight и включать каждое подключение только при свежих непустых position rows;
-- отсутствие данных не маскировать как нулевые позиции; paid checks и provider mutations не выполнять.
+- после merge нового onboarding выполнить управляемое подключение существующих сайтов: выбрать region и загрузить ядро 20–100 запросов;
+- подтвердить две цели Метрики для каждого сайта со статусом `ACTION_REQUIRED`;
+- первый production Topvisor price-check/paid capture выполнить только после отдельной release-команды; отсутствие данных не маскировать нулевыми позициями.
 
 ## Platform controls
 

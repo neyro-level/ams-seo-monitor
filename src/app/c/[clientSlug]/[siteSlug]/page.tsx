@@ -47,9 +47,10 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
     notFound();
   }
 
-  const [projectContext, snapshot] = await Promise.all([
+  const [projectContext, snapshot, directorAnalytics] = await Promise.all([
     monitoringService.getProjectContext(clientSlug),
     reportService.getSiteReportForUser(state.principal, clientSlug, siteSlug, periodKey),
+    reportService.getSiteDirectorAnalyticsForUser(state.principal, clientSlug, siteSlug, periodKey),
   ]);
   const site = projectContext?.client.sites.find((item) => item.siteSlug === siteSlug) ?? null;
 
@@ -63,6 +64,7 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
         clientName={`Проект ${projectContext.client.name}`}
         site={site}
         snapshot={snapshot}
+        directorAnalytics={directorAnalytics}
         mode="live"
         backHref={`/c/${clientSlug}/`}
         periodControl={

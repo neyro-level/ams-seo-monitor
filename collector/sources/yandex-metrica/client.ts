@@ -10,6 +10,9 @@ import {
   normalizeDevices,
   normalizeGoals,
   normalizeGoalTotals,
+  normalizeOrganicEngineRows,
+  normalizeSearchPhrases,
+  normalizeGeography,
   normalizeLandingPages,
   normalizeMetricaSiteUrl,
   normalizeSampleMeta,
@@ -55,7 +58,11 @@ function buildYandexOrganicFilter() {
   return "ym:s:lastsignSearchEngineRootName=='Yandex'";
 }
 
-function buildUniqueTargetFilter(goalIds: string[]) {
+function buildEngineOrganicFilter(engine: "YANDEX" | "GOOGLE") {
+  return `ym:s:lastsignSearchEngineRootName=='${engine === "YANDEX" ? "Yandex" : "Google"}'`;
+}
+
+function buildUniqueTargetFilter(goalIds: string[], engine: "YANDEX" | "GOOGLE" = "YANDEX") {
   if (goalIds.length === 0) {
     return null;
   }
@@ -63,7 +70,7 @@ function buildUniqueTargetFilter(goalIds: string[]) {
   const targetFilter = goalIds
     .map((goalId) => `ym:s:goal${goalId}IsReached=='Yes'`)
     .join(" OR ");
-  return `${buildYandexOrganicFilter()} AND (${targetFilter})`;
+  return `${buildEngineOrganicFilter(engine)} AND (${targetFilter})`;
 }
 
 export function readMetricaEnvironment(env: NodeJS.ProcessEnv = process.env): MetricaEnvironment {
@@ -269,6 +276,23 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
       : { totals: [0, 0], query: commonDates };
     const uniqueTargetTotals = normalizeTargetVisitTotals(uniqueTargetPayload);
 
+    const engineDetails = await Promise.all((["YANDEX", "GOOGLE"] as const).map(async (engine) => {
+      const engineFilter = buildEngineOrganicFilter(engine);
+      const engineTargetFilter = buildUniqueTargetFilter(seoConversionGoalIds, engine);
+      const [targetPayload, phrasesPayload, targetPhrasesPayload] = await Promise.all([
+        engineTargetFilter ? getTableReport({ ids: access.counterId, metrics: "ym:s:visits", filters: engineTargetFilter, ...commonDates }) : Promise.resolve({ totals: [0] }),
+        getTableReport({ ids: access.counterId, dimensions: "ym:s:lastSearchPhrase", metrics: ["ym:s:visits", "ym:s:users", ...goalReachesMetrics], filters: engineFilter, sort: "-ym:s:visits", limit: 500, ...commonDates }),
+        engineTargetFilter ? getTableReport({ ids: access.counterId, dimensions: "ym:s:lastSearchPhrase", metrics: "ym:s:visits", filters: engineTargetFilter, sort: "-ym:s:visits", limit: 500, ...commonDates }) : Promise.resolve({ data: [] }),
+      ]);
+      return { engine, targetVisits: normalizeTargetVisitTotals(targetPayload).targetVisits, phrases: normalizeSearchPhrases(engine, phrasesPayload, targetPhrasesPayload) };
+    }));
+    const allOrganicFilter = `(${buildEngineOrganicFilter("YANDEX")} OR ${buildEngineOrganicFilter("GOOGLE")})`;
+    const allTargetFilter = seoConversionGoalIds.length ? `(${allOrganicFilter}) AND (${seoConversionGoalIds.map((goalId) => `ym:s:goal${goalId}IsReached=='Yes'`).join(" OR ")})` : null;
+    const [geographyPayload, targetGeographyPayload] = await Promise.all([
+      getTableReport({ ids: access.counterId, dimensions: ["ym:s:regionCountryName", "ym:s:regionAreaName", "ym:s:regionCityName"], metrics: ["ym:s:visits", "ym:s:users", ...goalReachesMetrics], filters: allOrganicFilter, sort: "-ym:s:visits", limit: 50, ...commonDates }),
+      allTargetFilter ? getTableReport({ ids: access.counterId, dimensions: ["ym:s:regionCountryName", "ym:s:regionAreaName", "ym:s:regionCityName"], metrics: "ym:s:visits", filters: allTargetFilter, sort: "-ym:s:visits", limit: 50, ...commonDates }) : Promise.resolve({ data: [] }),
+    ]);
+
     const byTimePayload = includeDetails
       ? await getByTimeReport({
           ids: access.counterId,
@@ -369,6 +393,9 @@ export function createMetricaClient(config: MetricaEnvironment, deps: MetricaCli
       goalsSummary: goalsSummaryPayloads.map((item) =>
         normalizeGoalTotals(item.payload, item.allowedGoal),
       ),
+      organicEngines: normalizeOrganicEngineRows(searchEnginePayload, Object.fromEntries(engineDetails.map((item) => [item.engine, item.targetVisits]))),
+      searchPhrases: engineDetails.flatMap((item) => item.phrases),
+      geography: normalizeGeography(geographyPayload, targetGeographyPayload),
     });
   }
 

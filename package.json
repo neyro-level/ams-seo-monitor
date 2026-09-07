@@ -60,6 +60,8 @@
     "collector:metrica:preflight": "pnpm build:collector && node dist-collector/collector/main.js metrica-preflight",
     "worker:sync:project": "pnpm build:collector && node dist-collector/src/worker/main.js project-sync",
     "worker:sync:all": "pnpm build:collector && node dist-collector/src/worker/main.js projects-sync daily",
+    "worker:topvisor:checks": "pnpm build:collector && node dist-collector/src/worker/main.js topvisor-checks",
+    "worker:sync:competitors": "pnpm build:collector && node dist-collector/src/worker/main.js competitors-sync",
     "worker:outbox:drain": "pnpm build:collector && node dist-collector/src/worker/main.js outbox-drain",
     "worker:outbox:retention": "pnpm build:collector && node dist-collector/src/worker/main.js outbox-retention"
   },

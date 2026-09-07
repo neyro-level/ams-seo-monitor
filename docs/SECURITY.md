@@ -30,10 +30,10 @@ Browser получает публичный сайт либо явные DTO к�
 ### Worker и integrations
 
 - provider tokens доступны только worker environment;
-- вызовы Яндекс.Вебмастера, Яндекс.Метрики и Topvisor только read-only и на exact allowlisted HTTPS origins;
+- Яндекс.Вебмастер и Яндекс.Метрика только read-only; Topvisor mutations разрешены узкому onboarding/weekly worker contract на exact allowlisted HTTPS origin;
 - browser не вызывает provider API;
 - provider mapping хранит только nonsecret identifiers/settings;
-- provider mutations и paid rank checks запрещены;
+- price-check обязателен до Topvisor paid rank-check; `ProviderOperation.operationKey` защищает от повторного списания, неоднозначный результат fail-closed в `ACTION_REQUIRED`;
 - logs содержат safe IDs/counts/status, но не token/header/raw body/PII;
 - outbox использует idempotency, lease, bounded retry и dead-letter.
 
@@ -72,6 +72,7 @@ Source of truth — разрешённый Doppler scope и root-owned protected
 - lead PII не хранится в этой БД;
 - production PII не используется в fixtures;
 - raw errors и provider bodies не сохраняются;
+- Notification хранит только safe title/message/route; token URL, raw payload и stack trace запрещены;
 - удаление/retention identity data — отдельная owner-approved операция;
 - release rollback не откатывает schema/data автоматически.
 

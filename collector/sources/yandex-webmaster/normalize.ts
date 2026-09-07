@@ -198,6 +198,22 @@ export function normalizePopularQueries(args: {
   });
 }
 
+export function normalizeQueryAnalytics(payload: unknown) {
+  const root = getRecord(payload);
+  return getArray(root?.text_indicator_to_statistics).map(getRecord).filter((row): row is Record<string, unknown> => row !== null).flatMap((row) => {
+    const text = getRecord(row.text_indicator);
+    const complementary = getRecord(row.popular_complementary_indicator);
+    const query = getString(text, "value");
+    if (!query) return [];
+    const totals = new Map<string, number>();
+    for (const statistic of getArray(row.statistics).map(getRecord).filter((item): item is Record<string, unknown> => item !== null)) {
+      const field = getString(statistic, "field"); const value = getNumber(statistic, "value");
+      if (field && value !== null) totals.set(field, (totals.get(field) ?? 0) + value);
+    }
+    return [{ query: query.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim(), demand: totals.get("DEMAND") ?? null, relevantUrl: getString(complementary, "value") }];
+  });
+}
+
 export function normalizeIndicatorHistory(historyPayload: unknown): WebmasterIndicatorHistory[] {
   const root = getRecord(historyPayload);
   const indicators = getRecord(root?.indicators) ?? {};

@@ -70,6 +70,9 @@ export async function buildNavigation(
               },
             ]
           : []),
+        ...(user.kind === "platform-admin" || user.kind === "platform-analyst"
+          ? [{ href: "/notifications/", label: "Уведомления", active: currentPath.startsWith("/notifications/") }]
+          : []),
       ],
     },
     {

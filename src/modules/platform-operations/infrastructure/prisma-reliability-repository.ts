@@ -319,7 +319,7 @@ export class PrismaReliabilityRepository implements ReliabilityRepository {
           status: OutboxStatus.PROCESSING,
           lockedBy: input.workerId,
         },
-        select: { attempts: true },
+        select: { attempts: true, organizationId: true, topic: true },
       });
       if (!event) {
         throw reliabilityError("OUTBOX_LEASE_LOST", "Outbox lease ownership was lost");
@@ -360,6 +360,12 @@ export class PrismaReliabilityRepository implements ReliabilityRepository {
       });
       if (updated.count !== 1 || job.count !== 1) {
         throw reliabilityError("OUTBOX_LEASE_LOST", "Outbox lease ownership was lost");
+      }
+      if (terminal) {
+        await transaction.notification.createMany({
+          data: [{ organizationId: event.organizationId, category: "QUEUE", severity: "ERROR", visibility: "PLATFORM_ADMIN_ONLY", title: "Задание остановлено", message: `Задание ${event.topic} помещено в dead letter. Код: ${input.safeErrorCode}`, route: "/admin/operations/", sourceType: "OutboxEvent", sourceId: input.outboxEventId, dedupKey: `outbox-dead:${input.outboxEventId}`, occurredAt: new Date(input.finishedAt) }],
+          skipDuplicates: true,
+        });
       }
 
       return {

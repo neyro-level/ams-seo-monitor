@@ -1,5 +1,6 @@
 import type {
   CreateGoalDefinitionInput,
+  ConfirmMetricaGoalsInput,
   CreateProviderConnectionInput,
   CreateQueryClusterProfileInput,
   CreateSiteInput,
@@ -135,6 +136,10 @@ export interface PlatformAdminReferenceRepository {
     input: UpdateProviderConnectionInput,
     organizationId: string,
   ): Promise<boolean>;
+  confirmMetricaGoals(
+    input: ConfirmMetricaGoalsInput,
+    organizationId: string,
+  ): Promise<{ projectId: string; connectionId: string }>;
   findGoalDefinitionForAction(id: string): Promise<GoalDefinitionActionRecord | null>;
   createGoalDefinition(
     input: CreateGoalDefinitionInput,

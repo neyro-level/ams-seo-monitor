@@ -41,7 +41,7 @@ DATABASE = self-managed-postgresql
 - `partial ≠ success`, `stale ≠ current`, `null ≠ 0`;
 - Webmaster average position не является exact ranking;
 - Top-3 входит в Top-10;
-- direct query-to-lead attribution, provider mutations и paid rank checks запрещены;
+- direct query-to-lead attribution запрещена; Topvisor mutations и paid rank checks разрешены только idempotent worker-сценарию onboarding/weekly schedule после обязательного price-check;
 - PostgreSQL — единственный runtime source of truth; operator config импортируется только явной private-path командой.
 
 ## Hard rules

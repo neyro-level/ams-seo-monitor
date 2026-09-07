@@ -19,9 +19,11 @@ export {
   listThresholdProfiles,
   listTrackedQuerySets,
   saveGoalDefinition,
+  confirmMetricaGoals,
   saveProviderConnection,
   saveQueryClusterProfile,
   saveSite,
   saveThresholdProfile,
   saveTrackedQuerySet,
 } from "./infrastructure/platform-admin-runtime.ts";
+export { searchTopvisorRegions } from "./infrastructure/topvisor-region-runtime.ts";

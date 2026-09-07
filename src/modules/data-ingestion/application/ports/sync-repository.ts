@@ -72,6 +72,8 @@ export interface StoreWebmasterQueryMetricRow {
   ctr: number | null;
   averagePosition: number | null;
   averageClickPosition: number | null;
+  demand: number | null;
+  relevantUrl: string | null;
 }
 
 export interface StoreMetrikaDailyMetricRow {
@@ -130,11 +132,29 @@ export interface StoreMetrikaGoalMetricRow {
   conversionRate: number | null;
 }
 
+export interface StoreMetrikaSearchEngineMetricRow {
+  date: string; engine: "YANDEX" | "GOOGLE"; visits: number; users: number;
+  goalReaches: number; uniqueTargetVisits: number; conversionRate: number | null;
+}
+export interface StoreMetrikaSearchPhraseMetricRow {
+  date: string; engine: "YANDEX" | "GOOGLE"; phrase: string; visits: number; users: number;
+  goalReaches: number; uniqueTargetVisits: number;
+}
+export interface StoreMetrikaGeoMetricRow {
+  date: string; regionKey: string; regionName: string; visits: number; users: number;
+  goalReaches: number; uniqueTargetVisits: number;
+}
+
 export interface StoreRankingCaptureRow {
   trackedQueryId: string;
   capturedAt: string;
   position: number | null;
   source: "OWNER_PROVIDED" | "TOPVISOR";
+  engine: "YANDEX" | "GOOGLE";
+  device: "DESKTOP" | "MOBILE";
+  regionKey: string;
+  regionName: string | null;
+  relevantUrl: string | null;
 }
 
 export interface StoreTechnicalSnapshotRow {
@@ -194,7 +214,12 @@ export interface StoreMetrikaGoalMetricsInput {
   rows: StoreMetrikaGoalMetricRow[];
 }
 
+export interface StoreMetrikaSearchEngineMetricsInput { siteId: string; sourceRunId: string; periodKey: ReportPeriodKey; rows: StoreMetrikaSearchEngineMetricRow[]; }
+export interface StoreMetrikaSearchPhraseMetricsInput { siteId: string; sourceRunId: string; periodKey: ReportPeriodKey; rows: StoreMetrikaSearchPhraseMetricRow[]; }
+export interface StoreMetrikaGeoMetricsInput { siteId: string; sourceRunId: string; periodKey: ReportPeriodKey; rows: StoreMetrikaGeoMetricRow[]; }
+
 export interface StoreRankingCapturesInput {
+  siteId: string;
   sourceRunId: string | null;
   rows: StoreRankingCaptureRow[];
 }
@@ -240,7 +265,11 @@ export interface SyncRepository {
   storeLandingPageMetrics(input: StoreLandingPageMetricsInput): Promise<void>;
   storeMetrikaDeviceMetrics(input: StoreMetrikaDeviceMetricsInput): Promise<void>;
   storeMetrikaGoalMetrics(input: StoreMetrikaGoalMetricsInput): Promise<void>;
+  storeMetrikaSearchEngineMetrics(input: StoreMetrikaSearchEngineMetricsInput): Promise<void>;
+  storeMetrikaSearchPhraseMetrics(input: StoreMetrikaSearchPhraseMetricsInput): Promise<void>;
+  storeMetrikaGeoMetrics(input: StoreMetrikaGeoMetricsInput): Promise<void>;
   storeRankingCaptures(input: StoreRankingCapturesInput): Promise<void>;
   storeTechnicalSnapshots(input: StoreTechnicalSnapshotsInput): Promise<void>;
   listTrackedQueriesForSite(siteId: string): Promise<StoredTrackedQuerySetRecord>;
+  storeSyncNotification(input: { organizationId: string; projectId: string; projectSlug: string; syncRunId: string; trigger: CreateSyncRunInput["trigger"]; status: "success" | "partial" | "failed"; occurredAt: string; safeErrorCode: string | null }): Promise<void>;
 }

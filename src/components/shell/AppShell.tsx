@@ -9,15 +9,18 @@ import { Button } from "../ui/button.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip.tsx";
 import { MobileDrawer } from "./MobileDrawer.tsx";
 import { ShellNav } from "./ShellNav.tsx";
+import { NotificationCenter } from "../notifications/NotificationCenter.tsx";
+import type { NotificationListResult } from "../../modules/notifications/index.ts";
 
 type AppShellProps = {
   sections: NavigationSection[];
   displayName: string;
   roleLabel: string;
   children: ReactNode;
+  notificationSummary: NotificationListResult | null;
 };
 
-export function AppShell({ sections, displayName, roleLabel, children }: AppShellProps) {
+export function AppShell({ sections, displayName, roleLabel, notificationSummary, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -73,6 +76,7 @@ export function AppShell({ sections, displayName, roleLabel, children }: AppShel
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-[var(--foreground)]">{activeLabel ?? "AMS IMPULSE"}</p>
           </div>
+          {notificationSummary ? <NotificationCenter initialSummary={notificationSummary} /> : null}
           <Button type="button" variant="ghost" size="icon" className="lg:hidden" onClick={signOut} disabled={signingOut} aria-label="Выйти из кабинета"><LogOut aria-hidden /></Button>
         </header>
 

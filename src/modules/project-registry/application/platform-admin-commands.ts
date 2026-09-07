@@ -2,6 +2,7 @@ import { defineCommand } from "../../../platform/commands/define-command.ts";
 import type { PrincipalContext } from "../../../platform/authorization/principal.ts";
 import {
   nextResourceVersion,
+  confirmMetricaGoalsInputSchema,
   ProjectRegistryAdminError,
   saveGoalDefinitionInputSchema,
   saveProviderConnectionInputSchema,
@@ -208,6 +209,22 @@ export function createPlatformAdminCommands(
         correlationId: scope.correlationId,
       });
       return { id: created.id, version: created.version };
+    },
+  });
+
+  const confirmMetricaGoals = defineCommand<PrincipalContext, typeof confirmMetricaGoalsInputSchema, { connectionId: string }>({
+    name: "confirmMetricaGoals",
+    input: confirmMetricaGoalsInputSchema,
+    authorize: (principal) => { if (principal.kind !== "platform-admin") throw new ProjectRegistryAdminError("PROJECT_REGISTRY_ADMIN_ACCESS_DENIED"); },
+    execute: async ({ principal, input, transaction }) => {
+      if (principal.kind !== "platform-admin") throw new ProjectRegistryAdminError("PROJECT_REGISTRY_ADMIN_ACCESS_DENIED");
+      const repository = dependencies.createRepository(transaction);
+      const site = await repository.findSiteForAction(input.siteId);
+      if (!site) throw new ProjectRegistryAdminError("PROVIDER_CONNECTION_NOT_FOUND_OR_FORBIDDEN");
+      const scope = requireProjectRegistryManagementScope(principal, site.organizationId);
+      const result = await repository.confirmMetricaGoals(input, scope.organizationId);
+      await repository.appendAudit({ actorId: scope.actorId, organizationId: scope.organizationId, action: "metrica-goals.confirm", entityType: "ProviderConnection", entityId: result.connectionId, beforeMarker: null, afterMarker: { siteId: input.siteId, projectId: result.projectId, categories: ["LEAD_SUBMIT", "PHONE_CLICK"] }, correlationId: scope.correlationId });
+      return { connectionId: result.connectionId };
     },
   });
 
@@ -544,6 +561,7 @@ export function createPlatformAdminCommands(
   return {
     saveSite,
     saveProviderConnection,
+    confirmMetricaGoals,
     saveGoalDefinition,
     saveTrackedQuerySet,
     saveThresholdProfile,

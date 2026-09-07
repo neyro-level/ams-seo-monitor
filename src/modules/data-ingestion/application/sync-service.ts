@@ -24,6 +24,9 @@ import type {
   StoreMetrikaDailyMetricsInput,
   StoreMetrikaDeviceMetricsInput,
   StoreMetrikaGoalMetricsInput,
+  StoreMetrikaSearchEngineMetricsInput,
+  StoreMetrikaSearchPhraseMetricsInput,
+  StoreMetrikaGeoMetricsInput,
   StoreRankingCapturesInput,
   StoreReportSnapshotInput,
   StoreTechnicalSnapshotsInput,
@@ -243,6 +246,10 @@ function toDateOnly(value: string) {
   return value.slice(0, 10);
 }
 
+export function shouldCollectTopvisor(trigger: CreateSyncRunInput["trigger"], timestamp: string) {
+  return trigger !== "daily" || new Date(timestamp).getUTCDay() === 1;
+}
+
 function buildWebmasterDailyRows(data: WebmasterSiteData | null) {
   if (!data) {
     return [];
@@ -295,6 +302,8 @@ function buildWebmasterQueryRows(
       ctr: query.ctrPercent,
       averagePosition: query.avgShowPosition,
       averageClickPosition: query.avgClickPosition,
+      demand: query.demand ?? null,
+      relevantUrl: query.relevantUrl ?? null,
     })),
   );
 }
@@ -318,6 +327,21 @@ function buildMetrikaDailyRows(data: MetricaSiteAudit | null) {
     allVisits: null,
     conversionRate: point.conversionRate,
   }));
+}
+
+function buildMetrikaSearchEngineRows(data: MetricaSiteAudit | null, fallbackDate: string) {
+  const date = data?.yandexOrganic.meta.date2 ?? fallbackDate;
+  return (data?.organicEngines ?? []).map((row) => ({ date, ...row }));
+}
+
+function buildMetrikaSearchPhraseRows(data: MetricaSiteAudit | null, fallbackDate: string) {
+  const date = data?.yandexOrganic.meta.date2 ?? fallbackDate;
+  return (data?.searchPhrases ?? []).map((row) => ({ date, ...row }));
+}
+
+function buildMetrikaGeoRows(data: MetricaSiteAudit | null, fallbackDate: string) {
+  const date = data?.yandexOrganic.meta.date2 ?? fallbackDate;
+  return (data?.geography ?? []).map((row) => ({ date, ...row }));
 }
 
 function buildAllowedGoalsForSite(siteSlug: string, goalProfile: GoalProfile) {
@@ -481,6 +505,11 @@ function buildRankingCaptureRows(
           capturedAt: `${snapshot.capturedAt}T00:00:00.000Z`,
           position: query.position,
           source: "TOPVISOR" as const,
+          engine: snapshot.engine ?? "YANDEX",
+          device: snapshot.device ?? "DESKTOP",
+          regionKey: snapshot.regionKey ?? "legacy",
+          regionName: null,
+          relevantUrl: null,
         },
       ];
     }),
@@ -565,6 +594,10 @@ export class SyncService {
   storeMetrikaGoalMetrics(input: StoreMetrikaGoalMetricsInput) {
     return this.syncRepository.storeMetrikaGoalMetrics(input);
   }
+
+  storeMetrikaSearchEngineMetrics(input: StoreMetrikaSearchEngineMetricsInput) { return this.syncRepository.storeMetrikaSearchEngineMetrics(input); }
+  storeMetrikaSearchPhraseMetrics(input: StoreMetrikaSearchPhraseMetricsInput) { return this.syncRepository.storeMetrikaSearchPhraseMetrics(input); }
+  storeMetrikaGeoMetrics(input: StoreMetrikaGeoMetricsInput) { return this.syncRepository.storeMetrikaGeoMetrics(input); }
 
   storeRankingCaptures(input: StoreRankingCapturesInput) {
     return this.syncRepository.storeRankingCaptures(input);
@@ -694,6 +727,7 @@ export class SyncService {
             `Seeded site is missing in PostgreSQL: ${projectContext.client.clientSlug}/${site.siteSlug}`,
           );
         }
+        const collectTopvisorNow = site.topvisor.enabled && shouldCollectTopvisor(args.trigger, generatedAt);
 
         const sourceRuns = {
           webmaster: site.webmaster.enabled
@@ -724,7 +758,7 @@ export class SyncService {
                 "YANDEX_METRIKA",
               )
             : null,
-          topvisor: site.topvisor.enabled
+          topvisor: collectTopvisorNow
             ? registerSourceRun(
                 await this.createSourceRun({
                   syncRunId: syncRun.syncRunId,
@@ -769,7 +803,7 @@ export class SyncService {
         let rankingData: TopvisorSiteData | null = null;
         let topvisorFailure: SafeSourceFailure | null = null;
 
-        if (site.topvisor.enabled) {
+        if (collectTopvisorNow) {
           try {
             if (!collectors.topvisor) {
               throw new Error("Topvisor collector is unavailable");
@@ -949,6 +983,9 @@ export class SyncService {
               periodKey,
               rows: buildMetrikaGoalRows(metricaData, currentPeriod.dateTo),
             });
+            await this.storeMetrikaSearchEngineMetrics({ siteId: siteRecord.siteId, sourceRunId: sourceRuns.metrica.sourceRunId, periodKey, rows: buildMetrikaSearchEngineRows(metricaData, currentPeriod.dateTo) });
+            await this.storeMetrikaSearchPhraseMetrics({ siteId: siteRecord.siteId, sourceRunId: sourceRuns.metrica.sourceRunId, periodKey, rows: buildMetrikaSearchPhraseRows(metricaData, currentPeriod.dateTo) });
+            await this.storeMetrikaGeoMetrics({ siteId: siteRecord.siteId, sourceRunId: sourceRuns.metrica.sourceRunId, periodKey, rows: buildMetrikaGeoRows(metricaData, currentPeriod.dateTo) });
           }
 
           if (periodKey === "month" && metricaData) {
@@ -995,6 +1032,7 @@ export class SyncService {
         if (sourceRuns.topvisor && rankingData) {
           const trackedQuerySet = await this.listTrackedQueriesForSite(siteRecord.siteId);
           await this.storeRankingCaptures({
+            siteId: siteRecord.siteId,
             sourceRunId: sourceRuns.topvisor.sourceRunId,
             rows: buildRankingCaptureRows(rankingData, trackedQuerySet.rows),
           });
@@ -1053,6 +1091,16 @@ export class SyncService {
         sitesPartial: siteResults.filter((site) => site.status === "partial").length,
         sitesFailed: siteResults.filter((site) => site.status === "failed").length,
         safeError: [...projectSafeErrors][0] ?? null,
+      });
+      await this.syncRepository.storeSyncNotification({
+        organizationId: projectContext.organizationId,
+        projectId: projectContext.projectId,
+        projectSlug: projectContext.client.clientSlug,
+        syncRunId: syncRun.syncRunId,
+        trigger: args.trigger,
+        status: finalStatus,
+        occurredAt: now(),
+        safeErrorCode: [...projectSafeErrors][0] ?? null,
       });
 
       this.log({

@@ -40,6 +40,8 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 | `Project.createdAt`, `Project.updatedAt` | project audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `Site.createdAt`, `Site.updatedAt` | site audit time | DB `now()` / Prisma `@updatedAt`; `Site.timezone` is business configuration, not proof for these instants | не менять до production proof | REQUIRES_CHECK |
 | `ProviderConnection.createdAt`, `ProviderConnection.updatedAt` | provider mapping audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
+| `ProviderConnection.lastCheckedAt`, `ProviderConnection.connectedAt`, `ProviderOperation.startedAt`, `ProviderOperation.finishedAt` | фактические provider lifecycle instants | worker JS `Date` | `timestamptz(3)` | TIMESTAMPTZ_UTC |
+| `ProviderOperation.createdAt`, `ProviderOperation.updatedAt`, `SearchTarget.createdAt`, `SearchTarget.updatedAt` | audit/configuration time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `GoalDefinition.createdAt`, `GoalDefinition.updatedAt` | goal configuration audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `TrackedQuerySet.createdAt`, `TrackedQuerySet.updatedAt` | query-set audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `TrackedQuery.createdAt`, `TrackedQuery.updatedAt` | tracked-query audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
@@ -48,9 +50,14 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 | `SourceRun.startedAt`, `SourceRun.finishedAt` | фактические границы provider execution | worker ISO instant with `Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `SourceRun.createdAt`, `SourceRun.updatedAt` | source-run audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `WebmasterDailyMetric.date`, `WebmasterQueryDailyMetric.date`, `MetrikaDailyMetric.date`, `LandingPageDailyMetric.date`, `MetrikaDeviceDailyMetric.date`, `MetrikaGoalDailyMetric.date` | provider civil day / period key | provider date plus site/provider timezone; persisted as `YYYY-MM-DDT00:00:00.000Z` solely for stable storage | сохранить `timestamp(3)`; `timestamptz` запрещён без отдельного semantic redesign | KEEP_TIMESTAMP |
+| `MetrikaSearchEngineDailyMetric.date`, `MetrikaSearchPhraseDailyMetric.date`, `MetrikaGeoDailyMetric.date` | provider civil day / period key | provider date plus site timezone; stable UTC-midnight storage only | сохранить `timestamp(3)` | KEEP_TIMESTAMP |
+| `MetrikaSearchEngineDailyMetric.createdAt`, `MetrikaSearchPhraseDailyMetric.createdAt`, `MetrikaGeoDailyMetric.createdAt` | ingestion row audit time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `WebmasterDailyMetric.createdAt`, `WebmasterQueryDailyMetric.createdAt`, `MetrikaDailyMetric.createdAt`, `LandingPageDailyMetric.createdAt`, `MetrikaDeviceDailyMetric.createdAt`, `MetrikaGoalDailyMetric.createdAt` | ingestion row audit time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `RankingCapture.capturedAt` | instant получения/владельческого снимка позиции | provider RFC3339 instant или explicit `T00:00:00.000Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `RankingCapture.createdAt` | capture row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
+| `CompetitorSnapshot.capturedAt` | Topvisor snapshot instant | worker JS `Date` | `timestamptz(3)` | TIMESTAMPTZ_UTC |
+| `CompetitorSnapshot.createdAt`, `Notification.createdAt` | persistence/audit time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
+| `Notification.occurredAt`, `NotificationRead.readAt` | user-visible event/read instants | worker/action JS `Date` | `timestamptz(3)` | TIMESTAMPTZ_UTC |
 | `TechnicalSnapshot.capturedAt` | instant provider fetch represented by snapshot | validated provider `fetchedAt` with offset; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `TechnicalSnapshot.createdAt` | snapshot row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 | `ReportSnapshot.generatedAt` | report compilation instant | worker-generated ISO instant with `Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
@@ -68,7 +75,7 @@ PostgreSQL не сохраняет timezone в `timestamp without time zone` и 
 | `RetentionRun.startedAt`, `RetentionRun.finishedAt` | retention execution boundaries | runtime passes one injected JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
 | `RetentionRun.createdAt` | retention row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
 
-Coverage: `17 TIMESTAMPTZ_UTC + 6 KEEP_TIMESTAMP + 58 REQUIRES_CHECK = 81 DateTime fields`. Ранее подтверждённый backup-copy proof сохраняет epoch/null-shape для оставшихся UTC-полей при production timezone `Etc/UTC`. Остальные поля остаются без schema change.
+Coverage включает все DateTime-поля текущей Prisma schema, включая onboarding, provider operation, Metrica analytics, competitor и notification records. Ранее подтверждённый backup-copy proof сохраняет epoch/null-shape для старых UTC-полей при production timezone `Etc/UTC`; новые migration-поля получают тип явно.
 
 ## Identity и access
 
@@ -146,6 +153,14 @@ Not a database record. A server factory creates a discriminated principal from f
 - хранит nonsecret external mapping и validated settings JSON;
 - credentials остаются в server environment;
 - `enabled=false` запрещает provider call.
+- lifecycle status: `PENDING | CONNECTING | CONNECTED | ACTION_REQUIRED | FAILED` с safe status code;
+- Metrica становится `CONNECTED` только после подтверждения двух выбранных целей.
+
+### SearchTarget и ProviderOperation
+
+- SearchTarget уникален по site + engine + device + region и задаёт четыре Topvisor targets;
+- ProviderOperation хранит цену и durable state платного checker по уникальному operationKey;
+- `DISPATCHING`/`ACTION_REQUIRED` не перезапускается автоматически.
 
 ## Profiles
 
@@ -218,7 +233,7 @@ PostgreSQL advisory lock запрещает concurrent full sync. Lock session-s
 ### Webmaster
 
 - `WebmasterDailyMetric` — daily all-query shows/clicks/CTR/average position, unique `(siteId, date)`;
-- `WebmasterQueryDailyMetric` — period/query/device/order detail, unique по site + period + date + normalized query + device + order;
+- `WebmasterQueryDailyMetric` — period/query/device/order detail с demand и relevant URL из Query Analytics, unique по site + period + date + normalized query + device + order;
 - total KPI не вычисляется суммой ограниченного popular-query pool.
 
 ### Metrika
@@ -227,12 +242,19 @@ PostgreSQL advisory lock запрещает concurrent full sync. Lock session-s
 - `LandingPageDailyMetric` — period landing aggregates;
 - `MetrikaDeviceDailyMetric` — period device aggregates;
 - `MetrikaGoalDailyMetric` — period goal aggregates.
+- `MetrikaSearchEngineDailyMetric` — Яндекс/Google organic и unique target visits;
+- `MetrikaSearchPhraseDailyMetric` — распознанные и неизвестные поисковые фразы;
+- `MetrikaGeoDailyMetric` — география органического трафика.
 
 Upsert обновляет актуальное значение того же natural key и связывает его с последним SourceRun.
 
 ### RankingCapture
 
-Exact/owner position на момент `capturedAt`, unique `(trackedQueryId, capturedAt, source)`.
+Exact/owner position на момент `capturedAt`, unique по tracked query + instant + source + engine + device + region. Legacy rows читаются как Яндекс/desktop/legacy.
+
+### CompetitorSnapshot
+
+До 10 ведущих доменов на каждый engine/device/region capture с visibility, average position и Top‑3/10/30/50/100.
 
 ### TechnicalSnapshot
 
@@ -274,6 +296,10 @@ Periods:
 - данные разных projects/sites/periods не смешиваются.
 
 ## Reliability records
+
+### Notification и NotificationRead
+
+Notification — safe пользовательская проекция lifecycle-события с tenant scope, visibility и уникальным dedupKey. NotificationRead индивидуален пользователю и уникален по `(notificationId, userId)`; технические журналы не заменяет.
 
 ### AuditEvent
 

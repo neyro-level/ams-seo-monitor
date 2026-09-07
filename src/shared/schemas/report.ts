@@ -302,7 +302,7 @@ export const combinedSeoReportSchema = z.object({
 });
 
 export const siteReportSnapshotSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   clientSlug: z.string().regex(slugPattern),
   siteSlug: z.string().regex(slugPattern),
   siteUrl: z.string().url(),

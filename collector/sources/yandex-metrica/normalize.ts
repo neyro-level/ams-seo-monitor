@@ -3,6 +3,9 @@ import {
   metricaDeviceRowSchema,
   metricaGoalSchema,
   metricaGoalStatSchema,
+  metricaOrganicEngineRowSchema,
+  metricaSearchPhraseRowSchema,
+  metricaGeoRowSchema,
   metricaLandingPageSchema,
   metricaPreflightSchema,
   metricaSampleMetaSchema,
@@ -14,6 +17,9 @@ import {
   type MetricaDeviceRow,
   type MetricaGoal,
   type MetricaGoalStat,
+  type MetricaOrganicEngineRow,
+  type MetricaSearchPhraseRow,
+  type MetricaGeoRow,
   type MetricaLandingPage,
   type MetricaSampleMeta,
   type MetricaSummary,
@@ -367,6 +373,58 @@ export function normalizeGoalTotals(payload: unknown, allowedGoal: MetricaAllowe
   });
 }
 
+function dimensionValue(row: Record<string, unknown>, index: number) {
+  const dimension = getArray(row.dimensions).map(getRecord)[index] ?? null;
+  return {
+    id: getString(dimension, "id") ?? getString(dimension, "name") ?? "unknown",
+    name: getString(dimension, "name") ?? getString(dimension, "id") ?? "Не определено",
+  };
+}
+
+export function normalizeOrganicEngineRows(
+  reportPayload: unknown,
+  targetVisits: Partial<Record<"YANDEX" | "GOOGLE", number>>,
+): MetricaOrganicEngineRow[] {
+  const root = getRecord(reportPayload);
+  return getArray(root?.data).map(getRecord).filter((row): row is Record<string, unknown> => row !== null).flatMap((row) => {
+    const label = dimensionValue(row, 0).name.toLocaleLowerCase("ru-RU");
+    const engine = label.includes("yandex") || label.includes("яндекс") ? "YANDEX" : label.includes("google") ? "GOOGLE" : null;
+    if (!engine) return [];
+    const metrics = normalizeRowMetrics(row);
+    const visits = metrics[0] ?? 0;
+    const uniqueTargetVisits = targetVisits[engine] ?? 0;
+    return [metricaOrganicEngineRowSchema.parse({ engine, visits, users: metrics[1] ?? 0, goalReaches: sumGoalReaches(metrics, 2), uniqueTargetVisits, conversionRate: visits > 0 ? Number(((uniqueTargetVisits / visits) * 100).toFixed(2)) : null })];
+  });
+}
+
+export function normalizeSearchPhrases(
+  engine: "YANDEX" | "GOOGLE",
+  reportPayload: unknown,
+  targetPayload: unknown,
+): MetricaSearchPhraseRow[] {
+  const targetRoot = getRecord(targetPayload);
+  const targets = new Map(getArray(targetRoot?.data).map(getRecord).filter((row): row is Record<string, unknown> => row !== null).map((row) => [dimensionValue(row, 0).name, normalizeRowMetrics(row)[0] ?? 0]));
+  const root = getRecord(reportPayload);
+  return getArray(root?.data).map(getRecord).filter((row): row is Record<string, unknown> => row !== null).map((row) => {
+    const phrase = dimensionValue(row, 0).name;
+    const metrics = normalizeRowMetrics(row);
+    return metricaSearchPhraseRowSchema.parse({ engine, phrase, visits: metrics[0] ?? 0, users: metrics[1] ?? 0, goalReaches: sumGoalReaches(metrics, 2), uniqueTargetVisits: targets.get(phrase) ?? 0 });
+  });
+}
+
+export function normalizeGeography(reportPayload: unknown, targetPayload: unknown): MetricaGeoRow[] {
+  const keyFor = (row: Record<string, unknown>) => getArray(row.dimensions).map(getRecord).map((_, index) => dimensionValue(row, index).id).join("/");
+  const targetRoot = getRecord(targetPayload);
+  const targets = new Map(getArray(targetRoot?.data).map(getRecord).filter((row): row is Record<string, unknown> => row !== null).map((row) => [keyFor(row), normalizeRowMetrics(row)[0] ?? 0]));
+  const root = getRecord(reportPayload);
+  return getArray(root?.data).map(getRecord).filter((row): row is Record<string, unknown> => row !== null).map((row) => {
+    const dimensions = getArray(row.dimensions).map(getRecord).map((_, index) => dimensionValue(row, index));
+    const region = [...dimensions].reverse().find((item) => item.id !== "unknown") ?? { id: "unknown", name: "Не определено" };
+    const metrics = normalizeRowMetrics(row);
+    return metricaGeoRowSchema.parse({ regionKey: region.id, regionName: region.name, visits: metrics[0] ?? 0, users: metrics[1] ?? 0, goalReaches: sumGoalReaches(metrics, 2), uniqueTargetVisits: targets.get(keyFor(row)) ?? 0 });
+  });
+}
+
 export function buildMetricaPreflight(args: {
   checkedAt: string;
   access: MetricaCounterAccess;
@@ -396,9 +454,12 @@ export function buildMetricaSiteAudit(args: {
   devices: MetricaDeviceRow[];
   goalsMeta: MetricaSampleMeta;
   goalsSummary: MetricaGoalStat[];
+  organicEngines?: MetricaOrganicEngineRow[];
+  searchPhrases?: MetricaSearchPhraseRow[];
+  geography?: MetricaGeoRow[];
 }) {
   return metricaSiteAuditSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     fetchedAt: args.fetchedAt,
     access: args.access,
     goals: args.goals,
@@ -426,5 +487,8 @@ export function buildMetricaSiteAudit(args: {
       meta: args.goalsMeta,
       items: args.goalsSummary,
     },
+    organicEngines: args.organicEngines ?? [],
+    searchPhrases: args.searchPhrases ?? [],
+    geography: args.geography ?? [],
   });
 }

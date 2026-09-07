@@ -10,10 +10,14 @@ export const rankQueryPositionSchema = z.object({
 export const rankSnapshotSchema = z.object({
   capturedAt: isoDateSchema,
   queries: z.array(rankQueryPositionSchema).min(1).max(100),
+  engine: z.enum(["YANDEX", "GOOGLE"]).optional(),
+  device: z.enum(["DESKTOP", "MOBILE"]).optional(),
+  regionKey: z.string().optional(),
+  regionIndex: z.number().int().nonnegative().optional(),
 });
 
 export const topvisorSiteDataSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   fetchedAt: z.string().datetime({ offset: true }),
   projectId: z.number().int().positive(),
   regionIndex: z.number().int().nonnegative(),

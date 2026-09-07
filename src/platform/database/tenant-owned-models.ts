@@ -7,6 +7,9 @@ export const TENANT_OWNED_MODELS = [
   "TrackedQuerySet",
   "TrackedQuery",
   "RankingCapture",
+  "SearchTarget",
+  "ProviderOperation",
+  "CompetitorSnapshot",
   "SyncRun",
   "SourceRun",
   "WebmasterDailyMetric",
@@ -15,12 +18,16 @@ export const TENANT_OWNED_MODELS = [
   "LandingPageDailyMetric",
   "MetrikaDeviceDailyMetric",
   "MetrikaGoalDailyMetric",
+  "MetrikaSearchEngineDailyMetric",
+  "MetrikaSearchPhraseDailyMetric",
+  "MetrikaGeoDailyMetric",
   "TechnicalSnapshot",
   "ReportSnapshot",
   "AuditEvent",
   "IdempotencyKey",
   "OutboxEvent",
   "JobRun",
+  "Notification",
 ] as const;
 
 export type TenantOwnedModel = (typeof TENANT_OWNED_MODELS)[number];

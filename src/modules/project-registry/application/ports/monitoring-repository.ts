@@ -2,6 +2,7 @@ export interface MonitoringProviderConnectionRecord {
   provider: "YANDEX_WEBMASTER" | "YANDEX_METRIKA" | "TOPVISOR";
   externalId: string | null;
   enabled: boolean;
+  status?: "PENDING" | "CONNECTING" | "CONNECTED" | "ACTION_REQUIRED" | "FAILED";
   settingsJson: unknown;
 }
 

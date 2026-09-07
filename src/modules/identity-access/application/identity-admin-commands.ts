@@ -44,7 +44,7 @@ export function createIdentityAdminCommands(
   const provisionClient = defineCommand<
     PrincipalContext,
     typeof provisionClientInputSchema,
-    { organizationId: string; projectId: string; userId: string; membershipId: string }
+    { organizationId: string; projectId: string; userId: string; membershipId: string; siteIds: string[] }
   >({
     name: "identity-access.client.provision",
     input: provisionClientInputSchema,
@@ -57,6 +57,8 @@ export function createIdentityAdminCommands(
       const result = await repository.provisionClient({
         ...safeInput,
         passwordHash,
+        actorId: actor.actorId,
+        correlationId: actor.correlationId,
       });
       await repository.appendAudit({
         actorId: actor.actorId,
@@ -69,6 +71,7 @@ export function createIdentityAdminCommands(
           username: input.username,
           projectId: result.projectId,
           tenantRole: input.tenantRole,
+          siteCount: result.siteIds.length,
         },
         correlationId: actor.correlationId,
       });

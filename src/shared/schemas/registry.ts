@@ -99,6 +99,7 @@ export const topvisorRegistrySchema = z
     enabled: z.boolean(),
     projectId: z.number().int().positive().nullable(),
     regionIndex: z.number().int().nonnegative().nullable(),
+    targets: z.array(z.object({ engine: z.enum(["YANDEX", "GOOGLE"]), device: z.enum(["DESKTOP", "MOBILE"]), regionKey: z.number().int().positive(), regionIndex: z.number().int().nonnegative() })).max(4).optional(),
   })
   .superRefine((value, ctx) => {
     if (value.enabled && value.projectId === null) {
@@ -130,6 +131,7 @@ export const siteRegistrySchema = z
       enabled: false,
       projectId: null,
       regionIndex: null,
+      targets: [],
     }),
   })
   .superRefine((site, ctx) => {

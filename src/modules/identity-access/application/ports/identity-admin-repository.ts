@@ -41,6 +41,8 @@ export interface IdentityAdminAuditInput {
 
 export type ProvisionClientPersistenceInput = Omit<ProvisionClientInput, "password"> & {
   passwordHash: string;
+  actorId: string;
+  correlationId: string;
 };
 
 export interface IdentityAdminRepository {

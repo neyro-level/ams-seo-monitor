@@ -99,7 +99,7 @@ EOF
 
 rollback_previous() {
   systemctl stop seo-monitor-worker.service seo-monitor-outbox.service seo-monitor-web.service >/dev/null 2>&1 || true
-  systemctl disable --now seo-monitor-worker.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
+  systemctl disable --now seo-monitor-worker.timer seo-monitor-topvisor-checks.timer seo-monitor-competitors.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
   if [ -n "$PREVIOUS" ]; then
     rm -f "$ROOT/current.rollback"
     ln -s "$PREVIOUS" "$ROOT/current.rollback"
@@ -115,7 +115,7 @@ rollback_previous() {
     elif [ -f "$NGINX_BACKUP" ]; then
       cp "$NGINX_BACKUP" "$NGINX_LIVE"
     fi
-    for unit in seo-monitor-web.service seo-monitor-worker.service seo-monitor-worker.timer seo-monitor-outbox.service seo-monitor-outbox.timer seo-monitor-db-backup.service seo-monitor-db-backup.timer; do
+    for unit in seo-monitor-web.service seo-monitor-worker.service seo-monitor-worker.timer seo-monitor-topvisor-checks.service seo-monitor-topvisor-checks.timer seo-monitor-competitors.service seo-monitor-competitors.timer seo-monitor-outbox.service seo-monitor-outbox.timer seo-monitor-db-backup.service seo-monitor-db-backup.timer; do
       if [ -f "$PREVIOUS/ops/systemd/$unit" ]; then
         install -m 0644 "$PREVIOUS/ops/systemd/$unit" "/etc/systemd/system/$unit"
       fi
@@ -232,7 +232,7 @@ run_with_env_file "$MIGRATOR_ENV_FILE" docker compose -f "$COMPOSE_FILE" run --r
 
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
-for unit in seo-monitor-web.service seo-monitor-worker.service seo-monitor-worker.timer seo-monitor-outbox.service seo-monitor-outbox.timer seo-monitor-db-backup.service seo-monitor-db-backup.timer; do
+for unit in seo-monitor-web.service seo-monitor-worker.service seo-monitor-worker.timer seo-monitor-topvisor-checks.service seo-monitor-topvisor-checks.timer seo-monitor-competitors.service seo-monitor-competitors.timer seo-monitor-outbox.service seo-monitor-outbox.timer seo-monitor-db-backup.service seo-monitor-db-backup.timer; do
   install -m 0644 "$RELEASE/ops/systemd/$unit" "/etc/systemd/system/$unit"
 done
 
@@ -247,7 +247,7 @@ nginx -t
 systemctl reload nginx
 systemctl restart seo-monitor-web.service
 systemctl start seo-monitor-worker.service
-systemctl enable --now seo-monitor-worker.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer
+systemctl enable --now seo-monitor-worker.timer seo-monitor-topvisor-checks.timer seo-monitor-competitors.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer
 
 WEB_CONTAINER_ID="$(docker compose -f "$ROOT/current/docker-compose.production.yml" ps -q web)"
 WORKER_CONTAINER_ID="$(docker compose -f "$ROOT/current/docker-compose.production.yml" ps -q worker)"

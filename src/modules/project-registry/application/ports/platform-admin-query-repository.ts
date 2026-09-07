@@ -41,6 +41,9 @@ export interface ProviderConnectionListItem {
   provider: Provider;
   externalId: string | null;
   enabled: boolean;
+  status: "PENDING" | "CONNECTING" | "CONNECTED" | "ACTION_REQUIRED" | "FAILED";
+  statusCode: string | null;
+  goalSuggestions: Array<{ category: "LEAD_SUBMIT" | "PHONE_CLICK"; candidates: Array<{ goalId: string; name: string }> }>;
   settingsJson: Record<string, string | number | boolean | null> | null;
   version: number;
   updatedAt: string;

@@ -11,6 +11,8 @@ import { TrackedQueryTable } from "../../../components/tables/TrackedQueryTable.
 import { formatDuration, formatInteger, formatPercent, formatPosition } from "../../../shared/format/metrics.ts";
 import type { ReportComparison, SiteReportSnapshot } from "../../../shared/schemas/report.ts";
 import type { SiteRegistry } from "../../../shared/schemas/registry.ts";
+import type { DirectorAnalytics } from "../application/ports/report-repository.ts";
+import { DirectorReportTabs } from "./DirectorReportTabs.tsx";
 
 type ComparisonMetric = ReportComparison["metrics"]["shows"];
 
@@ -53,9 +55,10 @@ type SiteReportViewProps = {
   mode: "fixture" | "live";
   backHref?: string;
   periodControl?: ReactNode;
+  directorAnalytics?: DirectorAnalytics | null;
 };
 
-export function SiteReportView({ clientName, site, snapshot, mode, backHref, periodControl }: SiteReportViewProps) {
+export function SiteReportView({ clientName, site, snapshot, mode, backHref, periodControl, directorAnalytics = null }: SiteReportViewProps) {
   if (!snapshot) {
     const sourcesEnabled = site.webmaster.enabled || site.metrica.enabled;
     return (
@@ -97,12 +100,14 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
         {periodControl}
         <p className="text-xs text-[var(--muted-foreground)]">{mode === "live" ? "Live-данные" : "Демонстрационные данные"}</p>
       </div>
+      <DirectorReportTabs snapshot={snapshot} analytics={directorAnalytics} timezone={site.timezone} />
 
       {snapshot.freshness === "partial" ? <StatusBanner tone="warning" title="Отчёт собран частично" description="Часть источников не вернула полный набор данных. Доступные показатели показаны без подмены отсутствующих значений нулями." /> : null}
       {snapshot.freshness === "stale" ? <StatusBanner tone="warning" title="Данные устарели" description="Последний опубликованный snapshot старше допустимого периода. Показатели сохранены для сравнения, но не считаются текущими." /> : null}
       {snapshot.freshness === "unavailable" ? <StatusBanner tone="error" title="Отчёт временно недоступен" description="Ни один обязательный источник не предоставил актуальные данные." /> : null}
       {integrationErrors.length > 0 ? <StatusBanner tone="error" title="Ошибка интеграции" description={`Проверьте доступ к источникам: ${integrationErrors.map(([name]) => name).join(", ")}.`} /> : null}
 
+      <div className="hidden" aria-hidden="true">
       {ranking ? (
         <section className="space-y-4" aria-labelledby="ranking-title">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -205,6 +210,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
           </>
         ) : <StatePanel state="empty" title="Нет данных Метрики" description="Источник не подключён или временно недоступен." />}
       </section>
+      </div>
 
       <SectionCard title="Что делать дальше" note="Приоритеты по фактическим данным">
         <div className="grid gap-3 md:grid-cols-2">

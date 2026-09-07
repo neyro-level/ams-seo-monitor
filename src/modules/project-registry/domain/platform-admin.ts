@@ -95,6 +95,15 @@ export const saveProviderConnectionInputSchema = z.union([
   updateProviderConnectionInputSchema,
 ]);
 
+export const confirmMetricaGoalsInputSchema = z.object({
+  siteId: idSchema,
+  leadGoalId: idSchema,
+  phoneGoalId: idSchema,
+}).refine((value) => value.leadGoalId !== value.phoneGoalId, {
+  message: "Для двух бизнес-целей выберите разные цели Метрики",
+  path: ["phoneGoalId"],
+});
+
 export const createGoalDefinitionInputSchema = z.object({
   projectId: idSchema,
   externalGoalId: idSchema,
@@ -227,6 +236,7 @@ export type SaveSiteInput = z.infer<typeof saveSiteInputSchema>;
 export type CreateSiteInput = z.infer<typeof createSiteInputSchema>;
 export type UpdateSiteInput = z.infer<typeof updateSiteInputSchema>;
 export type SaveProviderConnectionInput = z.infer<typeof saveProviderConnectionInputSchema>;
+export type ConfirmMetricaGoalsInput = z.infer<typeof confirmMetricaGoalsInputSchema>;
 export type CreateProviderConnectionInput = z.infer<typeof createProviderConnectionInputSchema>;
 export type UpdateProviderConnectionInput = z.infer<typeof updateProviderConnectionInputSchema>;
 export type SaveGoalDefinitionInput = z.infer<typeof saveGoalDefinitionInputSchema>;
@@ -263,6 +273,7 @@ export type ProjectRegistryAdminErrorCode =
   | "PROVIDER_CONNECTION_NOT_FOUND_OR_FORBIDDEN"
   | "PROVIDER_CONNECTION_REFERENCE_INVALID"
   | "PROVIDER_CONNECTION_STALE"
+  | "METRIKA_GOAL_MAPPING_INVALID"
   | "GOAL_DEFINITION_CONFLICT"
   | "GOAL_DEFINITION_NOT_FOUND_OR_FORBIDDEN"
   | "GOAL_DEFINITION_REFERENCE_INVALID"

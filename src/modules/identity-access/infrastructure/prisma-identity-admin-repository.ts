@@ -286,7 +286,114 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
         data: { organizationId: organization.id, userId: user.id, tenantRole: input.tenantRole },
         select: { id: true },
       });
-      return { organizationId: organization.id, projectId: project.id, userId: user.id, membershipId: membership.id };
+      const siteIds: string[] = [];
+      for (const siteInput of input.sites) {
+        const site = await this.prisma.site.create({
+          data: {
+            organizationId: organization.id,
+            projectId: project.id,
+            name: siteInput.name,
+            slug: siteInput.slug,
+            url: siteInput.url,
+            timezone: siteInput.timezone,
+            enabled: true,
+          },
+          select: { id: true },
+        });
+        siteIds.push(site.id);
+
+        await this.prisma.providerConnection.createMany({
+          data: ["YANDEX_METRIKA", "YANDEX_WEBMASTER", "TOPVISOR"].map((provider) => ({
+            organizationId: organization.id,
+            siteId: site.id,
+            provider: provider as "YANDEX_METRIKA" | "YANDEX_WEBMASTER" | "TOPVISOR",
+            enabled: true,
+            status: "PENDING" as const,
+            settingsJson: provider === "TOPVISOR" ? {
+              region: {
+                name: siteInput.regionName,
+                countryCode: siteInput.regionCountryCode,
+                yandexKey: siteInput.yandexRegionKey,
+                googleKey: siteInput.googleRegionKey,
+              },
+            } : Prisma.JsonNull,
+          })),
+        });
+        await this.prisma.searchTarget.createMany({
+          data: [
+            ["YANDEX", "DESKTOP", siteInput.yandexRegionKey],
+            ["YANDEX", "MOBILE", siteInput.yandexRegionKey],
+            ["GOOGLE", "DESKTOP", siteInput.googleRegionKey],
+            ["GOOGLE", "MOBILE", siteInput.googleRegionKey],
+          ].map(([engine, device, regionKey]) => ({
+            organizationId: organization.id,
+            siteId: site.id,
+            engine: engine as "YANDEX" | "GOOGLE",
+            device: device as "DESKTOP" | "MOBILE",
+            regionKey: String(regionKey),
+            regionName: siteInput.regionName,
+          })),
+        });
+        const querySet = await this.prisma.trackedQuerySet.create({
+          data: {
+            organizationId: organization.id,
+            siteId: site.id,
+            source: "TOPVISOR",
+            baselineLabel: "Основное ядро",
+            expectedCount: siteInput.queries.length,
+          },
+          select: { id: true },
+        });
+        await this.prisma.trackedQuery.createMany({
+          data: siteInput.queries.map((query) => ({
+            organizationId: organization.id,
+            trackedQuerySetId: querySet.id,
+            query,
+            normalizedQuery: query.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim(),
+          })),
+        });
+
+        const outboxEvent = await this.prisma.outboxEvent.create({
+          data: {
+            organizationId: organization.id,
+            topic: "site.integrations.setup.requested",
+            payload: { siteId: site.id, projectId: project.id, projectSlug: input.projectSlug },
+            correlationId: input.correlationId,
+          },
+          select: { id: true },
+        });
+        await this.prisma.idempotencyKey.create({
+          data: {
+            organizationId: organization.id,
+            organizationScope: organization.id,
+            scope: "site.integration.setup",
+            key: site.id,
+            requestHash: site.id,
+            status: "COMPLETED",
+            response: { outboxEventId: outboxEvent.id },
+            outboxEventId: outboxEvent.id,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        });
+        await this.prisma.notification.create({
+          data: {
+            organizationId: organization.id,
+            projectId: project.id,
+            siteId: site.id,
+            category: "ONBOARDING",
+            severity: "INFO",
+            visibility: "PLATFORM_TEAM",
+            title: `Сайт «${siteInput.name}» создан`,
+            message: "Начата автоматическая проверка Метрики, Вебмастера и Topvisor.",
+            route: `/admin/sites/?site=${site.id}`,
+            sourceType: "Site",
+            sourceId: site.id,
+            dedupKey: `site-created:${site.id}`,
+            occurredAt: new Date(),
+          },
+        });
+      }
+      return { organizationId: organization.id, projectId: project.id, userId: user.id, membershipId: membership.id, siteIds };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -294,6 +401,7 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
           const modelName = String(error.meta?.modelName ?? "");
           if (target.includes("username") || target.includes("email")) throw new IdentityAdminError("USER_LOGIN_CONFLICT");
           if (modelName === "Project") throw new IdentityAdminError("PROJECT_SLUG_CONFLICT");
+          if (modelName === "Site") throw new IdentityAdminError("SITE_SLUG_CONFLICT");
           throw new IdentityAdminError("ORGANIZATION_SLUG_CONFLICT");
         }
         if (error.code === "P2003") throw new IdentityAdminError("PROJECT_REFERENCE_INVALID");

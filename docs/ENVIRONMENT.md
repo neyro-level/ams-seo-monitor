@@ -62,7 +62,7 @@ E2E uses the explicit `APP_ENV=test` identity. Auth policy не имеет envir
 
 Site URLs are loaded server-side from PostgreSQL and passed to provider adapters; they are not long-lived production authority from browser env.
 
-Provider credential presence не включает источник автоматически. Provider call разрешён только когда PostgreSQL `ProviderConnection.enabled=true`, external mapping подтверждён read-only preflight, а worker env после materialization/restart содержит соответствующие credential names. Для Topvisor дополнительно требуются подтверждённые project/region mapping и свежие непустые position rows; создание проекта, импорт keywords и paid checker остаются отдельными запрещёнными mutations.
+Provider credential presence не включает источник автоматически. Provider call разрешён только когда PostgreSQL `ProviderConnection.enabled=true`, а worker env после materialization/restart содержит соответствующие credential names. Для Topvisor проект и четыре search targets находятся либо создаются worker; keyword import и checker разрешены только после durable operation reservation и обязательного price-check. `seo-monitor-topvisor-checks.timer` запускает недельную проверку в понедельник до ежедневного сбора; успешная запись позиций завершает durable operation.
 
 ## Local and test database
 

@@ -8,6 +8,7 @@ import {
   WebmasterSafeError,
   type FetchLike,
   getWebmasterJson,
+  postWebmasterJson,
   type QueryValue,
 } from "./http.ts";
 import {
@@ -17,6 +18,7 @@ import {
   normalizeIndicatorHistory,
   normalizePlainHistory,
   normalizePopularQueries,
+  normalizeQueryAnalytics,
   normalizeSiteUrl,
   normalizeSitemaps,
   normalizeSummary,
@@ -164,9 +166,10 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
     endpoint: string,
     endpointErrors: WebmasterEndpointError[],
     query?: Record<string, QueryValue>,
+    execute?: () => Promise<unknown>,
   ) {
     try {
-      return await getWebmasterJson({
+      return execute ? await execute() : await getWebmasterJson({
         baseUrl: config.baseUrl,
         token: config.token,
         endpoint,
@@ -277,6 +280,11 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
       : null;
 
     const queryCollections = [];
+    const queryAnalyticsByDevice = new Map<string, Map<string, { demand: number | null; relevantUrl: string | null }>>();
+    for (const device of devices) {
+      const analyticsPayload = await collectOptional(`${baseEndpoint}/query-analytics/list`, endpointErrors, {}, () => postWebmasterJson({ baseUrl: config.baseUrl, token: config.token, endpoint: `${baseEndpoint}/query-analytics/list`, body: { offset: 0, limit: 500, device_type_indicator: device, search_location: "WEB_LOCATION", text_indicator: "QUERY", sort_by_date: options?.queryDateTo ? { date: options.queryDateTo, statistic_field: "IMPRESSIONS", by: "DESC" } : undefined }, fetchImpl }));
+      if (analyticsPayload !== null) queryAnalyticsByDevice.set(device, new Map(normalizeQueryAnalytics(analyticsPayload).map((row) => [row.query, row])));
+    }
     for (const orderBy of queryOrders) {
       webmasterQueryOrderBySchema.parse(orderBy);
       for (const device of devices) {
@@ -301,14 +309,14 @@ export function createWebmasterClient(config: WebmasterEnvironment, deps: Webmas
         if (queriesPayload === null) {
           continue;
         }
-        queryCollections.push(
-          normalizePopularQueries({
+        const collection = normalizePopularQueries({
             payload: queriesPayload,
             orderBy,
             device,
             requestedLimit: queryLimit,
-          }),
-        );
+          });
+        const analytics = queryAnalyticsByDevice.get(device);
+        queryCollections.push({ ...collection, queries: collection.queries.map((query) => ({ ...query, ...(analytics?.get(query.queryText.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim()) ?? { demand: null, relevantUrl: null }) })) });
       }
     }
     const actualQueryDateFrom =

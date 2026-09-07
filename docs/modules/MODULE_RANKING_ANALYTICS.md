@@ -6,7 +6,7 @@
 
 ## Не входит в scope
 
-Webmaster average position as exact rank, keyword mutation/import, paid checks, browser provider calls and cross-site aggregate rank.
+Webmaster average position as exact rank, browser provider calls, arbitrary provider mutations and cross-site aggregate rank.
 
 ## Data ownership
 
@@ -72,7 +72,7 @@ No topics or jobs owned.
 
 ## Integrations
 
-Optional Topvisor provides read-only exact captures through Data Ingestion; owner-provided fallback remains labelled.
+Topvisor provides exact captures for Яндекс/Google × desktop/mobile through Data Ingestion. Project/search-target/core setup and paid checker are permitted only inside the idempotent worker contract; owner-provided fallback remains labelled.
 
 ## Failure behavior
 

@@ -18,6 +18,9 @@ import type {
   StoreMetrikaDailyMetricsInput,
   StoreMetrikaDeviceMetricsInput,
   StoreMetrikaGoalMetricsInput,
+  StoreMetrikaSearchEngineMetricsInput,
+  StoreMetrikaSearchPhraseMetricsInput,
+  StoreMetrikaGeoMetricsInput,
   StoreRankingCapturesInput,
   StoreReportSnapshotInput,
   StoreTechnicalSnapshotsInput,
@@ -326,6 +329,8 @@ export class PrismaSyncRepository implements SyncRepository {
           ctr: row.ctr?.toString() ?? null,
           averagePosition: row.averagePosition?.toString() ?? null,
           averageClickPosition: row.averageClickPosition?.toString() ?? null,
+          demand: row.demand?.toString() ?? null,
+          relevantUrl: row.relevantUrl,
           organizationId,
           sourceRunId: input.sourceRunId,
         },
@@ -343,6 +348,8 @@ export class PrismaSyncRepository implements SyncRepository {
           ctr: row.ctr?.toString() ?? null,
           averagePosition: row.averagePosition?.toString() ?? null,
           averageClickPosition: row.averageClickPosition?.toString() ?? null,
+          demand: row.demand?.toString() ?? null,
+          relevantUrl: row.relevantUrl,
           organizationId,
           sourceRunId: input.sourceRunId,
         },
@@ -529,16 +536,24 @@ export class PrismaSyncRepository implements SyncRepository {
       if (!organizationId) throw new Error("TRACKED_QUERY_ORGANIZATION_MISSING");
       await getPrismaClient().rankingCapture.upsert({
         where: {
-          trackedQueryId_capturedAt_source: {
+          trackedQueryId_capturedAt_source_engine_device_regionKey: {
             trackedQueryId: row.trackedQueryId,
             capturedAt: toDateTime(row.capturedAt),
             source: PRISMA_RANKING_SOURCE[row.source],
+            engine: row.engine,
+            device: row.device,
+            regionKey: row.regionKey,
           },
         },
         update: {
           organizationId,
           position: row.position,
           sourceRunId: input.sourceRunId,
+          engine: row.engine,
+          device: row.device,
+          regionKey: row.regionKey,
+          regionName: row.regionName,
+          relevantUrl: row.relevantUrl,
         },
         create: {
           organizationId,
@@ -547,6 +562,11 @@ export class PrismaSyncRepository implements SyncRepository {
           position: row.position,
           source: PRISMA_RANKING_SOURCE[row.source],
           sourceRunId: input.sourceRunId,
+          engine: row.engine,
+          device: row.device,
+          regionKey: row.regionKey,
+          regionName: row.regionName,
+          relevantUrl: row.relevantUrl,
         },
       });
     }
@@ -588,5 +608,57 @@ export class PrismaSyncRepository implements SyncRepository {
           normalizedQuery: row.normalizedQuery,
         })) ?? [],
     };
+  }
+
+  async storeMetrikaSearchEngineMetrics(input: StoreMetrikaSearchEngineMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
+    for (const row of input.rows) await getPrismaClient().metrikaSearchEngineDailyMetric.upsert({
+      where: { siteId_periodKey_date_engine: { siteId: input.siteId, periodKey: PRISMA_REPORT_PERIOD_BY_APP_PERIOD[input.periodKey], date: toDateOnly(row.date), engine: row.engine } },
+      update: { organizationId, visits: row.visits, users: row.users, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits, conversionRate: row.conversionRate?.toString() ?? null, sourceRunId: input.sourceRunId },
+      create: { organizationId, siteId: input.siteId, periodKey: PRISMA_REPORT_PERIOD_BY_APP_PERIOD[input.periodKey], date: toDateOnly(row.date), engine: row.engine, visits: row.visits, users: row.users, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits, conversionRate: row.conversionRate?.toString() ?? null, sourceRunId: input.sourceRunId },
+    });
+  }
+
+  async storeMetrikaSearchPhraseMetrics(input: StoreMetrikaSearchPhraseMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
+    for (const row of input.rows) {
+      const normalizedPhrase = row.phrase.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim();
+      await getPrismaClient().metrikaSearchPhraseDailyMetric.upsert({
+        where: { siteId_periodKey_date_engine_normalizedPhrase: { siteId: input.siteId, periodKey: PRISMA_REPORT_PERIOD_BY_APP_PERIOD[input.periodKey], date: toDateOnly(row.date), engine: row.engine, normalizedPhrase } },
+        update: { organizationId, phrase: row.phrase, visits: row.visits, users: row.users, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits, sourceRunId: input.sourceRunId },
+        create: { organizationId, siteId: input.siteId, periodKey: PRISMA_REPORT_PERIOD_BY_APP_PERIOD[input.periodKey], date: toDateOnly(row.date), engine: row.engine, phrase: row.phrase, normalizedPhrase, visits: row.visits, users: row.users, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits, sourceRunId: input.sourceRunId },
+      });
+    }
+    if (input.rows.length > 0) {
+      await getPrismaClient().providerOperation.updateMany({
+        where: {
+          siteId: input.siteId,
+          provider: "TOPVISOR",
+          operation: "RANK_CHECK",
+          status: "STARTED",
+        },
+        data: { status: "COMPLETED", finishedAt: new Date() },
+      });
+    }
+  }
+
+  async storeMetrikaGeoMetrics(input: StoreMetrikaGeoMetricsInput): Promise<void> {
+    const organizationId = await this.getOrganizationIdForSite(input.siteId);
+    for (const row of input.rows) await getPrismaClient().metrikaGeoDailyMetric.upsert({
+      where: { siteId_periodKey_date_regionKey: { siteId: input.siteId, periodKey: PRISMA_REPORT_PERIOD_BY_APP_PERIOD[input.periodKey], date: toDateOnly(row.date), regionKey: row.regionKey } },
+      update: { organizationId, regionName: row.regionName, visits: row.visits, users: row.users, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits, sourceRunId: input.sourceRunId },
+      create: { organizationId, siteId: input.siteId, periodKey: PRISMA_REPORT_PERIOD_BY_APP_PERIOD[input.periodKey], date: toDateOnly(row.date), regionKey: row.regionKey, regionName: row.regionName, visits: row.visits, users: row.users, goalReaches: row.goalReaches, uniqueTargetVisits: row.uniqueTargetVisits, sourceRunId: input.sourceRunId },
+    });
+  }
+
+  async storeSyncNotification(input: Parameters<SyncRepository["storeSyncNotification"]>[0]): Promise<void> {
+    const day = input.occurredAt.slice(0, 10);
+    const dedupKey = input.trigger === "daily" ? `daily-sync:${input.projectId}:${day}` : `sync:${input.syncRunId}`;
+    const statusText = input.status === "success" ? "завершено" : input.status === "partial" ? "завершено частично" : "не сформировано";
+    await getPrismaClient().notification.upsert({
+      where: { dedupKey },
+      update: { severity: input.status === "success" ? "SUCCESS" : input.status === "partial" ? "WARNING" : "ERROR", title: `Обновление проекта ${statusText}`, message: input.safeErrorCode ? `Часть данных требует внимания. Код: ${input.safeErrorCode}` : "Данные отчётов обновлены.", occurredAt: new Date(input.occurredAt), sourceId: input.syncRunId },
+      create: { organizationId: input.organizationId, projectId: input.projectId, category: "REPORT", severity: input.status === "success" ? "SUCCESS" : input.status === "partial" ? "WARNING" : "ERROR", visibility: "PLATFORM_TEAM", title: `Обновление проекта ${statusText}`, message: input.safeErrorCode ? `Часть данных требует внимания. Код: ${input.safeErrorCode}` : "Данные отчётов обновлены.", route: `/c/${input.projectSlug}/`, sourceType: "SyncRun", sourceId: input.syncRunId, dedupKey, occurredAt: new Date(input.occurredAt) },
+    });
   }
 }

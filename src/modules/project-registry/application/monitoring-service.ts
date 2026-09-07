@@ -53,6 +53,15 @@ function readNumberSetting(settingsJson: unknown, key: string): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readTopvisorTargets(settingsJson: unknown) {
+  if (!settingsJson || typeof settingsJson !== "object" || !("targets" in settingsJson) || !Array.isArray(settingsJson.targets)) return [];
+  return settingsJson.targets.flatMap((value) => {
+    if (!value || typeof value !== "object") return [];
+    const row = value as Record<string, unknown>;
+    return (row.engine === "YANDEX" || row.engine === "GOOGLE") && (row.device === "DESKTOP" || row.device === "MOBILE") && typeof row.regionKey === "number" && typeof row.regionIndex === "number" ? [{ engine: row.engine, device: row.device, regionKey: row.regionKey, regionIndex: row.regionIndex }] : [];
+  });
+}
+
 function mapGoalCategory(category: string): GoalProfile["goals"][number]["category"] {
   switch (category) {
     case "LEAD_SUBMIT":
@@ -77,16 +86,17 @@ function mapGoalDirection(direction: string): GoalProfile["goals"][number]["dire
 function buildSiteTopvisorConfig(providerConnections: MonitoringProviderConnectionRecord[]) {
   const topvisor = findProviderConnection(providerConnections, "TOPVISOR");
   return {
-    enabled: topvisor?.enabled ?? false,
+    enabled: Boolean(topvisor?.enabled && (topvisor.status === undefined || topvisor.status === "CONNECTED")),
     projectId: topvisor?.externalId ? Number(topvisor.externalId) : null,
     regionIndex: readNumberSetting(topvisor?.settingsJson ?? null, "regionIndex"),
+    targets: readTopvisorTargets(topvisor?.settingsJson ?? null),
   };
 }
 
 function buildSiteMetricaConfig(providerConnections: MonitoringProviderConnectionRecord[]) {
   const metrica = findProviderConnection(providerConnections, "YANDEX_METRIKA");
   return {
-    enabled: metrica?.enabled ?? false,
+    enabled: Boolean(metrica?.enabled && (metrica.status === undefined || metrica.status === "CONNECTED")),
     counterId: metrica?.externalId ?? null,
     goalProfile: readStringSetting(metrica?.settingsJson ?? null, "goalProfile"),
   };
@@ -95,7 +105,7 @@ function buildSiteMetricaConfig(providerConnections: MonitoringProviderConnectio
 function buildSiteWebmasterConfig(providerConnections: MonitoringProviderConnectionRecord[]) {
   const webmaster = findProviderConnection(providerConnections, "YANDEX_WEBMASTER");
   return {
-    enabled: webmaster?.enabled ?? false,
+    enabled: Boolean(webmaster?.enabled && (webmaster.status === undefined || webmaster.status === "CONNECTED")),
     expectedHostUrl:
       readStringSetting(webmaster?.settingsJson ?? null, "expectedHostUrl") ??
       webmaster?.externalId ??

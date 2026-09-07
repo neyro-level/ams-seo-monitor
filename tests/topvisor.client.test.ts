@@ -22,7 +22,7 @@ function getTopvisorSite() {
   };
 }
 
-describe("Topvisor read-only source", () => {
+describe("Topvisor source", () => {
   it("fails safely when credentials are absent", () => {
     expect(() => readTopvisorEnvironment({})).toThrowError(TopvisorSafeError);
   });
@@ -81,7 +81,7 @@ describe("Topvisor read-only source", () => {
     ]);
   });
 
-  it("uses only Topvisor GET operations", async () => {
+  it("reads all configured engine/device targets", async () => {
     const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
     const fetchImpl = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       requests.push({
@@ -117,13 +117,19 @@ describe("Topvisor read-only source", () => {
       fetchImpl as typeof fetch,
     );
 
-    const result = await client.collectSiteData(getTopvisorSite(), {
+    const site = getTopvisorSite();
+    const result = await client.collectSiteData({ ...site, topvisor: { ...site.topvisor, targets: [
+      { engine: "YANDEX", device: "DESKTOP", regionKey: 225, regionIndex: 0 },
+      { engine: "GOOGLE", device: "MOBILE", regionKey: 225, regionIndex: 3 },
+    ] } }, {
       dateFrom: "2026-08-01",
       dateTo: "2026-08-22",
     });
 
-    expect(result.snapshots).toHaveLength(2);
+    expect(result.snapshots).toHaveLength(4);
     expect(requests.map((request) => request.url)).toEqual([
+      "https://api.topvisor.test/v2/json/get/positions_2/summary/chart",
+      "https://api.topvisor.test/v2/json/get/positions_2/history",
       "https://api.topvisor.test/v2/json/get/positions_2/summary/chart",
       "https://api.topvisor.test/v2/json/get/positions_2/history",
     ]);

@@ -2,15 +2,15 @@
 
 ## Назначение
 
-Собирает read-only provider evidence, нормализует его и сохраняет tenant-owned history in PostgreSQL.
+Собирает provider evidence, безопасно настраивает Topvisor и сохраняет tenant-owned history in PostgreSQL.
 
 ## Не входит в scope
 
-Browser provider calls, provider mutations, keyword import/paid checks, credential storage, report presentation and arbitrary scheduler logic.
+Browser provider calls, Яндекс mutations, произвольные Topvisor operations вне allowlist, credential storage, report presentation and arbitrary scheduler logic.
 
 ## Data ownership
 
-SyncRun, SourceRun, historical metrics, TechnicalSnapshot and ingestion repository contracts. Reporting owns ReportSnapshot semantics; Project Registry owns configuration.
+SyncRun, SourceRun, ProviderOperation, historical metrics, CompetitorSnapshot, TechnicalSnapshot and ingestion repository contracts. Reporting owns ReportSnapshot semantics; Project Registry owns configuration/SearchTarget. A dedicated Monday timer starts the paid Topvisor checker before the daily collector; a successful ranking capture completes the durable operation.
 
 ## Principal types
 
@@ -22,7 +22,7 @@ SEO_ANALYST may request allowed sync through server capabilities; client roles c
 
 ## Commands
 
-Compiled worker commands: project sync plus provider preflight/audit wrappers. Deferred request handler is `project.sync.requested`.
+Compiled worker commands: project sync, competitors sync and provider preflight/audit wrappers. Deferred handlers: `project.sync.requested`, `site.integrations.setup.requested`, `site.competitors.sync.requested`.
 
 ## Queries
 
@@ -34,7 +34,8 @@ Provider responses are normalized and validated before persistence. Raw HTTP bod
 
 ## Invariants
 
-- provider access is exact-origin HTTPS and read-only;
+- provider access uses exact-origin HTTPS; Яндекс read-only, Topvisor bounded by explicit allowlist;
+- price-check and durable operation reservation precede every paid Topvisor launch;
 - browser and web env have no provider tokens;
 - one source/period failure does not contaminate another;
 - `partial`, `stale` and null stay honest;
@@ -68,11 +69,11 @@ Sync request enqueue is audited. Execution evidence lives in SyncRun/SourceRun a
 
 ## Events / Async policy
 
-`project.sync.requested` travels OutboxEvent → pg-boss → idempotent JobPrincipal handler outside the enqueue transaction.
+`project.sync.requested`, `site.integrations.setup.requested` and `site.competitors.sync.requested` travel OutboxEvent → pg-boss → idempotent JobPrincipal handlers outside the enqueue transaction.
 
 ## Integrations
 
-Yandex Webmaster, Yandex Metrika and optional Topvisor via `collector/sources/*`.
+Yandex Webmaster, Yandex Metrika and Topvisor via `collector/sources/*`. Daily Yandex, Monday positions, onboarding + first-Monday monthly competitors.
 
 ## Failure behavior
 

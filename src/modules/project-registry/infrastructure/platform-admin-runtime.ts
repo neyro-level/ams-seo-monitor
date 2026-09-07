@@ -17,6 +17,7 @@ const queries = createPlatformAdminQueries({
 });
 
 export const {
+  confirmMetricaGoals,
   saveGoalDefinition,
   saveProviderConnection,
   saveQueryClusterProfile,

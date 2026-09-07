@@ -24,6 +24,11 @@ scheduled project sync
 → Reporting compiler
 → ReportSnapshot
 
+client onboarding command
+→ transaction: Organization + Project + Sites + User + Membership + SEO core + SearchTargets + OutboxEvent
+→ worker: Yandex read-only discovery + Topvisor idempotent setup/price-check/first capture
+→ Notification projection + first ReportSnapshot
+
 business command requiring deferred work
 → transaction: business data + AuditEvent + IdempotencyKey + OutboxEvent
 → persistent outbox worker
@@ -68,11 +73,11 @@ Better Auth владеет identity/password/session. AMS владеет Organiz
 
 ### Project Registry
 
-Владеет Organization → Project → Site, provider mappings, goals, tracked query sets, threshold/cluster profiles, configuration readiness и typed Platform Admin commands.
+Владеет Organization → Project → Site, provider mappings, goals, tracked query sets, four-way SearchTarget, threshold/cluster profiles, configuration readiness и typed Platform Admin commands.
 
 ### Reporting
 
-Владеет report reads, periods и единственным compiler: `src/modules/reporting/domain/report-compiler.ts`. Browser получает только validated `SiteReportSnapshot`.
+Владеет report reads, periods и единственным compiler: `src/modules/reporting/domain/report-compiler.ts`. Browser получает validated `SiteReportSnapshot` v1/v2 compatibility payload и tenant-authorized director analytics projections.
 
 ### Ranking Analytics
 
@@ -80,7 +85,11 @@ Better Auth владеет identity/password/session. AMS владеет Organiz
 
 ### Data Ingestion
 
-Владеет `SyncService`, provider ports, sync lifecycle и persistence. Реальные read-only clients находятся в `collector/sources`.
+Владеет `SyncService`, provider ports, sync lifecycle и persistence. Яндекс-клиенты read-only; Topvisor client имеет узкий mutation contract для project/search targets/keywords/checker. Paid operation резервируется до API-вызова в `ProviderOperation`.
+
+### Notifications
+
+Владеет browser-safe лентой, role/tenant visibility, персональным `NotificationRead`, server pagination и unread count. Это проекция lifecycle-событий, а не замена AuditEvent/SyncRun/OutboxEvent.
 
 ### Platform Operations
 
@@ -162,7 +171,9 @@ External HTTP, provider calls, email и storage запрещены внутри 
 - Top-3 является подмножеством Top-10;
 - direct query-to-lead attribution запрещена;
 - browser не вызывает Yandex/Topvisor APIs и не получает credentials;
-- provider operations только read-only.
+- Topvisor weekly check runs on Monday; competitors run at onboarding and in the first Monday window of each month;
+- missing price-check blocks a paid call; ambiguous paid dispatch remains `ACTION_REQUIRED`;
+- Яндекс providers остаются read-only; Topvisor writes запрещены вне idempotent worker contract.
 
 ## Runtime and release
 

@@ -15,6 +15,30 @@ const organizationNameSchema = z
   .min(2, "Укажите название организации")
   .max(160);
 
+const trackedQuerySchema = z.string().trim().min(2).max(240);
+
+const onboardingSiteSchema = z.object({
+  name: z.string().trim().min(2, "Укажите название сайта").max(160),
+  slug: slugSchema,
+  url: z.url("Укажите корректный HTTPS-адрес").refine((value) => value.startsWith("https://"), "Адрес должен начинаться с https://"),
+  timezone: z.string().trim().min(1, "Укажите timezone").max(80),
+  regionName: z.string().trim().min(2, "Выберите регион Topvisor").max(160),
+  regionCountryCode: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/),
+  yandexRegionKey: z.number().int().positive(),
+  googleRegionKey: z.number().int().positive(),
+  queries: z.array(trackedQuerySchema).min(20, "Добавьте минимум 20 запросов").max(100, "Можно добавить не более 100 запросов"),
+}).superRefine((value, context) => {
+  const normalized = value.queries.map((query) => query.toLocaleLowerCase("ru-RU").replace(/\s+/g, " ").trim());
+  if (new Set(normalized).size !== normalized.length) {
+    context.addIssue({ code: "custom", path: ["queries"], message: "Удалите повторяющиеся запросы" });
+  }
+  try {
+    Intl.DateTimeFormat("ru-RU", { timeZone: value.timezone }).format(new Date());
+  } catch {
+    context.addIssue({ code: "custom", path: ["timezone"], message: "Укажите корректную IANA timezone" });
+  }
+});
+
 export const tenantRoleSchema = z.enum(["ORG_OWNER", "ORG_MEMBER", "VIEWER"]);
 
 export const usernameSchema = z
@@ -38,6 +62,7 @@ export const provisionClientInputSchema = z.object({
   username: usernameSchema,
   password: fixedPasswordSchema,
   tenantRole: tenantRoleSchema.default("VIEWER"),
+  sites: z.array(onboardingSiteSchema).min(1, "Добавьте хотя бы один сайт").max(50, "Можно добавить не более 50 сайтов"),
 });
 
 export const resetUserPasswordInputSchema = z.object({
@@ -104,6 +129,7 @@ export interface ProvisionClientResult {
   projectId: string;
   userId: string;
   membershipId: string;
+  siteIds: string[];
 }
 
 export interface IdentityAdminUserListItem {
@@ -167,7 +193,8 @@ export type IdentityAdminErrorCode =
   | "USER_LOGIN_CONFLICT"
   | "USER_NOT_FOUND"
   | "PROJECT_SLUG_CONFLICT"
-  | "PROJECT_REFERENCE_INVALID";
+  | "PROJECT_REFERENCE_INVALID"
+  | "SITE_SLUG_CONFLICT";
 
 export class IdentityAdminError extends Error {
   constructor(public readonly code: IdentityAdminErrorCode) {

@@ -254,9 +254,10 @@ function compileTrackedRanking(args: {
   const periodSnapshots = args.rankingData?.snapshots
     .filter(
       (snapshot) =>
-        !args.currentPeriod ||
-        (snapshot.capturedAt >= args.currentPeriod.dateFrom &&
-          snapshot.capturedAt <= args.currentPeriod.dateTo),
+        (snapshot.engine === undefined || (snapshot.engine === "YANDEX" && snapshot.device === "DESKTOP")) &&
+        (!args.currentPeriod ||
+          (snapshot.capturedAt >= args.currentPeriod.dateFrom &&
+            snapshot.capturedAt <= args.currentPeriod.dateTo)),
     )
     .sort((left, right) => left.capturedAt.localeCompare(right.capturedAt)) ?? [];
   const exactSnapshots = periodSnapshots.length > 0;
@@ -965,7 +966,7 @@ export function compileSiteReportSnapshot(args: CompileSiteReportArgs): SiteRepo
   });
 
   return siteReportSnapshotSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     clientSlug: args.clientSlug,
     siteSlug: args.site.siteSlug,
     siteUrl: args.site.siteUrl,

@@ -5,6 +5,7 @@ import {
   normalizeTrackedQuery,
   ProjectRegistryAdminError,
   type CreateGoalDefinitionInput,
+  type ConfirmMetricaGoalsInput,
   type CreateProviderConnectionInput,
   type CreateQueryClusterProfileInput,
   type CreateSiteInput,
@@ -54,6 +55,8 @@ const providerListSelect = {
   provider: true,
   externalId: true,
   enabled: true,
+  status: true,
+  statusCode: true,
   settingsJson: true,
   version: true,
   updatedAt: true,
@@ -147,6 +150,23 @@ function asSettingsJson(value: Prisma.JsonValue | null): Record<string, string |
   return value as Record<string, string | number | boolean | null>;
 }
 
+function readGoalSuggestions(value: Prisma.JsonValue | null): ProviderConnectionListItem["goalSuggestions"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const raw = (value as { goalSuggestions?: unknown }).goalSuggestions;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const row = item as { category?: unknown; candidates?: unknown };
+    if (row.category !== "LEAD_SUBMIT" && row.category !== "PHONE_CLICK") return [];
+    const candidates = Array.isArray(row.candidates) ? row.candidates.flatMap((candidate) => {
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return [];
+      const goal = candidate as { goalId?: unknown; name?: unknown };
+      return typeof goal.goalId === "string" && typeof goal.name === "string" ? [{ goalId: goal.goalId, name: goal.name }] : [];
+    }) : [];
+    return [{ category: row.category, candidates }];
+  });
+}
+
 function asStringArray(value: Prisma.JsonValue): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
@@ -180,6 +200,9 @@ function toProviderListItem(item: SelectedProvider): ProviderConnectionListItem 
     provider: item.provider,
     externalId: item.externalId,
     enabled: item.enabled,
+    status: item.status,
+    statusCode: item.statusCode,
+    goalSuggestions: readGoalSuggestions(item.settingsJson),
     settingsJson: asSettingsJson(item.settingsJson),
     version: item.version,
     updatedAt: item.updatedAt.toISOString(),
@@ -626,6 +649,43 @@ export class PrismaProjectRegistryAdminRepository
       },
     });
     return result.count === 1;
+  }
+
+  async confirmMetricaGoals(input: ConfirmMetricaGoalsInput, organizationId: string) {
+    const connection = await this.prisma.providerConnection.findFirst({
+      where: { organizationId, siteId: input.siteId, provider: "YANDEX_METRIKA", enabled: true },
+      select: { id: true, settingsJson: true, site: { select: { projectId: true, name: true } } },
+    });
+    if (!connection) throw new ProjectRegistryAdminError("PROVIDER_CONNECTION_NOT_FOUND_OR_FORBIDDEN");
+    const suggestions = readGoalSuggestions(connection.settingsJson);
+    const allowedIds = new Set(suggestions.flatMap((item) => item.candidates.map((candidate) => candidate.goalId)));
+    if (!allowedIds.has(input.leadGoalId) || !allowedIds.has(input.phoneGoalId)) {
+      throw new ProjectRegistryAdminError("METRIKA_GOAL_MAPPING_INVALID");
+    }
+    const definitions = [
+      { externalGoalId: input.leadGoalId, label: "Основная заявка", category: "LEAD_SUBMIT" as const, direction: "PRIMARY" as const },
+      { externalGoalId: input.phoneGoalId, label: "Раскрытие телефона", category: "PHONE_CLICK" as const, direction: "SECONDARY" as const },
+    ];
+    for (const definition of definitions) {
+      const goal = await this.prisma.goalDefinition.upsert({
+        where: { projectId_externalGoalId: { projectId: connection.site.projectId, externalGoalId: definition.externalGoalId } },
+        update: { label: definition.label, category: definition.category, direction: definition.direction, includeInSeoConversion: true, version: { increment: 1 } },
+        create: { organizationId, projectId: connection.site.projectId, ...definition, includeInSeoConversion: true },
+        select: { id: true },
+      });
+      await this.prisma.goalDefinitionSite.upsert({
+        where: { goalDefinitionId_siteId: { goalDefinitionId: goal.id, siteId: input.siteId } },
+        update: { organizationId },
+        create: { organizationId, goalDefinitionId: goal.id, siteId: input.siteId },
+      });
+    }
+    await this.prisma.providerConnection.update({ where: { id: connection.id }, data: { status: "CONNECTED", statusCode: null, connectedAt: new Date(), lastCheckedAt: new Date(), settingsJson: { goalProfile: "seo-conversion", selectedGoals: definitions.map((item) => ({ externalGoalId: item.externalGoalId, category: item.category })) } } });
+    await this.prisma.notification.upsert({
+      where: { dedupKey: `metrica-connected:${input.siteId}` },
+      update: { severity: "SUCCESS", title: "Метрика подключена", message: "Цели заявки и раскрытия телефона подтверждены.", occurredAt: new Date() },
+      create: { organizationId, projectId: connection.site.projectId, siteId: input.siteId, category: "INTEGRATION", severity: "SUCCESS", visibility: "PLATFORM_TEAM", title: "Метрика подключена", message: "Цели заявки и раскрытия телефона подтверждены.", route: `/admin/providers/?site=${input.siteId}`, sourceType: "ProviderConnection", sourceId: connection.id, dedupKey: `metrica-connected:${input.siteId}`, occurredAt: new Date() },
+    });
+    return { projectId: connection.site.projectId, connectionId: connection.id };
   }
 
   findGoalDefinitionForAction(id: string) {

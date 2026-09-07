@@ -18,6 +18,7 @@ export type {
 } from "./application/ports/project-query-repository.ts";
 export {
   createGoalDefinitionInputSchema,
+  confirmMetricaGoalsInputSchema,
   createProviderConnectionInputSchema,
   createQueryClusterProfileInputSchema,
   createSiteInputSchema,
@@ -48,8 +49,10 @@ export {
   updateTrackedQuerySetInputSchema,
 } from "./domain/platform-admin.ts";
 export { ProjectRegistryAdminError } from "./domain/platform-admin.ts";
+export type TopvisorRegionOption = { name: string; countryCode: string; parentName: string | null; yandexKey: number; googleKey: number };
 export type {
   CreateGoalDefinitionInput,
+  ConfirmMetricaGoalsInput,
   CreateProviderConnectionInput,
   CreateQueryClusterProfileInput,
   CreateSiteInput,

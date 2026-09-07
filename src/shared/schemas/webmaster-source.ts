@@ -69,6 +69,8 @@ export const webmasterQuerySchema = z.object({
   ctrPercent: z.number().nonnegative().nullable(),
   avgShowPosition: z.number().nonnegative().nullable(),
   avgClickPosition: z.number().nonnegative().nullable(),
+  demand: z.number().nonnegative().nullable().optional(),
+  relevantUrl: z.string().nullable().optional(),
 });
 
 export const webmasterQueryCollectionSchema = z.object({
