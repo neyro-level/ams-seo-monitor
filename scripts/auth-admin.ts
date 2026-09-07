@@ -9,6 +9,8 @@ import { parseSystemRole } from "../src/modules/identity-access/index.ts";
 type AuthAdminCommand =
   | "create"
   | "disable"
+  | "prepare-simple-auth"
+  | "reset-password"
   | "set-system-role"
   | "add-to-organization"
   | "remove-from-organization";
@@ -67,6 +69,17 @@ function requireUsername() {
   return normalizeUsername(requireOption("username"));
 }
 
+function readPasswordFromStdin() {
+  if (options.password !== undefined) {
+    throw new Error("--password is forbidden; provide the password through stdin");
+  }
+  const password = readFileSync(0, "utf8").replace(/\r?\n$/, "");
+  if (!/^[\x21-\x7e]{8}$/.test(password)) {
+    throw new Error("Password from stdin must contain exactly 8 printable characters without spaces");
+  }
+  return password;
+}
+
 async function findUserByUsername(username: string) {
   const user = await prisma.user.findUnique({ where: { username } });
   if (!user) {
@@ -86,13 +99,7 @@ async function createUser() {
   const username = requireUsername();
   const email = (options.email ?? `${username}@users.impulse.invalid`).toLowerCase();
   const name = requireOption("name");
-  if (options.password !== undefined) {
-    throw new Error("--password is forbidden; provide the password through stdin");
-  }
-  const password = readFileSync(0, "utf8").replace(/\r?\n$/, "");
-  if (!/^[\x21-\x7e]{8}$/.test(password)) {
-    throw new Error("Password from stdin must contain exactly 8 printable characters without spaces");
-  }
+  const password = readPasswordFromStdin();
   const systemRole = parseSystemRole(options["system-role"] ?? SystemRole.CLIENT_VIEWER);
   const existingUser = await prisma.user.findFirst({
     where: {
@@ -134,6 +141,46 @@ async function createUser() {
   ]);
 
   console.log(`created_user=${username}`);
+}
+
+async function resetPassword({ prepareSimpleAuth = false } = {}) {
+  const username = requireUsername();
+  const password = readPasswordFromStdin();
+  const user = await findUserByUsername(username);
+  const passwordHash = await hashPassword(password);
+  const credential = {
+    userId: user.id,
+    providerId: "credential",
+    issuer: createLocalAccountIssuer("credential"),
+    accountId: user.id,
+  };
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.account.upsert({
+      where: {
+        issuer_accountId: {
+          issuer: credential.issuer,
+          accountId: credential.accountId,
+        },
+      },
+      update: { userId: user.id, providerId: "credential", password: passwordHash },
+      create: { id: randomUUID(), ...credential, password: passwordHash },
+    });
+    await transaction.session.deleteMany({ where: { userId: user.id } });
+    if (prepareSimpleAuth) {
+      await transaction.userSetupToken.updateMany({
+        where: { userId: user.id, usedAt: null, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      await transaction.twoFactor.deleteMany({ where: { userId: user.id } });
+      await transaction.user.update({
+        where: { id: user.id },
+        data: { mustChangePassword: false, twoFactorEnabled: false, disabledAt: null },
+      });
+    }
+  });
+
+  console.log(`${prepareSimpleAuth ? "prepared_simple_auth" : "reset_password"}=${username}`);
 }
 
 async function disableUser() {
@@ -230,6 +277,12 @@ async function main() {
       return;
     case "disable":
       await disableUser();
+      return;
+    case "prepare-simple-auth":
+      await resetPassword({ prepareSimpleAuth: true });
+      return;
+    case "reset-password":
+      await resetPassword();
       return;
     case "set-system-role":
       await setSystemRole();
