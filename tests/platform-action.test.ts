@@ -28,7 +28,6 @@ const tenant: TenantUserPrincipal = {
 function boundary(overrides: Partial<ActionBoundaryDependencies> = {}) {
   const dependencies: ActionBoundaryDependencies = {
     requireCabinetPrincipal: async () => admin,
-    requireAuthenticatedPrincipal: async () => admin,
     revalidate: vi.fn(),
     ...overrides,
   };
@@ -53,7 +52,6 @@ describe("defineAction", () => {
   });
 
   it.each([
-    ["admin without production 2FA", "TWO_FACTOR_REQUIRED"],
     ["disabled user", "CABINET_USER_INACTIVE"],
     ["direct call without a session", "AUTHENTICATION_REQUIRED"],
   ] as const)("returns a safe envelope for %s", async (_caseName, code) => {

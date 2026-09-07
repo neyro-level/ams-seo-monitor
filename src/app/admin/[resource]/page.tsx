@@ -126,8 +126,8 @@ export default async function AdminResourcePageRoute({
   params: Promise<{ resource: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const onboardingRedirect = await getCurrentCabinetRedirect();
-  if (onboardingRedirect) redirect(onboardingRedirect);
+  const cabinetRedirect = await getCurrentCabinetRedirect();
+  if (cabinetRedirect) redirect(cabinetRedirect);
 
   const [state, routeParams, rawSearchParams] = await Promise.all([
     getCurrentPrincipalState(),

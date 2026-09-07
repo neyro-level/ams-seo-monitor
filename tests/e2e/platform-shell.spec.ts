@@ -34,6 +34,11 @@ test("preserves the public AMS IMPULSE surface", async ({ page, request }) => {
   expect(authResponse.status()).toBe(200);
   expect(await authResponse.json()).toBeNull();
 
+  for (const removedPath of ["/setup/", "/onboarding/password/", "/onboarding/two-factor/"]) {
+    const removedResponse = await request.get(removedPath);
+    expect(removedResponse.status()).toBe(404);
+  }
+
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
@@ -49,31 +54,24 @@ test("keeps private routes behind the login boundary", async ({ page }) => {
   await expect(page.getByLabel("Пароль")).toBeVisible();
 });
 
-test("requires first-password completion before cabinet access", async ({ page }, testInfo) => {
-  const onboardingUsernameByProject: Record<string, string> = {
-    "mobile-375": "e2e.onboarding.mobile",
-    "tablet-768": "e2e.onboarding.tablet",
-    "desktop-1280": "e2e.onboarding.desktop1280",
-    "desktop-1440": "e2e.onboarding.desktop1440",
+test("opens the cabinet immediately after the first login", async ({ page }, testInfo) => {
+  const usernameByProject: Record<string, string> = {
+    "mobile-375": "e2e.client.mobile",
+    "tablet-768": "e2e.client.tablet",
+    "desktop-1280": "e2e.client.desktop1280",
+    "desktop-1440": "e2e.client.desktop1440",
   };
-  const username = onboardingUsernameByProject[testInfo.project.name];
-  if (!username) throw new Error(`Missing onboarding identity for ${testInfo.project.name}`);
+  const username = usernameByProject[testInfo.project.name];
+  if (!username) throw new Error(`Missing client identity for ${testInfo.project.name}`);
 
   await page.goto("/?login=1");
   await page.getByLabel("Логин").fill(username);
-  await page.getByLabel("Пароль").fill("E2e-local-only-2026!");
+  await page.getByLabel("Пароль").fill("E2e!2026");
   await page
     .getByRole("dialog", { name: "Вход в кабинет" })
     .getByRole("button", { name: "Войти", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/onboarding\/password\/?$/);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Измените временный пароль" }),
-  ).toBeVisible();
-  await page.getByLabel("Текущий временный пароль").fill("E2e-local-only-2026!");
-  await page.getByLabel("Новый пароль").fill(`Changed-${testInfo.project.name}-2026!`);
-  await page.getByRole("button", { name: "Изменить пароль" }).click();
-  await expect(page).toHaveURL(/\/dashboard\/?$/);
+  await expect(page).toHaveURL(/\/client\/?$/);
 });
 
 test.describe("Platform Admin", () => {

@@ -3,12 +3,12 @@ import { hashPassword } from "better-auth/crypto";
 import { createLocalAccountIssuer } from "better-auth/db";
 import { getPrismaClient } from "../src/platform/database/prisma/client.ts";
 
-const E2E_PASSWORD = "E2e-local-only-2026!";
-const ONBOARDING_USERNAMES = [
-  "e2e.onboarding.mobile",
-  "e2e.onboarding.tablet",
-  "e2e.onboarding.desktop1280",
-  "e2e.onboarding.desktop1440",
+const E2E_PASSWORD = "E2e!2026";
+const CLIENT_USERNAMES = [
+  "e2e.client.mobile",
+  "e2e.client.tablet",
+  "e2e.client.desktop1280",
+  "e2e.client.desktop1440",
 ] as const;
 const localHosts = new Set(["127.0.0.1", "localhost", "::1"]);
 
@@ -29,7 +29,6 @@ async function main() {
       email: string;
       name: string;
       systemRole: "PLATFORM_ADMIN" | "CLIENT_VIEWER";
-      mustChangePassword: boolean;
     }) => {
       const existing = await prisma.user.findUnique({
         where: { email: input.email },
@@ -42,7 +41,7 @@ async function main() {
           name: input.name,
           username: input.username,
           systemRole: input.systemRole,
-          mustChangePassword: input.mustChangePassword,
+          mustChangePassword: false,
           disabledAt: null,
           twoFactorEnabled: false,
         },
@@ -52,7 +51,7 @@ async function main() {
           username: input.username,
           name: input.name,
           systemRole: input.systemRole,
-          mustChangePassword: input.mustChangePassword,
+          mustChangePassword: false,
           twoFactorEnabled: false,
           emailVerified: false,
         },
@@ -77,20 +76,18 @@ async function main() {
       email: "e2e-platform-admin@example.invalid",
       name: "E2E Platform Admin",
       systemRole: "PLATFORM_ADMIN",
-      mustChangePassword: false,
     });
 
     const organization = await prisma.organization.findUniqueOrThrow({
       where: { slug: "alpha" },
       select: { id: true },
     });
-    for (const username of ONBOARDING_USERNAMES) {
+    for (const username of CLIENT_USERNAMES) {
       const userId = await provisionUser({
         username,
         email: `${username}@example.invalid`,
         name: `E2E ${username}`,
         systemRole: "CLIENT_VIEWER",
-        mustChangePassword: true,
       });
       await prisma.member.upsert({
         where: {
@@ -104,7 +101,7 @@ async function main() {
         },
       });
     }
-    console.log(JSON.stringify({ seeded: true, identityCount: 1 + ONBOARDING_USERNAMES.length }));
+    console.log(JSON.stringify({ seeded: true, identityCount: 1 + CLIENT_USERNAMES.length }));
   } finally {
     await prisma.$disconnect();
   }

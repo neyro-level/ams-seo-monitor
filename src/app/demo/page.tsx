@@ -28,8 +28,8 @@ const demoSite = siteRegistrySchema.parse({
 });
 
 export default async function DemoPage() {
-  const onboardingRedirect = await getCurrentCabinetRedirect();
-  if (onboardingRedirect) redirect(onboardingRedirect);
+  const cabinetRedirect = await getCurrentCabinetRedirect();
+  if (cabinetRedirect) redirect(cabinetRedirect);
   const state = await getCurrentPrincipalState();
   if (!state) redirect("/?login=1");
 

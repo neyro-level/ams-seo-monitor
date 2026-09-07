@@ -14,8 +14,8 @@ import { buildAnalystOverview } from "../../modules/project-registry/presentatio
 import { hasPermission } from "../../platform/authorization/principal.ts";
 
 export default async function AllProjectsPage() {
-  const onboardingRedirect = await getCurrentCabinetRedirect();
-  if (onboardingRedirect) redirect(onboardingRedirect);
+  const cabinetRedirect = await getCurrentCabinetRedirect();
+  if (cabinetRedirect) redirect(cabinetRedirect);
   const state = await getCurrentPrincipalState();
   if (!state) redirect("/?login=1");
   if (!hasPermission(state.principal, "project:read:any")) {

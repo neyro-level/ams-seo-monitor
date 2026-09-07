@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPlatformAdminTwoFactorRequired } from "../src/platform/auth/two-factor-policy.ts";
-import {
-  CabinetPrincipalError,
-  requireCabinetPrincipalFromState,
-} from "../src/platform/auth/principal-session.ts";
+import { requireCabinetPrincipalFromState } from "../src/platform/auth/principal-session.ts";
 import {
   getPrincipalPermissions,
   hasPermission,
@@ -79,38 +75,12 @@ describe("PrincipalContext", () => {
     });
   });
 
-  it("requires platform-admin 2FA only for the explicit production identity", () => {
-    expect(isPlatformAdminTwoFactorRequired({ NODE_ENV: "production" })).toBe(true);
-    expect(isPlatformAdminTwoFactorRequired({ APP_ENV: "development" })).toBe(false);
-    expect(isPlatformAdminTwoFactorRequired({ APP_ENV: "test", NODE_ENV: "production" })).toBe(false);
-    expect(isPlatformAdminTwoFactorRequired({ APP_ENV: "production" })).toBe(true);
-  });
-
-  it("enforces completed password onboarding and production admin 2FA", () => {
-    expect(() =>
-      requireCabinetPrincipalFromState(
-        { principal: admin, displayName: "Admin", mustChangePassword: true, twoFactorEnabled: false },
-        { APP_ENV: "production" },
-      ),
-    ).toThrow(new CabinetPrincipalError("PASSWORD_ONBOARDING_REQUIRED"));
-    expect(() =>
-      requireCabinetPrincipalFromState(
-        { principal: admin, displayName: "Admin", mustChangePassword: false, twoFactorEnabled: false },
-        { APP_ENV: "production" },
-      ),
-    ).toThrow(new CabinetPrincipalError("TWO_FACTOR_REQUIRED"));
+  it("opens the cabinet immediately for an active authenticated principal", () => {
     expect(
       requireCabinetPrincipalFromState(
-        { principal: admin, displayName: "Admin", mustChangePassword: false, twoFactorEnabled: true },
-        { APP_ENV: "production" },
+        { principal: admin, displayName: "Admin" },
       ),
     ).toBe(admin);
-    expect(
-      requireCabinetPrincipalFromState(
-        { principal: viewer, displayName: "Viewer", mustChangePassword: false, twoFactorEnabled: false },
-        { APP_ENV: "production" },
-      ),
-    ).toBe(viewer);
   });
 
   it("validates operator system roles independently from principal permissions", () => {

@@ -2,13 +2,12 @@ import "server-only";
 
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { betterAuth } from "better-auth";
-import { twoFactor, username } from "better-auth/plugins";
+import { username } from "better-auth/plugins";
 import {
   hasDatabaseConfiguration,
   readAuthEnvironment,
 } from "../config/server-environment.ts";
 import { getPrismaClient } from "../database/prisma/client.ts";
-import { userSetupTokenPlugin } from "./setup-token-plugin.ts";
 import { createAuthRateLimitConfig } from "./security-config.ts";
 
 const authEnvironment = readAuthEnvironment();
@@ -39,15 +38,11 @@ export const auth =
         },
         rateLimit: createAuthRateLimitConfig(),
         plugins: [
-          userSetupTokenPlugin(),
           username({
             displayUsername: false,
             immutableUsername: true,
             minUsernameLength: 3,
             maxUsernameLength: 30,
-          }),
-          twoFactor({
-            issuer: "AMS IMPULSE",
           }),
         ],
       })
