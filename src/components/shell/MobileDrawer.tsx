@@ -9,9 +9,10 @@ import { ShellNav } from "./ShellNav.tsx";
 
 type MobileDrawerProps = {
   sections: NavigationSection[];
+  currentPath: string;
 };
 
-export function MobileDrawer({ sections }: MobileDrawerProps) {
+export function MobileDrawer({ sections, currentPath }: MobileDrawerProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -38,7 +39,7 @@ export function MobileDrawer({ sections }: MobileDrawerProps) {
             <SheetTitle className="text-sm font-semibold text-white">IMPULSE</SheetTitle>
             <SheetDescription className="sr-only">Навигация по отчётам и разделам кабинета</SheetDescription>
           </SheetHeader>
-          <ShellNav sections={sections} onNavigate={() => setOpen(false)} />
+          <ShellNav sections={sections} currentPath={currentPath} onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>
     </>

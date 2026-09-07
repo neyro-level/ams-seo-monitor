@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { SearchParams } from "nuqs/server";
-import { AppShell } from "../../../components/shell/AppShell.tsx";
 import { Button } from "../../../components/ui/button.tsx";
 import { Input } from "../../../components/ui/input.tsx";
 import { NativeSelect } from "../../../components/ui/native-select.tsx";
@@ -30,14 +29,14 @@ export default async function ProjectsPage({
 
   if (!hasPermission(state.principal, "project:manage:any")) {
     return (
-      <AppShell currentPath="/admin/projects" principal={state.principal} displayName={state.displayName}>
+      <>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6" role="alert">
             <h1 className="text-xl font-semibold text-slate-950">Раздел недоступен</h1>
             <p className="mt-2 text-sm leading-6 text-slate-700">У текущей роли нет права управлять проектами.</p>
           </div>
         </main>
-      </AppShell>
+      </>
     );
   }
 
@@ -65,7 +64,7 @@ export default async function ProjectsPage({
   const filtersActive = Boolean(query.search || query.status);
 
   return (
-    <AppShell currentPath="/admin/projects" principal={state.principal} displayName={state.displayName}>
+    <>
       <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Platform Admin</p>
@@ -122,6 +121,6 @@ export default async function ProjectsPage({
           result={projects}
         />
       </main>
-    </AppShell>
+    </>
   );
 }

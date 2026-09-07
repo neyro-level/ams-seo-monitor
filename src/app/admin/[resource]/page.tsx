@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
-import { AppShell } from "../../../components/shell/AppShell.tsx";
 import { Button } from "../../../components/ui/button.tsx";
 import { Input } from "../../../components/ui/input.tsx";
 import { NativeSelect } from "../../../components/ui/native-select.tsx";
@@ -161,7 +160,7 @@ export default async function AdminResourcePageRoute({
     const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
     if (query.page > pageCount) redirect(buildPlatformAdminPageHref(resource, query, { page: pageCount }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -170,7 +169,7 @@ export default async function AdminResourcePageRoute({
           <PlatformAdminTable pageSize={result.pageSize} query={query} resource={resource} rows={rows} sortOptions={defaultSortOptions} total={result.total} />
           <OrganizationsAdminForms items={result.items} />
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -192,7 +191,7 @@ export default async function AdminResourcePageRoute({
     const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
     if (query.page > pageCount) redirect(buildPlatformAdminPageHref(resource, query, { page: pageCount }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -202,7 +201,7 @@ export default async function AdminResourcePageRoute({
           <MembershipsAdminForms items={result.items} options={options} />
           <ClientProvisioningAdmin users={users} thresholdProfiles={projectOptions.thresholdProfiles} clusterProfiles={projectOptions.clusterProfiles} />
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -220,7 +219,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -229,7 +228,7 @@ export default async function AdminResourcePageRoute({
           <PlatformAdminTable pageSize={result.pageSize} query={query} resource={resource} rows={rows} sortOptions={defaultSortOptions} total={result.total} />
           <SitesAdminForms items={result.items} options={options} />
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -247,7 +246,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -256,7 +255,7 @@ export default async function AdminResourcePageRoute({
           <PlatformAdminTable pageSize={result.pageSize} query={query} resource={resource} rows={rows} sortOptions={defaultSortOptions} total={result.total} />
           <ProviderConnectionsAdminForms items={result.items} options={options} />
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -274,7 +273,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -283,7 +282,7 @@ export default async function AdminResourcePageRoute({
           <PlatformAdminTable pageSize={result.pageSize} query={query} resource={resource} rows={rows} sortOptions={defaultSortOptions} total={result.total} />
           <GoalDefinitionsAdminForms items={result.items} options={options} />
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -301,7 +300,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -310,7 +309,7 @@ export default async function AdminResourcePageRoute({
           <PlatformAdminTable pageSize={result.pageSize} query={query} resource={resource} rows={rows} sortOptions={defaultSortOptions} total={result.total} />
           <TrackedQuerySetsAdminForms items={result.items} options={options} />
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -335,7 +334,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -348,7 +347,7 @@ export default async function AdminResourcePageRoute({
             <QueryClusterProfilesAdminForms items={clusters.items} />
           </div>
         </div>
-      </AppShell>
+      </>
     );
   }
 
@@ -365,7 +364,7 @@ export default async function AdminResourcePageRoute({
       updatedAt: item.updatedAt,
     }));
     return (
-      <AppShell currentPath={currentPath} principal={state.principal} displayName={state.displayName}>
+      <>
         <div className="space-y-6">
           <PageHeader title={definition.label} description={definition.description} />
           <Summary {...summary} />
@@ -374,7 +373,7 @@ export default async function AdminResourcePageRoute({
           <PlatformAdminTable pageSize={result.pageSize} query={query} resource={resource} rows={rows} sortOptions={defaultSortOptions} total={result.total} />
           <OperationsAdminForms />
         </div>
-      </AppShell>
+      </>
     );
   }
 

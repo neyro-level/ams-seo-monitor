@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { AppShell } from "../../../components/shell/AppShell.tsx";
 import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../../components/dashboard/SectionCard.tsx";
@@ -39,7 +38,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
   const projectReady = connectedSites > 0 && readySites === connectedSites;
 
   return (
-    <AppShell currentPath={`/c/${overview.client.clientSlug}/`} principal={state.principal} displayName={state.displayName}>
+    <>
       <div className="space-y-6">
         <PageHeader
           eyebrow="Проект"
@@ -104,6 +103,6 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
           </div>
         </SectionCard>
       </div>
-    </AppShell>
+    </>
   );
 }

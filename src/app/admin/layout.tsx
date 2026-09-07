@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 import { PrivateApplicationLayout } from "../../components/shell/PrivateApplicationLayout.tsx";
 
 export const metadata: Metadata = {
-  title: "Кабинет аналитика",
+  title: "Администрирование",
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default function AnalystLayout({ children }: { children: ReactNode }) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return <PrivateApplicationLayout>{children}</PrivateApplicationLayout>;
 }

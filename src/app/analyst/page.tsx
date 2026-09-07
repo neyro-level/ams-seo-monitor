@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AppShell } from "../../components/shell/AppShell.tsx";
 import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
@@ -25,7 +24,7 @@ export default async function AllProjectsPage() {
   const overview = await buildAnalystOverview(state.principal);
 
   return (
-    <AppShell currentPath="/analyst/" principal={state.principal} displayName={state.displayName}>
+    <>
       <div className="space-y-6">
         <PageHeader
           title="Все проекты"
@@ -155,6 +154,6 @@ export default async function AllProjectsPage() {
           </div>
         </SectionCard>
       </div>
-    </AppShell>
+    </>
   );
 }
