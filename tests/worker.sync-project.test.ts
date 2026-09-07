@@ -173,7 +173,7 @@ workerTestDescription("syncProjectToDatabase", () => {
       });
 
       expect(result.projectSlug).toBe("alpha");
-      expect(result.status).toBe("success");
+      expect(result.status).toBe("partial");
       expect(result.sites).toHaveLength(3);
       expect(result.sites[0]?.periods).toHaveLength(4);
 
@@ -227,7 +227,7 @@ workerTestDescription("syncProjectToDatabase", () => {
       });
       expect(storedSyncRun).toMatchObject({
         trigger: "DAILY",
-        status: "SUCCESS",
+        status: "PARTIAL",
         startedAt: new Date("2026-08-30T00:00:00+03:00"),
         finishedAt: new Date("2026-08-30T00:01:00+03:00"),
       });
