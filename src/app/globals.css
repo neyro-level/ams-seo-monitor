@@ -5,6 +5,7 @@
 @import "@fontsource/manrope/800.css";
 
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @font-face {
   font-family: "PT Root UI";
@@ -15,6 +16,26 @@
 }
 
 :root {
+  --background: var(--crm-page);
+  --foreground: var(--crm-text);
+  --card: var(--crm-surface);
+  --card-foreground: var(--crm-text);
+  --popover: var(--crm-surface);
+  --popover-foreground: var(--crm-text);
+  --primary: var(--crm-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--crm-surface-muted);
+  --secondary-foreground: var(--crm-text);
+  --muted: var(--crm-surface-muted);
+  --muted-foreground: var(--crm-text-muted);
+  --accent: var(--crm-surface-muted);
+  --accent-foreground: var(--crm-text);
+  --destructive: #be123c;
+  --destructive-foreground: #ffffff;
+  --border: var(--crm-border);
+  --input: var(--crm-border-strong);
+  --ring: var(--crm-interactive);
+  --radius: 0.75rem;
   --crm-page: #eef2f5;
   --crm-surface: #ffffff;
   --crm-surface-muted: #f8fafc;
