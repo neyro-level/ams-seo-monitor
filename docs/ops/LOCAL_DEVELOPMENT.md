@@ -9,7 +9,8 @@
 - databases: `seo_monitor_dev`, `seo_monitor_test`;
 - identities: `seo_monitor_local` for development and `seo_monitor_test` for tests;
 - PostgreSQL service: `postgresql-x64-18`, shared by local projects but isolated by roles/databases;
-- production credentials/data запрещены.
+- production credentials запрещены;
+- production data допускаются только как явно разрешённый владельцем одноразовый snapshot для локальной UI/QA-работы: без provider secrets, с отзывом перенесённых sessions/verification tokens, отдельным local auth secret и локальной резервной копией перед restore.
 
 ## Подготовка
 
@@ -33,10 +34,29 @@ pnpm dev:db:stop
 ## Application
 
 ```bash
-pnpm dev
+pnpm dev:start
 ```
 
-Next.js читает `.env.local`. Local URL: `http://127.0.0.1:3000`.
+`dev:start` сначала проверяет native PostgreSQL и локального `superadmin`, безопасно переиспользует уже работающий AMS IMPULSE либо запускает Next.js в скрытом процессе. Next.js читает `.env.local`. Канонический local URL: `http://127.0.0.1:3001`. Порт `3000` не освобождать принудительно: он может принадлежать другому проекту.
+
+`next.config.ts` явно задаёт `agentRules: false`: Next.js не создаёт и не дописывает agent-файлы при старте. Launcher сохраняет исходный tracked `next-env.d.ts` после автоматической dev-генерации, поэтому обычный запуск не должен менять Git state.
+
+## Повторный быстрый запуск
+
+Фраза владельца `подними AMS IMPULSE локально` означает для AI следующий сценарий без дополнительных вопросов:
+
+1. перейти в canonical checkout и проверить `main`, `origin/main` и dirty state;
+2. выполнить `pnpm dev:status`, затем `pnpm dev:start`; использовать только native PostgreSQL `18.6` и `seo_monitor_dev` на `127.0.0.1:5435`;
+3. launcher проверяет `http://127.0.0.1:3001/api/health/live` и принимает только сервис `ams-seo-monitor`;
+4. если AMS IMPULSE уже отвечает — launcher переиспользует процесс; если порт свободен — запускает Next.js в скрытом локальном процессе;
+5. если `3001` занят другим приложением — остановиться и назвать владельца процесса, не завершать его автоматически;
+6. проверить наличие активного пользователя `superadmin` с ролью `PLATFORM_ADMIN`; обычный запуск не меняет password hash и sessions;
+7. открыть `http://127.0.0.1:3001/analyst` в постоянном browser profile, войти и подтвердить реальный приватный экран с проектами/данными;
+8. не считать запуск завершённым только по открытому порту или публичной странице.
+
+Canonical username: `superadmin`. Пароль не записывается в документацию и не передаётся через argv. Если сохранённая browser session недействительна, значение берётся без печати из Doppler `ams-seo-monitor/prd`, secret `AMS_SEO_MONITOR_SUPERADMIN_PASSWORD`, и вводится только в password field. Reset выполняется лишь при доказанной проблеме с credential, а не при каждом запуске.
+
+Текущий `seo_monitor_dev` может содержать owner-approved production snapshot для настройки интерфейса. Это локальная копия, а не синхронизация: её дату и актуальность всегда проверять отдельно; не запускать автоматический refresh из production.
 
 Auth user создаётся Platform Admin UI или operator CLI с одной из versioned roles: `PLATFORM_ADMIN`, `SEO_ANALYST`, `CLIENT_VIEWER`. Пароль ровно из 8 печатных символов передаётся CLI только через stdin; argv, hardcoded password и local auth bypass запрещены. Первый вход сразу открывает `/dashboard/`.
 

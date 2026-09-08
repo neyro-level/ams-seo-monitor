@@ -10,6 +10,8 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "dev:status": "node --env-file=.env.local scripts/local-dev.mjs status",
+    "dev:start": "node --env-file=.env.local scripts/local-dev.mjs start",
     "start": "node .next/standalone/server.js",
     "build": "pnpm prisma:generate && pnpm verify:config && next build && node scripts/prepare-standalone.mjs",
     "build:collector": "pnpm prisma:generate && tsc -p tsconfig.collector.json",

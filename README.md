@@ -98,21 +98,21 @@ UI следует AMS UI Development Constitution `3.1` и основан на p
 
 ## Локальная подготовка
 
+Единственный source of truth для локального запуска — [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md). Запросы `запусти локально`, `подними платформу` и `открой локальный кабинет` выполняются по этому runbook.
+
 ```bash
 pnpm install --frozen-lockfile
 pnpm playwright:install
 ```
 
-Создайте ignored `.env.local` по `.env.example`, затем:
+Создайте ignored `.env.local` по `.env.example`. Обычный повторный запуск существующего локального контура:
 
 ```bash
-pnpm dev:db:start
-pnpm dev:db:migrate
-pnpm dev:db:bootstrap
-pnpm dev
+pnpm dev:status
+pnpm dev:start
 ```
 
-Native PostgreSQL `18.6` слушает `127.0.0.1:5435` и использует отдельные `seo_monitor_dev` и `seo_monitor_test`. `dev:db:start` проверяет готовность уже установленной Windows-службы, а `dev:db:stop` не останавливает shared PostgreSQL. Docker для обычной локальной разработки не используется. Production DB/credentials запрещены. Полный порядок: [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md).
+Первичная подготовка дополнительно выполняет `pnpm dev:db:migrate` и `pnpm dev:db:bootstrap`. Native PostgreSQL `18.6` слушает `127.0.0.1:5435` и использует отдельные `seo_monitor_dev` и `seo_monitor_test`. `dev:db:start` проверяет готовность уже установленной Windows-службы, а `dev:db:stop` не останавливает shared PostgreSQL. Docker для обычной локальной разработки не используется. Канонический local URL — `http://127.0.0.1:3001`; полный порядок: [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md).
 
 Operator provisioning поддерживает `PLATFORM_ADMIN`, `SEO_ANALYST` и `CLIENT_VIEWER`:
 
