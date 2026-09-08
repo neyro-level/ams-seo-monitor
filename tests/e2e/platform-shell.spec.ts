@@ -104,9 +104,9 @@ test.describe("Platform Admin", () => {
 
     await page.goto("/admin/providers/");
     await expect(page.getByRole("heading", { level: 1, name: "Подключения источников" })).toBeVisible();
-    await expect(page.getByLabel("Сайт")).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Сайт*" })).toBeVisible();
     await expect(page.getByRole("combobox", { name: "Источник*" })).toBeVisible();
-    await expect(page.getByLabel("Nonsecret settings JSON").first()).toBeVisible();
+    await expect(page.getByLabel("Дополнительные настройки").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Создать подключение" })).toBeVisible();
 
     const hasHorizontalOverflow = await page.evaluate(
