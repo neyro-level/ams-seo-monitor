@@ -53,11 +53,12 @@ Prisma migrations own application schema history. pg-boss schema lifecycle is se
 
 ## Local and test PostgreSQL
 
-- Docker image: PostgreSQL `18.6`;
-- bind: `127.0.0.1`, default host port `55432`;
+- Windows-native PostgreSQL `18.6` service;
+- bind: `127.0.0.1`, canonical host port `5435`;
 - separate databases and roles: `seo_monitor_dev`/`seo_monitor_local`, `seo_monitor_test`/`seo_monitor_test`;
 - credentials exist only in ignored `.env.local`;
-- named volume survives normal stop/start;
+- `dev:db:start` and `dev:db:status` verify connection identity; `dev:db:stop` leaves the shared Windows service running;
+- Docker Desktop/Compose is not part of ordinary local development;
 - integration runner rejects a database or identity without the test marker, then generates Prisma client, applies migrations, runs only synthetic test bootstrap and executes DB suites;
 - SourceCraft `risky-check` поднимает isolated PostgreSQL для профильных DB/auth/tenant/worker checks перед merge.
 

@@ -2,13 +2,13 @@
 
 ## Контур
 
-Канонический local mode для AMS IMPULSE — Windows-native checkout + Docker Desktop PostgreSQL `18.6`.
+Канонический local mode для AMS IMPULSE — Windows-native checkout + Windows-native PostgreSQL `18.6`.
 
 - bind: `127.0.0.1`;
-- default host port: `55432`;
+- canonical host port: `5435`;
 - databases: `seo_monitor_dev`, `seo_monitor_test`;
 - identities: `seo_monitor_local` for development and `seo_monitor_test` for tests;
-- project-scoped named volume: `seo-monitor-postgres-data`;
+- PostgreSQL service: `postgresql-x64-18`, shared by local projects but isolated by roles/databases;
 - production credentials/data запрещены.
 
 ## Подготовка
@@ -28,7 +28,7 @@ pnpm dev:db:bootstrap
 pnpm dev:db:stop
 ```
 
-`dev:db:stop` сохраняет named volume. Удаление volume — destructive operation и не входит в обычный stop/restart.
+`dev:db:start` и `dev:db:status` проверяют реальное подключение, database, role и server version без вывода пароля. `dev:db:stop` намеренно не останавливает shared Windows service. Docker Desktop/Compose не запускаются для обычной local development.
 
 ## Application
 

@@ -112,7 +112,7 @@ pnpm dev:db:bootstrap
 pnpm dev
 ```
 
-Docker PostgreSQL слушает только `127.0.0.1`, использует отдельные `seo_monitor_dev` и `seo_monitor_test` и сохраняет named volume между перезапусками. Production DB/credentials запрещены. Полный порядок: [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md).
+Native PostgreSQL `18.6` слушает `127.0.0.1:5435` и использует отдельные `seo_monitor_dev` и `seo_monitor_test`. `dev:db:start` проверяет готовность уже установленной Windows-службы, а `dev:db:stop` не останавливает shared PostgreSQL. Docker для обычной локальной разработки не используется. Production DB/credentials запрещены. Полный порядок: [`docs/ops/LOCAL_DEVELOPMENT.md`](docs/ops/LOCAL_DEVELOPMENT.md).
 
 Operator provisioning поддерживает `PLATFORM_ADMIN`, `SEO_ANALYST` и `CLIENT_VIEWER`:
 
