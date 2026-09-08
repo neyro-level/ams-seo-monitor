@@ -83,7 +83,7 @@ test.describe("Platform Admin", () => {
       page.getByRole("heading", { level: 1, name: "Организации" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("navigation", { name: "Ресурсы администрирования" }),
+      page.getByRole("navigation", { name: "Разделы администрирования" }),
     ).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Хлебные крошки" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Создать организацию" })).toBeVisible();
