@@ -123,9 +123,8 @@ export function ProjectCreateForm({ options }: { options: ProjectFormOptions }) 
           {errors.name ? <span className="text-xs text-app-destructive">{errors.name.message}</span> : null}
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-app-foreground">Код проекта</span>
+          <span className="block text-sm font-medium text-app-foreground">Адрес в кабинете</span>
           <Input placeholder="project-name" {...register("slug")} />
-          <span className="block text-xs text-app-muted-foreground">Короткое уникальное имя латиницей для адреса страниц.</span>
           {errors.slug ? <span className="text-xs text-app-destructive">{errors.slug.message}</span> : null}
         </label>
         <label className="space-y-1.5">

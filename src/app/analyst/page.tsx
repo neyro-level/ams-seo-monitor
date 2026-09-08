@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
-import { ButtonLink } from "../../components/ui/button-link.tsx";
 import {
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
@@ -28,8 +28,7 @@ export default async function AllProjectsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Все проекты"
-          description="Все клиентские проекты, сайты и состояние подключений."
-          actions={hasPermission(state.principal, "project:manage:any") ? <ButtonLink href="/admin/projects/" className="w-full sm:w-auto">Управление проектами</ButtonLink> : null}
+          description="Проекты АМС, их сайты и готовность данных для отчётов."
         />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -39,7 +38,7 @@ export default async function AllProjectsPage() {
           <KpiCard label="Источники" value={String(overview.enabledSources)} tone="soft" />
         </section>
 
-        <SectionCard title="Проекты" note={`${overview.totalProjects} всего`}>
+        <SectionCard title="Проекты" note="Актуальные данные">
           <div className="grid gap-4 xl:grid-cols-2">
             {overview.projectCards.map((project) => {
               const projectReady =
@@ -70,10 +69,7 @@ export default async function AllProjectsPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-app-muted-foreground">
-                        Код: {project.projectSlug}
-                      </p>
-                      <h2 className="mt-2 text-xl font-semibold text-app-foreground">
+                      <h2 className="text-xl font-semibold text-app-foreground">
                         {project.name}
                       </h2>
                     </div>
@@ -127,18 +123,33 @@ export default async function AllProjectsPage() {
                         : "Источники ещё не подключены"}
                   </p>
 
-                  <ButtonLink
+                  <Link
                     href={`/c/${project.projectSlug}/`}
-                    className="mt-5"
+                    className="mt-5 inline-flex rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-app-primary-foreground"
                   >
                     Открыть проект
-                  </ButtonLink>
+                  </Link>
                 </article>
               );
             })}
           </div>
         </SectionCard>
 
+        <SectionCard title="Добавление проекта" note="Только для администратора">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <h2 className="text-lg font-semibold text-app-foreground">
+                Проекты добавляет администратор
+              </h2>
+              <p className="mt-2 text-sm text-app-secondary">
+                Система создаёт проект, сайты и начальные правила аналитики, а также проверяет, чтобы адреса не повторялись.
+              </p>
+            </div>
+            <span className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-sm font-semibold text-app-foreground">
+              Обратитесь к администратору
+            </span>
+          </div>
+        </SectionCard>
       </div>
     </>
   );

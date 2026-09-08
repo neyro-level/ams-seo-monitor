@@ -16,38 +16,44 @@
 }
 
 :root {
-  --background: #edf2f6;
-  --foreground: #10202f;
+  --background: #eef2f5;
+  --foreground: #020617;
   --card: #ffffff;
-  --card-foreground: #10202f;
+  --card-foreground: #020617;
   --popover: #ffffff;
-  --popover-foreground: #10202f;
-  --primary: #197fb8;
+  --popover-foreground: #020617;
+  --primary: #101720;
   --primary-foreground: #ffffff;
-  --secondary: #f2f6f9;
-  --secondary-foreground: #10202f;
-  --muted: #f7f9fc;
-  --muted-foreground: #708290;
-  --accent: #e8f4fb;
-  --accent-foreground: #0e4f73;
+  --secondary: #f8fafc;
+  --secondary-foreground: #020617;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: rgb(95 127 174 / 10%);
+  --accent-foreground: #10202f;
   --destructive: #aa3e3e;
   --destructive-foreground: #ffffff;
   --destructive-soft: #fbecec;
-  --border: #d7e1e8;
-  --input: #d7e1e8;
-  --ring: #3997cb;
-  --text-secondary: #4f6474;
-  --link: #0e4f73;
-  --sidebar: #082539;
-  --sidebar-foreground: #eff6fb;
-  --sidebar-primary: #7fc7ee;
-  --sidebar-primary-foreground: #082539;
-  --sidebar-accent: #174664;
-  --sidebar-accent-foreground: #eff6fb;
-  --sidebar-muted: #91b0c4;
-  --sidebar-hover: #113850;
-  --sidebar-border: #10334b;
-  --sidebar-ring: #7fc7ee;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
+  --ring: #5f7fae;
+  --text-secondary: #475569;
+  --link: #3e5d86;
+  --sidebar: #101720;
+  --sidebar-foreground: #f5f7f8;
+  --sidebar-primary: #d4dbe0;
+  --sidebar-primary-foreground: #101720;
+  --sidebar-accent: #3b434a;
+  --sidebar-accent-foreground: #f5f7f8;
+  --sidebar-muted: #aab3ba;
+  --sidebar-hover: #1b2633;
+  --sidebar-border: #2a2f34;
+  --sidebar-ring: #5f7fae;
+  --sidebar-surface: rgb(255 255 255 / 5.5%);
+  --sidebar-surface-hover: rgb(255 255 255 / 10%);
+  --sidebar-active: rgb(2 8 17 / 48%);
+  --sidebar-active-border: rgb(95 127 174 / 22%);
+  --sidebar-project-accent: rgb(95 127 174 / 68%);
+  --sidebar-group-border: rgb(95 127 174 / 30%);
   --success: #2a7057;
   --success-soft: #eaf5f0;
   --warning: #8d5c10;
@@ -56,8 +62,8 @@
   --info-soft: #edf1fb;
   --status-neutral: #687680;
   --status-neutral-soft: #eef1f3;
-  --chart-1: #197fb8;
-  --chart-2: #48639b;
+  --chart-1: #5f7fae;
+  --chart-2: #3e5d86;
   --chart-3: #2a7057;
   --chart-4: #8d5c10;
   --chart-5: #8a5fa8;
@@ -147,8 +153,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Stable semantic text utilities. Tailwind arbitrary `text-[var(...)]` values
-   are ambiguous in this stack and can silently inherit the wrong color. */
+/* Stable semantic text utilities for Tailwind 4 CSS-variable colors. */
 .text-app-background { color: var(--background); }
 .text-app-border { color: var(--border); }
 .text-app-card-foreground { color: var(--card-foreground); }
@@ -162,14 +167,73 @@ body {
 .text-app-primary { color: var(--primary); }
 .text-app-primary-foreground { color: var(--primary-foreground); }
 .text-app-secondary-foreground { color: var(--secondary-foreground); }
-.text-app-sidebar-accent-foreground { color: var(--sidebar-accent-foreground); }
 .text-app-sidebar-foreground { color: var(--sidebar-foreground); }
 .text-app-sidebar-muted { color: var(--sidebar-muted); }
-.text-app-sidebar-primary-foreground { color: var(--sidebar-primary-foreground); }
 .text-app-status-neutral { color: var(--status-neutral); }
 .text-app-success { color: var(--success); }
 .text-app-secondary { color: var(--text-secondary); }
 .text-app-warning { color: var(--warning); }
+
+.sidebar-action { color: var(--sidebar-muted); }
+.sidebar-action:hover {
+  background: var(--sidebar-surface-hover);
+  color: var(--sidebar-foreground);
+}
+
+.sidebar-collapse-widget {
+  isolation: isolate;
+  border: 0;
+  background: transparent;
+  opacity: 0.68;
+  transition: opacity 140ms ease;
+}
+
+.sidebar-collapse-widget::before,
+.sidebar-collapse-widget::after {
+  position: absolute;
+  top: 9px;
+  left: 7px;
+  width: 18px;
+  height: 22px;
+  background: var(--sidebar-active-border);
+  content: "";
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+  transition: background-color 140ms ease;
+}
+
+.sidebar-collapse-widget::after {
+  z-index: 1;
+  top: 11px;
+  left: 10px;
+  width: 14px;
+  height: 18px;
+  background: color-mix(in srgb, var(--sidebar) 82%, transparent);
+}
+
+.sidebar-collapse-widget[data-collapsed="true"]::before,
+.sidebar-collapse-widget[data-collapsed="true"]::after {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.sidebar-collapse-widget:hover,
+.sidebar-collapse-widget:focus-visible {
+  opacity: 1;
+}
+
+.sidebar-collapse-widget:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.sidebar-collapse-widget:hover::before,
+.sidebar-collapse-widget:focus-visible::before {
+  background: var(--sidebar-ring);
+}
+
+.sidebar-collapse-widget:hover::after,
+.sidebar-collapse-widget:focus-visible::after {
+  background: var(--sidebar-hover);
+}
 
 .impulse-landing {
   font-family: "Manrope", "PT Root UI", "Segoe UI", ui-sans-serif, system-ui, sans-serif;

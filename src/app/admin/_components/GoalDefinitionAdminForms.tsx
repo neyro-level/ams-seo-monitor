@@ -54,9 +54,12 @@ const goalCategoryLabels = {
   MESSENGER_CLICK: "Переход в мессенджер",
   FORM_START: "Начало заполнения формы",
   FILE_DOWNLOAD: "Скачивание файла",
-  OTHER: "Другое",
+  OTHER: "Другое действие",
 } as const;
-const goalDirectionLabels = { PRIMARY: "Основная", SECONDARY: "Дополнительная" } as const;
+const goalDirectionLabels = {
+  PRIMARY: "Основная цель",
+  SECONDARY: "Дополнительная цель",
+} as const;
 const goalCategoryOptions = goalCategorySchema.options.map((value) => ({ value, label: goalCategoryLabels[value] }));
 const goalDirectionOptions = goalDirectionSchema.options.map((value) => ({ value, label: goalDirectionLabels[value] }));
 function parseList(value: string) {
@@ -125,7 +128,7 @@ function GoalDefinitionEditCard({ item }: { item: GoalDefinitionListItem }) {
           Учитывать в SEO-конверсии
         </label>
         <div className="sm:col-span-2">
-          <FormField error={form.formState.errors.siteIdsText?.message} helper="Необязательно. По одному идентификатору сайта в строке или через запятую." label="Ограничить выбранными сайтами">
+          <FormField error={form.formState.errors.siteIdsText?.message} helper="Необязательно. Укажите внутренние номера сайтов по одному в строке." label="Связанные сайты">
             <AreaInput rows={5} {...form.register("siteIdsText")} />
           </FormField>
         </div>
@@ -173,12 +176,12 @@ export function GoalDefinitionsAdminForms({ items, options }: { items: GoalDefin
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать цель" description="Цель будет доступна только в выбранном проекте и его сайтах.">
+      <SectionCard title="Создать цель" description="Цель будет доступна только в выбранном проекте и на связанных сайтах.">
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <FormField error={form.formState.errors.projectId?.message} label="Проект" required>
             <SelectInput options={options.projects.map((option) => ({ value: option.id, label: option.label }))} {...form.register("projectId")} />
           </FormField>
-          <FormField error={form.formState.errors.externalGoalId?.message} helper="Номер цели в системе аналитики." label="Идентификатор цели" required>
+          <FormField error={form.formState.errors.externalGoalId?.message} label="Номер цели в Метрике" required>
             <TextInput {...form.register("externalGoalId")} />
           </FormField>
           <FormField error={form.formState.errors.label?.message} label="Название" required>
@@ -195,7 +198,7 @@ export function GoalDefinitionsAdminForms({ items, options }: { items: GoalDefin
             Учитывать в SEO-конверсии
           </label>
           <div className="sm:col-span-2">
-            <FormField error={form.formState.errors.siteIdsText?.message} helper="Необязательно. По одному идентификатору сайта в строке или через запятую." label="Ограничить выбранными сайтами">
+            <FormField error={form.formState.errors.siteIdsText?.message} helper="Необязательно. Укажите внутренние номера сайтов по одному в строке." label="Связанные сайты">
               <AreaInput rows={5} {...form.register("siteIdsText")} />
             </FormField>
           </div>

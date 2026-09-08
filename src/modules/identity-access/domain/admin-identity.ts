@@ -6,7 +6,7 @@ const positiveVersionSchema = z.number().int().positive();
 const slugSchema = z
   .string()
   .trim()
-  .min(1, "Укажите slug организации")
+  .min(1, "Укажите адрес в кабинете")
   .max(80)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Используйте строчные латинские буквы, цифры и дефис");
 const organizationNameSchema = z
@@ -21,8 +21,8 @@ const onboardingSiteSchema = z.object({
   name: z.string().trim().min(2, "Укажите название сайта").max(160),
   slug: slugSchema,
   url: z.url("Укажите корректный HTTPS-адрес").refine((value) => value.startsWith("https://"), "Адрес должен начинаться с https://"),
-  timezone: z.string().trim().min(1, "Укажите timezone").max(80),
-  regionName: z.string().trim().min(2, "Выберите регион Topvisor").max(160),
+  timezone: z.string().trim().min(1, "Укажите часовой пояс").max(80),
+  regionName: z.string().trim().min(2, "Выберите регион продвижения").max(160),
   regionCountryCode: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/),
   yandexRegionKey: z.number().int().positive(),
   googleRegionKey: z.number().int().positive(),
@@ -35,7 +35,7 @@ const onboardingSiteSchema = z.object({
   try {
     Intl.DateTimeFormat("ru-RU", { timeZone: value.timezone }).format(new Date());
   } catch {
-    context.addIssue({ code: "custom", path: ["timezone"], message: "Укажите корректную IANA timezone" });
+    context.addIssue({ code: "custom", path: ["timezone"], message: "Укажите корректный часовой пояс, например Europe/Moscow" });
   }
 });
 

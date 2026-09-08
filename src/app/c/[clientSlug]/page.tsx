@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../../components/dashboard/SectionCard.tsx";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner.tsx";
-import { ButtonLink } from "../../../components/ui/button-link.tsx";
 import {
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
@@ -41,10 +41,8 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
     <>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Все проекты"
-          eyebrowHref="/analyst/"
-          title={overview.client.name}
-          description="Сайты проекта, состояние подключений и переход к подробным отчётам."
+          title={`Проект ${overview.client.name}`}
+          description="Сайты проекта, подключённые источники и переходы к отдельным отчётам."
         />
 
         <StatusBanner
@@ -71,7 +69,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
           />
         </section>
 
-        <SectionCard title="Сайты проекта" note="Выберите сайт">
+        <SectionCard title="Сайты проекта" note="Отдельный отчёт на сайт">
           <div className="grid gap-3 lg:grid-cols-2">
             {overview.sites.map((site) => (
               <article
@@ -93,12 +91,12 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
                       : "Не подключён"}
                   </span>
                 </div>
-                <ButtonLink
+                <Link
                   href={`/c/${overview.client.clientSlug}/${site.siteSlug}/`}
-                  className="mt-4"
+                  className="mt-4 inline-flex rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-app-primary-foreground"
                 >
-                  Открыть отчёт
-                </ButtonLink>
+                  Открыть сайт
+                </Link>
               </article>
             ))}
           </div>

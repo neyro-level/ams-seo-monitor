@@ -76,14 +76,14 @@ navigationTestDescription("database-backed navigation isolation", () => {
     await database.prisma.user.deleteMany({ where: { id: clientViewerIdentity.userId } });
     await database.close();
   });
-  it("renders only the current client subtree on a client route", async () => {
+  it("keeps all available projects visible on a client route", async () => {
     const sections = await buildNavigation("/c/alpha/north/", clientViewerPrincipal!);
     const items = sections.flatMap((section) => section.items);
 
     expect(sections).toHaveLength(2);
     expect(items.map((item) => item.label)).toEqual([
       "Мои проекты",
-      "Проект Synthetic Alpha Organization",
+      "Synthetic Alpha Organization",
     ]);
     expect(items[1]?.children?.map((item) => item.label)).toEqual([
       "Synthetic site 2",
@@ -104,8 +104,8 @@ navigationTestDescription("database-backed navigation isolation", () => {
     expect(mainItems.map((item) => item.label)).toEqual(["Все проекты", "Уведомления"]);
     expect(mainItems[0]?.active).toBe(true);
     expect(projectItems.map((item) => item.label)).toEqual([
-      "Проект Synthetic Alpha Organization",
-      "Проект Synthetic Beta Organization",
+      "Synthetic Alpha Organization",
+      "Synthetic Beta Organization",
     ]);
     expect(serialized).not.toContain("Общий кабинет");
   });

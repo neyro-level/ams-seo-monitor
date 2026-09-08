@@ -28,15 +28,9 @@ export async function buildNavigation(
   user: PrincipalContext,
 ): Promise<NavigationSection[]> {
   const projectTrees = await getProjectService().listProjectTreesForUser(user);
-  const clientPathMatch = currentPath.match(/^\/c\/([^/]+)\//);
-  const currentClientSlug = clientPathMatch?.[1] ?? null;
-  const visibleProjects = currentClientSlug
-    ? projectTrees.filter((project) => project.projectSlug === currentClientSlug)
-    : projectTrees;
-
-  const items: NavigationItem[] = visibleProjects.map((project) => ({
+  const items: NavigationItem[] = projectTrees.map((project) => ({
     href: `/c/${project.projectSlug}/`,
-    label: `Проект ${project.name}`,
+    label: project.name,
     active:
       currentPath === `/c/${project.projectSlug}/` ||
       currentPath.startsWith(`/c/${project.projectSlug}/`),

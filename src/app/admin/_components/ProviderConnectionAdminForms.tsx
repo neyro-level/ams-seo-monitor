@@ -45,7 +45,11 @@ const updateProviderFormSchema = z.object({
   enabled: z.boolean(),
   settingsJsonText: z.string().max(10000),
 });
-const providerLabels = { YANDEX_WEBMASTER: "Яндекс.Вебмастер", YANDEX_METRIKA: "Яндекс.Метрика", TOPVISOR: "Topvisor" } as const;
+const providerLabels = {
+  YANDEX_WEBMASTER: "Яндекс.Вебмастер",
+  YANDEX_METRIKA: "Яндекс.Метрика",
+  TOPVISOR: "Topvisor",
+} as const;
 const providerOptions = providerSchema.options.map((value) => ({ value, label: providerLabels[value] }));
 function parseSettingsJson(text: string) {
   if (!text.trim()) return null;
@@ -101,7 +105,7 @@ function ProviderConnectionEditCard({ item }: { item: ProviderConnectionListItem
       router.refresh();
     } catch (error) {
       const message = error instanceof Error && error.message === "SETTINGS_JSON_SENSITIVE_KEY"
-        ? "В дополнительных настройках нельзя указывать токены, пароли и ключи доступа"
+        ? "Здесь нельзя хранить пароли, секретные ключи и другие данные для входа"
         : "Проверьте формат дополнительных настроек";
       form.setError("settingsJsonText", { message });
       setFeedback({ kind: "error", message });
@@ -122,7 +126,7 @@ function ProviderConnectionEditCard({ item }: { item: ProviderConnectionListItem
   }
 
   return (
-    <SectionCard title={`${item.siteName} · ${providerLabels[item.provider]}`} description={`${item.projectName} · код сайта: ${item.siteSlug}`}>
+    <SectionCard title={`${item.siteName} · ${providerLabels[item.provider]}`} description={item.projectName}>
       {item.provider === "YANDEX_METRIKA" && item.status === "ACTION_REQUIRED" ? <div className="mb-4 grid gap-3 rounded-[var(--radius-panel)] border border-[var(--warning)]/40 bg-[var(--warning)]/10 p-4">
         <p className="text-sm font-semibold text-app-foreground">Подтвердите две цели Метрики</p>
         <FormField label="Основная заявка" required><SelectInput value={leadGoalId} onChange={(event) => setLeadGoalId(event.target.value)} options={[{ value: "", label: "Выберите цель" }, ...leadCandidates.map((goal) => ({ value: goal.goalId, label: goal.name }))]} /></FormField>
@@ -132,10 +136,10 @@ function ProviderConnectionEditCard({ item }: { item: ProviderConnectionListItem
       <form className="grid gap-4" onSubmit={submit}>
         <input type="hidden" {...form.register("id")} />
         <input type="hidden" {...form.register("version", { valueAsNumber: true })} />
-        <FormField error={form.formState.errors.externalId?.message} helper="Идентификатор сайта или счётчика во внешнем сервисе." label="Внешний идентификатор">
+        <FormField error={form.formState.errors.externalId?.message} label="Номер в источнике">
           <TextInput {...form.register("externalId")} />
         </FormField>
-        <FormField error={form.formState.errors.settingsJsonText?.message} helper="Служебный формат JSON. Не указывайте токены, пароли и ключи доступа." label="Дополнительные настройки" required>
+        <FormField error={form.formState.errors.settingsJsonText?.message} helper="Служебные параметры без паролей и секретных ключей." label="Дополнительные настройки" required>
           <AreaInput rows={6} {...form.register("settingsJsonText")} />
         </FormField>
         <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-app-foreground">
@@ -179,7 +183,7 @@ export function ProviderConnectionsAdminForms({ items, options }: { items: Provi
       router.refresh();
     } catch (error) {
       const message = error instanceof Error && error.message === "SETTINGS_JSON_SENSITIVE_KEY"
-        ? "В дополнительных настройках нельзя указывать токены, пароли и ключи доступа"
+        ? "Здесь нельзя хранить пароли, секретные ключи и другие данные для входа"
         : "Проверьте формат дополнительных настроек";
       form.setError("settingsJsonText", { message });
       setFeedback({ kind: "error", message });
@@ -188,7 +192,7 @@ export function ProviderConnectionsAdminForms({ items, options }: { items: Provi
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать подключение" description="Выберите сайт и источник данных. Пароли и ключи доступа здесь не вводятся.">
+      <SectionCard title="Создать подключение" description="Выберите сайт и источник данных. Пароли и секретные ключи здесь не хранятся.">
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <FormField error={form.formState.errors.siteId?.message} label="Сайт" required>
             <SelectInput options={options.sites.map((option) => ({ value: option.id, label: option.label }))} {...form.register("siteId")} />
@@ -196,7 +200,7 @@ export function ProviderConnectionsAdminForms({ items, options }: { items: Provi
           <FormField error={form.formState.errors.provider?.message} label="Источник" required>
             <SelectInput options={providerOptions} {...form.register("provider")} />
           </FormField>
-          <FormField error={form.formState.errors.externalId?.message} helper="Идентификатор сайта или счётчика во внешнем сервисе." label="Внешний идентификатор">
+          <FormField error={form.formState.errors.externalId?.message} label="Номер в источнике">
             <TextInput {...form.register("externalId")} />
           </FormField>
           <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-app-foreground xl:self-end">
@@ -204,7 +208,7 @@ export function ProviderConnectionsAdminForms({ items, options }: { items: Provi
             Источник включён
           </label>
           <div className="sm:col-span-2">
-            <FormField error={form.formState.errors.settingsJsonText?.message} helper="Служебный формат JSON. Не указывайте токены, пароли и ключи доступа." label="Дополнительные настройки" required>
+            <FormField error={form.formState.errors.settingsJsonText?.message} helper="Служебные параметры без паролей и секретных ключей." label="Дополнительные настройки" required>
               <AreaInput rows={6} {...form.register("settingsJsonText")} />
             </FormField>
           </div>

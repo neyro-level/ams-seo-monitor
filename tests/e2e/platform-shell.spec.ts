@@ -85,16 +85,21 @@ test.describe("Platform Admin", () => {
     await expect(
       page.getByRole("navigation", { name: "Ресурсы администрирования" }),
     ).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Хлебные крошки" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Создать организацию" })).toBeVisible();
     await expect(page.getByText(/Страница 1 из/i)).toBeVisible();
 
     if ((page.viewportSize()?.width ?? 0) >= 1024) {
-      await expect(page.getByText("Platform Admin", { exact: true })).toBeVisible();
-      const collapseButton = page.getByRole("button", { name: "Свернуть боковую панель" });
-      await expect(collapseButton).toBeVisible();
-      await collapseButton.click();
-      await expect(page.getByRole("button", { name: "Развернуть боковую панель" })).toBeVisible();
-      await expect(page.locator("aside")).toHaveCSS("width", "72px");
+      await expect(page.getByText("Супер админ", { exact: true })).toBeVisible();
+      await expect(page.locator("aside")).toHaveCSS("width", "232px");
+      const collapseWidget = page.getByRole("button", { name: "Свернуть боковое меню" });
+      await expect(collapseWidget).toBeVisible();
+      await collapseWidget.click();
+      await expect(page.locator("aside")).toHaveCSS("width", "76px");
+      const expandWidget = page.getByRole("button", { name: "Развернуть боковое меню" });
+      await expect(expandWidget).toBeVisible();
+      await expandWidget.click();
+      await expect(page.locator("aside")).toHaveCSS("width", "232px");
     }
 
     await page.goto("/admin/providers/");

@@ -16,12 +16,6 @@ import { DirectorReportTabs } from "./DirectorReportTabs.tsx";
 
 type ComparisonMetric = ReportComparison["metrics"]["shows"];
 
-const reportSourceLabels: Record<string, string> = {
-  webmaster: "Яндекс.Вебмастер",
-  metrica: "Яндекс.Метрика",
-  ranking: "проверка позиций",
-};
-
 function formatDelta(metric: ComparisonMetric | undefined, mode: "percent" | "points" | "position" = "percent") {
   const value = mode === "percent" ? metric?.deltaPercent : metric?.deltaPoints;
   if (value === null || value === undefined) return { text: undefined, tone: "neutral" as const };
@@ -54,8 +48,16 @@ function countDelta(value: number | null, label: string) {
   return `${value > 0 ? "+" : ""}${value} ${label}`;
 }
 
+function readableInsight(value: string) {
+  return value
+    .replace(/Критичное техническое состояние/giu, "Сайт требует внимания")
+    .replace(/HTTP 5xx/giu, "Ошибок сервера")
+    .replace(/критичных диагностик/giu, "серьёзных проблем")
+    .replace(/ошибок Sitemap/giu, "ошибок карты сайта")
+    .replace(/\bCTR\b/giu, "кликабельность");
+}
+
 type SiteReportViewProps = {
-  clientName: string;
   site: SiteRegistry;
   snapshot: SiteReportSnapshot | null;
   mode: "fixture" | "live";
@@ -64,14 +66,14 @@ type SiteReportViewProps = {
   directorAnalytics?: DirectorAnalytics | null;
 };
 
-export function SiteReportView({ clientName, site, snapshot, mode, backHref, periodControl, directorAnalytics = null }: SiteReportViewProps) {
+export function SiteReportView({ site, snapshot, mode, backHref, periodControl, directorAnalytics = null }: SiteReportViewProps) {
   if (!snapshot) {
     const sourcesEnabled = site.webmaster.enabled || site.metrica.enabled;
     return (
       <div className="space-y-6">
-        <PageHeader eyebrow={clientName} title={site.name} description="Единый отчёт по поисковой видимости, техническому состоянию и органическому трафику." backHref={backHref} />
+        <PageHeader title={site.name} description="Единый отчёт по поисковой видимости, техническому состоянию и органическому трафику." backHref={backHref} />
         {periodControl}
-        <StatePanel state={sourcesEnabled ? "stale" : "not-connected"} title={sourcesEnabled ? "Отчёт готовится" : "Источники не подключены"} description={sourcesEnabled ? "Данные появятся после завершения первого обновления." : "Для отчёта нужны доступы к Яндекс.Вебмастеру и Яндекс.Метрике."} />
+        <StatePanel state={sourcesEnabled ? "stale" : "not-connected"} title={sourcesEnabled ? "Отчёт готовится" : "Источники не подключены"} description={sourcesEnabled ? "Данные появятся после завершения обновления." : "Для отчёта нужны доступы к Яндекс.Вебмастеру и Яндекс.Метрике."} />
       </div>
     );
   }
@@ -101,7 +103,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
 
   return (
     <div className="w-[calc(100vw-2rem)] min-w-0 max-w-full space-y-8 sm:w-[calc(100vw-3rem)] lg:w-auto">
-      <PageHeader eyebrow={clientName} title={site.name} description={`Единый отчёт за ${periodLabel}. Обновлён ${new Date(snapshot.generatedAt).toLocaleString("ru-RU")}.`} backHref={backHref} />
+      <PageHeader title={site.name} description={`Единый отчёт за ${periodLabel}. Обновлён ${new Date(snapshot.generatedAt).toLocaleString("ru-RU")}.`} backHref={backHref} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         {periodControl}
         <p className="text-xs text-app-muted-foreground">{mode === "live" ? "Актуальные данные" : "Демонстрационные данные"}</p>
@@ -109,27 +111,27 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
       <DirectorReportTabs snapshot={snapshot} analytics={directorAnalytics} timezone={site.timezone} />
 
       {snapshot.freshness === "partial" ? <StatusBanner tone="warning" title="Отчёт собран частично" description="Часть источников не вернула полный набор данных. Доступные показатели показаны без подмены отсутствующих значений нулями." /> : null}
-      {snapshot.freshness === "stale" ? <StatusBanner tone="warning" title="Данные устарели" description="Последнее обновление было давно. Показатели сохранены для сравнения, но не считаются текущими." /> : null}
+      {snapshot.freshness === "stale" ? <StatusBanner tone="warning" title="Данные устарели" description="Последний отчёт старше допустимого периода. Показатели сохранены для сравнения, но не считаются текущими." /> : null}
       {snapshot.freshness === "unavailable" ? <StatusBanner tone="error" title="Отчёт временно недоступен" description="Ни один обязательный источник не предоставил актуальные данные." /> : null}
-      {integrationErrors.length > 0 ? <StatusBanner tone="error" title="Не удалось обновить данные" description={`Проверьте доступ к источникам: ${integrationErrors.map(([name]) => reportSourceLabels[name] ?? name).join(", ")}.`} /> : null}
+      {integrationErrors.length > 0 ? <StatusBanner tone="error" title="Не удалось обновить часть данных" description="Проверьте доступ к подключённым источникам и повторите обновление." /> : null}
 
       <div className="hidden" aria-hidden="true">
       {ranking ? (
         <section className="space-y-4" aria-labelledby="ranking-title">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">Поисковое ядро</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">Поисковые запросы</p>
               <h2 id="ranking-title" className="mt-1 text-2xl font-semibold text-app-foreground">Позиции утверждённых запросов</h2>
             </div>
             <p className="text-xs text-app-muted-foreground">
               {ranking.source === "topvisor" && ranking.lastCapturedAt
                 ? `Последний съём Topvisor: ${ranking.lastCapturedAt}`
-                : `Сравнение с ${ranking.baselineLabel}`}
+                : `Первый замер · сравнение с ${ranking.baselineLabel}`}
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
-              label="Ядро запросов"
+              label="Поисковые запросы"
               value={formatInteger(ranking.queryCount)}
               delta={`${ranking.measuredCount} с текущей позицией`}
               deltaTone="neutral"
@@ -149,7 +151,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
               deltaTone={(ranking.top3Delta ?? 0) > 0 ? "positive" : (ranking.top3Delta ?? 0) < 0 ? "negative" : "neutral"}
             />
             <KpiCard
-              label="Динамика ядра"
+              label="Изменение позиций"
               value={`+${ranking.improvedCount} / −${ranking.declinedCount}`}
               delta={`Новые ${ranking.newCount} · потеряны ${ranking.lostCount}`}
               deltaTone={ranking.improvedCount > ranking.declinedCount ? "positive" : ranking.declinedCount > ranking.improvedCount ? "negative" : "neutral"}
@@ -171,16 +173,16 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
           <StatusBanner tone={healthTone} title={healthTitle} description={`${health.fatalCount + health.criticalCount} критичных проблем, ${health.possibleProblemCount} возможных проблем; ошибок сервера: ${health.http5xx}; ошибок карты сайта: ${health.sitemapErrors}.`} />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {factCard("Страницы в поиске", formatInteger(health.pagesInSearch), `${formatInteger(health.excludedPages)} исключено`)}
-            {factCard("Страницы в карте сайта", formatInteger(health.sitemapUrls), health.sitemapErrors > 0 ? `${health.sitemapErrors} ошибок` : "без ошибок")}
+            {factCard("Карта сайта", formatInteger(health.sitemapUrls), health.sitemapErrors > 0 ? `${health.sitemapErrors} ошибок` : "без ошибок")}
             {factCard("Обновление поиска", health.searchBalance >= 0 ? `+${formatInteger(health.searchBalance)}` : formatInteger(health.searchBalance), `${health.appearedInSearch} появилось · ${health.removedFromSearch} удалено`)}
-            {factCard("ИКС", formatInteger(health.sqi), health.sqiDelta === null ? "нет сравнения" : `${health.sqiDelta > 0 ? "+" : ""}${health.sqiDelta} к прошлому замеру`)}
+            {factCard("Индекс качества сайта", formatInteger(health.sqi), health.sqiDelta === null ? "нет сравнения" : `${health.sqiDelta > 0 ? "+" : ""}${health.sqiDelta} к прошлому замеру`)}
           </div>
         </section>
       ) : null}
 
       <section className="space-y-4" aria-labelledby="seo-title">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">SEO-результат</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">Результат продвижения</p>
           <h2 id="seo-title" className="mt-1 text-2xl font-semibold text-app-foreground">Видимость в поиске Яндекса</h2>
         </div>
         {webmaster ? (
@@ -188,7 +190,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <KpiCard label="Показы" value={formatInteger(webmaster.summary.shows)} tone="primary" delta={showsDelta.text} deltaTone={showsDelta.tone} />
               <KpiCard label="Клики" value={formatInteger(webmaster.summary.clicks)} delta={clicksDelta.text} deltaTone={clicksDelta.tone} />
-              <KpiCard label="CTR" value={formatPercent(webmaster.summary.ctr, 2)} delta={ctrDelta.text} deltaTone={ctrDelta.tone} />
+              <KpiCard label="Кликабельность" value={formatPercent(webmaster.summary.ctr, 2)} delta={ctrDelta.text} deltaTone={ctrDelta.tone} />
               <KpiCard label="Средняя позиция" value={formatPosition(webmaster.summary.avgPosition)} delta={positionDelta.text} deltaTone={positionDelta.tone} />
             </div>
             <MetricTrendChart title="Динамика показов и кликов" subtitle="Как меняется поисковая видимость сайта по дням." period={periodLabel} timezone={site.timezone} data={webmaster.visibilityTrend} metricLabel="Показы" secondaryMetricLabel="Клики" tertiaryMetricLabel="Средняя позиция" />
@@ -220,14 +222,14 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
 
       <SectionCard title="Что делать дальше" note="Приоритеты по фактическим данным">
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-app-muted-foreground">Главный риск</p><p className="mt-2 font-semibold">{topAlert?.title ?? "Критичных рисков не обнаружено"}</p>{topAlert ? <p className="mt-1 text-sm text-app-secondary">{topAlert.summary}</p> : null}</div>
-          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-app-muted-foreground">Точка роста</p><p className="mt-2 font-semibold">{topOpportunity?.title ?? "Сохранить текущий курс"}</p>{topOpportunity ? <p className="mt-1 text-sm text-app-secondary">{topOpportunity.summary}</p> : null}</div>
+          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-app-muted-foreground">Главный риск</p><p className="mt-2 font-semibold">{topAlert ? readableInsight(topAlert.title) : "Критичных рисков не обнаружено"}</p>{topAlert ? <p className="mt-1 text-sm text-app-secondary">{readableInsight(topAlert.summary)}</p> : null}</div>
+          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-app-muted-foreground">Точка роста</p><p className="mt-2 font-semibold">{topOpportunity ? readableInsight(topOpportunity.title) : "Сохранить текущий курс"}</p>{topOpportunity ? <p className="mt-1 text-sm text-app-secondary">{readableInsight(topOpportunity.summary)}</p> : null}</div>
         </div>
       </SectionCard>
 
       <footer className="border-t border-[var(--border)] pt-5 text-xs leading-5 text-app-muted-foreground">
-        <p>Источники: Topvisor или утверждённый исходный снимок — точные позиции ядра; Яндекс.Вебмастер — спрос, индексация и диагностика; Яндекс.Метрика — обезличенный трафик и целевые действия.</p>
-        <p>Вебмастер показывает среднюю позицию за период, а не результат точной проверки позиций. Клики и визиты считаются разными системами.</p>
+        <p>Источники: Topvisor — точные позиции поисковых запросов; Яндекс.Вебмастер — спрос, страницы в поиске и найденные проблемы; Яндекс.Метрика — обезличенный трафик и целевые действия.</p>
+        <p>Вебмастер показывает среднюю позицию за период, а не точную позицию в конкретный день. Клики и визиты считаются разными системами.</p>
       </footer>
     </div>
   );

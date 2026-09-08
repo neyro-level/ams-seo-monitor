@@ -61,7 +61,6 @@ export default async function SiteReportPage({ params, searchParams }: SiteRepor
   return (
     <>
       <SiteReportView
-        clientName={`Проект ${projectContext.client.name}`}
         site={site}
         snapshot={snapshot}
         directorAnalytics={directorAnalytics}

@@ -12,7 +12,7 @@ export const createProjectInputSchema = z.object({
   slug: z
     .string()
     .trim()
-    .min(1, "Укажите slug проекта")
+    .min(1, "Укажите адрес проекта в кабинете")
     .max(80)
     .regex(/^[a-z0-9-]+$/, "Используйте строчные латинские буквы, цифры и дефис"),
   name: projectNameSchema,

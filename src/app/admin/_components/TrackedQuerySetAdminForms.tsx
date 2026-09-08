@@ -41,7 +41,10 @@ const updateTrackedQueryFormSchema = z.object({
   baselineLabel: z.string().trim().min(2),
   queriesText: z.string().trim().min(1),
 });
-const rankingSourceLabels = { OWNER_PROVIDED: "Загружен вручную", TOPVISOR: "Topvisor" } as const;
+const rankingSourceLabels = {
+  OWNER_PROVIDED: "Задано вручную",
+  TOPVISOR: "Topvisor",
+} as const;
 const rankingSourceOptions = rankingSourceSchema.options.map((value) => ({ value, label: rankingSourceLabels[value] }));
 
 function parseList(value: string) {
@@ -92,10 +95,10 @@ function TrackedQuerySetEditCard({ item }: { item: TrackedQuerySetListItem }) {
       <form className="grid gap-4" onSubmit={submit}>
         <input type="hidden" {...form.register("id")} />
         <input type="hidden" {...form.register("version", { valueAsNumber: true })} />
-        <FormField error={form.formState.errors.source?.message} label="Источник контрольных значений" required>
+        <FormField error={form.formState.errors.source?.message} label="Источник исходных данных" required>
           <SelectInput options={rankingSourceOptions} {...form.register("source")} />
         </FormField>
-        <FormField error={form.formState.errors.baselineLabel?.message} label="Название контрольного набора" required>
+        <FormField error={form.formState.errors.baselineLabel?.message} label="Название исходного замера" required>
           <TextInput {...form.register("baselineLabel")} />
         </FormField>
         <FormField error={form.formState.errors.queriesText?.message} helper="Один запрос на строку." label="Запросы" required>
@@ -137,15 +140,15 @@ export function TrackedQuerySetsAdminForms({ items, options }: { items: TrackedQ
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать набор запросов" description="Изменения состава запросов сохраняются в истории и не удаляют предыдущие данные.">
+      <SectionCard title="Создать набор запросов" description="Изменения сохраняются в истории, чтобы результаты за разные периоды оставались сопоставимыми.">
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <FormField error={form.formState.errors.siteId?.message} label="Сайт" required>
             <SelectInput options={options.sites.map((option) => ({ value: option.id, label: option.label }))} {...form.register("siteId")} />
           </FormField>
-          <FormField error={form.formState.errors.source?.message} label="Источник контрольных значений" required>
+          <FormField error={form.formState.errors.source?.message} label="Источник исходных данных" required>
             <SelectInput options={rankingSourceOptions} {...form.register("source")} />
           </FormField>
-          <FormField error={form.formState.errors.baselineLabel?.message} label="Название контрольного набора" required>
+          <FormField error={form.formState.errors.baselineLabel?.message} label="Название исходного замера" required>
             <TextInput {...form.register("baselineLabel")} />
           </FormField>
           <div className="sm:col-span-2">

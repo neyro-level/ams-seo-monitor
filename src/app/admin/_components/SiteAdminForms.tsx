@@ -75,7 +75,7 @@ function SiteEditCard({ item }: { item: SiteListItem }) {
         <FormField error={form.formState.errors.name?.message} label="Название" required>
           <TextInput {...form.register("name")} />
         </FormField>
-        <FormField error={form.formState.errors.slug?.message} helper="Короткое имя латиницей для адреса отчёта." label="Код сайта" required>
+        <FormField error={form.formState.errors.slug?.message} label="Адрес в кабинете" helper="Короткое имя для адреса страницы." required>
           <TextInput {...form.register("slug")} />
         </FormField>
         <FormField error={form.formState.errors.url?.message} label="Адрес сайта" required>
@@ -122,7 +122,7 @@ export function SitesAdminForms({ items, options }: { items: SiteListItem[]; opt
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать сайт" description="Сайт будет добавлен в выбранный проект и станет доступен его пользователям.">
+      <SectionCard title="Создать сайт" description="Сайт будет автоматически привязан к выбранному проекту и организации.">
         <form className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" onSubmit={submit}>
           <FormField error={form.formState.errors.projectId?.message} label="Проект" required>
             <SelectInput options={options.projects.map((option) => ({ value: option.id, label: option.label }))} {...form.register("projectId")} />
@@ -130,7 +130,7 @@ export function SitesAdminForms({ items, options }: { items: SiteListItem[]; opt
           <FormField error={form.formState.errors.name?.message} label="Название" required>
             <TextInput {...form.register("name")} />
           </FormField>
-          <FormField error={form.formState.errors.slug?.message} helper="Короткое имя латиницей для адреса отчёта." label="Код сайта" required>
+          <FormField error={form.formState.errors.slug?.message} label="Адрес в кабинете" helper="Короткое имя для адреса страницы." required>
             <TextInput {...form.register("slug")} />
           </FormField>
           <FormField error={form.formState.errors.url?.message} label="Адрес сайта" required>

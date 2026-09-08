@@ -15,8 +15,6 @@ import { getCurrentPrincipalState } from "../../../platform/auth/principal-sessi
 import { ProjectCreateForm } from "./_components/ProjectForms.tsx";
 import { ProjectTable } from "./_components/ProjectTable.tsx";
 import { PermissionDeniedState, StatePanel } from "../../../components/states/StatePanel.tsx";
-import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
-import { AdminResourceNav } from "../_components/AdminResourceNav.tsx";
 import {
   loadProjectSearchParams,
   serializeProjectSearchParams,
@@ -33,9 +31,9 @@ export default async function ProjectsPage({
   if (!hasPermission(state.principal, "project:manage:any")) {
     return (
       <>
-        <div className="space-y-6">
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <PermissionDeniedState title="Раздел недоступен" description="У текущей роли нет права управлять проектами." />
-        </div>
+        </main>
       </>
     );
   }
@@ -65,14 +63,17 @@ export default async function ProjectsPage({
 
   return (
     <>
-      <div className="space-y-6">
-        <PageHeader title="Проекты" description="Проекты клиентов, их состояние и настройки аналитики." />
-        <AdminResourceNav currentPath="/admin/projects/" />
+      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <header>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-app-info">Администрирование</p>
+          <h1 className="mt-2 text-2xl font-semibold text-app-foreground">Проекты</h1>
+          <p className="mt-2 text-sm text-app-secondary">Найдено проектов: {projects.total}</p>
+        </header>
 
         {hasRequiredOptions ? (
           <ProjectCreateForm options={options} />
         ) : (
-          <StatePanel state="not-connected" title="Создание проекта недоступно" description="Сначала добавьте организацию, пороговый и кластерный профили." />
+          <StatePanel state="not-connected" title="Создание проекта недоступно" description="Сначала добавьте организацию, правила оценки и группы поисковых запросов." />
         )}
 
         <form className="grid gap-4 rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--card)] p-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]" method="get">
@@ -82,7 +83,7 @@ export default async function ProjectsPage({
               defaultValue={query.search}
               maxLength={100}
               name="search"
-              placeholder="Название или код для ссылки"
+              placeholder="Название или адрес"
             />
           </label>
           <label className="space-y-1.5">
@@ -114,7 +115,7 @@ export default async function ProjectsPage({
           }}
           result={projects}
         />
-      </div>
+      </main>
     </>
   );
 }

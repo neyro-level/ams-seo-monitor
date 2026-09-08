@@ -44,12 +44,12 @@ export function OperationsAdminForms() {
   });
 
   return (
-    <SectionCard title="Обновить данные проекта" description="Запустите безопасное обновление данных по выбранному проекту.">
+    <SectionCard title="Обновить данные проекта" description="Запустите безопасное обновление данных. Повторное нажатие не создаст одинаковые задания.">
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-        <FormField error={form.formState.errors.projectSlug?.message} helper="Код проекта из его адреса в кабинете." label="Код проекта" required>
+        <FormField error={form.formState.errors.projectSlug?.message} label="Адрес проекта" required>
           <TextInput {...form.register("projectSlug")} />
         </FormField>
-        <FormField error={form.formState.errors.idempotencyKey?.message} helper="Уникальная пометка защищает от повторного запуска одного задания." label="Уникальная пометка запуска" required>
+        <FormField error={form.formState.errors.idempotencyKey?.message} label="Номер запуска" helper="Нужен, чтобы случайно не запустить одно обновление дважды." required>
           <TextInput {...form.register("idempotencyKey")} />
         </FormField>
         <div className="sm:col-span-2">

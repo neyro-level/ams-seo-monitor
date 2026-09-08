@@ -34,9 +34,9 @@ export function MobileDrawer({ sections, currentPath }: MobileDrawerProps) {
           id="mobile-report-nav"
           className="left-0 top-0 h-dvh w-[min(86vw,320px)] translate-x-0 translate-y-0 rounded-none border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] p-3 text-app-sidebar-foreground data-ending-style:-translate-x-full data-starting-style:-translate-x-full lg:hidden"
         >
-          <SheetHeader className="mb-4 rounded-[var(--radius-panel)] border border-[var(--sidebar-border)] bg-[var(--sidebar-hover)] p-3 pr-12">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-app-sidebar-muted">АМС</p>
-            <SheetTitle className="text-sm font-semibold text-app-sidebar-foreground">IMPULSE</SheetTitle>
+          <SheetHeader className="mb-4 flex flex-row items-center gap-2.5 rounded-[var(--radius-panel)] border border-[var(--sidebar-border)] bg-[var(--sidebar-surface)] p-2 pr-12">
+            <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius)] bg-[var(--sidebar-ring)] text-[10px] font-bold tracking-[0.12em] text-app-sidebar-foreground">АМС</span>
+            <SheetTitle className="text-[13px] font-semibold tracking-[0.12em] text-app-sidebar-foreground">ИМПУЛЬС</SheetTitle>
             <SheetDescription className="sr-only">Навигация по отчётам и разделам кабинета</SheetDescription>
           </SheetHeader>
           <ShellNav sections={sections} currentPath={currentPath} onNavigate={() => setOpen(false)} />

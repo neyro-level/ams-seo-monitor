@@ -15,7 +15,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       periodStart: "2026-07-30",
       periodEnd: "2026-08-26",
       timezone: "+03:00",
-      note: "Демонстрационные данные Яндекс.Вебмастера.",
+      note: "Wave 1 synthetic fixture. Live OAuth not used.",
       safeErrorCode: null,
     },
     metrica: {
@@ -24,7 +24,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       periodStart: "2026-07-30",
       periodEnd: "2026-08-26",
       timezone: "+03:00",
-      note: "Демонстрационные данные Яндекс.Метрики.",
+      note: "Wave 1 synthetic fixture. Live counter onboarding is still ahead.",
       safeErrorCode: null,
     },
   },
@@ -109,19 +109,19 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
         previousClicks: 1,
         deltaClicksPercent: -100,
         deltaCtrPoints: -1.35,
-        opportunityType: "нет кликов по заметным запросам",
+        opportunityType: "0 clicks in top pool",
       },
     ],
     diagnostics: [
       {
         severity: "warning",
-        title: "Демонстрационный режим",
-        description: "На этой странице показаны тестовые данные, а не показатели подключённого сайта.",
+        title: "Synthetic fixture mode",
+        description: "Wave 1 intentionally uses fixture data instead of live API collection.",
       },
       {
         severity: "info",
-        title: "Карта сайта в порядке",
-        description: "Тестовая карта сайта загружена без ошибок.",
+        title: "Карта сайта работает без ошибок",
+        description: "Synthetic sitemap state mirrors the approved MVP shape.",
       },
     ],
     sitemap: {
@@ -210,13 +210,13 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       goalReaches: 74,
       caveats: [
         "Клики Вебмастера и визиты Метрики не равны один одному.",
-        "На странице показаны демонстрационные данные.",
+        "Wave 1 показывает synthetic fixture instead of live onboarding data.",
       ],
     },
     opportunities: [
       {
         id: "opp-1",
-        title: "Усилить CTR на запросах 4–10 позиции",
+        title: "Повысить кликабельность запросов на 4–10 позиции",
         summary: "Есть пул запросов с достаточными показами и позициями, но кликабельность ниже потенциала.",
         source: "webmaster",
         tone: "info",
@@ -224,7 +224,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       {
         id: "opp-2",
         title: "Перепроверить мобильную ипотечную посадочную",
-        summary: "Мобильный трафик по ипотечному кластеру есть, но конверсия и CTR заметно слабее общего уровня.",
+        summary: "Посетители с телефонов интересуются ипотекой, но реже переходят и оставляют заявки.",
         source: "combined",
         tone: "warning",
       },
@@ -239,14 +239,14 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
     alerts: [
       {
         id: "alert-1",
-        title: "Демонстрационный режим",
+        title: "Wave 1 fixture mode",
         summary: "Этот отчёт нужен для проверки shell, routes и DTO. Live OAuth ещё не подключён.",
         tone: "info",
       },
     ],
     methodology: [
-      "Периоды в демонстрационном отчёте имеют равную длину.",
-      "CTR считается только по shows > 0.",
+      "Периоды в synthetic fixture равной длины.",
+      "Кликабельность считается только для запросов, у которых были показы.",
       "Combined funnel не утверждает прямую причинность query → lead.",
     ],
   },

@@ -11,7 +11,7 @@ import { siteRegistrySchema } from "../../shared/schemas/registry.ts";
 
 const demoSite = siteRegistrySchema.parse({
   siteSlug: "overview",
-  name: "Демонстрационный отчёт",
+  name: "Synthetic overview",
   siteUrl: "https://demo.ams-cloud.ru",
   timezone: "+03:00",
   enabled: true,
@@ -35,7 +35,6 @@ export default async function DemoPage() {
   return (
     <>
       <SiteReportView
-        clientName="Демонстрация"
         site={demoSite}
         snapshot={getDemoSnapshot()}
         mode="fixture"

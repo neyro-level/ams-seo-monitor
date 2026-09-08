@@ -18,6 +18,7 @@ for (const file of trackedUiFiles) {
   if (/--radius-control|var\(--radius-control\)/.test(source)) violations.push(`${file}: obsolete radius-control token`);
   if (/(?:text-\[(?:color:)?var|\[color:var)\(--(?!ch-)/.test(source)) violations.push(`${file}: private text color must use a stable semantic text utility`);
   if (/Application Design System 2\.0|UI Development Constitution 1\.0/.test(source)) violations.push(`${file}: obsolete UI canon version`);
+  if (/(?:text-\[(?:color:)?var|\[color:var)\(--(?!ch-)/.test(source)) violations.push(`${file}: private text color must use a stable semantic text utility`);
 }
 
 const reusableComponents = (await filesUnder("src/components"))

@@ -12,6 +12,29 @@ import type { PlatformAdminListQuery } from "../../platform-admin/contracts.ts";
 
 const reliabilityService = new ReliabilityService(new PrismaReliabilityRepository());
 
+const operationStatusLabels: Record<string, string> = {
+  PENDING: "Ожидает запуска",
+  PROCESSING: "Выполняется",
+  RUNNING: "Выполняется",
+  PROCESSED: "Завершено",
+  SUCCESS: "Завершено",
+  FAILED: "Ошибка",
+  DEAD_LETTER: "Остановлено после ошибок",
+};
+
+const triggerLabels: Record<string, string> = {
+  manual: "Запущено вручную",
+  daily: "Плановое обновление",
+  weekly: "Еженедельное обновление",
+  onboarding: "Первичная настройка",
+};
+
+const topicLabels: Record<string, string> = {
+  "project.sync.requested": "Обновление данных проекта",
+  "providers.sync.requested": "Обновление данных источников",
+  "outbox.retention.requested": "Очистка завершённых заданий",
+};
+
 function requirePlatformAdmin(principal: PrincipalContext) {
   if (principal.kind !== "platform-admin") {
     throw new PlatformOperationsAdminError("PLATFORM_OPERATIONS_ADMIN_ACCESS_DENIED");
@@ -61,17 +84,17 @@ export async function listOperations(
     ...syncRuns.map((item) => ({
       id: item.id,
       kind: "sync-run" as const,
-      primary: `${item.projectSlug} · ${item.trigger}`,
-      secondary: `${item.sitesProcessed} сайтов · ${item.safeError ?? "без ошибки"}`,
-      status: item.status,
+      primary: `Проект ${item.projectSlug}`,
+      secondary: `${triggerLabels[item.trigger] ?? "Автоматическое обновление"} · обработано сайтов: ${item.sitesProcessed}${item.safeError ? " · требуется внимание" : ""}`,
+      status: operationStatusLabels[item.status] ?? "Состояние уточняется",
       updatedAt: item.updatedAt.toISOString(),
     })),
     ...outboxEvents.map((item) => ({
       id: item.id,
       kind: "outbox-event" as const,
-      primary: item.topic,
-      secondary: `Попыток: ${item.attempts} · ${item.lastErrorCode ?? "без ошибки"}`,
-      status: item.status,
+      primary: topicLabels[item.topic] ?? "Служебное задание",
+      secondary: `Попыток запуска: ${item.attempts}${item.lastErrorCode ? " · требуется внимание" : ""}`,
+      status: operationStatusLabels[item.status] ?? "Состояние уточняется",
       updatedAt: item.updatedAt.toISOString(),
     })),
   ]

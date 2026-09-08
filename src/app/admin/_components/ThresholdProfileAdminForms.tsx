@@ -80,19 +80,19 @@ function ThresholdProfileEditCard({ item }: { item: ThresholdProfileListItem }) 
   });
 
   return (
-    <SectionCard title={`Правила: ${item.slug}`} description="Значения, по которым система автоматически оценивает изменения.">
+    <SectionCard title={`Правила оценки «${item.slug}»`} description="Пороговые значения для предупреждений в отчёте.">
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
         <input type="hidden" {...form.register("id")} />
         <input type="hidden" {...form.register("version", { valueAsNumber: true })} />
         <FormField error={form.formState.errors.minimumShows?.message} label="Минимум показов" required><TextInput type="number" step="1" {...form.register("minimumShows", { valueAsNumber: true })} /></FormField>
-        <FormField error={form.formState.errors.maximumCtrPercent?.message} label="Максимальный CTR, %" required><TextInput type="number" step="any" {...form.register("maximumCtrPercent", { valueAsNumber: true })} /></FormField>
-        <FormField error={form.formState.errors.maximumAveragePosition?.message} label="Максимальная средняя позиция" required><TextInput type="number" step="any" {...form.register("maximumAveragePosition", { valueAsNumber: true })} /></FormField>
+        <FormField error={form.formState.errors.maximumCtrPercent?.message} label="Предельная кликабельность, %" required><TextInput type="number" step="any" {...form.register("maximumCtrPercent", { valueAsNumber: true })} /></FormField>
+        <FormField error={form.formState.errors.maximumAveragePosition?.message} label="Предельная средняя позиция" required><TextInput type="number" step="any" {...form.register("maximumAveragePosition", { valueAsNumber: true })} /></FormField>
         <FormField error={form.formState.errors.showsDropPercent?.message} label="Снижение показов, %" required><TextInput type="number" step="any" {...form.register("showsDropPercent", { valueAsNumber: true })} /></FormField>
         <FormField error={form.formState.errors.clicksDropPercent?.message} label="Снижение кликов, %" required><TextInput type="number" step="any" {...form.register("clicksDropPercent", { valueAsNumber: true })} /></FormField>
         <FormField error={form.formState.errors.positionWorsenedDelta?.message} label="Ухудшение позиции" required><TextInput type="number" step="any" {...form.register("positionWorsenedDelta", { valueAsNumber: true })} /></FormField>
         <FormField error={form.formState.errors.pagesInSearchDropPercent?.message} label="Снижение страниц в поиске, %" required><TextInput type="number" step="any" {...form.register("pagesInSearchDropPercent", { valueAsNumber: true })} /></FormField>
-        <FormField error={form.formState.errors.organicVisitsDropPercent?.message} label="Снижение органических визитов, %" required><TextInput type="number" step="any" {...form.register("organicVisitsDropPercent", { valueAsNumber: true })} /></FormField>
-        <FormField error={form.formState.errors.goalConversionDropPercent?.message} label="Снижение конверсии по целям, %" required><TextInput type="number" step="any" {...form.register("goalConversionDropPercent", { valueAsNumber: true })} /></FormField>
+        <FormField error={form.formState.errors.organicVisitsDropPercent?.message} label="Снижение визитов из поиска, %" required><TextInput type="number" step="any" {...form.register("organicVisitsDropPercent", { valueAsNumber: true })} /></FormField>
+        <FormField error={form.formState.errors.goalConversionDropPercent?.message} label="Снижение конверсии, %" required><TextInput type="number" step="any" {...form.register("goalConversionDropPercent", { valueAsNumber: true })} /></FormField>
         <div className="sm:col-span-2"><SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Сохранить пороги" onRefresh={() => router.refresh()} pendingLabel="Сохраняем…" /></div>
       </form>
     </SectionCard>
@@ -131,18 +131,18 @@ export function ThresholdProfilesAdminForms({ items }: { items: ThresholdProfile
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать правила оценки" description="Задайте значения, при которых система должна обратить внимание на изменения показателей.">
+      <SectionCard title="Создать правила оценки" description="Задайте значения, при которых система должна обратить внимание на изменение показателей.">
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-          <FormField error={form.formState.errors.slug?.message} helper="Короткое уникальное имя латиницей." label="Код правил" required><TextInput {...form.register("slug")} /></FormField>
+          <FormField error={form.formState.errors.slug?.message} label="Короткое название" required><TextInput {...form.register("slug")} /></FormField>
           <FormField error={form.formState.errors.minimumShows?.message} label="Минимум показов" required><TextInput type="number" step="1" {...form.register("minimumShows", { valueAsNumber: true })} /></FormField>
-          <FormField error={form.formState.errors.maximumCtrPercent?.message} label="Максимальный CTR, %" required><TextInput type="number" step="any" {...form.register("maximumCtrPercent", { valueAsNumber: true })} /></FormField>
-          <FormField error={form.formState.errors.maximumAveragePosition?.message} label="Максимальная средняя позиция" required><TextInput type="number" step="any" {...form.register("maximumAveragePosition", { valueAsNumber: true })} /></FormField>
+          <FormField error={form.formState.errors.maximumCtrPercent?.message} label="Предельная кликабельность, %" required><TextInput type="number" step="any" {...form.register("maximumCtrPercent", { valueAsNumber: true })} /></FormField>
+          <FormField error={form.formState.errors.maximumAveragePosition?.message} label="Предельная средняя позиция" required><TextInput type="number" step="any" {...form.register("maximumAveragePosition", { valueAsNumber: true })} /></FormField>
           <FormField error={form.formState.errors.showsDropPercent?.message} label="Снижение показов, %" required><TextInput type="number" step="any" {...form.register("showsDropPercent", { valueAsNumber: true })} /></FormField>
           <FormField error={form.formState.errors.clicksDropPercent?.message} label="Снижение кликов, %" required><TextInput type="number" step="any" {...form.register("clicksDropPercent", { valueAsNumber: true })} /></FormField>
           <FormField error={form.formState.errors.positionWorsenedDelta?.message} label="Ухудшение позиции" required><TextInput type="number" step="any" {...form.register("positionWorsenedDelta", { valueAsNumber: true })} /></FormField>
           <FormField error={form.formState.errors.pagesInSearchDropPercent?.message} label="Снижение страниц в поиске, %" required><TextInput type="number" step="any" {...form.register("pagesInSearchDropPercent", { valueAsNumber: true })} /></FormField>
-          <FormField error={form.formState.errors.organicVisitsDropPercent?.message} label="Снижение органических визитов, %" required><TextInput type="number" step="any" {...form.register("organicVisitsDropPercent", { valueAsNumber: true })} /></FormField>
-          <FormField error={form.formState.errors.goalConversionDropPercent?.message} label="Снижение конверсии по целям, %" required><TextInput type="number" step="any" {...form.register("goalConversionDropPercent", { valueAsNumber: true })} /></FormField>
+          <FormField error={form.formState.errors.organicVisitsDropPercent?.message} label="Снижение визитов из поиска, %" required><TextInput type="number" step="any" {...form.register("organicVisitsDropPercent", { valueAsNumber: true })} /></FormField>
+          <FormField error={form.formState.errors.goalConversionDropPercent?.message} label="Снижение конверсии, %" required><TextInput type="number" step="any" {...form.register("goalConversionDropPercent", { valueAsNumber: true })} /></FormField>
           <div className="sm:col-span-2"><SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Создать пороги" onRefresh={() => router.refresh()} pendingLabel="Создаём…" /></div>
         </form>
       </SectionCard>

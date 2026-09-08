@@ -401,7 +401,7 @@ function compileWebmasterReport(
     const key = `${opportunity.queryId}::${opportunity.device}`;
     const labels = opportunityTypes.get(key) ?? [];
     const labelByType = {
-      high_impressions_low_ctr: "высокие показы / низкий CTR",
+      high_impressions_low_ctr: "много показов, мало переходов",
       positions_4_10: "позиции 4–10",
       positions_11_20: "позиции 11–20",
       zero_clicks: "нет кликов",
@@ -679,8 +679,8 @@ function compileCombinedReport(args: {
   ) {
     alerts.push({
       id: "webmaster-health-critical",
-      title: "Критичное техническое состояние",
-      summary: `HTTP 5xx: ${health.http5xx}; критичных диагностик: ${health.fatalCount + health.criticalCount}; ошибок Sitemap: ${health.sitemapErrors}.`,
+      title: "Сайт требует внимания",
+      summary: `Ошибок сервера: ${health.http5xx}; серьёзных проблем: ${health.fatalCount + health.criticalCount}; ошибок карты сайта: ${health.sitemapErrors}.`,
       tone: "error",
     });
   }
@@ -689,7 +689,7 @@ function compileCombinedReport(args: {
     alerts.push({
       id: "webmaster-source-failure",
       title: "Яндекс.Вебмастер недоступен",
-      summary: `Безопасный код ошибки: ${args.webmasterFailure.code}`,
+      summary: "Источник временно не отвечает. Повторите обновление позже.",
       tone: "error",
     });
   }
@@ -697,7 +697,7 @@ function compileCombinedReport(args: {
     alerts.push({
       id: "metrica-source-failure",
       title: "Яндекс.Метрика недоступна",
-      summary: `Безопасный код ошибки: ${args.metricaFailure.code}`,
+      summary: "Источник временно не отвечает. Повторите обновление позже.",
       tone: "error",
     });
   }
@@ -770,7 +770,7 @@ function compileCombinedReport(args: {
     opportunities.push({
       id: `query-${query.queryId}`,
       title: query.queryText,
-      summary: `${query.shows} показов, CTR ${(query.ctrPercent ?? 0).toFixed(2)}%, позиция ${(query.avgShowPosition ?? 0).toFixed(1)}.`,
+      summary: `${query.shows} показов, кликабельность ${(query.ctrPercent ?? 0).toFixed(2)}%, позиция ${(query.avgShowPosition ?? 0).toFixed(1)}.`,
       source: "webmaster",
       tone: "info",
     });

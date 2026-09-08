@@ -63,31 +63,36 @@ const defaultSortOptions: Array<{ field: PlatformAdminSortField; label: string }
   { field: "updatedAt", label: "Обновлено" },
 ];
 
-const systemValueLabels: Record<string, string> = {
-  ORG_OWNER: "Владелец",
-  ORG_MEMBER: "Участник",
-  VIEWER: "Наблюдатель",
+const accessLevelLabels: Record<string, string> = {
+  ORG_OWNER: "Владелец организации",
+  ORG_MEMBER: "Сотрудник организации",
+  VIEWER: "Только просмотр",
+};
+const sourceLabels: Record<string, string> = {
+  OWNER_PROVIDED: "Задано вручную",
+  TOPVISOR: "Topvisor",
   YANDEX_WEBMASTER: "Яндекс.Вебмастер",
   YANDEX_METRIKA: "Яндекс.Метрика",
-  TOPVISOR: "Topvisor",
-  OWNER_PROVIDED: "Загружен вручную",
+};
+const goalCategoryLabels: Record<string, string> = {
   LEAD_SUBMIT: "Отправка заявки",
   PHONE_CLICK: "Раскрытие телефона",
   MESSENGER_CLICK: "Переход в мессенджер",
-  FORM_START: "Начало формы",
+  FORM_START: "Начало заполнения формы",
   FILE_DOWNLOAD: "Скачивание файла",
-  OTHER: "Другое",
-  PRIMARY: "Основная",
-  SECONDARY: "Дополнительная",
+  OTHER: "Другое действие",
 };
-const humanizeSystemValue = (value: string) => systemValueLabels[value] ?? value;
+const goalDirectionLabels: Record<string, string> = {
+  PRIMARY: "Основная цель",
+  SECONDARY: "Дополнительная цель",
+};
 
 function Filters({ query, resource }: { query: PlatformAdminPageQuery; resource: string }) {
   return (
     <form className="grid gap-3 rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--card)] p-4 sm:grid-cols-[minmax(0,1fr)_180px_160px_auto]" method="get">
       <label className="space-y-1.5">
         <span className="block text-sm font-medium text-app-foreground">Поиск</span>
-        <Input defaultValue={query.search} name="q" placeholder="Название, код или идентификатор" />
+        <Input defaultValue={query.search} name="q" placeholder="Название или адрес" />
       </label>
       <label className="space-y-1.5">
         <span className="block text-sm font-medium text-app-foreground">Сортировка</span>
@@ -172,7 +177,7 @@ export default async function AdminResourcePageRoute({
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
       primary: item.name,
-      secondary: `Код: ${item.slug} · ${item.projectCount} проектов · ${item.membershipCount} участников`,
+      secondary: `${item.projectCount} проектов · ${item.membershipCount} участников`,
       status: "Активна",
       updatedAt: item.updatedAt,
     }));
@@ -204,7 +209,7 @@ export default async function AdminResourcePageRoute({
       id: item.id,
       primary: item.userName,
       secondary: `${item.userEmail} · ${item.organizationName}`,
-      status: humanizeSystemValue(item.tenantRole),
+      status: accessLevelLabels[item.tenantRole] ?? "Доступ настроен",
       updatedAt: item.updatedAt,
     }));
     const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
@@ -259,8 +264,8 @@ export default async function AdminResourcePageRoute({
     ]);
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
-      primary: `${item.siteName} · ${humanizeSystemValue(item.provider)}`,
-      secondary: `${item.projectName} · ${item.externalId ?? "без внешнего идентификатора"}`,
+      primary: `${item.siteName} · ${sourceLabels[item.provider] ?? "Источник данных"}`,
+      secondary: item.projectName,
       status: item.enabled ? "Включён" : "Отключён",
       updatedAt: item.updatedAt,
     }));
@@ -287,8 +292,8 @@ export default async function AdminResourcePageRoute({
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
       primary: item.label,
-      secondary: `${item.projectName} · цель ${item.externalGoalId} · ${humanizeSystemValue(item.category)}`,
-      status: item.includeInSeoConversion ? "Учитывается в SEO" : humanizeSystemValue(item.direction),
+      secondary: `${item.projectName} · ${goalCategoryLabels[item.category] ?? "Целевое действие"}`,
+      status: item.includeInSeoConversion ? "Учитывается в результате SEO" : (goalDirectionLabels[item.direction] ?? "Не учитывается"),
       updatedAt: item.updatedAt,
     }));
     return (
@@ -314,8 +319,8 @@ export default async function AdminResourcePageRoute({
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
       primary: item.siteName,
-      secondary: `${item.projectName} · ${item.baselineLabel} · ${item.enabledQueryCount} из ${item.expectedCount} запросов`,
-      status: humanizeSystemValue(item.source),
+      secondary: `${item.projectName} · ${item.enabledQueryCount} из ${item.expectedCount} запросов`,
+      status: sourceLabels[item.source] ?? "Источник указан",
       updatedAt: item.updatedAt,
     }));
     return (
@@ -340,16 +345,16 @@ export default async function AdminResourcePageRoute({
     ]);
     const thresholdRows: PlatformAdminDisplayRow[] = thresholds.items.map((item) => ({
       id: item.id,
-      primary: `Правила ${item.slug}`,
+      primary: `Правила оценки «${item.slug}»`,
       secondary: `Минимум показов ${item.minimumShows}`,
-      status: "Настроен",
+      status: "Настроено",
       updatedAt: item.updatedAt,
     }));
     const clusterRows: PlatformAdminDisplayRow[] = clusters.items.map((item) => ({
       id: item.id,
       primary: item.name,
-      secondary: `Код: ${item.slug} · ${item.groups.length} групп`,
-      status: "Настроен",
+      secondary: `${item.groups.length} групп запросов`,
+      status: "Настроено",
       updatedAt: item.updatedAt,
     }));
     return (

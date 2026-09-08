@@ -79,20 +79,20 @@ function QueryClusterProfileEditCard({ item }: { item: QueryClusterProfileListIt
       setFeedback({ kind: "success", message: "Группы запросов обновлены" });
       router.refresh();
     } catch {
-      form.setError("groupsJsonText", { message: "Проверьте структуру групп" });
-      setFeedback({ kind: "error", message: "Проверьте структуру групп" });
+      form.setError("groupsJsonText", { message: "Проверьте формат списка групп" });
+      setFeedback({ kind: "error", message: "Проверьте формат списка групп" });
     }
   });
 
   return (
-    <SectionCard title={item.name} description={`Код: ${item.slug}`}>
+    <SectionCard title={item.name} description={`${item.groups.length} групп запросов`}>
       <form className="grid gap-4" onSubmit={submit}>
         <input type="hidden" {...form.register("id")} />
         <input type="hidden" {...form.register("version", { valueAsNumber: true })} />
         <FormField error={form.formState.errors.name?.message} label="Название" required>
           <TextInput {...form.register("name")} />
         </FormField>
-        <FormField error={form.formState.errors.groupsJsonText?.message} helper="Расширенная настройка. Сохраняйте скобки, кавычки и запятые." label="Структура групп" required>
+        <FormField error={form.formState.errors.groupsJsonText?.message} helper="Служебный список групп поисковых запросов." label="Группы запросов" required>
           <AreaInput rows={8} {...form.register("groupsJsonText")} />
         </FormField>
         <SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Сохранить кластеры" onRefresh={() => router.refresh()} pendingLabel="Сохраняем…" />
@@ -121,21 +121,21 @@ export function QueryClusterProfilesAdminForms({ items }: { items: QueryClusterP
         setFeedback(feedbackFrom(result));
         return;
       }
-      setFeedback({ kind: "success", message: "Группы запросов созданы" });
+      setFeedback({ kind: "success", message: "Набор групп создан" });
       router.refresh();
     } catch {
-      form.setError("groupsJsonText", { message: "Проверьте структуру групп" });
-      setFeedback({ kind: "error", message: "Проверьте структуру групп" });
+      form.setError("groupsJsonText", { message: "Проверьте формат списка групп" });
+      setFeedback({ kind: "error", message: "Проверьте формат списка групп" });
     }
   });
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать группы запросов" description="Настройте именованные группы для анализа поисковых запросов.">
+      <SectionCard title="Создать набор групп" description="Объедините поисковые запросы в понятные смысловые группы.">
         <form className="grid gap-4" onSubmit={submit}>
-          <FormField error={form.formState.errors.slug?.message} helper="Короткое уникальное имя латиницей." label="Код набора" required><TextInput {...form.register("slug")} /></FormField>
+          <FormField error={form.formState.errors.slug?.message} label="Короткое название" required><TextInput {...form.register("slug")} /></FormField>
           <FormField error={form.formState.errors.name?.message} label="Название" required><TextInput {...form.register("name")} /></FormField>
-          <FormField error={form.formState.errors.groupsJsonText?.message} helper="Расширенная настройка групп в служебном формате JSON." label="Структура групп" required><AreaInput rows={8} {...form.register("groupsJsonText")} /></FormField>
+          <FormField error={form.formState.errors.groupsJsonText?.message} helper="Служебный список групп поисковых запросов." label="Группы запросов" required><AreaInput rows={8} {...form.register("groupsJsonText")} /></FormField>
           <SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Создать кластеры" onRefresh={() => router.refresh()} pendingLabel="Создаём…" />
         </form>
       </SectionCard>
