@@ -25,7 +25,7 @@ export function AccordionTrigger({ className, children, ...props }: React.Compon
         {...props}
       >
         {children}
-        <ChevronDown className="size-4 shrink-0 text-[var(--muted-foreground)] transition-transform group-data-[open]:rotate-180 motion-reduce:transition-none" aria-hidden />
+        <ChevronDown className="size-4 shrink-0 text-app-muted-foreground transition-transform group-data-[open]:rotate-180 motion-reduce:transition-none" aria-hidden />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );
@@ -38,7 +38,7 @@ export function AccordionContent({ className, children, ...props }: React.Compon
       className="h-[var(--accordion-panel-height)] overflow-hidden transition-[height] duration-200 motion-reduce:transition-none data-ending-style:h-0 data-starting-style:h-0"
       {...props}
     >
-      <div className={cn("pb-4 text-sm text-[var(--text-secondary)]", className)}>{children}</div>
+      <div className={cn("pb-4 text-sm text-app-secondary", className)}>{children}</div>
     </AccordionPrimitive.Panel>
   );
 }

@@ -38,12 +38,12 @@ export function AppShell({ sections, displayName, roleLabel, notificationSummary
   }
 
   return (
-    <div className="theme-app admin-root min-h-screen bg-[var(--background)] text-[var(--foreground)]" data-shell-theme="impulse">
+    <div className="theme-app admin-root min-h-screen bg-[var(--background)] text-app-foreground">
       <aside className={`fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-200 lg:block ${collapsed ? "w-[72px]" : "w-[232px]"}`}>
-        <div className="flex h-full flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] text-[var(--sidebar-foreground)]">
+        <div className="flex h-full flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] text-app-sidebar-foreground">
           <div className="flex h-16 items-center border-b border-[var(--sidebar-border)] px-3">
             <div className={`flex min-w-0 flex-1 items-center ${collapsed ? "justify-center" : "gap-3"}`}>
-              <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius)] bg-[var(--sidebar-primary)] text-[11px] font-bold tracking-[0.08em] text-[var(--sidebar-primary-foreground)]">АМС</span>
+              <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius)] bg-[var(--sidebar-primary)] text-[11px] font-bold tracking-[0.08em] text-app-sidebar-primary-foreground">АМС</span>
               {collapsed ? null : <span className="truncate text-xs font-semibold tracking-[0.12em]">IMPULSE</span>}
             </div>
           </div>
@@ -53,11 +53,11 @@ export function AppShell({ sections, displayName, roleLabel, notificationSummary
           </div>
 
           <div className="border-t border-[var(--sidebar-border)] p-2">
-            <div className={`flex min-h-11 items-center rounded-[var(--radius)] bg-[var(--sidebar-surface)] ${collapsed ? "justify-center" : "gap-2 px-2"}`}>
-              <span className="grid size-8 shrink-0 place-items-center rounded-[var(--radius)] bg-[var(--sidebar-surface-hover)] text-[var(--sidebar-foreground)]"><ShieldCheck className="size-4" strokeWidth={1.8} aria-hidden /></span>
-              {collapsed ? <span className="sr-only">{displayName}, {roleLabel}</span> : <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{displayName}</p><p className="truncate text-xs text-[var(--sidebar-muted)]">{roleLabel}</p></div>}
+            <div className={`flex min-h-11 items-center rounded-[var(--radius)] bg-[var(--sidebar-hover)] ${collapsed ? "justify-center" : "gap-2 px-2"}`}>
+              <span className="grid size-8 shrink-0 place-items-center rounded-[var(--radius)] bg-[var(--sidebar-accent)] text-app-sidebar-foreground"><ShieldCheck className="size-4" strokeWidth={1.8} aria-hidden /></span>
+              {collapsed ? <span className="sr-only">{displayName}, {roleLabel}</span> : <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{displayName}</p><p className="truncate text-xs text-app-sidebar-muted">{roleLabel}</p></div>}
               {collapsed ? null : (
-                <Button type="button" variant="ghost" size="icon" className="size-9 min-h-9 text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-surface-hover)] hover:text-[var(--sidebar-foreground)]" onClick={signOut} disabled={signingOut} aria-label="Выйти из кабинета">
+                <Button type="button" variant="ghost" size="icon" className="size-9 min-h-9 text-app-sidebar-muted hover:bg-[var(--sidebar-accent)] hover:text-app-sidebar-foreground" onClick={signOut} disabled={signingOut} aria-label="Выйти из кабинета">
                   <LogOut aria-hidden />
                 </Button>
               )}
@@ -74,7 +74,7 @@ export function AppShell({ sections, displayName, roleLabel, notificationSummary
             <TooltipContent>{collapsed ? "Развернуть меню" : "Свернуть меню"}</TooltipContent>
           </Tooltip>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-[var(--foreground)]">{activeLabel ?? "AMS IMPULSE"}</p>
+            <p className="truncate text-sm font-semibold text-app-foreground">{activeLabel ?? "AMS IMPULSE"}</p>
           </div>
           {notificationSummary ? <NotificationCenter initialSummary={notificationSummary} /> : null}
           <Button type="button" variant="ghost" size="icon" className="lg:hidden" onClick={signOut} disabled={signingOut} aria-label="Выйти из кабинета"><LogOut aria-hidden /></Button>

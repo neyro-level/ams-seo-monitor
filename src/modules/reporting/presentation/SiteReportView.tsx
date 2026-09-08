@@ -16,6 +16,12 @@ import { DirectorReportTabs } from "./DirectorReportTabs.tsx";
 
 type ComparisonMetric = ReportComparison["metrics"]["shows"];
 
+const reportSourceLabels: Record<string, string> = {
+  webmaster: "Яндекс.Вебмастер",
+  metrica: "Яндекс.Метрика",
+  ranking: "проверка позиций",
+};
+
 function formatDelta(metric: ComparisonMetric | undefined, mode: "percent" | "points" | "position" = "percent") {
   const value = mode === "percent" ? metric?.deltaPercent : metric?.deltaPoints;
   if (value === null || value === undefined) return { text: undefined, tone: "neutral" as const };
@@ -35,9 +41,9 @@ function formatDelta(metric: ComparisonMetric | undefined, mode: "percent" | "po
 function factCard(label: string, value: string, note?: string) {
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-[var(--foreground)]">{value}</p>
-      {note ? <p className="mt-1 text-xs text-[var(--text-secondary)]">{note}</p> : null}
+      <p className="text-xs font-semibold uppercase tracking-wide text-app-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums text-app-foreground">{value}</p>
+      {note ? <p className="mt-1 text-xs text-app-secondary">{note}</p> : null}
     </div>
   );
 }
@@ -65,7 +71,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
       <div className="space-y-6">
         <PageHeader eyebrow={clientName} title={site.name} description="Единый отчёт по поисковой видимости, техническому состоянию и органическому трафику." backHref={backHref} />
         {periodControl}
-        <StatePanel state={sourcesEnabled ? "stale" : "not-connected"} title={sourcesEnabled ? "Live-отчёт готовится" : "Источники не подключены"} description={sourcesEnabled ? "Данные появятся после успешной публикации snapshot." : "Для отчёта нужны доступы к Яндекс.Вебмастеру и Яндекс.Метрике."} />
+        <StatePanel state={sourcesEnabled ? "stale" : "not-connected"} title={sourcesEnabled ? "Отчёт готовится" : "Источники не подключены"} description={sourcesEnabled ? "Данные появятся после завершения первого обновления." : "Для отчёта нужны доступы к Яндекс.Вебмастеру и Яндекс.Метрике."} />
       </div>
     );
   }
@@ -98,27 +104,27 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
       <PageHeader eyebrow={clientName} title={site.name} description={`Единый отчёт за ${periodLabel}. Обновлён ${new Date(snapshot.generatedAt).toLocaleString("ru-RU")}.`} backHref={backHref} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         {periodControl}
-        <p className="text-xs text-[var(--muted-foreground)]">{mode === "live" ? "Live-данные" : "Демонстрационные данные"}</p>
+        <p className="text-xs text-app-muted-foreground">{mode === "live" ? "Актуальные данные" : "Демонстрационные данные"}</p>
       </div>
       <DirectorReportTabs snapshot={snapshot} analytics={directorAnalytics} timezone={site.timezone} />
 
       {snapshot.freshness === "partial" ? <StatusBanner tone="warning" title="Отчёт собран частично" description="Часть источников не вернула полный набор данных. Доступные показатели показаны без подмены отсутствующих значений нулями." /> : null}
-      {snapshot.freshness === "stale" ? <StatusBanner tone="warning" title="Данные устарели" description="Последний опубликованный snapshot старше допустимого периода. Показатели сохранены для сравнения, но не считаются текущими." /> : null}
+      {snapshot.freshness === "stale" ? <StatusBanner tone="warning" title="Данные устарели" description="Последнее обновление было давно. Показатели сохранены для сравнения, но не считаются текущими." /> : null}
       {snapshot.freshness === "unavailable" ? <StatusBanner tone="error" title="Отчёт временно недоступен" description="Ни один обязательный источник не предоставил актуальные данные." /> : null}
-      {integrationErrors.length > 0 ? <StatusBanner tone="error" title="Ошибка интеграции" description={`Проверьте доступ к источникам: ${integrationErrors.map(([name]) => name).join(", ")}.`} /> : null}
+      {integrationErrors.length > 0 ? <StatusBanner tone="error" title="Не удалось обновить данные" description={`Проверьте доступ к источникам: ${integrationErrors.map(([name]) => reportSourceLabels[name] ?? name).join(", ")}.`} /> : null}
 
       <div className="hidden" aria-hidden="true">
       {ranking ? (
         <section className="space-y-4" aria-labelledby="ranking-title">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--primary)]">Поисковое ядро</p>
-              <h2 id="ranking-title" className="mt-1 text-2xl font-semibold text-[var(--foreground)]">Позиции утверждённых запросов</h2>
+              <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">Поисковое ядро</p>
+              <h2 id="ranking-title" className="mt-1 text-2xl font-semibold text-app-foreground">Позиции утверждённых запросов</h2>
             </div>
-            <p className="text-xs text-[var(--muted-foreground)]">
+            <p className="text-xs text-app-muted-foreground">
               {ranking.source === "topvisor" && ranking.lastCapturedAt
                 ? `Последний съём Topvisor: ${ranking.lastCapturedAt}`
-                : `Исходный снимок · сравнение с ${ranking.baselineLabel}`}
+                : `Сравнение с ${ranking.baselineLabel}`}
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -159,13 +165,13 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
       {health ? (
         <section className="space-y-4" aria-labelledby="health-title">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--primary)]">Состояние сайта</p>
-            <h2 id="health-title" className="max-w-full break-words text-2xl font-semibold text-[var(--foreground)]">Индексация и техническое здоровье</h2>
+            <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">Состояние сайта</p>
+            <h2 id="health-title" className="max-w-full break-words text-2xl font-semibold text-app-foreground">Индексация и техническое здоровье</h2>
           </div>
-          <StatusBanner tone={healthTone} title={healthTitle} description={`${health.fatalCount + health.criticalCount} критичных диагностик, ${health.possibleProblemCount} возможных проблем; HTTP 5xx: ${health.http5xx}; Sitemap: ${health.sitemapErrors} ошибок.`} />
+          <StatusBanner tone={healthTone} title={healthTitle} description={`${health.fatalCount + health.criticalCount} критичных проблем, ${health.possibleProblemCount} возможных проблем; ошибок сервера: ${health.http5xx}; ошибок карты сайта: ${health.sitemapErrors}.`} />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {factCard("Страницы в поиске", formatInteger(health.pagesInSearch), `${formatInteger(health.excludedPages)} исключено`)}
-            {factCard("Sitemap", formatInteger(health.sitemapUrls), health.sitemapErrors > 0 ? `${health.sitemapErrors} ошибок` : "без ошибок")}
+            {factCard("Страницы в карте сайта", formatInteger(health.sitemapUrls), health.sitemapErrors > 0 ? `${health.sitemapErrors} ошибок` : "без ошибок")}
             {factCard("Обновление поиска", health.searchBalance >= 0 ? `+${formatInteger(health.searchBalance)}` : formatInteger(health.searchBalance), `${health.appearedInSearch} появилось · ${health.removedFromSearch} удалено`)}
             {factCard("ИКС", formatInteger(health.sqi), health.sqiDelta === null ? "нет сравнения" : `${health.sqiDelta > 0 ? "+" : ""}${health.sqiDelta} к прошлому замеру`)}
           </div>
@@ -174,8 +180,8 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
 
       <section className="space-y-4" aria-labelledby="seo-title">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--primary)]">SEO-результат</p>
-          <h2 id="seo-title" className="mt-1 text-2xl font-semibold text-[var(--foreground)]">Видимость в поиске Яндекса</h2>
+          <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">SEO-результат</p>
+          <h2 id="seo-title" className="mt-1 text-2xl font-semibold text-app-foreground">Видимость в поиске Яндекса</h2>
         </div>
         {webmaster ? (
           <>
@@ -192,8 +198,8 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
 
       <section className="space-y-4" aria-labelledby="traffic-title">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--primary)]">Трафик</p>
-          <h2 id="traffic-title" className="mt-1 text-2xl font-semibold text-[var(--foreground)]">Органические визиты и целевые действия</h2>
+          <p className="text-xs font-semibold uppercase tracking-wider text-app-primary">Трафик</p>
+          <h2 id="traffic-title" className="mt-1 text-2xl font-semibold text-app-foreground">Органические визиты и целевые действия</h2>
         </div>
         {metrica ? (
           <>
@@ -205,7 +211,7 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
             </div>
             <MetricTrendChart title="Органический трафик" subtitle="Как меняются визиты и целевые действия из поиска Яндекса." period={periodLabel} timezone={site.timezone} data={metrica.organicTrend} metricLabel="Визиты" secondaryMetricLabel="Целевые визиты" tertiaryMetricLabel="Конверсия" />
             <SectionCard title="Посадочные страницы" note="Основные входы из органического поиска">
-              <DataTable caption="Эффективность посадочных страниц" columns={["Страница", "Визиты", "Целевые визиты", "Конверсия", "Отказы"]} rows={metrica.landingPages.slice(0, 10).map((page) => ({ key: page.path, cells: [<span key="path" className="font-semibold text-[var(--foreground)]">{page.path}</span>, formatInteger(page.visits), formatInteger(page.targetVisits), formatPercent(page.conversionRate), formatPercent(page.bounceRate)] }))} />
+              <DataTable caption="Эффективность посадочных страниц" columns={["Страница", "Визиты", "Целевые визиты", "Конверсия", "Отказы"]} rows={metrica.landingPages.slice(0, 10).map((page) => ({ key: page.path, cells: [<span key="path" className="font-semibold text-app-foreground">{page.path}</span>, formatInteger(page.visits), formatInteger(page.targetVisits), formatPercent(page.conversionRate), formatPercent(page.bounceRate)] }))} />
             </SectionCard>
           </>
         ) : <StatePanel state="empty" title="Нет данных Метрики" description="Источник не подключён или временно недоступен." />}
@@ -214,14 +220,14 @@ export function SiteReportView({ clientName, site, snapshot, mode, backHref, per
 
       <SectionCard title="Что делать дальше" note="Приоритеты по фактическим данным">
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-[var(--muted-foreground)]">Главный риск</p><p className="mt-2 font-semibold">{topAlert?.title ?? "Критичных рисков не обнаружено"}</p>{topAlert ? <p className="mt-1 text-sm text-[var(--text-secondary)]">{topAlert.summary}</p> : null}</div>
-          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-[var(--muted-foreground)]">Точка роста</p><p className="mt-2 font-semibold">{topOpportunity?.title ?? "Сохранить текущий курс"}</p>{topOpportunity ? <p className="mt-1 text-sm text-[var(--text-secondary)]">{topOpportunity.summary}</p> : null}</div>
+          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-app-muted-foreground">Главный риск</p><p className="mt-2 font-semibold">{topAlert?.title ?? "Критичных рисков не обнаружено"}</p>{topAlert ? <p className="mt-1 text-sm text-app-secondary">{topAlert.summary}</p> : null}</div>
+          <div className="rounded-xl bg-[var(--muted)] p-4"><p className="text-xs font-semibold uppercase text-app-muted-foreground">Точка роста</p><p className="mt-2 font-semibold">{topOpportunity?.title ?? "Сохранить текущий курс"}</p>{topOpportunity ? <p className="mt-1 text-sm text-app-secondary">{topOpportunity.summary}</p> : null}</div>
         </div>
       </SectionCard>
 
-      <footer className="border-t border-[var(--border)] pt-5 text-xs leading-5 text-[var(--muted-foreground)]">
+      <footer className="border-t border-[var(--border)] pt-5 text-xs leading-5 text-app-muted-foreground">
         <p>Источники: Topvisor или утверждённый исходный снимок — точные позиции ядра; Яндекс.Вебмастер — спрос, индексация и диагностика; Яндекс.Метрика — обезличенный трафик и целевые действия.</p>
-        <p>Позиция Вебмастера остаётся средней позицией показа за период и не подменяет rank-check. Клики и визиты считаются разными системами.</p>
+        <p>Вебмастер показывает среднюю позицию за период, а не результат точной проверки позиций. Клики и визиты считаются разными системами.</p>
       </footer>
     </div>
   );

@@ -7,12 +7,12 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[color-mix(in_srgb,var(--primary)_90%,white)]",
-        secondary: "bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-[var(--accent)]",
-        outline: "border border-[var(--input)] bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--accent)]",
-        ghost: "text-[var(--foreground)] hover:bg-[var(--accent)]",
-        link: "min-h-0 rounded-none px-0 text-[var(--link)] underline-offset-4 hover:underline",
-        destructive: "bg-[var(--destructive)] text-[var(--destructive-foreground)] hover:bg-[color-mix(in_srgb,var(--destructive)_88%,black)]",
+        default: "bg-[var(--primary)] text-app-primary-foreground hover:bg-[color-mix(in_srgb,var(--primary)_90%,white)]",
+        secondary: "bg-[var(--secondary)] text-app-secondary-foreground hover:bg-[var(--accent)]",
+        outline: "border border-[var(--input)] bg-[var(--background)] text-app-foreground hover:bg-[var(--accent)]",
+        ghost: "text-app-foreground hover:bg-[var(--accent)]",
+        link: "min-h-0 rounded-none px-0 text-app-link underline-offset-4 hover:underline",
+        destructive: "bg-[var(--destructive)] text-app-destructive-foreground hover:bg-[color-mix(in_srgb,var(--destructive)_88%,black)]",
       },
       size: {
         default: "h-11",

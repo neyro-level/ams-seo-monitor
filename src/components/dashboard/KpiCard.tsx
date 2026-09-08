@@ -7,10 +7,10 @@ type KpiCardProps = {
 };
 
 const toneMap: Record<NonNullable<KpiCardProps["tone"]>, string> = {
-  default: "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
-  primary: "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]",
-  soft: "border-[var(--info)]/20 bg-[var(--info-soft)] text-[var(--foreground)]",
-  success: "border-[var(--success)]/20 bg-[var(--success-soft)] text-[var(--foreground)]",
+  default: "border-[var(--border)] bg-[var(--card)] text-app-foreground",
+  primary: "border-[var(--primary)] bg-[var(--primary)] text-app-primary-foreground",
+  soft: "border-[var(--info)]/20 bg-[var(--info-soft)] text-app-foreground",
+  success: "border-[var(--success)]/20 bg-[var(--success-soft)] text-app-foreground",
 };
 
 export function KpiCard({
@@ -24,7 +24,7 @@ export function KpiCard({
     <article className={`rounded-[var(--radius-card)] border p-5 shadow-[var(--shadow-surface)] ${toneMap[tone]}`}>
       <p
         className={`text-xs font-semibold uppercase ${
-          tone === "primary" ? "text-[var(--primary-foreground)]/75" : "text-[var(--muted-foreground)]"
+          tone === "primary" ? "text-app-primary-foreground opacity-75" : "text-app-muted-foreground"
         }`}
       >
         {label}
@@ -35,12 +35,12 @@ export function KpiCard({
           className={[
             "mt-2 text-xs font-semibold tabular-nums",
             tone === "primary"
-              ? "text-[var(--primary-foreground)]/85"
+              ? "text-app-primary-foreground opacity-85"
               : deltaTone === "positive"
-                ? "text-[var(--success)]"
+                ? "text-app-success"
                 : deltaTone === "negative"
-                  ? "text-[var(--destructive)]"
-                  : "text-[var(--muted-foreground)]",
+                  ? "text-app-destructive"
+                  : "text-app-muted-foreground",
           ].join(" ")}
         >
           {delta}

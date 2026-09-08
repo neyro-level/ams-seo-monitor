@@ -22,7 +22,7 @@ export function DataTable({ caption, columns, rows }: DataTableProps) {
                 <TableHead
                   key={column}
                   scope="col"
-                  className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--muted-foreground)]"
+                  className="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-[0.08em] text-app-muted-foreground"
                 >
                   {column}
                 </TableHead>
@@ -33,7 +33,7 @@ export function DataTable({ caption, columns, rows }: DataTableProps) {
             {rows.map((row) => (
               <TableRow key={row.key} className="border-t border-[var(--border)] align-top">
                 {row.cells.map((cell, index) => (
-                  <TableCell key={`${row.key}-${index}`} className="px-4 py-3 text-[var(--text-secondary)]">
+                  <TableCell key={`${row.key}-${index}`} className="px-4 py-3 text-app-secondary">
                     {cell}
                   </TableCell>
                 ))}

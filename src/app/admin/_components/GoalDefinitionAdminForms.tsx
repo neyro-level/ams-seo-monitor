@@ -48,8 +48,17 @@ const updateGoalFormSchema = z.object({
   includeInSeoConversion: z.boolean(),
   siteIdsText: z.string().max(20000),
 });
-const goalCategoryOptions = goalCategorySchema.options.map((value) => ({ value, label: value }));
-const goalDirectionOptions = goalDirectionSchema.options.map((value) => ({ value, label: value }));
+const goalCategoryLabels = {
+  LEAD_SUBMIT: "Отправка заявки",
+  PHONE_CLICK: "Раскрытие телефона",
+  MESSENGER_CLICK: "Переход в мессенджер",
+  FORM_START: "Начало заполнения формы",
+  FILE_DOWNLOAD: "Скачивание файла",
+  OTHER: "Другое",
+} as const;
+const goalDirectionLabels = { PRIMARY: "Основная", SECONDARY: "Дополнительная" } as const;
+const goalCategoryOptions = goalCategorySchema.options.map((value) => ({ value, label: goalCategoryLabels[value] }));
+const goalDirectionOptions = goalDirectionSchema.options.map((value) => ({ value, label: goalDirectionLabels[value] }));
 function parseList(value: string) {
   return [...new Set(value.split(/[\r\n,]+/).map((item) => item.trim()).filter(Boolean))];
 }
@@ -111,12 +120,12 @@ function GoalDefinitionEditCard({ item }: { item: GoalDefinitionListItem }) {
         <FormField error={form.formState.errors.direction?.message} label="Направление" required>
           <SelectInput options={goalDirectionOptions} {...form.register("direction")} />
         </FormField>
-        <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)] xl:self-end">
+        <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-app-foreground xl:self-end">
           <Controller control={form.control} name="includeInSeoConversion" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
           Учитывать в SEO-конверсии
         </label>
         <div className="sm:col-span-2">
-          <FormField error={form.formState.errors.siteIdsText?.message} helper="Один site ID на строку или через запятую." label="Site IDs">
+          <FormField error={form.formState.errors.siteIdsText?.message} helper="Необязательно. По одному идентификатору сайта в строке или через запятую." label="Ограничить выбранными сайтами">
             <AreaInput rows={5} {...form.register("siteIdsText")} />
           </FormField>
         </div>
@@ -164,12 +173,12 @@ export function GoalDefinitionsAdminForms({ items, options }: { items: GoalDefin
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать цель" description="Project owner и site scopes проверяются на сервере.">
+      <SectionCard title="Создать цель" description="Цель будет доступна только в выбранном проекте и его сайтах.">
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <FormField error={form.formState.errors.projectId?.message} label="Проект" required>
             <SelectInput options={options.projects.map((option) => ({ value: option.id, label: option.label }))} {...form.register("projectId")} />
           </FormField>
-          <FormField error={form.formState.errors.externalGoalId?.message} label="External goal ID" required>
+          <FormField error={form.formState.errors.externalGoalId?.message} helper="Номер цели в системе аналитики." label="Идентификатор цели" required>
             <TextInput {...form.register("externalGoalId")} />
           </FormField>
           <FormField error={form.formState.errors.label?.message} label="Название" required>
@@ -181,12 +190,12 @@ export function GoalDefinitionsAdminForms({ items, options }: { items: GoalDefin
           <FormField error={form.formState.errors.direction?.message} label="Направление" required>
             <SelectInput options={goalDirectionOptions} {...form.register("direction")} />
           </FormField>
-          <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)] xl:self-end">
+          <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-app-foreground xl:self-end">
             <Controller control={form.control} name="includeInSeoConversion" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
             Учитывать в SEO-конверсии
           </label>
           <div className="sm:col-span-2">
-            <FormField error={form.formState.errors.siteIdsText?.message} helper="Один site ID на строку или через запятую." label="Site IDs">
+            <FormField error={form.formState.errors.siteIdsText?.message} helper="Необязательно. По одному идентификатору сайта в строке или через запятую." label="Ограничить выбранными сайтами">
               <AreaInput rows={5} {...form.register("siteIdsText")} />
             </FormField>
           </div>

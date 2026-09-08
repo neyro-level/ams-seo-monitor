@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { KpiCard } from "../../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../../components/dashboard/SectionCard.tsx";
 import { StatusBanner } from "../../../components/dashboard/StatusBanner.tsx";
+import { ButtonLink } from "../../../components/ui/button-link.tsx";
 import {
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
@@ -41,9 +41,10 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
     <>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="Проект"
-          title={`Проект ${overview.client.name}`}
-          description="Сайты проекта, подключённые источники и переходы к отдельным отчётам."
+          eyebrow="Все проекты"
+          eyebrowHref="/analyst/"
+          title={overview.client.name}
+          description="Сайты проекта, состояние подключений и переход к подробным отчётам."
         />
 
         <StatusBanner
@@ -70,7 +71,7 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
           />
         </section>
 
-        <SectionCard title="Сайты проекта" note="Отдельный отчёт на сайт">
+        <SectionCard title="Сайты проекта" note="Выберите сайт">
           <div className="grid gap-3 lg:grid-cols-2">
             {overview.sites.map((site) => (
               <article
@@ -79,12 +80,12 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-lg font-semibold text-[var(--foreground)]">{site.name}</h2>
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                    <h2 className="text-lg font-semibold text-app-foreground">{site.name}</h2>
+                    <p className="mt-1 text-sm text-app-secondary">
                       {site.enabled ? site.siteUrl : "Не подключён"}
                     </p>
                   </div>
-                  <span className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                  <span className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-app-muted-foreground">
                     {site.enabled
                       ? `${site.enabledSourceCount} ${
                           site.enabledSourceCount === 1 ? "источник" : "источника"
@@ -92,12 +93,12 @@ export default async function ClientOverviewPage({ params }: ClientOverviewPageP
                       : "Не подключён"}
                   </span>
                 </div>
-                <Link
+                <ButtonLink
                   href={`/c/${overview.client.clientSlug}/${site.siteSlug}/`}
-                  className="mt-4 inline-flex rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
+                  className="mt-4"
                 >
-                  Открыть сайт
-                </Link>
+                  Открыть отчёт
+                </ButtonLink>
               </article>
             ))}
           </div>

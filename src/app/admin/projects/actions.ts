@@ -19,7 +19,7 @@ function mapProjectError(error: unknown) {
     PROJECT_ACCESS_DENIED: "Недостаточно прав для изменения проекта.",
     PROJECT_NOT_FOUND_OR_FORBIDDEN: "Проект недоступен или уже удалён.",
     PROJECT_STALE: "Проект уже изменён. Обновите страницу и повторите действие.",
-    PROJECT_SLUG_CONFLICT: "Проект с таким slug уже существует.",
+    PROJECT_SLUG_CONFLICT: "Проект с таким кодом уже существует.",
     PROJECT_REFERENCE_INVALID: "Выбранная организация или профиль недоступны.",
   };
   return { code, message: messages[code] ?? "Не удалось сохранить проект." };

@@ -10,5 +10,5 @@ export function AlertTitle({ className, ...props }: React.HTMLAttributes<HTMLHea
 }
 
 export function AlertDescription({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div data-slot="alert-description" className={cn("text-[var(--muted-foreground)]", className)} {...props} />;
+  return <div data-slot="alert-description" className={cn("text-app-muted-foreground", className)} {...props} />;
 }

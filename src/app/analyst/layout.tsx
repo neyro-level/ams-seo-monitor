@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export const viewport: Viewport = { colorScheme: "light", themeColor: "#eef2f5" };
+export const viewport: Viewport = { colorScheme: "light", themeColor: "#edf2f6" };
 
 export default function AnalystLayout({ children }: { children: ReactNode }) {
   return <PrivateApplicationLayout>{children}</PrivateApplicationLayout>;

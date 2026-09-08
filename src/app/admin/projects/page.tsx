@@ -15,6 +15,8 @@ import { getCurrentPrincipalState } from "../../../platform/auth/principal-sessi
 import { ProjectCreateForm } from "./_components/ProjectForms.tsx";
 import { ProjectTable } from "./_components/ProjectTable.tsx";
 import { PermissionDeniedState, StatePanel } from "../../../components/states/StatePanel.tsx";
+import { PageHeader } from "../../../components/dashboard/PageHeader.tsx";
+import { AdminResourceNav } from "../_components/AdminResourceNav.tsx";
 import {
   loadProjectSearchParams,
   serializeProjectSearchParams,
@@ -31,9 +33,9 @@ export default async function ProjectsPage({
   if (!hasPermission(state.principal, "project:manage:any")) {
     return (
       <>
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="space-y-6">
           <PermissionDeniedState title="Раздел недоступен" description="У текущей роли нет права управлять проектами." />
-        </main>
+        </div>
       </>
     );
   }
@@ -63,12 +65,9 @@ export default async function ProjectsPage({
 
   return (
     <>
-      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--info)]">Platform Admin</p>
-          <h1 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">Проекты</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">{projects.total} в текущем срезе реестра</p>
-        </header>
+      <div className="space-y-6">
+        <PageHeader title="Проекты" description="Проекты клиентов, их состояние и настройки аналитики." />
+        <AdminResourceNav currentPath="/admin/projects/" />
 
         {hasRequiredOptions ? (
           <ProjectCreateForm options={options} />
@@ -78,16 +77,16 @@ export default async function ProjectsPage({
 
         <form className="grid gap-4 rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--card)] p-4 sm:grid-cols-[minmax(0,1fr)_220px_auto]" method="get">
           <label className="space-y-1.5">
-            <span className="block text-sm font-medium text-[var(--foreground)]">Поиск</span>
+            <span className="block text-sm font-medium text-app-foreground">Поиск</span>
             <Input
               defaultValue={query.search}
               maxLength={100}
               name="search"
-              placeholder="Название или slug"
+              placeholder="Название или код для ссылки"
             />
           </label>
           <label className="space-y-1.5">
-            <span className="block text-sm font-medium text-[var(--foreground)]">Статус</span>
+            <span className="block text-sm font-medium text-app-foreground">Статус</span>
             <NativeSelect
               defaultValue={query.status ?? ""}
               name="status"
@@ -100,7 +99,7 @@ export default async function ProjectsPage({
           </label>
           <div className="flex items-end gap-2">
             <Button type="submit">Применить</Button>
-            {filtersActive ? <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)]" href="/admin/projects">Сбросить</Link> : null}
+            {filtersActive ? <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-app-muted-foreground hover:text-app-foreground" href="/admin/projects">Сбросить</Link> : null}
           </div>
         </form>
 
@@ -115,7 +114,7 @@ export default async function ProjectsPage({
           }}
           result={projects}
         />
-      </main>
+      </div>
     </>
   );
 }

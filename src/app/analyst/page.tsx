@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
+import { ButtonLink } from "../../components/ui/button-link.tsx";
 import {
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
@@ -28,7 +28,8 @@ export default async function AllProjectsPage() {
       <div className="space-y-6">
         <PageHeader
           title="Все проекты"
-          description="Проекты АМС, их сайты и готовность конфигурации источников."
+          description="Все клиентские проекты, сайты и состояние подключений."
+          actions={hasPermission(state.principal, "project:manage:any") ? <ButtonLink href="/admin/projects/" className="w-full sm:w-auto">Управление проектами</ButtonLink> : null}
         />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -38,7 +39,7 @@ export default async function AllProjectsPage() {
           <KpiCard label="Источники" value={String(overview.enabledSources)} tone="soft" />
         </section>
 
-        <SectionCard title="Реестр проектов" note="Database-backed">
+        <SectionCard title="Проекты" note={`${overview.totalProjects} всего`}>
           <div className="grid gap-4 xl:grid-cols-2">
             {overview.projectCards.map((project) => {
               const projectReady =
@@ -55,12 +56,12 @@ export default async function AllProjectsPage() {
                       : "План";
               const stateClasses =
                 project.status === "DISABLED"
-                  ? "border-[var(--status-neutral)]/20 bg-[var(--status-neutral-soft)] text-[var(--status-neutral)]"
+                  ? "border-[var(--status-neutral)]/20 bg-[var(--status-neutral-soft)] text-app-status-neutral"
                   : projectReady
-                    ? "border-[var(--success)]/20 bg-[var(--success-soft)] text-[var(--success)]"
+                    ? "border-[var(--success)]/20 bg-[var(--success-soft)] text-app-success"
                     : project.connectedSites > 0
-                      ? "border-[var(--warning)]/20 bg-[var(--warning-soft)] text-[var(--warning)]"
-                      : "border-[var(--info)]/20 bg-[var(--info-soft)] text-[var(--info)]";
+                      ? "border-[var(--warning)]/20 bg-[var(--warning-soft)] text-app-warning"
+                      : "border-[var(--info)]/20 bg-[var(--info-soft)] text-app-info";
 
               return (
                 <article
@@ -69,10 +70,10 @@ export default async function AllProjectsPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
-                        {project.projectSlug}
+                      <p className="text-xs uppercase tracking-[0.14em] text-app-muted-foreground">
+                        Код: {project.projectSlug}
                       </p>
-                      <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">
+                      <h2 className="mt-2 text-xl font-semibold text-app-foreground">
                         {project.name}
                       </h2>
                     </div>
@@ -85,40 +86,40 @@ export default async function AllProjectsPage() {
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
-                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                      <p className="text-xs uppercase tracking-[0.12em] text-app-muted-foreground">
                         Сайты
                       </p>
-                      <p className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+                      <p className="mt-2 text-2xl font-semibold text-app-foreground">
                         {project.totalSites}
                       </p>
                     </div>
                     <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
-                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                      <p className="text-xs uppercase tracking-[0.12em] text-app-muted-foreground">
                         Подключено
                       </p>
-                      <p className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+                      <p className="mt-2 text-2xl font-semibold text-app-foreground">
                         {project.connectedSites}
                       </p>
                     </div>
                     <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
-                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                      <p className="text-xs uppercase tracking-[0.12em] text-app-muted-foreground">
                         Готово
                       </p>
-                      <p className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+                      <p className="mt-2 text-2xl font-semibold text-app-foreground">
                         {project.readySites}
                       </p>
                     </div>
                     <div className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">
-                      <p className="text-xs uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                      <p className="text-xs uppercase tracking-[0.12em] text-app-muted-foreground">
                         Источники
                       </p>
-                      <p className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+                      <p className="mt-2 text-2xl font-semibold text-app-foreground">
                         {project.enabledSources}
                       </p>
                     </div>
                   </div>
 
-                  <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                  <p className="mt-4 text-sm text-app-secondary">
                     {projectReady
                       ? "Все сайты заведены"
                       : project.connectedSites > 0
@@ -126,33 +127,18 @@ export default async function AllProjectsPage() {
                         : "Источники ещё не подключены"}
                   </p>
 
-                  <Link
+                  <ButtonLink
                     href={`/c/${project.projectSlug}/`}
-                    className="mt-5 inline-flex rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
+                    className="mt-5"
                   >
                     Открыть проект
-                  </Link>
+                  </ButtonLink>
                 </article>
               );
             })}
           </div>
         </SectionCard>
 
-        <SectionCard title="Добавление проекта" note="Operator-only">
-          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">
-                Пока без production-админки
-              </h2>
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                Wizard создаёт project/site config и пустой goal profile, проверяет collisions и общий registry. Секреты, deploy и SourceCraft он не изменяет.
-              </p>
-            </div>
-            <code className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-sm font-semibold text-[var(--foreground)]">
-              pnpm project:add
-            </code>
-          </div>
-        </SectionCard>
       </div>
     </>
   );

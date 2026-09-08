@@ -10,8 +10,8 @@ export function StatePanel({ state, title, description, action, className }: { s
   const Icon = iconMap[state];
   return (
     <div className={cn("flex flex-col items-start gap-3 rounded-[var(--radius-panel)] border border-dashed border-[var(--border)] bg-[var(--muted)] p-5 text-left", className)} role={state === "error" || state === "permission-denied" ? "alert" : "status"}>
-      <Icon className={cn("size-6 text-[var(--muted-foreground)]", state === "loading" && "animate-spin")} strokeWidth={1.8} aria-hidden />
-      <div className="space-y-2"><h2 className="text-lg font-semibold leading-6 text-[var(--foreground)]">{title}</h2><p className="max-w-2xl text-sm leading-5 text-[var(--text-secondary)]">{description}</p></div>
+      <Icon className={cn("size-6 text-app-muted-foreground", state === "loading" && "animate-spin")} strokeWidth={1.8} aria-hidden />
+      <div className="space-y-2"><h2 className="text-lg font-semibold leading-6 text-app-foreground">{title}</h2><p className="max-w-2xl text-sm leading-5 text-app-secondary">{description}</p></div>
       {action}
     </div>
   );
@@ -24,5 +24,5 @@ export const ErrorState = (props: Omit<React.ComponentProps<typeof StatePanel>, 
 export const PermissionDeniedState = (props: Omit<React.ComponentProps<typeof StatePanel>, "state">) => <StatePanel state="permission-denied" {...props} />;
 
 export function StaleDataBanner({ children }: { children: ReactNode }) {
-  return <div className="rounded-[var(--radius-panel)] border border-[var(--warning)]/25 bg-[var(--warning-soft)] px-4 py-3 text-sm text-[var(--warning)]" role="status">{children}</div>;
+  return <div className="rounded-[var(--radius-panel)] border border-[var(--warning)]/25 bg-[var(--warning-soft)] px-4 py-3 text-sm text-app-warning" role="status">{children}</div>;
 }

@@ -44,16 +44,16 @@ export function OperationsAdminForms() {
   });
 
   return (
-    <SectionCard title="Запустить синхронизацию" description="Команда создаёт idempotency key, AuditEvent и OutboxEvent в одной transaction.">
+    <SectionCard title="Обновить данные проекта" description="Запустите безопасное обновление данных по выбранному проекту.">
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-        <FormField error={form.formState.errors.projectSlug?.message} label="Project slug" required>
+        <FormField error={form.formState.errors.projectSlug?.message} helper="Код проекта из его адреса в кабинете." label="Код проекта" required>
           <TextInput {...form.register("projectSlug")} />
         </FormField>
-        <FormField error={form.formState.errors.idempotencyKey?.message} label="Ключ идемпотентности" required>
+        <FormField error={form.formState.errors.idempotencyKey?.message} helper="Уникальная пометка защищает от повторного запуска одного задания." label="Уникальная пометка запуска" required>
           <TextInput {...form.register("idempotencyKey")} />
         </FormField>
         <div className="sm:col-span-2">
-          <SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Поставить в очередь" onRefresh={() => router.refresh()} pendingLabel="Ставим в очередь…" />
+          <SubmitRow busy={form.formState.isSubmitting} feedback={feedback} label="Запустить обновление" onRefresh={() => router.refresh()} pendingLabel="Запускаем…" />
         </div>
       </form>
     </SectionCard>

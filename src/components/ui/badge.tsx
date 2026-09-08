@@ -5,11 +5,11 @@ import { cn } from "../../shared/lib/cn.ts";
 const badgeVariants = cva("inline-flex items-center rounded-[var(--radius)] border px-2 py-1 text-xs font-semibold", {
   variants: {
     variant: {
-      default: "border-[var(--border)] bg-[var(--muted)] text-[var(--text-secondary)]",
-      secondary: "border-transparent bg-[var(--secondary)] text-[var(--secondary-foreground)]",
-      outline: "border-[var(--border)] bg-transparent text-[var(--foreground)]",
-      destructive: "border-transparent bg-[var(--destructive-soft)] text-[var(--destructive)]",
-      success: "border-transparent bg-[var(--success-soft)] text-[var(--success)]",
+      default: "border-[var(--border)] bg-[var(--muted)] text-app-secondary",
+      secondary: "border-transparent bg-[var(--secondary)] text-app-secondary-foreground",
+      outline: "border-[var(--border)] bg-transparent text-app-foreground",
+      destructive: "border-transparent bg-[var(--destructive-soft)] text-app-destructive",
+      success: "border-transparent bg-[var(--success-soft)] text-app-success",
     },
   },
   defaultVariants: { variant: "default" },

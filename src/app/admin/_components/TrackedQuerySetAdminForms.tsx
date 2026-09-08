@@ -41,7 +41,8 @@ const updateTrackedQueryFormSchema = z.object({
   baselineLabel: z.string().trim().min(2),
   queriesText: z.string().trim().min(1),
 });
-const rankingSourceOptions = rankingSourceSchema.options.map((value) => ({ value, label: value }));
+const rankingSourceLabels = { OWNER_PROVIDED: "Загружен вручную", TOPVISOR: "Topvisor" } as const;
+const rankingSourceOptions = rankingSourceSchema.options.map((value) => ({ value, label: rankingSourceLabels[value] }));
 
 function parseList(value: string) {
   return [...new Set(value.split(/[\r\n,]+/).map((item) => item.trim()).filter(Boolean))];
@@ -91,10 +92,10 @@ function TrackedQuerySetEditCard({ item }: { item: TrackedQuerySetListItem }) {
       <form className="grid gap-4" onSubmit={submit}>
         <input type="hidden" {...form.register("id")} />
         <input type="hidden" {...form.register("version", { valueAsNumber: true })} />
-        <FormField error={form.formState.errors.source?.message} label="Источник baseline" required>
+        <FormField error={form.formState.errors.source?.message} label="Источник контрольных значений" required>
           <SelectInput options={rankingSourceOptions} {...form.register("source")} />
         </FormField>
-        <FormField error={form.formState.errors.baselineLabel?.message} label="Baseline label" required>
+        <FormField error={form.formState.errors.baselineLabel?.message} label="Название контрольного набора" required>
           <TextInput {...form.register("baselineLabel")} />
         </FormField>
         <FormField error={form.formState.errors.queriesText?.message} helper="Один запрос на строку." label="Запросы" required>
@@ -136,15 +137,15 @@ export function TrackedQuerySetsAdminForms({ items, options }: { items: TrackedQ
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать набор запросов" description="История запросов сохраняется через enabled lifecycle, а не удалением.">
+      <SectionCard title="Создать набор запросов" description="Изменения состава запросов сохраняются в истории и не удаляют предыдущие данные.">
         <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
           <FormField error={form.formState.errors.siteId?.message} label="Сайт" required>
             <SelectInput options={options.sites.map((option) => ({ value: option.id, label: option.label }))} {...form.register("siteId")} />
           </FormField>
-          <FormField error={form.formState.errors.source?.message} label="Источник baseline" required>
+          <FormField error={form.formState.errors.source?.message} label="Источник контрольных значений" required>
             <SelectInput options={rankingSourceOptions} {...form.register("source")} />
           </FormField>
-          <FormField error={form.formState.errors.baselineLabel?.message} label="Baseline label" required>
+          <FormField error={form.formState.errors.baselineLabel?.message} label="Название контрольного набора" required>
             <TextInput {...form.register("baselineLabel")} />
           </FormField>
           <div className="sm:col-span-2">

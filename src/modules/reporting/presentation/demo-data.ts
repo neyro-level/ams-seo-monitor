@@ -15,7 +15,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       periodStart: "2026-07-30",
       periodEnd: "2026-08-26",
       timezone: "+03:00",
-      note: "Wave 1 synthetic fixture. Live OAuth not used.",
+      note: "Демонстрационные данные Яндекс.Вебмастера.",
       safeErrorCode: null,
     },
     metrica: {
@@ -24,7 +24,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       periodStart: "2026-07-30",
       periodEnd: "2026-08-26",
       timezone: "+03:00",
-      note: "Wave 1 synthetic fixture. Live counter onboarding is still ahead.",
+      note: "Демонстрационные данные Яндекс.Метрики.",
       safeErrorCode: null,
     },
   },
@@ -109,19 +109,19 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
         previousClicks: 1,
         deltaClicksPercent: -100,
         deltaCtrPoints: -1.35,
-        opportunityType: "0 clicks in top pool",
+        opportunityType: "нет кликов по заметным запросам",
       },
     ],
     diagnostics: [
       {
         severity: "warning",
-        title: "Synthetic fixture mode",
-        description: "Wave 1 intentionally uses fixture data instead of live API collection.",
+        title: "Демонстрационный режим",
+        description: "На этой странице показаны тестовые данные, а не показатели подключённого сайта.",
       },
       {
         severity: "info",
-        title: "Sitemap healthy",
-        description: "Synthetic sitemap state mirrors the approved MVP shape.",
+        title: "Карта сайта в порядке",
+        description: "Тестовая карта сайта загружена без ошибок.",
       },
     ],
     sitemap: {
@@ -210,7 +210,7 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
       goalReaches: 74,
       caveats: [
         "Клики Вебмастера и визиты Метрики не равны один одному.",
-        "Wave 1 показывает synthetic fixture instead of live onboarding data.",
+        "На странице показаны демонстрационные данные.",
       ],
     },
     opportunities: [
@@ -239,13 +239,13 @@ const syntheticSnapshot = siteReportSnapshotSchema.parse({
     alerts: [
       {
         id: "alert-1",
-        title: "Wave 1 fixture mode",
+        title: "Демонстрационный режим",
         summary: "Этот отчёт нужен для проверки shell, routes и DTO. Live OAuth ещё не подключён.",
         tone: "info",
       },
     ],
     methodology: [
-      "Периоды в synthetic fixture равной длины.",
+      "Периоды в демонстрационном отчёте имеют равную длину.",
       "CTR считается только по shows > 0.",
       "Combined funnel не утверждает прямую причинность query → lead.",
     ],

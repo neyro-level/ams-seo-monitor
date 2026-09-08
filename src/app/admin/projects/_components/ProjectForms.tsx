@@ -54,7 +54,7 @@ function FeedbackMessage({ feedback, onRefresh }: { feedback: Feedback; onRefres
   if (!feedback) return null;
   return (
     <div
-      className={feedback.kind === "success" ? "text-sm font-medium text-[var(--success)]" : "text-sm font-medium text-[var(--destructive)]"}
+      className={feedback.kind === "success" ? "text-sm font-medium text-app-success" : "text-sm font-medium text-app-destructive"}
       role={feedback.kind === "success" ? "status" : "alert"}
     >
       <span>{feedback.message}</span>
@@ -111,36 +111,37 @@ export function ProjectCreateForm({ options }: { options: ProjectFormOptions }) 
       <AccordionContent className="p-0">
       <form className="grid gap-4 border-t border-[var(--border)] p-5 sm:grid-cols-2 lg:grid-cols-3" onSubmit={submit}>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-[var(--foreground)]">Организация</span>
+          <span className="block text-sm font-medium text-app-foreground">Организация</span>
           <NativeSelect {...register("organizationId")}>
             {options.organizations.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.name}</NativeSelectOption>)}
           </NativeSelect>
-          {errors.organizationId ? <span className="text-xs text-[var(--destructive)]">{errors.organizationId.message}</span> : null}
+          {errors.organizationId ? <span className="text-xs text-app-destructive">{errors.organizationId.message}</span> : null}
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-[var(--foreground)]">Название</span>
+          <span className="block text-sm font-medium text-app-foreground">Название</span>
           <Input {...register("name")} />
-          {errors.name ? <span className="text-xs text-[var(--destructive)]">{errors.name.message}</span> : null}
+          {errors.name ? <span className="text-xs text-app-destructive">{errors.name.message}</span> : null}
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-[var(--foreground)]">Slug</span>
-          <Input placeholder="project-slug" {...register("slug")} />
-          {errors.slug ? <span className="text-xs text-[var(--destructive)]">{errors.slug.message}</span> : null}
+          <span className="block text-sm font-medium text-app-foreground">Код проекта</span>
+          <Input placeholder="project-name" {...register("slug")} />
+          <span className="block text-xs text-app-muted-foreground">Короткое уникальное имя латиницей для адреса страниц.</span>
+          {errors.slug ? <span className="text-xs text-app-destructive">{errors.slug.message}</span> : null}
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-[var(--foreground)]">Статус</span>
+          <span className="block text-sm font-medium text-app-foreground">Статус</span>
           <NativeSelect {...register("status")}>
             {PROJECT_STATUSES.map((status) => <NativeSelectOption key={status} value={status}>{statusLabels[status]}</NativeSelectOption>)}
           </NativeSelect>
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-[var(--foreground)]">Пороговый профиль</span>
+          <span className="block text-sm font-medium text-app-foreground">Правила оценки</span>
           <NativeSelect {...register("thresholdProfileId")}>
             {options.thresholdProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
           </NativeSelect>
         </label>
         <label className="space-y-1.5">
-          <span className="block text-sm font-medium text-[var(--foreground)]">Кластерный профиль</span>
+          <span className="block text-sm font-medium text-app-foreground">Группы запросов</span>
           <NativeSelect {...register("clusterProfileId")}>
             {options.clusterProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
           </NativeSelect>
@@ -209,7 +210,7 @@ export function ProjectRowActions({ project, options }: { project: ProjectListIt
     <div className="space-y-3">
       <form className="flex flex-wrap items-end gap-2" onSubmit={submitStatus}>
         <label className="min-w-40 space-y-1">
-          <span className="block text-xs font-medium text-[var(--text-secondary)]">Статус</span>
+          <span className="block text-xs font-medium text-app-secondary">Статус</span>
           <NativeSelect {...statusForm.register("status")}>
             {PROJECT_STATUSES.map((status) => <NativeSelectOption key={status} value={status}>{statusLabels[status]}</NativeSelectOption>)}
           </NativeSelect>
@@ -221,24 +222,24 @@ export function ProjectRowActions({ project, options }: { project: ProjectListIt
       </form>
       <Accordion className="rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--muted)]/60">
         <AccordionItem value={project.id}>
-        <AccordionTrigger className="px-3 font-medium text-[var(--text-secondary)]">
+        <AccordionTrigger className="px-3 font-medium text-app-secondary">
           Настройки
         </AccordionTrigger>
         <AccordionContent className="p-0">
         <form className="grid gap-3 border-t border-[var(--border)] p-3" onSubmit={submitSettings}>
           <label className="space-y-1">
-            <span className="block text-xs font-medium text-[var(--text-secondary)]">Название</span>
+            <span className="block text-xs font-medium text-app-secondary">Название</span>
             <Input {...settingsForm.register("name")} />
-            {settingsForm.formState.errors.name ? <span className="text-xs text-[var(--destructive)]">{settingsForm.formState.errors.name.message}</span> : null}
+            {settingsForm.formState.errors.name ? <span className="text-xs text-app-destructive">{settingsForm.formState.errors.name.message}</span> : null}
           </label>
           <label className="space-y-1">
-            <span className="block text-xs font-medium text-[var(--text-secondary)]">Пороговый профиль</span>
+            <span className="block text-xs font-medium text-app-secondary">Правила оценки</span>
             <NativeSelect {...settingsForm.register("thresholdProfileId")}>
               {options.thresholdProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
             </NativeSelect>
           </label>
           <label className="space-y-1">
-            <span className="block text-xs font-medium text-[var(--text-secondary)]">Кластерный профиль</span>
+            <span className="block text-xs font-medium text-app-secondary">Группы запросов</span>
             <NativeSelect {...settingsForm.register("clusterProfileId")}>
               {options.clusterProfiles.map((option) => <NativeSelectOption key={option.id} value={option.id}>{option.label}</NativeSelectOption>)}
             </NativeSelect>

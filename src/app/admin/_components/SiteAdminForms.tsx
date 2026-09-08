@@ -75,16 +75,16 @@ function SiteEditCard({ item }: { item: SiteListItem }) {
         <FormField error={form.formState.errors.name?.message} label="Название" required>
           <TextInput {...form.register("name")} />
         </FormField>
-        <FormField error={form.formState.errors.slug?.message} label="Slug" required>
+        <FormField error={form.formState.errors.slug?.message} helper="Короткое имя латиницей для адреса отчёта." label="Код сайта" required>
           <TextInput {...form.register("slug")} />
         </FormField>
-        <FormField error={form.formState.errors.url?.message} label="URL" required>
+        <FormField error={form.formState.errors.url?.message} label="Адрес сайта" required>
           <TextInput {...form.register("url")} />
         </FormField>
-        <FormField error={form.formState.errors.timezone?.message} label="Timezone" required>
+        <FormField error={form.formState.errors.timezone?.message} label="Часовой пояс" required>
           <TextInput {...form.register("timezone")} />
         </FormField>
-        <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)] sm:col-span-2">
+        <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-app-foreground sm:col-span-2">
           <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
           Сбор данных включён
         </label>
@@ -122,7 +122,7 @@ export function SitesAdminForms({ items, options }: { items: SiteListItem[]; opt
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Создать сайт" description="Project owner и organization scope выводятся из выбранного проекта.">
+      <SectionCard title="Создать сайт" description="Сайт будет добавлен в выбранный проект и станет доступен его пользователям.">
         <form className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" onSubmit={submit}>
           <FormField error={form.formState.errors.projectId?.message} label="Проект" required>
             <SelectInput options={options.projects.map((option) => ({ value: option.id, label: option.label }))} {...form.register("projectId")} />
@@ -130,16 +130,16 @@ export function SitesAdminForms({ items, options }: { items: SiteListItem[]; opt
           <FormField error={form.formState.errors.name?.message} label="Название" required>
             <TextInput {...form.register("name")} />
           </FormField>
-          <FormField error={form.formState.errors.slug?.message} label="Slug" required>
+          <FormField error={form.formState.errors.slug?.message} helper="Короткое имя латиницей для адреса отчёта." label="Код сайта" required>
             <TextInput {...form.register("slug")} />
           </FormField>
-          <FormField error={form.formState.errors.url?.message} label="URL" required>
+          <FormField error={form.formState.errors.url?.message} label="Адрес сайта" required>
             <TextInput {...form.register("url")} />
           </FormField>
-          <FormField error={form.formState.errors.timezone?.message} label="Timezone" required>
+          <FormField error={form.formState.errors.timezone?.message} label="Часовой пояс" required>
             <TextInput {...form.register("timezone")} />
           </FormField>
-          <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-[var(--foreground)] xl:self-end">
+          <label className="flex min-h-11 items-center gap-3 rounded-[var(--radius)] border border-[var(--border)] px-3 text-sm font-medium text-app-foreground xl:self-end">
             <Controller control={form.control} name="enabled" render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} />} />
             Сбор данных включён
           </label>

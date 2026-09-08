@@ -5,8 +5,8 @@ import { ErrorState } from "../../../components/states/StatePanel.tsx";
 
 export default function AdminResourceError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-      <ErrorState title="Не удалось загрузить раздел Platform Admin" description="Повторите запрос. Если ошибка сохранится, передайте оператору время возникновения." action={<Button onClick={reset} type="button">Повторить</Button>} />
-    </main>
+    <div className="mx-auto w-full max-w-3xl py-6">
+      <ErrorState title="Не удалось загрузить раздел администрирования" description="Повторите запрос. Если ошибка сохранится, сообщите время её появления." action={<Button onClick={reset} type="button">Повторить</Button>} />
+    </div>
   );
 }

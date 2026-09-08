@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
+import { ButtonLink } from "../../components/ui/button-link.tsx";
 import {
   getCurrentCabinetRedirect,
   getCurrentPrincipalState,
@@ -24,17 +24,16 @@ export default async function DashboardPage() {
     <>
       <div className="space-y-6">
         <PageHeader
-          eyebrow="АМС"
-          title="AMS IMPULSE"
-          description="Приватный SEO-кабинет: проекты, сайты, Яндекс.Вебмастер, Метрика и управленческие отчёты."
+          title="Обзор"
+          description="Общее состояние проектов, сайтов и подключённых источников данных."
           actions={
             hasPermission(state.principal, "project:read:any") ? (
-              <Link
+              <ButtonLink
                 href="/analyst/"
-                className="rounded-[var(--radius)] bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--primary-foreground)]"
+                className="w-full sm:w-auto"
               >
                 Все проекты
-              </Link>
+              </ButtonLink>
             ) : null
           }
         />
@@ -46,12 +45,12 @@ export default async function DashboardPage() {
           <KpiCard label="Плановые" value={String(overview.plannedSites)} tone="soft" />
         </section>
 
-        <SectionCard title="Текущий контур" note="Production runtime active">
-          <ul className="grid gap-3 text-sm text-[var(--text-secondary)] md:grid-cols-2">
-            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">Авторизация работает через Better Auth и organization membership.</li>
-            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">Webmaster, Metrica и Topvisor остаются read-only provider adapters.</li>
-            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">Runtime уже работает как Next.js server + PostgreSQL + Worker behind Nginx.</li>
-            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">SiteReportSnapshot и SEO semantics остаются browser-safe контрактом отчёта.</li>
+        <SectionCard title="Состояние системы" note="Работает штатно">
+          <ul className="grid gap-3 text-sm text-app-secondary md:grid-cols-2">
+            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">Доступ к данным определяется ролью пользователя и выбранной организацией.</li>
+            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">Данные поступают из Яндекс.Вебмастера, Метрики и сервиса проверки позиций.</li>
+            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">Отчёты хранятся в единой базе и обновляются фоновыми заданиями.</li>
+            <li className="rounded-[var(--radius-panel)] bg-[var(--muted)] p-4">Показатели подготовлены для безопасного просмотра в личном кабинете.</li>
           </ul>
         </SectionCard>
       </div>

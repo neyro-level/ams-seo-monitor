@@ -2,7 +2,9 @@
 
 Статус: канон приватного интерфейса AMS IMPULSE. Версия проектного профиля: 2.1.
 
-Документ конкретизирует `AMS UI Development Constitution 3.1` и `AMS Application Design System 2.1` для кабинета, Platform Admin, аналитики и отчётов. Архитектурные и security-границы определяет Application Platform Core 3.4. Палитра AMS IMPULSE является утверждённым project override и не заменяется default-палитрой Design System.
+Документ конкретизирует `AMS UI Development Constitution 3.1` и `AMS Application Design System 2.1` для кабинета, Platform Admin, аналитики и отчётов. Архитектурные и security-границы определяет Application Platform Core 3.4. Приватный интерфейс использует каноническую default-палитру AMS Application Design System без project color override.
+
+Заголовок страницы остаётся в обычном потоке документа. Второй липкий слой под верхней панелью запрещён: он перекрывает содержание при прокрутке.
 
 ## Область действия
 
@@ -43,19 +45,20 @@ semantic tokens
 
 ## Визуальный профиль
 
-Характер: строгий, спокойный, технологичный, информационно плотный. Рабочая зона светлая; shell графитовый; steel-blue используется дозированно для focus, selection и интерактивных состояний.
+Характер: строгий, спокойный, технологичный, информационно плотный. Рабочая зона светлая; shell тёмно-синий; голубой акцент используется дозированно для primary action, focus, selection и интерактивных состояний.
 
 Канонические значения:
 
 | Роль | Значение |
 |---|---|
-| Shell и primary action | `#101720` |
-| Shell hover | `#1B2633` |
-| Interactive accent и ring | `#5F7FAE` |
-| Link | `#3E5D86` |
-| Page | `#EEF2F5` |
+| Shell | `#082539` |
+| Shell hover | `#113850` |
+| Primary action | `#197FB8` |
+| Interactive ring | `#3997CB` |
+| Link | `#0E4F73` |
+| Page | `#EDF2F6` |
 | Surface | `#FFFFFF` |
-| Main text | `#020617` |
+| Main text | `#10202F` |
 
 Reusable UI обращается только к семантическим переменным:
 

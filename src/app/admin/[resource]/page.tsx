@@ -63,15 +63,34 @@ const defaultSortOptions: Array<{ field: PlatformAdminSortField; label: string }
   { field: "updatedAt", label: "Обновлено" },
 ];
 
+const systemValueLabels: Record<string, string> = {
+  ORG_OWNER: "Владелец",
+  ORG_MEMBER: "Участник",
+  VIEWER: "Наблюдатель",
+  YANDEX_WEBMASTER: "Яндекс.Вебмастер",
+  YANDEX_METRIKA: "Яндекс.Метрика",
+  TOPVISOR: "Topvisor",
+  OWNER_PROVIDED: "Загружен вручную",
+  LEAD_SUBMIT: "Отправка заявки",
+  PHONE_CLICK: "Раскрытие телефона",
+  MESSENGER_CLICK: "Переход в мессенджер",
+  FORM_START: "Начало формы",
+  FILE_DOWNLOAD: "Скачивание файла",
+  OTHER: "Другое",
+  PRIMARY: "Основная",
+  SECONDARY: "Дополнительная",
+};
+const humanizeSystemValue = (value: string) => systemValueLabels[value] ?? value;
+
 function Filters({ query, resource }: { query: PlatformAdminPageQuery; resource: string }) {
   return (
     <form className="grid gap-3 rounded-[var(--radius-panel)] border border-[var(--border)] bg-[var(--card)] p-4 sm:grid-cols-[minmax(0,1fr)_180px_160px_auto]" method="get">
       <label className="space-y-1.5">
-        <span className="block text-sm font-medium text-[var(--foreground)]">Поиск</span>
-        <Input defaultValue={query.search} name="q" placeholder="Название, slug или ID" />
+        <span className="block text-sm font-medium text-app-foreground">Поиск</span>
+        <Input defaultValue={query.search} name="q" placeholder="Название, код или идентификатор" />
       </label>
       <label className="space-y-1.5">
-        <span className="block text-sm font-medium text-[var(--foreground)]">Сортировка</span>
+        <span className="block text-sm font-medium text-app-foreground">Сортировка</span>
         <NativeSelect defaultValue={query.sort} name="sort">
           <NativeSelectOption value="updatedAt">Обновлено</NativeSelectOption>
           <NativeSelectOption value="createdAt">Создано</NativeSelectOption>
@@ -80,7 +99,7 @@ function Filters({ query, resource }: { query: PlatformAdminPageQuery; resource:
         </NativeSelect>
       </label>
       <label className="space-y-1.5">
-        <span className="block text-sm font-medium text-[var(--foreground)]">Направление</span>
+        <span className="block text-sm font-medium text-app-foreground">Направление</span>
         <NativeSelect defaultValue={query.direction} name="direction">
           <NativeSelectOption value="desc">По убыванию</NativeSelectOption>
           <NativeSelectOption value="asc">По возрастанию</NativeSelectOption>
@@ -89,7 +108,7 @@ function Filters({ query, resource }: { query: PlatformAdminPageQuery; resource:
       <div className="flex items-end gap-2">
         <Button type="submit">Применить</Button>
         {query.search || query.sort !== "updatedAt" || query.direction !== "desc" || query.page > 1 ? (
-          <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)]" href={`/admin/${resource}/`}>
+          <Link className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-app-muted-foreground hover:text-app-foreground" href={`/admin/${resource}/`}>
             Сбросить
           </Link>
         ) : null}
@@ -112,8 +131,8 @@ function Summary({
       <KpiCard label="Проекты" value={String(projects)} />
       <KpiCard label="Сайты" value={String(sites)} />
       <KpiCard label="Источники" value={String(enabledProviders)} tone="soft" />
-      <KpiCard label="Sync выполняется" value={String(runningSyncs)} />
-      <KpiCard label="Задания в очереди" value={String(pendingJobs)} />
+      <KpiCard label="Обновляются сейчас" value={String(runningSyncs)} />
+      <KpiCard label="Ожидают запуска" value={String(pendingJobs)} />
     </section>
   );
 }
@@ -153,8 +172,8 @@ export default async function AdminResourcePageRoute({
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
       primary: item.name,
-      secondary: `${item.slug} · ${item.projectCount} проектов · ${item.membershipCount} участников`,
-      status: `v${item.version}`,
+      secondary: `Код: ${item.slug} · ${item.projectCount} проектов · ${item.membershipCount} участников`,
+      status: "Активна",
       updatedAt: item.updatedAt,
     }));
     const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
@@ -185,7 +204,7 @@ export default async function AdminResourcePageRoute({
       id: item.id,
       primary: item.userName,
       secondary: `${item.userEmail} · ${item.organizationName}`,
-      status: item.tenantRole,
+      status: humanizeSystemValue(item.tenantRole),
       updatedAt: item.updatedAt,
     }));
     const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
@@ -240,8 +259,8 @@ export default async function AdminResourcePageRoute({
     ]);
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
-      primary: `${item.siteName} · ${item.provider}`,
-      secondary: `${item.projectName} · ${item.externalId ?? "без external ID"}`,
+      primary: `${item.siteName} · ${humanizeSystemValue(item.provider)}`,
+      secondary: `${item.projectName} · ${item.externalId ?? "без внешнего идентификатора"}`,
       status: item.enabled ? "Включён" : "Отключён",
       updatedAt: item.updatedAt,
     }));
@@ -268,8 +287,8 @@ export default async function AdminResourcePageRoute({
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
       primary: item.label,
-      secondary: `${item.projectName} · ${item.externalGoalId} · ${item.category}`,
-      status: item.includeInSeoConversion ? "В SEO-конверсии" : item.direction,
+      secondary: `${item.projectName} · цель ${item.externalGoalId} · ${humanizeSystemValue(item.category)}`,
+      status: item.includeInSeoConversion ? "Учитывается в SEO" : humanizeSystemValue(item.direction),
       updatedAt: item.updatedAt,
     }));
     return (
@@ -295,8 +314,8 @@ export default async function AdminResourcePageRoute({
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
       primary: item.siteName,
-      secondary: `${item.projectName} · ${item.baselineLabel} · ${item.enabledQueryCount}/${item.expectedCount}`,
-      status: item.source,
+      secondary: `${item.projectName} · ${item.baselineLabel} · ${item.enabledQueryCount} из ${item.expectedCount} запросов`,
+      status: humanizeSystemValue(item.source),
       updatedAt: item.updatedAt,
     }));
     return (
@@ -321,16 +340,16 @@ export default async function AdminResourcePageRoute({
     ]);
     const thresholdRows: PlatformAdminDisplayRow[] = thresholds.items.map((item) => ({
       id: item.id,
-      primary: item.slug,
+      primary: `Правила ${item.slug}`,
       secondary: `Минимум показов ${item.minimumShows}`,
-      status: `v${item.version}`,
+      status: "Настроен",
       updatedAt: item.updatedAt,
     }));
     const clusterRows: PlatformAdminDisplayRow[] = clusters.items.map((item) => ({
       id: item.id,
       primary: item.name,
-      secondary: `${item.slug} · ${item.groups.length} групп`,
-      status: `v${item.version}`,
+      secondary: `Код: ${item.slug} · ${item.groups.length} групп`,
+      status: "Настроен",
       updatedAt: item.updatedAt,
     }));
     return (

@@ -6,7 +6,7 @@ import { getNotificationSummary } from "../../modules/notifications/server.ts";
 import { AppShell } from "./AppShell.tsx";
 
 function getRoleLabel(state: NonNullable<Awaited<ReturnType<typeof getCurrentPrincipalState>>>) {
-  if (state.principal.kind === "platform-admin") return "Platform Admin";
+  if (state.principal.kind === "platform-admin") return "Администратор платформы";
   if (state.principal.kind === "platform-analyst") return "SEO-аналитик";
   if (state.principal.kind === "tenant-user") {
     return state.principal.role === "ORG_OWNER"
