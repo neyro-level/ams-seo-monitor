@@ -262,7 +262,7 @@ model OauthClient {
   skipConsent                      Boolean?
   enableEndSession                 Boolean?
   subjectType                      String?
-  scopes                           String[]
+  scopes                           String[]              @default([])
   clientCredentialsScopes          String[]              @default([])
   userId                           String?
   createdAt                        DateTime?
@@ -284,8 +284,8 @@ model OauthClient {
   applicationType                  String?
   jwks                             String?
   jwksUri                          String?
-  grantTypes                       String[]
-  responseTypes                    String[]
+  grantTypes                       String[]              @default([])
+  responseTypes                    String[]              @default([])
   requirePKCE                      Boolean?
   dpopBoundAccessTokens            Boolean?              @default(false)
   referenceId                      String?
@@ -344,8 +344,8 @@ model OauthRefreshToken {
   userId                  String
   referenceId             String?
   authorizationCodeId     String?
-  resources               String[]
-  requestedUserInfoClaims String[]
+  resources               String[]           @default([])
+  requestedUserInfoClaims String[]           @default([])
   expiresAt               DateTime?
   createdAt               DateTime?
   revoked                 DateTime?
@@ -375,8 +375,8 @@ model OauthAccessToken {
   userId                  String?
   referenceId             String?
   authorizationCodeId     String?
-  resources               String[]
-  requestedUserInfoClaims String[]
+  resources               String[]           @default([])
+  requestedUserInfoClaims String[]           @default([])
   refreshId               String?
   expiresAt               DateTime?
   createdAt               DateTime?
@@ -401,8 +401,8 @@ model OauthConsent {
   clientId                String
   userId                  String?
   referenceId             String?
-  resources               String[]
-  requestedUserInfoClaims String[]
+  resources               String[]    @default([])
+  requestedUserInfoClaims String[]    @default([])
   scopes                  String[]
   createdAt               DateTime?
   updatedAt               DateTime?

@@ -14,6 +14,10 @@ const oauthDcrFixSql = readFileSync(
   new URL("../prisma/migrations/20260911213000_fix_oauth_dcr_optional_arrays/migration.sql", import.meta.url),
   "utf8",
 );
+const oauthTokenArrayFixSql = readFileSync(
+  new URL("../prisma/migrations/20260911222500_fix_oauth_optional_array_defaults/migration.sql", import.meta.url),
+  "utf8",
+);
 
 describe("Tools and Research database contract", () => {
   it("uses independent membership and explicit project grants", () => {
@@ -50,5 +54,12 @@ describe("Tools and Research database contract", () => {
   it("lets dynamic OAuth clients omit optional array metadata", () => {
     expect(oauthDcrFixSql).toContain('ALTER COLUMN "contacts" SET DEFAULT ARRAY[]::TEXT[]');
     expect(oauthDcrFixSql).toContain('ALTER COLUMN "postLogoutRedirectUris" SET DEFAULT ARRAY[]::TEXT[]');
+  });
+
+  it("defaults every optional OAuth token and consent array", () => {
+    expect(oauthTokenArrayFixSql).toContain('ALTER TABLE "public"."oauthRefreshToken"');
+    expect(oauthTokenArrayFixSql).toContain('ALTER TABLE "public"."oauthAccessToken"');
+    expect(oauthTokenArrayFixSql).toContain('ALTER TABLE "public"."oauthConsent"');
+    expect(oauthTokenArrayFixSql.match(/SET DEFAULT ARRAY\[\]::TEXT\[\]/g)).toHaveLength(9);
   });
 });
