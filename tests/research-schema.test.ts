@@ -10,6 +10,10 @@ const oauthSql = readFileSync(
   new URL("../prisma/migrations/20260911193000_add_mcp_oauth/migration.sql", import.meta.url),
   "utf8",
 );
+const oauthDcrFixSql = readFileSync(
+  new URL("../prisma/migrations/20260911213000_fix_oauth_dcr_optional_arrays/migration.sql", import.meta.url),
+  "utf8",
+);
 
 describe("Tools and Research database contract", () => {
   it("uses independent membership and explicit project grants", () => {
@@ -41,5 +45,10 @@ describe("Tools and Research database contract", () => {
 
   it("lets Better Auth seed an OAuth resource without explicit scopes", () => {
     expect(oauthSql).toContain('"allowedScopes" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]');
+  });
+
+  it("lets dynamic OAuth clients omit optional array metadata", () => {
+    expect(oauthDcrFixSql).toContain('ALTER COLUMN "contacts" SET DEFAULT ARRAY[]::TEXT[]');
+    expect(oauthDcrFixSql).toContain('ALTER COLUMN "postLogoutRedirectUris" SET DEFAULT ARRAY[]::TEXT[]');
   });
 });

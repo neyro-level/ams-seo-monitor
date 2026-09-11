@@ -270,14 +270,14 @@ model OauthClient {
   name                             String?
   uri                              String?
   icon                             String?
-  contacts                         String[]
+  contacts                         String[]              @default([])
   tos                              String?
   policy                           String?
   softwareId                       String?
   softwareVersion                  String?
   softwareStatement                String?
   redirectUris                     String[]
-  postLogoutRedirectUris           String[]
+  postLogoutRedirectUris           String[]              @default([])
   backchannelLogoutUri             String?
   backchannelLogoutSessionRequired Boolean?
   tokenEndpointAuthMethod          String?
