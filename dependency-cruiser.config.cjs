@@ -105,6 +105,18 @@ module.exports = {
       to: { path: "^src/modules/product-catalog/(domain|application|infrastructure|presentation)/" },
     },
     {
+      name: "research-internals-are-private",
+      severity: "error",
+      from: { pathNot: "^src/modules/research/" },
+      to: { path: "^src/modules/research/(domain|application|infrastructure|presentation)/" },
+    },
+    {
+      name: "tools-workspace-internals-are-private",
+      severity: "error",
+      from: { pathNot: "^src/modules/tools-workspace/" },
+      to: { path: "^src/modules/tools-workspace/(domain|application|infrastructure|presentation)/" },
+    },
+    {
       name: "project-registry-internals-are-private",
       severity: "error",
       from: { pathNot: "^src/modules/project-registry/" },

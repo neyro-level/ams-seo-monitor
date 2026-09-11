@@ -1,0 +1,22 @@
+import type {
+  CreateResearchInput,
+  ResearchRecord,
+  ResearchRef,
+  ResearchRunEstimate,
+  UpdateResearchInput,
+} from "../../domain/research.ts";
+
+export interface ResearchRepository {
+  listByProject(organizationId: string, projectId: string): Promise<ResearchRecord[]>;
+  findById(ref: ResearchRef): Promise<ResearchRecord | null>;
+  create(input: CreateResearchInput & { createdByUserId: string; correlationId: string }): Promise<ResearchRecord>;
+  update(input: UpdateResearchInput & { actorId: string; correlationId: string }): Promise<ResearchRecord | null>;
+  archive(ref: ResearchRef & { version: number; actorId: string; correlationId: string }): Promise<boolean>;
+  getCommittedSpend(organizationId: string, now: Date): Promise<{ dailyKopecks: number; monthlyKopecks: number }>;
+  createRunEstimate(input: {
+    ref: ResearchRef;
+    idempotencyKey: string;
+    queryCount: number;
+    estimatedCostKopecks: number;
+  }): Promise<Pick<ResearchRunEstimate, "runId">>;
+}
