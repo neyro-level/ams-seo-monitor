@@ -53,7 +53,7 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
 
       loginSucceededRef.current = true;
       setOpen(false);
-      router.replace("/dashboard/");
+      if (!window.location.search.includes("oauth_query=")) router.replace("/dashboard/");
     } catch {
       setErrorMessage("Не удалось войти. Повторите попытку позже.");
     } finally {

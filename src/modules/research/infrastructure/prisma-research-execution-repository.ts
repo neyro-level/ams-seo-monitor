@@ -1,18 +1,28 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "../../../generated/prisma/client.ts";
 import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
+import { setDatabaseJobContext, type DatabaseJobContext } from "../../../platform/database/authorization-context.ts";
+import type { DatabaseTransaction } from "../../../platform/database/transaction.ts";
 import type { ClaimedResearchRun, ResearchExecutionRepository } from "../application/ports/research-execution-repository.ts";
 import type { SearchEvidence, WordstatEvidence } from "../application/ports/research-provider.ts";
 
 export class PrismaResearchExecutionRepository implements ResearchExecutionRepository {
-  constructor(private readonly injectedPrisma?: PrismaClient) {}
+  constructor(private readonly jobContext: DatabaseJobContext, private readonly injectedPrisma?: PrismaClient) {}
   private get prisma() { return this.injectedPrisma ?? getPrismaClient(); }
+  private withContext<T>(operation: (transaction: DatabaseTransaction) => Promise<T>) {
+    return this.prisma.$transaction(async (transaction) => {
+      await setDatabaseJobContext(transaction, this.jobContext);
+      return operation(transaction);
+    });
+  }
 
   async failStaleRuns(startedBefore: Date) {
-    return this.prisma.$transaction(async (transaction) => {
+    return this.withContext(async (transaction) => {
       const stale = await transaction.$queryRaw<Array<{ id: string; researchId: string }>>(Prisma.sql`
         SELECT "id", "researchId" FROM "research"."Run"
-        WHERE "status"='RUNNING' AND "startedAt" < ${startedBefore} FOR UPDATE SKIP LOCKED
+        WHERE "status"='RUNNING' AND "startedAt" < ${startedBefore}
+          AND "organizationId"=${this.jobContext.organizationId} AND "projectId"=${this.jobContext.projectId}
+        FOR UPDATE SKIP LOCKED
       `);
       for (const run of stale) {
         await transaction.$executeRaw(Prisma.sql`UPDATE "research"."QueryRun" SET "status"='FAILED', "safeErrorCode"='WORKER_INTERRUPTED_AMBIGUOUS', "finishedAt"=CURRENT_TIMESTAMP WHERE "runId"=${run.id} AND "status"='RUNNING'`);
@@ -24,12 +34,14 @@ export class PrismaResearchExecutionRepository implements ResearchExecutionRepos
   }
 
   async claimRun(runId: string): Promise<ClaimedResearchRun | null> {
-    return this.prisma.$transaction(async (transaction) => {
+    return this.withContext(async (transaction) => {
       const locked = await transaction.$queryRaw<Array<{ locked: boolean }>>(Prisma.sql`SELECT pg_try_advisory_xact_lock(hashtextextended('research.run.v1', 0)) AS "locked"`);
       if (!locked[0]?.locked) return null;
       const runs = await transaction.$queryRaw<Array<Omit<ClaimedResearchRun, "queries"> & { status: string }>>(Prisma.sql`
         SELECT "id" AS "runId", "organizationId", "projectId", "researchId", "approvedCostKopecks", "status"::text AS "status"
-        FROM "research"."Run" WHERE "id"=${runId} FOR UPDATE
+        FROM "research"."Run" WHERE "id"=${runId}
+          AND "organizationId"=${this.jobContext.organizationId} AND "projectId"=${this.jobContext.projectId}
+        FOR UPDATE
       `);
       const run = runs[0]; if (!run || run.status !== "QUEUED" || run.approvedCostKopecks === null) return null;
       await transaction.$executeRaw(Prisma.sql`UPDATE "research"."Run" SET "status"='RUNNING', "startedAt"=CURRENT_TIMESTAMP, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${runId}`);
@@ -50,11 +62,13 @@ export class PrismaResearchExecutionRepository implements ResearchExecutionRepos
   }
 
   async markQueryStarted(queryRunId: string) {
-    return (await this.prisma.$executeRaw(Prisma.sql`UPDATE "research"."QueryRun" SET "status"='RUNNING', "attemptCount"="attemptCount"+1, "startedAt"=CURRENT_TIMESTAMP WHERE "id"=${queryRunId} AND "status"='PENDING'`)) === 1;
+    return this.withContext(async (transaction) => (
+      await transaction.$executeRaw(Prisma.sql`UPDATE "research"."QueryRun" SET "status"='RUNNING', "attemptCount"="attemptCount"+1, "startedAt"=CURRENT_TIMESTAMP WHERE "id"=${queryRunId} AND "status"='PENDING'`)
+    ) === 1);
   }
 
   async completeQuery(input: { queryRunId: string; search: SearchEvidence[]; wordstat: WordstatEvidence[]; costKopecks: number }) {
-    await this.prisma.$transaction(async (transaction) => {
+    await this.withContext(async (transaction) => {
       const scopes = await transaction.$queryRaw<Array<{ organizationId: string; projectId: string }>>(Prisma.sql`SELECT "organizationId", "projectId" FROM "research"."QueryRun" WHERE "id"=${input.queryRunId} AND "status"='RUNNING' FOR UPDATE`);
       const scope = scopes[0]; if (!scope) throw new Error("QUERY_RUN_NOT_RUNNING");
       for (const evidence of input.search) {
@@ -67,16 +81,20 @@ export class PrismaResearchExecutionRepository implements ResearchExecutionRepos
     });
   }
 
-  async failQuery(queryRunId: string, safeErrorCode: string) { await this.prisma.$executeRaw(Prisma.sql`UPDATE "research"."QueryRun" SET "status"='FAILED', "safeErrorCode"=${safeErrorCode}, "finishedAt"=CURRENT_TIMESTAMP WHERE "id"=${queryRunId} AND "status"='RUNNING'`); }
+  async failQuery(queryRunId: string, safeErrorCode: string) {
+    await this.withContext(async (transaction) => {
+      await transaction.$executeRaw(Prisma.sql`UPDATE "research"."QueryRun" SET "status"='FAILED', "safeErrorCode"=${safeErrorCode}, "finishedAt"=CURRENT_TIMESTAMP WHERE "id"=${queryRunId} AND "status"='RUNNING'`);
+    });
+  }
   async failRun(runId: string, safeErrorCode: string) {
-    await this.prisma.$transaction(async (transaction) => {
+    await this.withContext(async (transaction) => {
       const runs = await transaction.$queryRaw<Array<{ researchId: string }>>(Prisma.sql`UPDATE "research"."Run" SET "status"='FAILED', "safeErrorCode"=${safeErrorCode}, "finishedAt"=CURRENT_TIMESTAMP, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${runId} AND "status" IN ('RUNNING','QUEUED') RETURNING "researchId"`);
       if (runs[0]) await transaction.$executeRaw(Prisma.sql`UPDATE "research"."Research" SET "status"='FAILED', "version"="version"+1, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${runs[0].researchId} AND "status"='RUNNING'`);
     });
   }
 
   async completeRun(run: ClaimedResearchRun) {
-    await this.prisma.$transaction(async (transaction) => {
+    await this.withContext(async (transaction) => {
       const domains = await transaction.$queryRaw<Array<{ domain: string; matchedQueryCount: bigint; visibilityScore: number }>>(Prisma.sql`
         SELECT evidence."payload"->>'domain' AS "domain", COUNT(DISTINCT query_run."queryId")::bigint AS "matchedQueryCount", COUNT(*)::float8 AS "visibilityScore"
         FROM "research"."Evidence" AS evidence JOIN "research"."QueryRun" AS query_run ON query_run.id=evidence."queryRunId"

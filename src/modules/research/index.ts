@@ -1,5 +1,6 @@
 export { ResearchService } from "./application/research-service.ts";
 export { ResearchExecutionService } from "./application/research-execution-service.ts";
+export { ResearchReportService } from "./application/research-report-service.ts";
 export { ResearchError } from "./domain/research.ts";
 export {
   confirmResearchRunInputSchema,
@@ -26,8 +27,11 @@ export { RESEARCH_RUN_QUEUE, RESEARCH_RUN_SCHEMA, researchRunJobSchema } from ".
 export type { ResearchRunJob } from "./domain/research-queue.ts";
 export { PrismaResearchRepository } from "./infrastructure/prisma-research-repository.ts";
 export { PrismaResearchExecutionRepository } from "./infrastructure/prisma-research-execution-repository.ts";
+export { PrismaResearchReportRepository } from "./infrastructure/prisma-research-report-repository.ts";
+export { S3PrivateExportStorage } from "./infrastructure/s3-private-export-storage.ts";
 export { ConfiguredResearchPricing } from "./infrastructure/configured-research-pricing.ts";
 export { XmlRiverClient, parseXmlRiverSerp, parseXmlRiverSuggestions, parseXmlRiverWordstat } from "./infrastructure/xmlriver-client.ts";
 export { ResearchProviderError } from "./application/ports/research-provider.ts";
 export type { ResearchPricingPolicy, ResearchProvider, ResearchProviderRequest, SearchEvidence, WordstatEvidence } from "./application/ports/research-provider.ts";
 export type { ClaimedResearchRun, ResearchExecutionRepository } from "./application/ports/research-execution-repository.ts";
+export type { PrivateExportStorage, ResearchExportRecord, ResearchReportRepository, ResearchRunReport } from "./application/ports/research-report-repository.ts";

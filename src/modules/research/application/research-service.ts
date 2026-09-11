@@ -16,9 +16,7 @@ const DAILY_LIMIT_KOPECKS = 50_000 as const;
 const MONTHLY_LIMIT_KOPECKS = 300_000 as const;
 
 function principalUserId(principal: PrincipalContext): string | null {
-  return principal.kind === "platform-admin" || principal.kind === "platform-analyst" || principal.kind === "tenant-user"
-    ? principal.userId
-    : null;
+  return principal.kind === "api-client" || principal.kind === "job" ? null : principal.userId;
 }
 
 export class ResearchService {

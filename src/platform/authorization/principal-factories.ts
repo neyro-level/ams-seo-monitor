@@ -3,6 +3,7 @@ import { getPrismaClient } from "../database/prisma/client.ts";
 import type {
   PlatformAdminPrincipal,
   PlatformAnalystPrincipal,
+  IdentityUserPrincipal,
   PrincipalContext,
   TenantRole,
   TenantUserPrincipal,
@@ -70,6 +71,25 @@ export async function getPrincipalStateByUserId(
     principal,
     displayName: user.name,
   };
+}
+
+export async function getIdentityPrincipalByUserId(
+  userId: string,
+  options: PrincipalFactoryOptions = {},
+): Promise<PlatformAdminPrincipal | IdentityUserPrincipal | null> {
+  const user = await getPrismaClient().user.findUnique({
+    where: { id: userId },
+    select: { id: true, systemRole: true, disabledAt: true },
+  });
+  if (!user || user.disabledAt) return null;
+  const correlationId = options.correlationId ?? createCorrelationId();
+  if (user.systemRole === "PLATFORM_ADMIN") return { kind: "platform-admin", userId: user.id, correlationId };
+  return {
+    kind: "identity-user",
+    userId: user.id,
+    systemRole: user.systemRole,
+    correlationId,
+  } satisfies IdentityUserPrincipal;
 }
 
 export function createJobPrincipal(input: {

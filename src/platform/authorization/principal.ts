@@ -35,6 +35,13 @@ export interface PlatformAnalystPrincipal {
   correlationId: string;
 }
 
+export interface IdentityUserPrincipal {
+  kind: "identity-user";
+  userId: string;
+  systemRole: "ANALYST" | "CLIENT";
+  correlationId: string;
+}
+
 export interface ApiClientPrincipal {
   kind: "api-client";
   apiClientId: string;
@@ -53,6 +60,7 @@ export type PrincipalContext =
   | TenantUserPrincipal
   | PlatformAdminPrincipal
   | PlatformAnalystPrincipal
+  | IdentityUserPrincipal
   | ApiClientPrincipal
   | JobPrincipal;
 
@@ -75,6 +83,8 @@ export function getPrincipalPermissions(principal: PrincipalContext): readonly P
       return PLATFORM_ADMIN_PERMISSIONS;
     case "platform-analyst":
       return PLATFORM_ANALYST_PERMISSIONS;
+    case "identity-user":
+      return principal.systemRole === "ANALYST" ? PLATFORM_ANALYST_PERMISSIONS : [];
     case "tenant-user":
       return TENANT_PERMISSIONS[principal.role];
     case "api-client":

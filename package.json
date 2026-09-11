@@ -69,10 +69,16 @@
     "worker:research:run": "pnpm build:collector && node dist-collector/src/worker/main.js research-run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1125.0",
+    "@aws-sdk/s3-request-presigner": "3.1125.0",
     "@base-ui/react": "1.8.0",
+    "@better-auth/cimd": "1.7.2",
+    "@better-auth/mcp": "1.7.2",
+    "@better-auth/oauth-provider": "1.7.2",
     "@better-auth/prisma-adapter": "1.7.2",
     "@fontsource/manrope": "5.2.8",
     "@hookform/resolvers": "5.9.1",
+    "@modelcontextprotocol/server": "2.0.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@tanstack/react-table": "9.2.4",
@@ -97,6 +103,7 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.3",

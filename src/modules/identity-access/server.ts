@@ -5,6 +5,7 @@ export {
 } from "../../platform/auth/principal-session.ts";
 export {
   createJobPrincipal,
+  getIdentityPrincipalByUserId,
   getPrincipalStateByUserId,
   requirePlatformAdmin,
   requirePlatformAnalyst,

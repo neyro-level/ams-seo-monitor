@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "../../../generated/prisma/client.ts";
 import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
+import { setDatabaseAuthorizationContext } from "../../../platform/database/authorization-context.ts";
 import type { DatabaseTransaction } from "../../../platform/database/transaction.ts";
 import type {
   CreateResearchInput,
@@ -38,31 +39,41 @@ async function appendAudit(
 }
 
 export class PrismaResearchRepository implements ResearchRepository {
-  constructor(private readonly injectedPrisma?: PrismaClient) {}
+  constructor(private readonly databaseUserId: string, private readonly injectedPrisma?: PrismaClient) {}
 
   private get prisma(): PrismaClient {
     return this.injectedPrisma ?? getPrismaClient();
   }
 
+  private withContext<T>(operation: (transaction: DatabaseTransaction) => Promise<T>) {
+    return this.prisma.$transaction(async (transaction) => {
+      await setDatabaseAuthorizationContext(transaction, { userId: this.databaseUserId });
+      return operation(transaction);
+    });
+  }
+
   async listByProject(organizationId: string, projectId: string): Promise<ResearchRecord[]> {
-    const rows = await this.prisma.$queryRaw<ResearchRow[]>(Prisma.sql`
+    return this.withContext(async (transaction) => {
+    const rows = await transaction.$queryRaw<ResearchRow[]>(Prisma.sql`
       SELECT "id", "organizationId", "projectId", "title", "brief", "status", "version", "updatedAt"
       FROM "research"."Research"
       WHERE "organizationId" = ${organizationId} AND "projectId" = ${projectId} AND "archivedAt" IS NULL
       ORDER BY "updatedAt" DESC
     `);
     if (!rows.length) return [];
-    const queries = await this.prisma.$queryRaw<QueryRow[]>(Prisma.sql`
+    const queries = await transaction.$queryRaw<QueryRow[]>(Prisma.sql`
       SELECT "id", "researchId", "text", "position"
       FROM "research"."Query"
       WHERE "organizationId" = ${organizationId} AND "projectId" = ${projectId}
       ORDER BY "researchId", "position"
     `);
     return rows.map((row) => toRecord(row, queries));
+    });
   }
 
   async findById(ref: ResearchRef): Promise<ResearchRecord | null> {
-    const rows = await this.prisma.$queryRaw<ResearchRow[]>(Prisma.sql`
+    return this.withContext(async (transaction) => {
+    const rows = await transaction.$queryRaw<ResearchRow[]>(Prisma.sql`
       SELECT "id", "organizationId", "projectId", "title", "brief", "status", "version", "updatedAt"
       FROM "research"."Research"
       WHERE "id" = ${ref.researchId} AND "organizationId" = ${ref.organizationId} AND "projectId" = ${ref.projectId}
@@ -70,18 +81,19 @@ export class PrismaResearchRepository implements ResearchRepository {
     `);
     const row = rows[0];
     if (!row) return null;
-    const queries = await this.prisma.$queryRaw<QueryRow[]>(Prisma.sql`
+    const queries = await transaction.$queryRaw<QueryRow[]>(Prisma.sql`
       SELECT "id", "researchId", "text", "position"
       FROM "research"."Query"
       WHERE "researchId" = ${ref.researchId} AND "organizationId" = ${ref.organizationId} AND "projectId" = ${ref.projectId}
       ORDER BY "position"
     `);
     return toRecord(row, queries);
+    });
   }
 
   async create(input: CreateResearchInput & { createdByUserId: string; correlationId: string }): Promise<ResearchRecord> {
     const researchId = randomUUID();
-    await this.prisma.$transaction(async (transaction) => {
+    await this.withContext(async (transaction) => {
       await transaction.$executeRaw(Prisma.sql`
         INSERT INTO "research"."Research"
           ("id", "organizationId", "projectId", "title", "brief", "status", "createdByUserId", "version", "createdAt", "updatedAt")
@@ -106,7 +118,7 @@ export class PrismaResearchRepository implements ResearchRepository {
   }
 
   async update(input: UpdateResearchInput & { actorId: string; correlationId: string }): Promise<ResearchRecord | null> {
-    const updated = await this.prisma.$transaction(async (transaction) => {
+    const updated = await this.withContext(async (transaction) => {
       const count = await transaction.$executeRaw(Prisma.sql`
         UPDATE "research"."Research"
         SET "title" = ${input.title}, "brief" = ${input.brief}, "version" = "version" + 1, "updatedAt" = CURRENT_TIMESTAMP
@@ -137,7 +149,7 @@ export class PrismaResearchRepository implements ResearchRepository {
   }
 
   async archive(ref: ResearchRef & { version: number; actorId: string; correlationId: string }): Promise<boolean> {
-    return this.prisma.$transaction(async (transaction) => {
+    return this.withContext(async (transaction) => {
       const count = await transaction.$executeRaw(Prisma.sql`
         UPDATE "research"."Research"
         SET "status" = 'ARCHIVED', "archivedAt" = CURRENT_TIMESTAMP, "version" = "version" + 1, "updatedAt" = CURRENT_TIMESTAMP
@@ -157,7 +169,8 @@ export class PrismaResearchRepository implements ResearchRepository {
   }
 
   async getCommittedSpend(organizationId: string, now: Date) {
-    const rows = await this.prisma.$queryRaw<Array<{ dailyKopecks: bigint; monthlyKopecks: bigint }>>(Prisma.sql`
+    return this.withContext(async (transaction) => {
+    const rows = await transaction.$queryRaw<Array<{ dailyKopecks: bigint; monthlyKopecks: bigint }>>(Prisma.sql`
       SELECT
         COALESCE(SUM(CASE WHEN "confirmedAt" >= date_trunc('day', ${now}::timestamptz) THEN "approvedCostKopecks" ELSE 0 END), 0)::bigint AS "dailyKopecks",
         COALESCE(SUM(CASE WHEN "confirmedAt" >= date_trunc('month', ${now}::timestamptz) THEN "approvedCostKopecks" ELSE 0 END), 0)::bigint AS "monthlyKopecks"
@@ -166,11 +179,13 @@ export class PrismaResearchRepository implements ResearchRepository {
         AND "status" IN ('QUEUED', 'RUNNING', 'SUCCEEDED')
     `);
     return { dailyKopecks: Number(rows[0]?.dailyKopecks ?? 0), monthlyKopecks: Number(rows[0]?.monthlyKopecks ?? 0) };
+    });
   }
 
   async createRunEstimate(input: { ref: ResearchRef; idempotencyKey: string; queryCount: number; estimatedCostKopecks: number }) {
     const runId = randomUUID();
-    const inserted = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    return this.withContext(async (transaction) => {
+    const inserted = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
       INSERT INTO "research"."Run"
         ("id", "organizationId", "projectId", "researchId", "status", "queryCount", "estimatedCostKopecks", "estimateExpiresAt", "idempotencyKey", "createdAt", "updatedAt")
       VALUES
@@ -179,7 +194,7 @@ export class PrismaResearchRepository implements ResearchRepository {
       RETURNING "id"
     `);
     if (inserted[0]) return { runId: inserted[0].id };
-    const existing = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    const existing = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`
       SELECT "id" FROM "research"."Run"
       WHERE "organizationId" = ${input.ref.organizationId} AND "idempotencyKey" = ${input.idempotencyKey}
         AND "projectId" = ${input.ref.projectId} AND "researchId" = ${input.ref.researchId}
@@ -187,10 +202,11 @@ export class PrismaResearchRepository implements ResearchRepository {
     `);
     if (!existing[0]) throw new Error("RESEARCH_IDEMPOTENCY_CONFLICT");
     return { runId: existing[0].id };
+    });
   }
 
   async confirmRun(input: { ref: ResearchRef; runId: string; expectedEstimatedCostKopecks: number; actorId: string; correlationId: string; now: Date }) {
-    return this.prisma.$transaction(async (transaction) => {
+    return this.withContext(async (transaction) => {
       const runs = await transaction.$queryRaw<Array<{ id: string; estimatedCostKopecks: number }>>(Prisma.sql`
         SELECT "id", "estimatedCostKopecks" FROM "research"."Run"
         WHERE "id"=${input.runId} AND "organizationId"=${input.ref.organizationId}

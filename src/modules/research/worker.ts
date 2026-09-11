@@ -6,8 +6,9 @@ import { PrismaResearchExecutionRepository } from "./infrastructure/prisma-resea
 import { XmlRiverClient } from "./infrastructure/xmlriver-client.ts";
 
 type QueueClient = Pick<PgBoss, "fetch" | "complete">;
+type ExecutionFactory = (job: ResearchRunJob) => Promise<ResearchExecutionService>;
 
-export async function runNextResearchJobWithDependencies(queue: QueueClient, execution: ResearchExecutionService) {
+export async function runNextResearchJobWithDependencies(queue: QueueClient, createExecution: ExecutionFactory) {
   const jobs = await queue.fetch<ResearchRunJob>(RESEARCH_RUN_QUEUE, { batchSize: 1, includeMetadata: true });
   const job = jobs[0] as JobWithMetadata<ResearchRunJob> | undefined;
   if (!job) return { handled: 0, status: "idle" as const };
@@ -16,6 +17,7 @@ export async function runNextResearchJobWithDependencies(queue: QueueClient, exe
     await queue.complete(RESEARCH_RUN_QUEUE, job.id, { status: "ignored", code: "INVALID_RESEARCH_JOB" });
     return { handled: 1, status: "ignored" as const };
   }
+  const execution = await createExecution(parsed.data);
   const result = await execution.execute(parsed.data.runId);
   await queue.complete(RESEARCH_RUN_QUEUE, job.id, result);
   return { handled: 1, ...result };
@@ -25,12 +27,17 @@ export async function runNextResearchJob(env: Record<string, string | undefined>
   const user = env.XMLRIVER_USER?.trim(); const key = env.XMLRIVER_KEY?.trim();
   if (!user || !key) throw new Error("XMLRIVER_CONFIGURATION_MISSING");
   const boss = await getPgBoss();
-  const repository = new PrismaResearchExecutionRepository();
   try {
-    await repository.failStaleRuns(new Date(Date.now() - 20 * 60 * 1000));
     return await runNextResearchJobWithDependencies(
       boss,
-      new ResearchExecutionService(repository, new XmlRiverClient({ user, key })),
+      async (job) => {
+        const repository = new PrismaResearchExecutionRepository({
+          organizationId: job.toolsOrganizationId,
+          projectId: job.toolsProjectId,
+        });
+        await repository.failStaleRuns(new Date(Date.now() - 20 * 60 * 1000));
+        return new ResearchExecutionService(repository, new XmlRiverClient({ user, key }));
+      },
     );
   } finally {
     await stopPgBoss();
