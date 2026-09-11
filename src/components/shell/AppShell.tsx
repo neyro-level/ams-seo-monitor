@@ -11,6 +11,7 @@ import { MobileDrawer } from "./MobileDrawer.tsx";
 import { ShellNav } from "./ShellNav.tsx";
 import { NotificationCenter } from "../notifications/NotificationCenter.tsx";
 import type { NotificationListResult } from "../../modules/notifications/index.ts";
+import { InstallAppButton } from "../pwa/InstallAppButton.tsx";
 
 type AppShellProps = {
   sections: NavigationSection[];
@@ -57,6 +58,7 @@ export function AppShell({ sections, accountLabel, notificationSummary, children
           </div>
 
           <div className="border-t border-[var(--sidebar-border)] p-2">
+            <div className="mb-1"><InstallAppButton collapsed={collapsed} /></div>
             <div className={`flex min-h-10 items-center gap-1 rounded-[var(--radius)] bg-[var(--sidebar-surface)] ${collapsed ? "flex-col py-1.5" : "px-2"}`}>
               <p className={collapsed ? "sr-only" : "min-w-0 flex-1 truncate text-xs font-medium text-app-sidebar-foreground"}>{accountLabel}</p>
               {notificationSummary ? <NotificationCenter initialSummary={notificationSummary} surface="sidebar" /> : null}

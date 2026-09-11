@@ -18,45 +18,51 @@ import { PrismaReportRepository } from "../modules/reporting/server.ts";
 import { AuthorizationService } from "../platform/authorization/authorization-service.ts";
 import { getPrismaClient } from "../platform/database/prisma/client.ts";
 
-const projectRepository = new PrismaProjectRepository();
-const monitoringRepository = new PrismaMonitoringRepository();
-const reportRepository = new PrismaReportRepository();
-const reliabilityRepository = new PrismaReliabilityRepository();
-const authorizationService = new AuthorizationService(
-  new PrismaAccessGrantRepository(getPrismaClient()),
-);
+function createServices() {
+  const projectRepository = new PrismaProjectRepository();
+  const authorizationService = new AuthorizationService(new PrismaAccessGrantRepository(getPrismaClient()));
+  const projectService = new ProjectService(projectRepository, authorizationService);
+  return {
+    projectService,
+    authorizationService,
+    analystService: new AnalystService(projectService),
+    siteService: new SiteService(projectService),
+    monitoringService: new MonitoringService(new PrismaMonitoringRepository()),
+    reportService: new ReportService(projectService, new PrismaReportRepository()),
+    reliabilityService: new ReliabilityService(new PrismaReliabilityRepository()),
+  };
+}
 
-const projectService = new ProjectService(projectRepository, authorizationService);
-const analystService = new AnalystService(projectService);
-const siteService = new SiteService(projectService);
-const monitoringService = new MonitoringService(monitoringRepository);
-const reportService = new ReportService(projectService, reportRepository);
-const reliabilityService = new ReliabilityService(reliabilityRepository);
+let services: ReturnType<typeof createServices> | null = null;
+function getServices() {
+  services ??= createServices();
+  return services;
+}
 
 export function getProjectService() {
-  return projectService;
+  return getServices().projectService;
 }
 
 export function getAuthorizationService() {
-  return authorizationService;
+  return getServices().authorizationService;
 }
 
 export function getAnalystService() {
-  return analystService;
+  return getServices().analystService;
 }
 
 export function getSiteService() {
-  return siteService;
+  return getServices().siteService;
 }
 
 export function getMonitoringService() {
-  return monitoringService;
+  return getServices().monitoringService;
 }
 
 export function getReportService() {
-  return reportService;
+  return getServices().reportService;
 }
 
 export function getReliabilityService() {
-  return reliabilityService;
+  return getServices().reliabilityService;
 }
