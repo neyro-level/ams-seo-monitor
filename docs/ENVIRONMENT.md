@@ -13,6 +13,8 @@ This document is the canonical registry of AMS IMPULSE environment variable owne
 
 One credential must not be reused between web, worker, migrator, tests and backup.
 
+Target production secrets are stored in the dedicated AMS IMPULSE Doppler scope before release. Timeweb account tokens are operator credentials and never become application runtime variables.
+
 ## Database Variables
 
 Application accepts either `DATABASE_URL` or a complete component set:
@@ -25,6 +27,8 @@ Application accepts either `DATABASE_URL` or a complete component set:
 - `DATABASE_SSLMODE`
 
 `APP_ENV` must identify `development`, `test` or `production`. Partial DB config fails closed. Diagnostics may print env, host, port, database and identity, but never full URL or password.
+
+Production managed PostgreSQL requires private host resolution and TLS. Public database endpoints are forbidden.
 
 Prisma migration commands require explicit `DATABASE_URL`; `prisma generate` is DB-independent.
 
@@ -55,8 +59,17 @@ Changing `NEXT_PUBLIC_*` requires rebuild/redeploy. Changing runtime secret requ
 - `OUTBOX_POLL_DELAY_MS`
 - `LOG_LEVEL`
 - `PGBOSS_SCHEMA`
+- `RESEARCH_WORKER_ID`
+- `RESEARCH_WORKER_CONCURRENCY`
+- `XMLRIVER_API_BASE_URL`
+- `XMLRIVER_API_KEY`
+- `XMLRIVER_RATE_CARD_VERSION`
+- `RESEARCH_DAILY_BUDGET_RUB`
+- `RESEARCH_MONTHLY_BUDGET_RUB`
 
 Provider token presence does not enable provider calls by itself. Calls require enabled ProviderConnection in PostgreSQL and valid server-side env after restart. Browser must never receive provider token variables.
+
+XMLRiver credentials are worker-only. Full provider URLs with query credentials must never be logged.
 
 ## Local/Test Variables
 

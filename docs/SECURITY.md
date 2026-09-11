@@ -1,132 +1,141 @@
 # SECURITY
 
-Security boundary for AMS IMPULSE profile: `multi-tenant / pii / own-saas / Platform Admin enabled`.
+Security boundary: `multi-tenant / pii / own-saas / Platform Admin enabled`.
 
-## Trust Boundaries
+## Core Rule
 
-### Browser
-
-Receives only public HTML or explicit browser-safe DTOs. It must never receive Prisma records, database URLs, provider credentials, raw provider payloads, password hashes, session tokens, backup credentials, stack traces or internal error bodies.
-
-### Next.js Web
-
-- Better Auth validates identity/password/session.
-- Server rebuilds fresh `PrincipalContext` for every private request/action.
-- Disabled User or removed Membership loses access on next request.
-- Public signup and user-created organizations are disabled.
-- Public errors use stable code, safe message and correlation ID.
-- `/api/health/ready` is loopback-only.
-
-### PostgreSQL
-
-- Single runtime source of truth.
-- No public Internet listener.
-- Runtime, migrator, test and backup identities are separated.
-- Tenant-owned records carry explicit `organizationId`.
-- Composite constraints reject cross-tenant parent relations.
-- Production schema changes use reviewed migrations only.
-- Backup/offsite/restore proof is required before release migration.
-
-### Worker And Providers
-
-- Provider tokens exist only in worker/server environment.
-- Yandex Webmaster and Yandex Metrika are read-only.
-- Topvisor writes are allowed only inside bounded idempotent worker contracts.
-- Browser never calls providers directly.
-- Provider settings in DB contain nonsecret mappings only.
-- Price-check is mandatory before paid Topvisor checker.
-- Logs contain safe IDs, counts and statuses; no token, header, raw body or PII.
-
-### Leads API
-
-Public lead form submits to allowlisted external AMS Leads API. AMS IMPULSE does not store name/phone in its PostgreSQL. `NEXT_PUBLIC_LEADS_*` values are public identifiers, not delivery credentials.
-
-## Identity Contract
-
-Better Auth `1.7.2` owns identity, password credential and session lifecycle. AMS owns Membership, permissions, resource authorization and AuditEvent.
-
-Effective principals:
+Authorization is deny-by-default. A user can act only when the server proves all required relationships:
 
 ```text
-platform-admin   → PLATFORM_ADMIN, no organizationId
-platform-analyst → SEO_ANALYST, no fake tenant
-tenant-user      → userId + membershipId + organizationId + tenantRole
-job              → jobName + explicit organizationId
+active identity
++ active product membership
++ explicit project grant
++ role permission
++ resource belongs to that project
+= allow
 ```
 
-Browser, URL, form and cookie do not create tenant scope.
+Missing, stale or inconsistent evidence means deny.
 
-## Login And Password Policy
+## Identity
 
-- Login uses unique lowercase username and operator-assigned password.
-- Password is exactly 8 printable ASCII characters without spaces.
-- Only Platform Admin/operator CLI assigns or resets password.
-- Plain password is never returned after save.
-- Reset revokes existing sessions.
-- Self-service registration, password recovery and user password change are out of scope.
-- No additional factor is an approved owner exception.
+Better Auth `1.7.2` owns credentials and sessions. AMS owns system roles, product memberships, project grants, permissions, resource authorization and audit.
 
-Compensating controls: HTTPS/HSTS, closed signup, Better Auth rate limit, server-side authorization, disabled-user boundary, session revocation and AuditEvent.
+System roles:
 
-## Authorization Rules
+- `PLATFORM_ADMIN` - only global bypass;
+- `ANALYST` - internal identity, explicit grants required;
+- `CLIENT` - customer identity, explicit grants required.
 
-- Knowledge of slug/URL is not access.
-- Navigation hiding is not authorization.
-- Permission and module-owned resource authorization are both required.
-- Platform Admin must explicitly name target organization for cross-tenant operation.
-- Tenant user can read only its fresh Membership organization.
-- Direct Server Action calls must pass the same checks as UI flows.
-- Worker `JobPrincipal` organization must match queued event/target.
+`PrincipalContext` contains identity/system role/correlation ID. Browser, URL, form, cookie, token claim or first membership never chooses tenant scope.
 
-## Secrets
+Public signup, user-created organizations, self-service role editing and arbitrary custom roles are disabled.
 
-Secret sources: approved Doppler scope and root-owned protected server env files.
-
-Secrets include Better Auth secret, DB credentials, provider tokens, Topvisor API key, backup credentials and external delivery credentials. They are forbidden in Git, fixtures, build output, docs, browser, argv, logs, AuditEvent and public error responses.
-
-Server-only secrets must not use `NEXT_PUBLIC_*`. Secret rotation runbook: [`ops/TOKEN_ROTATION.md`](ops/TOKEN_ROTATION.md).
-
-## PII And Logging
-
-- User/session may include email, IP and user-agent only in auth/server layer.
-- Lead PII is not stored in this database.
-- Production PII is not used in fixtures.
-- Raw provider errors and response bodies are not persisted.
-- Notifications use safe title/message/route only.
-- Pino redaction covers root and nested password/token/secret/cookie/API key/email/phone fields.
-- Serialized-log tests must keep sentinel secrets out of output.
-
-## Mutations And Audit
-
-Business mutations follow:
+## Authorization Contract
 
 ```text
-defineAction/API/job adapter
-→ fresh PrincipalContext
-→ defineCommand
-→ permission + resource authorization
-→ transaction-bound repositories
-→ mutation + safe AuditEvent + optional OutboxEvent
+authorize(principal, permission, resourceRef)
+-> ALLOW | DENY
 ```
 
-External provider calls are outside the business DB transaction. Successful admin/user/provider configuration mutations write one safe AuditEvent atomically with the mutation.
+`resourceRef` names product and exact organization/project/resource. Authorization runs for every:
 
-## Security Invariants
+- private Server Component and route handler;
+- server action and application command;
+- API and export download;
+- MCP tool call;
+- worker job.
 
-- Public signup off.
-- `PrincipalContext` is the only authorization input.
-- Foreign tenant read/write denied in application and blocked by DB constraints.
-- UI does not import Prisma/SQL.
-- Provider settings reject sensitive key names.
-- Secret/PII absent from DTOs, logs, AuditEvent and error responses.
-- Integration runner accepts only dedicated `*_test` database.
-- Production deploy uses exact reviewed SHA and immutable image digest.
+Navigation hiding is not authorization. Unknown or foreign resource returns safe not-found semantics. Error bodies and timing should not intentionally disclose whether a foreign ID exists.
 
-## Open Security Work
+## Product Isolation
 
-Tracked in [`MASTER_PLAN.md`](MASTER_PLAN.md):
+- SEO grant never opens Leads or Tools.
+- Leads grant never opens SEO or Tools.
+- Tools grant never opens client products.
+- Organization membership does not open every project.
+- No access to future projects is inherited automatically.
+- Product-specific access tables use real foreign keys; generic polymorphic grants are forbidden.
+- Analyst receives no data solely from `ANALYST` system role.
 
-- independent confirmation of SourceCraft secret scanning;
-- GitHub mirror sanitation before public visibility;
-- narrowing production migrator `CREATEDB` after owner-approved impact scope;
-- external monitor for public health/stale integrations without exposing readiness body.
+Changing/revoking membership or project grant writes AuditEvent and revokes active Better Auth sessions. Effective access is rebuilt from database state on the next request.
+
+## PostgreSQL Defense
+
+Application authorization, scoped repositories and composite ownership constraints are mandatory. RLS adds defense in depth for tenant-owned runtime tables:
+
+- `ENABLE ROW LEVEL SECURITY`;
+- `FORCE ROW LEVEL SECURITY`;
+- runtime roles use `NOBYPASSRLS` and do not own protected tables;
+- transaction-local user/product/project context;
+- no context means default deny;
+- `USING` restricts reads/deletes and `WITH CHECK` restricts inserts/updates;
+- web and worker roles cannot run DDL;
+- migrator and backup identities are not used by application runtime.
+
+RLS changes require PostgreSQL integration tests proving allowed and denied reads/writes. Backup proof verifies complete dump and restore independently from runtime policies.
+
+## Browser And UI
+
+- Server builds navigation from effective product access.
+- Organization/project selectors receive only authorized options.
+- Client-side permission checks improve UX only.
+- Private responses use `Cache-Control: no-store` where relevant.
+- Service worker cannot cache session, API, report, export, research or PII responses.
+- Private S3 object keys are never public; download URLs are short-lived and issued after fresh authorization.
+
+## MCP
+
+- Production transport uses OAuth 2.1 + PKCE.
+- Access token subject maps to Better Auth user.
+- Token scopes may narrow but cannot expand current AMS grants.
+- Authorization is re-evaluated on every tool call.
+- No browser cookie, universal admin bearer token, generic SQL or direct database tool.
+- Paid tool requires separate estimate, exact confirmation hash, amount ceiling and idempotency key.
+- Tool outputs are bounded and redact provider/internal errors.
+
+## Worker And Providers
+
+- JobPrincipal contains exact product, organization, project and job identity.
+- Handler verifies payload ownership before data access.
+- Provider secrets exist only server-side.
+- XMLRiver full URL/query credential/raw response is never logged.
+- XML parser disables DTD/external entities and applies response-size limits.
+- External call runs outside DB transaction.
+- Paid request is reserved durably before dispatch.
+- Ambiguous paid result becomes `ACTION_REQUIRED`, never automatic retry.
+
+## Passwords And Sessions
+
+The existing operator-assigned password policy remains until a separate identity-hardening decision. Password and hashes never enter Git, docs, argv, logs or AuditEvent. Password reset, access change and user disable revoke sessions.
+
+No additional authentication factor remains an approved owner exception. Compensating controls: HTTPS/HSTS, closed signup, rate limiting, fresh authorization, session revocation and audit.
+
+## PII, Secrets And Logging
+
+- PII is limited to required identity/product records.
+- Production PII is prohibited in fixtures.
+- Secrets come from approved Doppler scope/protected server environment.
+- Server secrets never use `NEXT_PUBLIC_*`.
+- Logs contain safe IDs/counts/status/correlation only.
+- Passwords, tokens, cookies, API keys, emails, phones, raw payloads and signed URLs are redacted.
+- Public errors contain stable code, safe message and correlation ID.
+
+## Required Access Matrix
+
+Tests must prove:
+
+- SEO-only, Leads-only, SEO+Leads and Tools-only navigation/data behavior;
+- project A cannot read project B in same organization;
+- tenant A cannot read/write tenant B;
+- guessed IDs fail in route/action/API/MCP;
+- direct server action invocation fails without access;
+- revoked/disabled user loses web and MCP access;
+- analyst has only explicit grants;
+- RLS denies missing context and cross-tenant inserts/updates;
+- backup includes all tenant rows;
+- logs/errors reveal no foreign resource or secret data.
+
+## Delivery
+
+Auth, tenancy, RLS, MCP, paid provider, PII and schema changes are `RISKY`. Merge requires diff review, scoped tests, PostgreSQL integration proof and green SourceCraft exact-head gate. Production additionally requires backup/restore, migration and live access smoke after an explicit owner command.

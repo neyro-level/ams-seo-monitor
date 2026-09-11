@@ -1,131 +1,134 @@
 # PRODUCT
 
-Этот документ — единственный продуктовый source of truth AMS IMPULSE. Он описывает пользователей, сценарии и ограничения, но не заменяет architecture, schema или security contracts.
+Этот документ - единственный product source of truth AMS IMPULSE. Фактическую готовность определяют код и слитые Pull Request.
 
 ## Назначение
 
-AMS IMPULSE объединяет:
+AMS IMPULSE - личная CRM-платформа владельца АМС с частичным клиентским доступом. Она объединяет клиентские продукты и внутренние инструменты под одной identity-системой, но сохраняет жёсткие границы данных и разрешений.
 
-- публичный сайт SEO-услуги АМС;
-- приватный кабинет регулярной SEO-отчётности;
-- внутренний Platform Admin для организаций, проектов, сайтов и доступов;
-- worker-контур, который собирает provider evidence и готовит отчёты.
+## Продуктовая Карта
 
-Цель продукта — заменить ручную сборку управленческого SEO-отчёта повторяемым контуром с честными статусами данных. Система не изменяет клиентские сайты.
+### SEO Монитор
 
-## Пользователи
+Клиентский продукт для регулярного SEO-контроля:
 
-### Public visitor
+```text
+SEO Organization
+-> SEO Project
+-> Site
+-> Evidence / Report
+```
 
-Читает предложение, открывает login modal или отправляет заявку во внешний AMS Leads API. Доступа к кабинету и данным клиентов нет. Имя и телефон заявки не сохраняются в PostgreSQL AMS IMPULSE.
+Текущий работающий SEO-кабинет мигрирует в эту границу без изменения смыслов отчёта и стабильных `/c/*` маршрутов.
+
+### АМС Лиды
+
+Отдельный клиентский продукт:
+
+```text
+Leads Organization
+-> Leads Project
+-> Funnel
+-> Lead
+```
+
+До реализации модуль не отображается как доступный. SEO organization/project не переиспользуются для лидов.
+
+### Инструменты
+
+Внутренний продукт с общим справочником:
+
+```text
+Tools Organization
+-> Tools Project
+-> Research / Contract / Invoice / Presentation / Site Clone
+```
+
+Модули:
+
+1. **Исследования** - первый реализуемый модуль.
+2. **Договоры**.
+3. **Счета**.
+4. **Презентации**.
+5. **Клон сайтов**.
+
+Организация и проект создаются в Инструментах один раз. Все внутренние модули ссылаются на один `ToolsProject`.
+
+## Пользователи И Доступ
 
 ### Platform Admin
 
-Внутренний оператор АМС. Управляет organizations, users, memberships, projects, sites, provider mappings, goals, query core and safe operations in `/admin/*`. Не видит secret values и не выполняет произвольный CRUD.
+Владелец платформы. Имеет global access, управляет пользователями и назначениями. Для действий с tenant data всё равно указывает целевой продукт и ресурс; изменения аудируются.
 
-### SEO Analyst
+### Analyst
 
-Видит все проекты, сайты, readiness источников, отчёты и уведомления. Может запускать разрешённые operator-only sync workflows через protected server capabilities. Не получает provider credentials в browser.
+Внутренний сотрудник. Системная роль не открывает данные автоматически. Владелец явно назначает продукты и проекты. Для Research получает роль `ANALYST` на конкретные Tools projects.
 
-### Client Viewer
+### Client
 
-Видит только organization subtree из свежего Membership. Читает `/dashboard/`, `/c/{clientSlug}/` и site reports. Не видит соседние tenants, raw provider payloads, credentials, internal snapshots и admin routes.
+Клиент. Видит только продукты и проекты, назначенные Platform Admin. Доступ к SEO не открывает АМС Лиды или Инструменты. Доступ к одному проекту не открывает соседние проекты организации.
 
-### Worker
+### Worker / MCP Client
 
-Server-owned principal. Читает enabled configuration из PostgreSQL, использует provider credentials только server-side, сохраняет normalized evidence и компилирует reports. Browser requests не обслуживает.
+Worker действует в scope конкретного job. MCP действует от имени Better Auth user и не может расширить его effective access.
 
-## Product Hierarchy
+## Роли Продукта
 
-```text
-Все проекты
-→ Проект
-  → Сайты
-    → Единый отчёт
-```
+- `VIEWER` - только чтение разрешённого проекта.
+- `OPERATOR` - разрешённые рабочие изменения в клиентском продукте.
+- `ANALYST` - работа с внутренними инструментами и запуск исследований.
 
-`clientSlug/siteSlug` and `/c/*` are stable URL/data contract.
+Роли фиксированы кодом. Dynamic/custom roles вне первого релиза.
 
-## Core Scenarios
+## Access Scenarios
 
-### Public lead
+- SEO only: пользователь видит только SEO Монитор и назначенные SEO projects.
+- Leads only: пользователь видит только АМС Лиды и назначенные Leads projects.
+- SEO + Leads: оба продукта видимы, scopes остаются независимыми.
+- Tools denied: раздел отсутствует в navigation, direct URL/API/MCP возвращает безопасный отказ.
+- One project: sibling projects той же organization не видны.
+- Revoked grant: web и MCP теряют доступ со следующего запроса, sessions отзываются.
 
-1. Visitor opens `/`.
-2. Reads offer and legal links.
-3. Opens lead dialog.
-4. Form submits only to allowlisted AMS Leads API.
-5. AMS IMPULSE stores no lead PII.
+## Исследования MVP
 
-### Client report
+Пользователь с Tools Research permission:
 
-1. User signs in through Better Auth.
-2. Server builds fresh `PrincipalContext`.
-3. User opens `/dashboard/`.
-4. User selects project and site inside allowed organization.
-5. Report route loads latest validated `SiteReportSnapshot`.
-6. User switches `week`, `month`, `quarter`, `halfYear`; server renders the selected period from PostgreSQL.
+1. выбирает разрешённые Tools organization/project;
+2. создаёт черновик анализа конкурентов;
+3. задаёт до 20 запросов, регион и устройство;
+4. получает оценку максимальной стоимости;
+5. отдельно подтверждает exact input hash и сумму;
+6. worker собирает XMLRiver evidence;
+7. система формирует детерминированную карту конкурентов;
+8. пользователь читает сохранённый отчёт и создаёт CSV export.
 
-### Analyst review
+MCP, кабинет и будущий внутренний AI используют один application contract.
 
-1. SEO Analyst opens `/analyst/`.
-2. Reviews all projects, sites, configuration readiness and source freshness.
-3. Opens site report and sees ranking, Webmaster, Metrika, technical, competitors and methodology sections.
-4. Reads notifications for failed/recovered integrations, stale data and queue issues.
+## SEO Monitor Compatibility
 
-### Client onboarding
+Сохраняются:
 
-1. Platform Admin creates organization, project, user, membership and 1–50 sites.
-2. Each site receives exact HTTPS URL, timezone, Topvisor region and 20–100 approved queries.
-3. One transaction creates business records, credential user, AuditEvent and OutboxEvent.
-4. Worker discovers Yandex mappings, asks for Metrika goal confirmation when needed, finds or creates Topvisor project/search targets.
-5. Paid Topvisor checker starts only after price-check and durable `ProviderOperation` reservation.
-6. First reports and notifications become visible without masking partial/stale states.
+- публичный landing и legal routes;
+- Better Auth login без public signup;
+- `/dashboard/`, `/analyst/`, `/admin/*`, `/notifications/`, `/c/*`;
+- `SiteReportSnapshot` и периоды `week`, `month`, `quarter`, `halfYear`;
+- Yandex read-only evidence и bounded Topvisor operations;
+- значения `partial`, `stale`, `null` без маскировки.
 
-Detailed operator runbook: [`ops/CLIENT_ONBOARDING.md`](ops/CLIENT_ONBOARDING.md).
+Миграция доступа не должна расширить видимость существующего клиента. Каждый текущий client Membership преобразуется в explicit SEO project grants только для уже доступных проектов.
 
-## Director Report
+## Mobile And Installable
 
-Route:
+Кабинет проектируется mobile-ready. PWA добавляет установку на Windows/Android и home-screen mode на iOS, но не кэширует sessions, PII, reports, exports или paid commands.
 
-```text
-/c/{clientSlug}/{siteSlug}/?period=week|month|quarter|halfYear
-```
+Native App Store/Google Play applications вне первого цикла.
 
-Order of meaning:
+## Non-goals Первого Цикла
 
-1. Project/site context, URL, period, timezone, freshness and source state.
-2. Ranking: Top-3/Top-10, coverage, movement and tracked queries.
-3. Technical/Webmaster health.
-4. Search demand: shows, clicks, CTR and average show position.
-5. Metrika: organic visits, unique target visits, goal actions and conversion.
-6. Landing pages, devices, goals, phrases and geography.
-7. Competitors, alerts, risks, opportunities and methodology.
-
-Google and desktop/mobile are explicit dimensions. Yandex remains default. Webmaster → Metrika funnel is always labelled as a summary across different sources.
-
-## Notifications
-
-Platform Admin and SEO Analyst receive `/notifications/`, unread count and filters. Client Viewer does not receive the route. Notifications are safe projections of lifecycle events and do not replace AuditEvent, SyncRun, SourceRun or logs.
-
-## Product Invariants
-
-- `SiteReportSnapshot` is the only browser-safe report DTO.
-- `month` is default.
-- Current and previous periods have equal length.
-- `partial`, `stale`, `unavailable` and `null` stay visible and honest.
-- Webmaster average show position is not exact rank.
-- Top-3 is a subset of Top-10.
-- Ranking denominator is the full approved enabled query core.
-- Direct query-to-lead attribution is prohibited.
-- Different sites are not merged into artificial ranking KPI.
-- Browser never receives provider credentials or raw provider payloads.
-
-## Non-Goals
-
-- CRM, billing, task tracker or file storage.
-- Public self-service signup.
-- Client browser admin.
-- Arbitrary provider write access.
-- Automatic client-site changes.
-- Second ORM, auth provider, backend or storage contract.
-- External public `/api/v1` until a product trigger creates it.
+- реализация АМС Лиды;
+- договоры, счета, презентации и клон сайтов;
+- arbitrary permission editor;
+- client self-service access administration;
+- generic SQL/MCP tools;
+- обязательный AI для Research report;
+- production migration или release без отдельной owner command.

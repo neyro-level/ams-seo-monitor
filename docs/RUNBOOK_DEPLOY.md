@@ -10,9 +10,10 @@ Project topology:
 
 - web binds `127.0.0.1:3000`;
 - host Nginx terminates external traffic;
-- application uses approved self-managed PostgreSQL 18;
+- current application uses self-managed PostgreSQL 18 until the managed database migration release;
+- target application uses Timeweb Managed PostgreSQL 18 through private TLS networking;
 - protected env files are separated for web, worker, migrator and backup;
-- managed PostgreSQL is not a target.
+- database migration is a separate owner-approved RISKY release and is never an ordinary code deploy side effect.
 
 ## Preconditions
 
@@ -51,9 +52,9 @@ Deploy script must:
 5. load OCI image and verify digest;
 6. validate Compose config under project name `ams-seo-monitor`;
 7. install backup/restore scripts;
-8. run pre-migration backup as `postgres`;
+8. run pre-migration backup with the dedicated backup identity;
 9. require offsite upload + remote HEAD confirmation;
-10. restore exact immutable backup file into ephemeral PostgreSQL for smoke;
+10. restore exact immutable backup file into isolated PostgreSQL for smoke;
 11. run Prisma migrate deploy and pg-boss schema migration;
 12. never run operator config sync automatically;
 13. install reviewed Nginx/systemd assets.
@@ -92,6 +93,8 @@ Required:
 - scheduled sync succeeds or records honest partial/failure state;
 - retention and backup timers are active;
 - latest backup has confirmed offsite object.
+
+For the managed database cutover additionally require private network/TLS proof, complete row counts, RLS access matrix, application connection identity checks and old database read-only state.
 
 Do not paste user/report data into public logs.
 

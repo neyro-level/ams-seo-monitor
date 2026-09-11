@@ -1,178 +1,175 @@
 # DATA MODEL
 
-Этот документ — единственный data/lifecycle source of truth. Фактическую структуру определяют `prisma/schema.prisma` and immutable `prisma/migrations/*`.
-
-## Sources Of Truth
-
-- `prisma/schema.prisma` — tables, relations, indexes, enums.
-- `prisma/migrations/*` — immutable schema history.
-- `src/shared/schemas/*` — browser/API DTO validation.
-- PostgreSQL — only runtime data store.
-- Operator configuration — explicit private-path import, not runtime source and not deploy input.
+Этот документ - единственный data/lifecycle source of truth. Фактическую структуру определяют `prisma/schema.prisma` и immutable `prisma/migrations/*`.
 
 ## Schema Policy
 
-- Applied migration is never edited.
-- Schema change requires a new migration.
-- Production uses only `prisma migrate deploy`; `db push` is forbidden.
-- Destructive data/schema action requires backup, compatibility plan and explicit owner approval.
-- Prisma access is allowed only in database/platform and module infrastructure repositories.
-- JSONB is allowed for validated complex snapshots; queryable ownership/security fields stay relational.
-- Runtime, migrator, test and backup database identities are separate.
+- Applied migration never changes.
+- Production uses `prisma migrate deploy`; `db push` is forbidden.
+- Queryable ownership and authorization fields stay relational.
+- Cross-product generic foreign keys are prohibited.
+- Runtime, worker, migrator and backup DB identities are separate.
+- Current single-schema SEO model migrates incrementally without data loss.
 
-## Core Ownership
+## Platform Identity
 
-### Identity And Access
+Better Auth owns `User`, `Session`, `Account`, `Verification`. AMS owns authorization records and AuditEvent.
 
-- `User`, `Session`, `Account`, `Verification` are Better Auth-owned identity/session records plus AMS `systemRole`.
-- `Organization` and `Member` are AMS tenant access records.
-- `PrincipalContext` is not a DB record; server builds it from fresh User and Membership.
+Target system roles:
 
-### Project Registry
+- `PLATFORM_ADMIN`;
+- `ANALYST`;
+- `CLIENT`.
 
-Owns:
+`PrincipalContext` is not persisted. It contains fresh identity/system role/correlation data and never chooses the first membership as active tenant.
 
-- `Project`, `Site`;
-- `ProviderConnection`, `SearchTarget`, `ProviderOperation`;
-- `GoalDefinition`, `GoalDefinitionSite`;
-- `TrackedQuerySet`, `TrackedQuery`;
-- `ThresholdProfile`, `QueryClusterProfile`, `QueryClusterGroup`.
+## Product Access
 
-`Project` is the tenant ownership root. `Site` and every configuration/history row carry explicit `organizationId`. Composite foreign keys protect parent ownership.
+Each product owns typed access tables:
 
-### Data Ingestion
+```text
+SeoMembership   -> SeoProjectAccess
+LeadsMembership -> LeadsProjectAccess
+ToolsMembership -> ToolsProjectAccess
+```
 
-Owns:
+Common invariants:
 
-- `SyncRun`, `SourceRun`;
-- Webmaster/Metrika metric tables;
-- `RankingCapture`, `CompetitorSnapshot`, `TechnicalSnapshot`;
-- provider operation state used by Topvisor paid/bounded actions.
+- one active membership per user/organization/product;
+- one explicit grant per membership/project;
+- project belongs to the same product organization as membership;
+- membership without project grant cannot read project data;
+- no wildcard for future projects in v1;
+- revoking membership cascades or disables its project grants atomically;
+- grants have version and timestamps for optimistic concurrency/audit.
 
-Natural keys protect repeatable upserts. Provider raw HTTP bodies, credentials and authorization headers are never stored.
+Product roles: `VIEWER`, `OPERATOR`, `ANALYST`. Role-to-permission mapping is code-owned and versioned, not editable arbitrary JSON.
 
-### Reporting
+## Product Ownership
 
-Owns `ReportSnapshot`: append-only, validated report payload for one site and period. Repository reads the latest snapshot by `generatedAt`.
+### SEO Monitor
 
-### Notifications
+```text
+SeoOrganization
+-> SeoProject
+-> Site
+-> Provider configuration/evidence
+-> ReportSnapshot
+```
 
-Owns `Notification` and `NotificationRead`. These are safe user-facing projections, not audit logs.
+Existing `Organization`, `Member`, `Project`, `Site` are migrated behind SEO facades. Existing client visibility is converted to grants for exactly the projects previously visible.
 
-### Platform Operations
+### AMS Leads
 
-Owns `AuditEvent`, `IdempotencyKey`, `OutboxEvent`, `JobRun`, `RuntimeHeartbeat`, `RetentionRun`.
+```text
+LeadsOrganization
+-> LeadsProject
+-> Funnel
+-> Lead
+```
 
-Outbox and JobRun are the business delivery truth; pg-boss is transport.
+Leads data model is reserved, not implemented in Research cycle.
 
-## Tenant Invariants
+Retention target: active leads remain; contact PII is removed six months after closure/last activity; aggregates remain 24 months. Exact lifecycle is finalized with Leads module.
 
-- Every tenant-owned row stores `organizationId`.
-- Browser route, URL slug, hidden form field or client state never establish tenant scope.
-- Resource authorization and database ownership constraints are both required.
-- Platform Admin uses explicit target organization; it never receives fake tenant scope.
-- Tenant reads use only fresh Membership.
-- Foreign tenant access returns denial/not-found without existence disclosure.
+### Tools
 
-## Principal And Roles
+```text
+ToolsOrganization
+-> ToolsProject
+-> Research / Contract / Invoice / Presentation / SiteClone
+```
 
-Effective principals:
+All internal tools reference `ToolsProject`. They do not create parallel organization/project tables.
 
-- `platform-admin` — global management with explicit target organization.
-- `platform-analyst` — global read/report/sync visibility.
-- `tenant-user` — fresh Membership with `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
-- `job` — server-owned organization scope for worker handlers.
-- `api-client` — reserved, not active public API.
+## Research Ownership
 
-## Project Lifecycle
+### Research
 
-- Project statuses: `PLANNED`, `ACTIVE`, `DISABLED`.
-- Site/provider/query disable preserves history.
-- Mutable aggregates use positive `version`; stale writes fail with no mutation and no AuditEvent.
-- Physical delete of project/site/history is outside ordinary commands.
-- Operator config sync disables removed tracked queries/sites when safe; it does not blindly delete history.
+- `id`, `toolsOrganizationId`, `toolsProjectId`;
+- name, type, status, author, version;
+- created/updated/archived timestamps.
 
-## Provider Lifecycle
+### ResearchQuery
 
-`ProviderConnection` states: `PENDING`, `CONNECTING`, `CONNECTED`, `ACTION_REQUIRED`, `FAILED`.
+- original and normalized text;
+- stable order;
+- unique normalized query within Research.
 
-- `enabled=false` forbids provider call.
-- Yandex providers are read-only.
-- Metrika is connected only after required goals are confirmed.
-- Topvisor requires four search targets: Yandex/Google × desktop/mobile.
-- Paid checker requires price-check and unique `ProviderOperation.operationKey`.
-- `DISPATCHING` or ambiguous paid result is not retried automatically.
+### ResearchRun
 
-## Sync And Report Lifecycle
+- immutable input snapshot;
+- provider/adapter/rate-card versions;
+- estimated and approved maximum amount;
+- confirmation actor/time/hash/expiry;
+- lifecycle counters, actual calculated amount and correlation ID.
 
-`SyncRun`: `RUNNING → SUCCESS | PARTIAL | FAILED`.
+### ResearchQueryRun
 
-`SourceRun`: `SUCCESS | PARTIAL | FAILED | NOT_CONFIGURED | ACCESS_DENIED | QUOTA_LIMITED | STALE`.
+- one query execution within a run;
+- operation key, attempts, billable units, safe error code and timestamps;
+- ambiguous paid dispatch ends in `ACTION_REQUIRED`.
 
-One full sync is protected by PostgreSQL advisory lock. Unexpected worker error closes open SourceRuns/SyncRun best-effort.
+### Evidence And Output
 
-Periods:
+- `SerpResult`, `SerpAd`, `KeywordMetric`, `ResearchSuggestion`;
+- `CompetitorProjection` - deterministic aggregate;
+- `ResearchInsight` - optional future AI interpretation;
+- `ResearchExport` - status, format, checksum and private storage reference.
 
-| Key | Days |
-|---|---:|
-| `week` | 7 |
-| `month` | 28 |
-| `quarter` | 90 |
-| `halfYear` | 180 |
+Raw provider XML/HTML and credentials are not stored by default.
 
-Previous period immediately precedes current and has the same length.
+## Research Lifecycle
 
-## Metric Invariants
+```text
+DRAFT -> QUEUED -> RUNNING -> SUCCESS | PARTIAL | FAILED | ACTION_REQUIRED
+DRAFT | QUEUED -> CANCELLED before paid dispatch
+```
 
-- `partial` does not become `success`.
-- `stale` does not become `current`.
-- Unknown value does not become `0`.
-- One provider/period failure does not contaminate another successful period.
-- Webmaster average show position is not exact rank.
-- Top-3 is a subset of Top-10.
-- Lower rank position is better.
-- Ranking denominator is the full approved enabled query core.
-- Director conversion = unique target visits / Yandex organic visits.
-- Direct query-to-lead attribution is prohibited.
-- Sites, projects and periods are never mixed.
+- `PARTIAL != SUCCESS`, `null != 0`.
+- Completed run input is immutable.
+- Retry creates/updates attempt state but never duplicates operation key.
+- Same idempotency key with different request hash is conflict.
+- Successful query evidence survives neighboring query failure.
+- Re-run creates a new ResearchRun.
 
-## Reliability Invariants
+## Budget
 
-- Enqueue transaction atomically creates idempotency marker, event and audit.
-- Same idempotency key + same hash returns original event.
-- Same idempotency key + different hash is conflict.
-- Outbox event payloads are bounded and versioned.
-- pg-boss job carries authoritative `job.data.event`.
-- `singletonKey = outboxEventId`.
-- Only lease owner completes/fails.
-- Retry is bounded exponential backoff.
-- Permanent/exhausted failures become `DEAD_LETTER`.
-- RuntimeHeartbeat is the worker liveness source for readiness.
-- Retention removes only old terminal delivery detail.
+- maximum 20 queries per ResearchRun in pilot;
+- daily approved ceiling 500 RUB;
+- monthly approved ceiling 3000 RUB;
+- paid execution requires current permission and unexpired exact confirmation;
+- rate card snapshot is stored with run;
+- actual provider invoice is not claimed unless provider exposes verifiable billing evidence.
+
+## Tenant And Database Invariants
+
+- Every tenant record carries product-local organization/project ownership.
+- Composite foreign keys reject cross-organization parent relations.
+- Resource lookup includes authorized product/project scope.
+- RLS is fail-closed when transaction context is absent.
+- Platform Admin does not receive a fake tenant record.
+- IDs from browser/API/MCP do not establish ownership.
+- Foreign resource returns not-found semantics without existence disclosure.
+
+## Operations
+
+Outbox, idempotency, JobRun, RuntimeHeartbeat and pg-boss continue as platform-owned reliability records. Product job payloads are bounded, versioned and carry explicit product/organization/project identifiers.
+
+Research queue topic: `research.run.v1`, concurrency `1`, finite retry and dead-letter behavior.
 
 ## DateTime Policy
 
-DateTime mapping was audited on `2026-09-07` for Prisma `7.10.0`.
-
-Rules:
-
 - proven UTC instants use `timestamptz(3)`;
-- provider civil day/period keys stay `timestamp(3)`;
-- historical DB/default timestamps remain unchanged until production timezone and sample proof exists;
-- blind conversion from `timestamp` to `timestamptz` is forbidden;
-- any new DateTime field must explicitly declare whether it is an instant or civil/business timestamp.
-
-The archived detailed field table is in `docs/archive/2026-09-11-docs-normalization/DATA_MODEL_DETAILED_2026-09-07.md` only for archaeology; active decisions must be checked against current Prisma schema before migration.
+- civil/business period keys use explicit `timestamp(3)` semantics;
+- every new DateTime field declares its category;
+- blind timezone conversion is prohibited.
 
 ## Backup And Retention
 
-Production backup contract:
-
-- custom-format `pg_dump`;
-- checksum;
-- private offsite copy;
-- remote HEAD confirmation before retention;
-- isolated restore smoke;
-- retention baseline: 7 daily, 8 weekly, 6 monthly.
-
-Release rollback does not roll back schema/data. DB restore is a separate owner-approved recovery operation.
+- Managed PostgreSQL physical backups: daily, at least 7 copies.
+- Independent custom-format logical dump to private S3.
+- Restore smoke before risky production migration.
+- Backup identity must produce complete data despite runtime RLS.
+- Old self-managed database remains read-only for 14 days after cutover.
+- Research/contracts/presentations retain history until explicit owner deletion policy.

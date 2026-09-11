@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. This is the only active top-level architecture decision.
+Accepted and amended by ADR-002 and ADR-003.
 
 ## Context
 
@@ -16,7 +16,7 @@ AMS IMPULSE combines public SEO marketing, private multi-tenant reporting, Platf
 - `DATA = pii`.
 - `DELIVERY = own-saas`.
 - `PLATFORM_ADMIN = enabled`.
-- `DATABASE = self-managed-postgresql`.
+- `DATABASE = managed-postgresql-target`; current self-managed PostgreSQL remains runtime only until the approved migration release.
 - Runtime keeps exact TypeScript `6.0.3` as approved project exception.
 - Architecture is one modular monolith on Next.js with separate web/worker processes from one immutable OCI image.
 - Data owner is PostgreSQL + Prisma; no second ORM/runtime store.
@@ -33,8 +33,8 @@ AMS IMPULSE combines public SEO marketing, private multi-tenant reporting, Platf
 - No additional auth factor is an approved owner exception with compensating controls.
 - Applied migrations are immutable; production uses only `prisma migrate deploy`.
 - Release is tied to exact reviewed SHA and immutable image digest.
-- Self-managed PostgreSQL 18 requires private listener, separated credentials, offsite backup and restore proof.
-- Managed PostgreSQL is not a planned migration target.
+- Current self-managed PostgreSQL 18 requires private listener, separated credentials, offsite backup and restore proof until cutover.
+- Target database topology and rollback are fixed in ADR-003.
 
 ## Reconsider When
 

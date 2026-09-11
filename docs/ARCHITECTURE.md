@@ -1,192 +1,178 @@
 # ARCHITECTURE
 
-AMS IMPULSE follows `AMS Application Platform Core 3.4 — Solo Minimal`.
+Platform contract: `AMS Application Platform Core 3.4 - Solo Minimal`.
 
-```text
-TENANCY = multi-tenant
-ASYNC = outbox-plus-queue
-DATA = pii
-DELIVERY = own-saas
-PLATFORM_ADMIN = enabled
-DATABASE = self-managed-postgresql
-```
+Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii`, `DELIVERY = own-saas`, `PLATFORM_ADMIN = enabled`, `DATABASE = managed-postgresql-target`.
 
-Self-managed PostgreSQL 18 and TypeScript `6.0.3` are approved project exceptions recorded in [`adr/ADR-001-application-platform-profile.md`](adr/ADR-001-application-platform-profile.md).
+## Status Convention
 
-## Runtime Stack
+- `CURRENT` - работает в canonical `main`.
+- `TARGET` - утверждено и реализуется stacked Pull Requests.
 
-Exact versions are defined by `package.json`, `pnpm-lock.yaml` and `.node-version`.
-
-| Layer | Current |
-|---|---:|
-| Node.js | `24.20.0` |
-| pnpm | `11.5.1` |
-| Next.js | `16.3.3` |
-| React / React DOM | `19.2.8` |
-| TypeScript | `6.0.3` |
-| Prisma / Client / adapter | `7.10.0` |
-| PostgreSQL | `18.x` |
-| Better Auth | `1.7.2` |
-| Tailwind / Base UI / TanStack Table / Recharts | `4.3.3` / `1.8.0` / `9.2.4` / `3.10.1` |
-
-`next.config.ts` uses standalone output. Web and worker are built from one repository and one immutable image.
+Текущий SEO runtime сохраняется до прохождения migration gates. Target architecture не считается production truth до merge/release.
 
 ## System Context
 
 ```text
-Public/private browser
-→ host Nginx
-→ Next.js App Router standalone web
-→ Better Auth session + PrincipalContext
-→ module query/command
-→ repository port
-→ Prisma adapter
-→ PostgreSQL
+Browser / Codex / ChatGPT
+-> Nginx / Next.js web
+-> Better Auth identity
+-> PrincipalContext
+-> AuthorizationService
+-> product application command/query
+-> scoped repository transaction
+-> PostgreSQL 18
+
+Outbox -> pg-boss -> bounded product worker -> provider/storage -> PostgreSQL
 ```
+
+Web, MCP и worker собираются из одного repository и immutable OCI image. Research worker является отдельным process/service, но не отдельным микросервисом.
+
+## Product Boundaries
+
+### Platform
+
+Владеет identity adapters, product catalog, authorization contract, commands/actions, database scope, audit, idempotency, outbox, queue transport, HTTP/MCP transport and observability.
+
+### SEO Monitor
+
+Владеет SEO organizations/projects/sites, provider configuration/evidence, ranking analytics and reports. Текущие `project-registry`, `data-ingestion`, `ranking-analytics` and `reporting` остаются совместимыми facades во время миграции.
+
+### AMS Leads
+
+Владеет Leads organizations/projects/funnels/leads. На первом цикле регистрируется как недоступный product; business implementation выполняется позже.
+
+### Tools
+
+Владеет Tools organizations/projects and project grants. Подмодули используют `ToolsProject` через публичный facade:
+
+- `research`;
+- `contracts`;
+- `invoices`;
+- `presentations`;
+- `site-clone`.
+
+Research не создаёт собственные organizations/projects.
+
+## Layer Rules
+
+Модуль может содержать `domain / application / infrastructure / presentation`.
+
+- Domain не импортирует Next.js, React, Prisma, HTTP, MCP или provider SDK.
+- Application зависит от domain и typed ports.
+- Infrastructure реализует repositories/providers/storage.
+- Presentation вызывает только module facade.
+- Cross-module consumers используют root entrypoints `index.ts`, `server.ts`, `worker.ts`, `mcp.ts`.
+- Deep imports другого module запрещает architecture guard.
+
+## Product Catalog
+
+Neutral registry предоставляет browser-safe metadata:
 
 ```text
-systemd timer / operator command / outbox handler
-→ worker entrypoint
-→ provider adapters
-→ normalized evidence
-→ PostgreSQL history
-→ report compiler
-→ ReportSnapshot
+seo-monitor -> SEO Монитор -> active
+leads       -> АМС Лиды    -> planned
+tools       -> Инструменты  -> active when user has grant
 ```
+
+Tools registry:
 
 ```text
-business command
-→ transaction: data + AuditEvent + IdempotencyKey + OutboxEvent
-→ outbox daemon
-→ pg-boss singleton job
-→ idempotent JobPrincipal handler
+research      -> Исследования
+contracts     -> Договоры
+invoices      -> Счета
+presentations -> Презентации
+site-clone    -> Клон сайтов
 ```
 
-PostgreSQL is the only runtime source of truth. Operator config is imported only by explicit private-path command and never by deploy.
+Feature availability and access are separate: active module still requires permission.
 
-## Layers And Boundaries
+## Identity And Authorization
 
-Vertical modules use only needed parts of:
+`PrincipalContext` carries identity, system role and correlation ID. It does not select an arbitrary first organization.
 
 ```text
-domain / application / infrastructure / presentation
+authorize(principal, permission, resourceRef)
+-> system-role check
+-> product membership
+-> explicit project grant
+-> module-owned resource relation
+-> ALLOW | DENY
 ```
 
-Allowed module entrypoints:
+The only implicit global access is `PLATFORM_ADMIN`. `ANALYST` and `CLIENT` require explicit grants. Navigation is built from `listAccessibleProducts`, but every backend entrypoint authorizes independently.
 
-- `index.ts` — framework-neutral API;
-- `server.ts` — server-only composition;
-- `client.ts` — browser-safe presentation contracts;
-- `presentation.ts` — server-rendered presentation;
-- `worker.ts` — worker API.
+Product-specific membership/project-access tables preserve real foreign keys. Generic polymorphic `resourceType/resourceId` grants are prohibited.
 
-External consumers must not deep-import another module. `dependency-cruiser.config.cjs` and `scripts/verify-architecture.mjs` guard cycles, test imports, client/server leakage, Prisma in presentation and forbidden compatibility paths.
+## Data Schemas
 
-## Platform Layer
+Target PostgreSQL schemas:
 
-- `src/platform/auth` — Better Auth adapter and fresh principal session.
-- `src/platform/authorization` — `PrincipalContext`, permissions and factories.
-- `src/platform/database` — Prisma/pg context, transactions, tenant-aware repositories.
-- `src/platform/actions` — transport-only Server Action boundary.
-- `src/platform/commands` — business transaction boundary.
-- `src/platform/config` — safe env validation.
-- `src/platform/http` — correlation and safe envelopes.
-- `src/platform/observability` — redacted structured logging.
+- `platform` - Better Auth identity, catalog metadata, audit/idempotency;
+- `seo` - SEO organizations/projects/sites/evidence/reports;
+- `leads` - Leads organizations/projects/funnels/leads;
+- `tools` - shared Tools organizations/projects/grants;
+- `research`, `contracts`, `invoices`, `presentations`, `site_clone` - tool-owned records;
+- `ops`, `pgboss` - delivery, jobs and transport.
 
-Composition roots: `src/infrastructure/service-container.ts` and `src/infrastructure/worker-service-container.ts`. They wire dependencies but do not own business rules.
+Prisma multi-schema and immutable SQL migrations are canonical. Product schemas do not imply separate database servers.
 
-## Business Modules
+## RLS Defense
 
-- Identity Access — Better Auth lifecycle, users, memberships, `PrincipalContext`.
-- Project Registry — organizations, projects, sites, provider mappings, goals, query sets and configuration readiness.
-- Reporting — report reads, period semantics, `SiteReportSnapshot` compiler and director analytics projections.
-- Ranking Analytics — pure ranking calculations and Top-3/Top-10 semantics.
-- Data Ingestion — Yandex/Topvisor orchestration, SyncRun/SourceRun and normalized history.
-- Notifications — safe lifecycle notification feed and unread state.
-- Platform Operations — AuditEvent, idempotency, outbox, pg-boss, JobRun, RuntimeHeartbeat, retention and readiness.
-- Platform Admin — protected `/admin/*` composition over owner-module APIs.
+Tenant-owned tables use PostgreSQL Row-Level Security after compatibility proof:
 
-Each significant new module must receive a matching `docs/modules/MODULE_<NAME>.md` contract.
+- `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY`;
+- runtime roles are `NOBYPASSRLS` and do not own protected tables;
+- web reads/writes use transaction-local principal/product/project context;
+- missing or malformed context means deny;
+- worker context names exact product/organization/project;
+- migrator owns DDL; backup procedure explicitly verifies complete dump/restore.
 
-## Data Paths
+RLS is defense in depth. Application authorization and composite ownership constraints remain mandatory.
 
-Read:
+## Research Runtime
 
 ```text
-Server Component
-→ fresh principal
-→ module query
-→ resource authorization
-→ tenant-aware repository
-→ DTO
-→ JSX
+UI / MCP
+-> Research command
+-> transaction: Research + Run + Audit + Outbox
+-> outbox worker
+-> research.run.v1
+-> research worker (concurrency 1)
+-> XMLRiver / export storage
+-> normalized evidence + notification
 ```
 
-Mutation:
+Paid call runs only after estimate, exact request hash, approved amount, idempotency reservation and active permission. Ambiguous paid outcome becomes `ACTION_REQUIRED`.
 
-```text
-form/API/worker adapter
-→ defineAction or worker adapter
-→ defineCommand
-→ permission + resource authorization
-→ transaction-bound repositories
-→ mutation + AuditEvent + optional OutboxEvent
-→ typed result
-```
+## MCP
 
-External HTTP, provider calls, email and storage are forbidden inside business transactions.
+Canonical endpoint: `/mcp`, Streamable HTTP. OAuth 2.1 + PKCE maps token subject to Better Auth user. Token scopes can narrow but never expand current AMS grants. MCP exposes bounded Research tools and no SQL/database/provider credentials.
 
-## UI Architecture
+## UI
 
-```text
-tokens
-→ shadcn/Base UI primitives
-→ shared application components
-→ module presentation
-→ route composition
-```
+Private shell uses server-built navigation and accessible organization/project options. Client state owns only presentation interactions such as drawer state. Direct URL access always reauthorizes server-side.
 
-Private UI uses `theme-app`, PT Root UI, semantic tokens and the internal design system. Public UI uses isolated `theme-public`, Manrope and `ch-*` tokens. Do not mix public and private token layers.
+Routes planned for Research:
 
-Mobile is part of the web application contract: private routes use topbar/drawer on small widths, tables render as cards, controls stay touch-friendly, and visual proof targets `375 / 768 / 1280 / 1440`.
+- `/tools/`;
+- `/tools/research/`;
+- `/tools/research/new/`;
+- `/tools/research/[id]/`.
 
-Installable/PWA behavior is not yet active. If added later, manifest/icons are a small STANDARD UI/runtime addition; service worker/offline caching is RISKY because private PII/report data must not be cached accidentally.
+## Runtime And Delivery
 
-## Worker And Providers
+Current production: host Nginx -> web/outbox worker containers -> self-managed PostgreSQL 18.
 
-Worker commands live behind `src/worker/main.ts` and compiled collector output. Providers:
+Target production: host Nginx -> web/outbox/research worker containers -> Timeweb Managed PostgreSQL 18 over private network/TLS. Database has no public IP. Existing AMS server public IP remains because it serves HTTPS domains and SSH.
 
-- Yandex Webmaster: read-only host, query and technical evidence.
-- Yandex Metrika: read-only traffic, goals, phrases, devices and geography.
-- Topvisor: bounded project/search target/query/checker/competitor operations.
-
-Topvisor paid checker requires durable `ProviderOperation` reservation and price-check. Ambiguous dispatch becomes `ACTION_REQUIRED`, not an automatic retry.
-
-## Release Topology
-
-Production release unit:
-
-```text
-reviewed main SHA
-→ immutable OCI image
-→ Docker Compose
-→ host Nginx
-→ protected web/worker/migrator/backup env
-→ self-managed PostgreSQL 18
-```
-
-Release requires backup, offsite confirmation, restore smoke, migration, cutover and live smoke. Merge is not release. Details: [`RUNBOOK_DEPLOY.md`](RUNBOOK_DEPLOY.md).
+Migration requires backup, restore smoke, maintenance window up to one hour, data verification and 14-day read-only fallback database. Production change needs a separate owner command.
 
 ## Verification
 
-Main scripts:
-
-```bash
-pnpm architecture:check
-pnpm verify:quick
-pnpm verify:risky
-pnpm verify:daily
-pnpm verify:release
-```
-
-Use minimum proof in WORK. SourceCraft exact-head gate is required before `main`. Production proof is only part of release.
+- `pnpm architecture:check` - dependency/import boundaries.
+- `pnpm test:unit` - domain and contracts.
+- `pnpm test:integration` - PostgreSQL authorization/constraints/RLS.
+- `pnpm test:e2e` - browser access matrix and responsive flows.
+- `pnpm verify:risky` - changed auth/data/runtime proof.
+- SourceCraft exact-head RISKY gate before merge.

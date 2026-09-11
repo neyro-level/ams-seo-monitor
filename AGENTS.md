@@ -4,7 +4,7 @@
 
 ## Project Identity
 
-AMS IMPULSE — отдельный продукт АМС: публичный сайт SEO-услуги и приватный multi-tenant кабинет SEO-отчётности. Это не модуль другого проекта; чужие runtime, БД, auth и credentials не используются.
+AMS IMPULSE — модульная CRM-платформа АМС: публичный сайт SEO-услуги, клиентские продукты **SEO Монитор** и **АМС Лиды**, внутренний продукт **Инструменты** и единый приватный кабинет. Чужие runtime, БД, auth и credentials не используются.
 
 Repository slug in SourceCraft: `integrator-p/ams-seo-monitor`.
 
@@ -20,10 +20,10 @@ ASYNC = outbox-plus-queue
 DATA = pii
 DELIVERY = own-saas
 PLATFORM_ADMIN = enabled
-DATABASE = self-managed-postgresql
+DATABASE = managed-postgresql-target
 ```
 
-`DATABASE = self-managed-postgresql` — принятое project exception. PostgreSQL 18 обслуживается в собственном AMS-контуре; Managed PostgreSQL не является целью или долгом.
+Текущий production использует self-managed PostgreSQL 18 до отдельной owner-approved миграции. Целевой contract — Timeweb Managed PostgreSQL 18 в частной сети без публичного database IP.
 
 ## Active Sources Of Truth
 
@@ -33,7 +33,7 @@ DATABASE = self-managed-postgresql
 - `docs/PRODUCT.md` — пользователи, сценарии, продуктовые ограничения.
 - `docs/ARCHITECTURE.md` — stack, layers, runtime, release topology.
 - `docs/DATA_MODEL.md` — data ownership, schema policy, lifecycle, invariants.
-- `docs/SECURITY.md` — auth, tenancy, PII, secrets, trust boundaries.
+- `docs/SECURITY.md` — identity, authorization, tenancy, RLS, PII, secrets, trust boundaries.
 - `docs/MASTER_PLAN.md` — только незавершённая работа.
 - `docs/RUNBOOK_DEPLOY.md` — production release and recovery gate.
 
@@ -59,7 +59,13 @@ Docs explain intent; code/schema/config decide actual behavior.
 
 ## Product Invariants
 
-- hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`;
+- products: `seo-monitor`, `leads`, `tools`;
+- SEO hierarchy: `SEO Organization -> SEO Project -> Site -> Report`;
+- Leads hierarchy: `Leads Organization -> Leads Project -> Funnel -> Lead`;
+- Tools hierarchy: `Tools Organization -> Tools Project -> Tool-owned records`;
+- Tools modules: `research`, `contracts`, `invoices`, `presentations`, `site-clone`;
+- product organization/project registries never substitute for each other;
+- organization membership alone does not grant project access;
 - URL/data contract: `clientSlug/siteSlug` and `/c/*`;
 - `SiteReportSnapshot` is the only browser-safe report DTO;
 - periods: `week`, `month`, `quarter`, `halfYear`; default `month`;
@@ -74,31 +80,36 @@ Docs explain intent; code/schema/config decide actual behavior.
 ## Security And Data Rules
 
 1. Browser, URL, form, hidden input and navigation never prove tenant access.
-2. Server-generated `PrincipalContext` is the only authorization input.
-3. Better Auth owns identity/password/session; AMS owns Membership, permissions and resource authorization.
+2. Server-generated identity-only `PrincipalContext` plus fresh product grants are the only authorization inputs.
+3. Better Auth owns identity/password/session; AMS owns product memberships, project grants, permissions and resource authorization.
 4. Platform Admin has no fake tenant and must name target organization for cross-tenant actions.
-5. Every tenant-owned record stores `organizationId`; composite PostgreSQL constraints protect parent ownership.
-6. Prisma is allowed only in approved database/infrastructure boundaries.
-7. Business mutation path: `defineAction/API/job adapter → defineCommand → transaction-bound repository`.
-8. External HTTP/email/provider/storage calls are forbidden inside business transaction.
-9. Applied migrations are immutable; production `db push` is forbidden.
-10. Secrets/PII must not appear in Git, docs, browser, argv, logs, AuditEvent or raw error bodies.
-11. Provider credentials exist only server-side. Yandex providers are read-only; Topvisor writes are bounded worker operations with price-check.
-12. Production uses exact reviewed SHA and immutable image; merge is not release.
+5. Every tenant-owned record stores product-local `organizationId` and `projectId`; composite PostgreSQL constraints protect parent ownership.
+6. Default is deny. Except `PLATFORM_ADMIN`, no system role implicitly opens a product or project.
+7. Navigation hiding is presentation only; route/query/command/worker/MCP authorization is mandatory.
+8. Prisma is allowed only in approved database/infrastructure boundaries.
+9. Business mutation path: `defineAction/API/job adapter -> defineCommand -> transaction-bound repository`.
+10. External HTTP/email/provider/storage calls are forbidden inside business transaction.
+11. Applied migrations are immutable; production `db push` is forbidden.
+12. Secrets/PII must not appear in Git, docs, browser, argv, logs, AuditEvent or raw error bodies.
+13. Provider credentials exist only server-side. Yandex providers are read-only; paid writes use explicit budget confirmation and idempotency.
+14. Production uses exact reviewed SHA and immutable image; merge is not release.
 
 ## Architecture Map
 
 - `src/app` — route composition only.
 - `src/components` — shared public/private UI.
-- `src/modules/identity-access` — auth adapter, PrincipalContext, users, memberships.
-- `src/modules/project-registry` — organizations, projects, sites, provider mappings, goals, query sets.
+- `src/modules/identity-access` — users, product memberships, project grants and access administration.
+- `src/modules/product-catalog` — product/tool registry and browser-safe labels.
+- `src/modules/project-registry` — SEO organizations, projects, sites and configuration until renamed behind its facade.
+- `src/modules/tools-registry` — Tools organizations/projects and their grants.
+- `src/modules/research` — Research domain, execution, export and MCP facade.
 - `src/modules/reporting` — report reads and `SiteReportSnapshot` compiler.
 - `src/modules/ranking-analytics` — pure ranking semantics.
 - `src/modules/data-ingestion` — provider orchestration, normalized evidence, worker APIs.
 - `src/modules/notifications` — browser-safe lifecycle notifications.
 - `src/modules/platform-operations` — audit, idempotency, outbox, pg-boss, JobRun, readiness, retention.
 - `src/modules/platform-admin` — protected admin composition.
-- `src/platform` — neutral auth/authorization/database/actions/commands/config/http/observability.
+- `src/platform` — neutral auth/authorization/database/actions/commands/config/http/MCP/observability.
 - `collector/sources` — server-only provider adapters.
 - `src/worker` — compiled worker entrypoint.
 - `prisma` — schema and immutable migrations.
