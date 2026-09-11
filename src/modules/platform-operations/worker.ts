@@ -19,6 +19,7 @@ import {
   OUTBOX_WORKER_RUNTIME,
   recordRuntimeHeartbeat,
 } from "./infrastructure/runtime-heartbeat.ts";
+import { RESEARCH_RUN_QUEUE, RESEARCH_RUN_SCHEMA, type ResearchRunJob } from "../research/index.ts";
 
 const projectSyncPayloadSchema = z.object({
   projectSlug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
@@ -101,7 +102,7 @@ async function handleProjectSync(event: ClaimedReliabilityEvent) {
   }
 }
 
-async function handleEvent(event: ClaimedReliabilityEvent) {
+async function handleEvent(event: ClaimedReliabilityEvent, boss: OutboxQueueClient) {
   if (event.topic === "project.sync.requested") {
     await handleProjectSync(event);
     return;
@@ -112,6 +113,16 @@ async function handleEvent(event: ClaimedReliabilityEvent) {
     const task = { organizationId: event.organizationId, siteId: payload.data.siteId, correlationId: event.correlationId };
     if (event.topic === "site.integrations.setup.requested") await setupSiteIntegrations(task);
     else await syncSiteCompetitors(task);
+    return;
+  }
+  if (event.topic === RESEARCH_RUN_QUEUE) {
+    const payload = z.object({ toolsOrganizationId: z.string().min(1), toolsProjectId: z.string().min(1), researchId: z.string().min(1), runId: z.string().min(1) }).safeParse(event.payload);
+    if (!payload.success) throw outboxError("INVALID_RESEARCH_RUN_PAYLOAD", false);
+    await boss.send(RESEARCH_RUN_QUEUE, {
+      schemaVersion: RESEARCH_RUN_SCHEMA,
+      ...payload.data,
+      correlationId: event.correlationId,
+    } satisfies ResearchRunJob);
     return;
   }
 
@@ -189,7 +200,7 @@ export async function drainOutboxWithDependencies(
   dependencies: OutboxDrainDependencies,
 ): Promise<DrainOutboxResult> {
   const { boss, reliability } = dependencies;
-  const eventHandler = dependencies.handle ?? handleEvent;
+  const eventHandler = dependencies.handle ?? ((event) => handleEvent(event, boss));
   const maxEvents = z.number().int().min(1).max(100).parse(options.maxEvents ?? 25);
   const result: DrainOutboxResult = { claimed: 0, completed: 0, failed: 0 };
 

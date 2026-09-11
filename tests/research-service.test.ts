@@ -22,6 +22,7 @@ class MemoryResearchRepository implements ResearchRepository {
   async archive(input: Parameters<ResearchRepository["archive"]>[0]) { const record = await this.findById(input); if (!record || record.version !== input.version) return false; record.status = "ARCHIVED"; record.version += 1; return true; }
   async getCommittedSpend() { return { dailyKopecks: this.dailyKopecks, monthlyKopecks: this.monthlyKopecks }; }
   async createRunEstimate(input: Parameters<ResearchRepository["createRunEstimate"]>[0]) { const runId = this.runIds.get(input.idempotencyKey) ?? `run-${this.runIds.size + 1}`; this.runIds.set(input.idempotencyKey, runId); return { runId }; }
+  async confirmRun(input: Parameters<ResearchRepository["confirmRun"]>[0]) { return input.expectedEstimatedCostKopecks >= 0 ? { runId: input.runId, outboxEventId: "outbox-1" } : null; }
 }
 
 const authorization = new AuthorizationService({
@@ -30,11 +31,12 @@ const authorization = new AuthorizationService({
     return records.filter((grant) => !product || grant.product === product);
   },
 });
+const pricing = { estimateRunCostKopecks: (queryCount: number) => queryCount * 125 };
 
 describe("ResearchService", () => {
   it("creates research only inside an explicitly assigned Tools project", async () => {
     const repository = new MemoryResearchRepository();
-    const service = new ResearchService(repository, authorization);
+    const service = new ResearchService(repository, authorization, pricing);
     const principal = createPlatformAnalystPrincipal("analyst");
     const created = await service.create(principal, { organizationId: "atlas", projectId: "secondary", title: "Рынок вторички", brief: "Москва", queries: ["купить квартиру", "цены на вторичку"] });
     expect(created).toMatchObject({ projectId: "secondary", status: "DRAFT", version: 1 });
@@ -42,29 +44,39 @@ describe("ResearchService", () => {
   });
 
   it("does not grant Tools access to a client through an SEO membership", async () => {
-    const service = new ResearchService(new MemoryResearchRepository(), authorization);
+    const service = new ResearchService(new MemoryResearchRepository(), authorization, pricing);
     const client = createTenantUserPrincipal({ userId: "client", organizationId: "atlas" });
     await expect(service.list(client, "atlas", "secondary")).rejects.toMatchObject({ code: "RESEARCH_NOT_FOUND_OR_FORBIDDEN" });
   });
 
   it("estimates once and requires confirmation without starting provider work", async () => {
     const repository = new MemoryResearchRepository();
-    const service = new ResearchService(repository, authorization, () => new Date("2026-09-11T10:00:00Z"));
+    const service = new ResearchService(repository, authorization, pricing, () => new Date("2026-09-11T10:00:00Z"));
     const principal = createPlatformAnalystPrincipal("analyst");
     const research = await service.create(principal, { organizationId: "atlas", projectId: "secondary", title: "Атлас", queries: ["один", "два"] });
-    const first = await service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-001", unitCostKopecks: 125 });
-    const repeated = await service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-001", unitCostKopecks: 125 });
+    const first = await service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-001" });
+    const repeated = await service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-001" });
     expect(first).toMatchObject({ runId: repeated.runId, queryCount: 2, estimatedCostKopecks: 250, confirmationRequired: true });
   });
 
   it("blocks the daily and monthly budget before creating a run", async () => {
     const repository = new MemoryResearchRepository();
-    const service = new ResearchService(repository, authorization);
+    const service = new ResearchService(repository, authorization, { estimateRunCostKopecks: () => 100 });
     const principal = createPlatformAnalystPrincipal("analyst");
     const research = await service.create(principal, { organizationId: "atlas", projectId: "secondary", title: "Лимит", queries: ["один"] });
     repository.dailyKopecks = 49_950;
-    await expect(service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-002", unitCostKopecks: 100 })).rejects.toMatchObject({ code: "RESEARCH_DAILY_LIMIT_EXCEEDED" });
+    await expect(service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-002" })).rejects.toMatchObject({ code: "RESEARCH_DAILY_LIMIT_EXCEEDED" });
     repository.dailyKopecks = 0; repository.monthlyKopecks = 299_950;
-    await expect(service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-003", unitCostKopecks: 100 })).rejects.toMatchObject({ code: "RESEARCH_MONTHLY_LIMIT_EXCEEDED" });
+    await expect(service.estimateRun(principal, { organizationId: "atlas", projectId: "secondary", researchId: research.id, idempotencyKey: "estimate-003" })).rejects.toMatchObject({ code: "RESEARCH_MONTHLY_LIMIT_EXCEEDED" });
+  });
+
+  it("rechecks run permission before queuing paid work", async () => {
+    const repository = new MemoryResearchRepository();
+    const service = new ResearchService(repository, authorization, pricing);
+    const analyst = createPlatformAnalystPrincipal("analyst");
+    const research = await service.create(analyst, { organizationId: "atlas", projectId: "secondary", title: "Запуск", queries: ["один"] });
+    await expect(service.confirmAndQueue(analyst, { organizationId: "atlas", projectId: "secondary", researchId: research.id, runId: "run-1", expectedEstimatedCostKopecks: 100 })).resolves.toEqual({ runId: "run-1", outboxEventId: "outbox-1" });
+    const client = createTenantUserPrincipal({ userId: "client", organizationId: "atlas" });
+    await expect(service.confirmAndQueue(client, { organizationId: "atlas", projectId: "secondary", researchId: research.id, runId: "run-1", expectedEstimatedCostKopecks: 100 })).rejects.toMatchObject({ code: "RESEARCH_NOT_FOUND_OR_FORBIDDEN" });
   });
 });

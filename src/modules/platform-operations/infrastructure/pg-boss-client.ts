@@ -10,6 +10,7 @@ import {
   OUTBOX_RETRY_DELAY_MAX_SECONDS,
   OUTBOX_RETRY_DELAY_SECONDS,
 } from "../domain/pg-boss.ts";
+import { RESEARCH_RUN_QUEUE } from "../../research/index.ts";
 
 const logger = getLogger({ component: "pg-boss" });
 
@@ -40,6 +41,12 @@ async function ensureQueue(boss: PgBoss) {
     retryBackoff: true,
     retryDelayMax: OUTBOX_RETRY_DELAY_MAX_SECONDS,
     expireInSeconds: OUTBOX_EXPIRE_IN_SECONDS,
+    deleteAfterSeconds: 0,
+  });
+  await boss.createQueue(RESEARCH_RUN_QUEUE, {
+    policy: "singleton",
+    retryLimit: 0,
+    expireInSeconds: 900,
     deleteAfterSeconds: 0,
   });
 }

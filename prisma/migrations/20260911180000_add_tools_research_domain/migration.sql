@@ -96,6 +96,7 @@ CREATE TABLE "research"."Run" (
   "status" "research"."RunStatus" NOT NULL DEFAULT 'DRAFT',
   "queryCount" INTEGER NOT NULL,
   "estimatedCostKopecks" INTEGER NOT NULL,
+  "estimateExpiresAt" TIMESTAMP(3) NOT NULL,
   "approvedCostKopecks" INTEGER,
   "actualCostKopecks" INTEGER,
   "idempotencyKey" TEXT NOT NULL,
@@ -131,6 +132,7 @@ CREATE TABLE "research"."QueryRun" (
   "startedAt" TIMESTAMP(3),
   "finishedAt" TIMESTAMP(3),
   UNIQUE ("organizationId", "projectId", "id"),
+  UNIQUE ("runId", "queryId"),
   FOREIGN KEY ("organizationId", "projectId", "runId") REFERENCES "research"."Run"("organizationId", "projectId", "id") ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY ("organizationId", "projectId", "queryId") REFERENCES "research"."Query"("organizationId", "projectId", "id") ON DELETE RESTRICT ON UPDATE CASCADE
 );

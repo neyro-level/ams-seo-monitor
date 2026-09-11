@@ -6,6 +6,7 @@ import {
   runReliabilityRetention,
 } from "../modules/platform-operations/worker.ts";
 import { getLogger } from "../platform/observability/logger.ts";
+import { runNextResearchJob } from "../modules/research/worker.ts";
 
 const command = process.argv[2] ?? null;
 const argument = process.argv[3] ?? null;
@@ -36,6 +37,13 @@ async function main() {
   if (command === "outbox-retention") {
     const result = await runReliabilityRetention();
     logger.info({ event: "outbox_retention_finished", ...result }, "outbox retention finished");
+    return;
+  }
+
+  if (command === "research-run") {
+    const result = await runNextResearchJob(process.env);
+    logger.info({ event: "research_run_finished", ...result }, "research run finished");
+    if (result.status === "failed") process.exitCode = 1;
     return;
   }
 
@@ -77,7 +85,7 @@ async function main() {
 
   if (command !== "project-sync" || !argument) {
     throw new Error(
-      "Usage: worker projects-sync [trigger] | topvisor-checks | competitors-sync | project-sync <project-slug> [trigger] | outbox-drain [worker-id] | outbox-retention",
+      "Usage: worker projects-sync [trigger] | topvisor-checks | competitors-sync | project-sync <project-slug> [trigger] | outbox-drain [worker-id] | outbox-retention | research-run",
     );
   }
   if (!allowedTriggers.includes(requestedTrigger as CreateSyncRunInput["trigger"])) {

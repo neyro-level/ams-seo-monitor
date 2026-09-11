@@ -30,13 +30,18 @@ export const researchRefSchema = z.object({
 
 export const estimateResearchRunInputSchema = researchRefSchema.extend({
   idempotencyKey: z.string().trim().min(8).max(128),
-  unitCostKopecks: z.number().int().min(0).max(100_000),
+});
+
+export const confirmResearchRunInputSchema = researchRefSchema.extend({
+  runId: idSchema,
+  expectedEstimatedCostKopecks: z.number().int().min(0),
 });
 
 export type CreateResearchInput = z.infer<typeof createResearchInputSchema>;
 export type UpdateResearchInput = z.infer<typeof updateResearchInputSchema>;
 export type ResearchRef = z.infer<typeof researchRefSchema>;
 export type EstimateResearchRunInput = z.infer<typeof estimateResearchRunInputSchema>;
+export type ConfirmResearchRunInput = z.infer<typeof confirmResearchRunInputSchema>;
 export type ResearchStatus = z.infer<typeof researchStatusSchema>;
 export type ResearchRunStatus = z.infer<typeof researchRunStatusSchema>;
 
@@ -67,6 +72,7 @@ export type ResearchErrorCode =
   | "RESEARCH_NOT_FOUND_OR_FORBIDDEN"
   | "RESEARCH_STALE"
   | "RESEARCH_NOT_EDITABLE"
+  | "RESEARCH_PRICING_UNAVAILABLE"
   | "RESEARCH_DAILY_LIMIT_EXCEEDED"
   | "RESEARCH_MONTHLY_LIMIT_EXCEEDED";
 

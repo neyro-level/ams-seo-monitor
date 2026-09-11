@@ -172,9 +172,9 @@ export class PrismaResearchRepository implements ResearchRepository {
     const runId = randomUUID();
     const inserted = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
       INSERT INTO "research"."Run"
-        ("id", "organizationId", "projectId", "researchId", "status", "queryCount", "estimatedCostKopecks", "idempotencyKey", "createdAt", "updatedAt")
+        ("id", "organizationId", "projectId", "researchId", "status", "queryCount", "estimatedCostKopecks", "estimateExpiresAt", "idempotencyKey", "createdAt", "updatedAt")
       VALUES
-        (${runId}, ${input.ref.organizationId}, ${input.ref.projectId}, ${input.ref.researchId}, 'AWAITING_CONFIRMATION', ${input.queryCount}, ${input.estimatedCostKopecks}, ${input.idempotencyKey}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        (${runId}, ${input.ref.organizationId}, ${input.ref.projectId}, ${input.ref.researchId}, 'AWAITING_CONFIRMATION', ${input.queryCount}, ${input.estimatedCostKopecks}, CURRENT_TIMESTAMP + INTERVAL '15 minutes', ${input.idempotencyKey}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT ("organizationId", "idempotencyKey") DO NOTHING
       RETURNING "id"
     `);
@@ -187,5 +187,33 @@ export class PrismaResearchRepository implements ResearchRepository {
     `);
     if (!existing[0]) throw new Error("RESEARCH_IDEMPOTENCY_CONFLICT");
     return { runId: existing[0].id };
+  }
+
+  async confirmRun(input: { ref: ResearchRef; runId: string; expectedEstimatedCostKopecks: number; actorId: string; correlationId: string; now: Date }) {
+    return this.prisma.$transaction(async (transaction) => {
+      const runs = await transaction.$queryRaw<Array<{ id: string; estimatedCostKopecks: number }>>(Prisma.sql`
+        SELECT "id", "estimatedCostKopecks" FROM "research"."Run"
+        WHERE "id"=${input.runId} AND "organizationId"=${input.ref.organizationId}
+          AND "projectId"=${input.ref.projectId} AND "researchId"=${input.ref.researchId}
+          AND "status"='AWAITING_CONFIRMATION' AND "estimateExpiresAt">${input.now}
+        FOR UPDATE
+      `);
+      const run = runs[0];
+      if (!run || run.estimatedCostKopecks !== input.expectedEstimatedCostKopecks) return null;
+      await transaction.$executeRaw(Prisma.sql`
+        UPDATE "research"."Run" SET "status"='QUEUED', "approvedCostKopecks"=${run.estimatedCostKopecks},
+          "confirmedByUserId"=${input.actorId}, "confirmedAt"=${input.now}, "updatedAt"=CURRENT_TIMESTAMP
+        WHERE "id"=${run.id}
+      `);
+      const outboxEventId = randomUUID();
+      await transaction.$executeRaw(Prisma.sql`
+        INSERT INTO "public"."OutboxEvent"
+          ("id", "organizationId", "topic", "payload", "status", "attempts", "schemaVersion", "correlationId", "occurredAt", "availableAt", "createdAt", "updatedAt")
+        VALUES
+          (${outboxEventId}, NULL, 'research.run.v1', ${JSON.stringify({ toolsOrganizationId: input.ref.organizationId, toolsProjectId: input.ref.projectId, researchId: input.ref.researchId, runId: input.runId })}::jsonb, 'PENDING', 0, 1, ${input.correlationId}, ${input.now}, ${input.now}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+      await appendAudit(transaction, { actorId: input.actorId, action: "research.run.confirm", entityId: input.runId, correlationId: input.correlationId, marker: { toolsOrganizationId: input.ref.organizationId, toolsProjectId: input.ref.projectId, estimatedCostKopecks: run.estimatedCostKopecks, outboxEventId } });
+      return { runId: input.runId, outboxEventId };
+    });
   }
 }

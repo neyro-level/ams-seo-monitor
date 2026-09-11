@@ -1,6 +1,7 @@
 import type { AuthorizationService } from "../../../platform/authorization/authorization-service.ts";
 import type { PrincipalContext } from "../../../platform/authorization/principal.ts";
 import {
+  confirmResearchRunInputSchema,
   createResearchInputSchema,
   estimateResearchRunInputSchema,
   ResearchError,
@@ -9,6 +10,7 @@ import {
   type ResearchRef,
 } from "../domain/research.ts";
 import type { ResearchRepository } from "./ports/research-repository.ts";
+import type { ResearchPricingPolicy } from "./ports/research-provider.ts";
 
 const DAILY_LIMIT_KOPECKS = 50_000 as const;
 const MONTHLY_LIMIT_KOPECKS = 300_000 as const;
@@ -23,10 +25,11 @@ export class ResearchService {
   constructor(
     private readonly repository: ResearchRepository,
     private readonly authorization: AuthorizationService,
+    private readonly pricing: ResearchPricingPolicy,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  private async requireAccess(principal: PrincipalContext, permission: "tools:project:read" | "research:create" | "research:update" | "research:estimate", ref: Omit<ResearchRef, "researchId">) {
+  private async requireAccess(principal: PrincipalContext, permission: "tools:project:read" | "research:create" | "research:update" | "research:estimate" | "research:run", ref: Omit<ResearchRef, "researchId">) {
     const decision = await this.authorization.authorize(principal, permission, { product: "tools", ...ref });
     if (!decision.allowed) throw new ResearchError("RESEARCH_NOT_FOUND_OR_FORBIDDEN");
   }
@@ -81,7 +84,10 @@ export class ResearchService {
     await this.requireAccess(principal, "research:estimate", input);
     const research = await this.repository.findById(input);
     if (!research) throw new ResearchError("RESEARCH_NOT_FOUND_OR_FORBIDDEN");
-    const estimatedCostKopecks = research.queries.length * input.unitCostKopecks;
+    const estimatedCostKopecks = this.pricing.estimateRunCostKopecks(research.queries.length);
+    if (!Number.isSafeInteger(estimatedCostKopecks) || estimatedCostKopecks < 0) {
+      throw new ResearchError("RESEARCH_PRICING_UNAVAILABLE");
+    }
     const committed = await this.repository.getCommittedSpend(input.organizationId, this.now());
     if (committed.dailyKopecks + estimatedCostKopecks > DAILY_LIMIT_KOPECKS) throw new ResearchError("RESEARCH_DAILY_LIMIT_EXCEEDED");
     if (committed.monthlyKopecks + estimatedCostKopecks > MONTHLY_LIMIT_KOPECKS) throw new ResearchError("RESEARCH_MONTHLY_LIMIT_EXCEEDED");
@@ -96,5 +102,22 @@ export class ResearchService {
       monthlyLimitKopecks: MONTHLY_LIMIT_KOPECKS,
       confirmationRequired: true as const,
     };
+  }
+
+  async confirmAndQueue(principal: PrincipalContext, rawInput: unknown) {
+    const input = confirmResearchRunInputSchema.parse(rawInput);
+    await this.requireAccess(principal, "research:run", input);
+    const actorId = principalUserId(principal);
+    if (!actorId) throw new ResearchError("RESEARCH_NOT_FOUND_OR_FORBIDDEN");
+    const result = await this.repository.confirmRun({
+      ref: input,
+      runId: input.runId,
+      expectedEstimatedCostKopecks: input.expectedEstimatedCostKopecks,
+      actorId,
+      correlationId: principal.correlationId,
+      now: this.now(),
+    });
+    if (!result) throw new ResearchError("RESEARCH_NOT_FOUND_OR_FORBIDDEN");
+    return result;
   }
 }

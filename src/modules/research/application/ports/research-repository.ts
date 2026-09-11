@@ -19,4 +19,12 @@ export interface ResearchRepository {
     queryCount: number;
     estimatedCostKopecks: number;
   }): Promise<Pick<ResearchRunEstimate, "runId">>;
+  confirmRun(input: {
+    ref: ResearchRef;
+    runId: string;
+    expectedEstimatedCostKopecks: number;
+    actorId: string;
+    correlationId: string;
+    now: Date;
+  }): Promise<{ runId: string; outboxEventId: string } | null>;
 }
