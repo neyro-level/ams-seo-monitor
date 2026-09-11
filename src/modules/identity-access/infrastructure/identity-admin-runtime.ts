@@ -18,9 +18,12 @@ const queries = createIdentityAdminQueries({
 
 export const {
   createMembership,
+  createSeoProjectAccess,
   createOrganization,
   removeMembership,
+  removeSeoProjectAccess,
   updateMembership,
+  updateSeoProjectAccess,
   updateOrganization,
   provisionClient,
   resetUserPassword,
@@ -30,6 +33,7 @@ export const {
 export const {
   getIdentityAdminFormOptions,
   listMemberships,
+  listSeoProjectAccesses,
   listOrganizations,
   listUsers,
 } = queries;

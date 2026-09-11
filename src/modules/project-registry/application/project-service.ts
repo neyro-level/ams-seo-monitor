@@ -3,10 +3,8 @@ import type {
   StoredProjectRecord,
   StoredSiteRecord,
 } from "./ports/project-repository.ts";
-import {
-  hasPermission,
-  type PrincipalContext,
-} from "../../../platform/authorization/principal.ts";
+import type { PrincipalContext } from "../../../platform/authorization/principal.ts";
+import type { AuthorizationService } from "../../../platform/authorization/authorization-service.ts";
 
 export interface ProjectSiteSummary {
   siteId: string;
@@ -79,24 +77,19 @@ function toProjectSummary(project: ProjectTree): ProjectSummary {
 }
 
 export class ProjectService {
-  constructor(private readonly projectRepository: ProjectRepository) {}
+  constructor(
+    private readonly projectRepository: ProjectRepository,
+    private readonly authorization: AuthorizationService,
+  ) {}
 
-  private getAccessScope(principal: PrincipalContext) {
-    if (hasPermission(principal, "project:read:any")) {
-      return { organizationIds: null };
-    }
-    if (
-      principal.kind === "tenant-user" &&
-      hasPermission(principal, "project:read:organization")
-    ) {
-      return { organizationIds: [principal.organizationId] };
-    }
-
-    return { organizationIds: [] };
+  private async getAccessScope(principal: PrincipalContext) {
+    return {
+      projectIds: await this.authorization.listAccessibleProjectIds(principal, "seo-monitor"),
+    };
   }
 
   async listProjectTreesForUser(user: PrincipalContext): Promise<ProjectTree[]> {
-    const scope = this.getAccessScope(user);
+    const scope = await this.getAccessScope(user);
     const projects = await this.projectRepository.listProjects(scope);
     return projects.map(toProjectTree);
   }
@@ -118,7 +111,7 @@ export class ProjectService {
     user: PrincipalContext,
     projectSlug: string,
   ): Promise<StoredProjectRecord | null> {
-    const scope = this.getAccessScope(user);
+    const scope = await this.getAccessScope(user);
     return this.projectRepository.findProjectBySlug(projectSlug, scope);
   }
 
@@ -127,13 +120,13 @@ export class ProjectService {
     projectSlug: string,
     siteSlug: string,
   ): Promise<StoredSiteRecord | null> {
-    const scope = this.getAccessScope(user);
+    const scope = await this.getAccessScope(user);
     return this.projectRepository.findSiteBySlugs(projectSlug, siteSlug, scope);
   }
 
   async getSiteBySlugs(projectSlug: string, siteSlug: string): Promise<StoredSiteRecord | null> {
     return this.projectRepository.findSiteBySlugs(projectSlug, siteSlug, {
-      organizationIds: null,
+      projectIds: null,
     });
   }
 }

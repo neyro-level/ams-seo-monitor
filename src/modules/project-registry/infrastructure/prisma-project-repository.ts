@@ -64,9 +64,9 @@ export class PrismaProjectRepository implements ProjectRepository {
   async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
     const projects = await getPrismaClient().project.findMany({
       where:
-        scope.organizationIds === null
+        scope.projectIds === null
           ? undefined
-          : { organizationId: { in: scope.organizationIds } },
+          : { id: { in: scope.projectIds } },
       orderBy: { slug: "asc" },
       select: {
         id: true,
@@ -110,9 +110,9 @@ export class PrismaProjectRepository implements ProjectRepository {
     const project = await getPrismaClient().project.findFirst({
       where: {
         slug: projectSlug,
-        ...(scope.organizationIds === null
+        ...(scope.projectIds === null
           ? {}
-          : { organizationId: { in: scope.organizationIds } }),
+          : { id: { in: scope.projectIds } }),
       },
       select: {
         id: true,
@@ -159,9 +159,9 @@ export class PrismaProjectRepository implements ProjectRepository {
         slug: siteSlug,
         project: {
           slug: projectSlug,
-          ...(scope.organizationIds === null
+          ...(scope.projectIds === null
             ? {}
-            : { organizationId: { in: scope.organizationIds } }),
+            : { id: { in: scope.projectIds } }),
         },
       },
       select: {

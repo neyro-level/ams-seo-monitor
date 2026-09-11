@@ -6,6 +6,7 @@ import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
 import {
   IdentityAdminError,
   type CreateMembershipInput,
+  type CreateSeoProjectAccessInput,
   type CreateOrganizationInput,
   type IdentityAdminFormOptions,
   type IdentityAdminListQuery,
@@ -14,7 +15,9 @@ import {
   type MembershipListResult,
   type OrganizationListItem,
   type OrganizationListResult,
+  type SeoProjectAccessListItem,
   type UpdateMembershipInput,
+  type UpdateSeoProjectAccessInput,
   type UpdateOrganizationInput,
 } from "../domain/admin-identity.ts";
 import type {
@@ -114,6 +117,9 @@ function translateWriteError(error: unknown): never {
       if (target.includes("slug")) {
         throw new IdentityAdminError("ORGANIZATION_SLUG_CONFLICT");
       }
+      if (String(error.meta?.modelName ?? "") === "SeoProjectAccess") {
+        throw new IdentityAdminError("PROJECT_ACCESS_ALREADY_EXISTS");
+      }
       throw new IdentityAdminError("MEMBERSHIP_ALREADY_EXISTS");
     }
     if (error.code === "P2003") {
@@ -194,7 +200,7 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
   }
 
   async listFormOptions(): Promise<IdentityAdminFormOptions> {
-    const [organizations, users] = await Promise.all([
+    const [organizations, users, memberships, projects] = await Promise.all([
       this.prisma.organization.findMany({
         orderBy: { name: "asc" },
         take: 100,
@@ -206,12 +212,69 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
         take: 100,
         select: { id: true, name: true, email: true },
       }),
+      this.prisma.member.findMany({
+        orderBy: [{ organization: { name: "asc" } }, { user: { name: "asc" } }],
+        take: 500,
+        select: {
+          id: true,
+          organizationId: true,
+          organization: { select: { name: true } },
+          user: { select: { name: true, email: true } },
+        },
+      }),
+      this.prisma.project.findMany({
+        orderBy: [{ organization: { name: "asc" } }, { name: "asc" }],
+        take: 500,
+        select: { id: true, organizationId: true, name: true, organization: { select: { name: true } } },
+      }),
     ]);
 
     return {
       organizations,
       users: users.map((user) => ({ id: user.id, label: `${user.name} · ${user.email}` })),
+      memberships: memberships.map((membership) => ({
+        id: membership.id,
+        organizationId: membership.organizationId,
+        label: `${membership.user.name} · ${membership.user.email} · ${membership.organization.name}`,
+      })),
+      projects: projects.map((project) => ({
+        id: project.id,
+        organizationId: project.organizationId,
+        label: `${project.organization.name} · ${project.name}`,
+      })),
     };
+  }
+
+  async listSeoProjectAccesses(): Promise<SeoProjectAccessListItem[]> {
+    const records = await this.prisma.seoProjectAccess.findMany({
+      orderBy: [{ membership: { user: { name: "asc" } } }, { project: { name: "asc" } }],
+      take: 1000,
+      select: {
+        id: true,
+        membershipId: true,
+        organizationId: true,
+        projectId: true,
+        role: true,
+        version: true,
+        updatedAt: true,
+        membership: { select: { userId: true, user: { select: { name: true, email: true } } } },
+        project: { select: { name: true, organization: { select: { name: true } } } },
+      },
+    });
+    return records.map((record) => ({
+      id: record.id,
+      membershipId: record.membershipId,
+      organizationId: record.organizationId,
+      organizationName: record.project.organization.name,
+      projectId: record.projectId,
+      projectName: record.project.name,
+      userId: record.membership.userId,
+      userName: record.membership.user.name,
+      userEmail: record.membership.user.email,
+      role: record.role,
+      version: record.version,
+      updatedAt: record.updatedAt.toISOString(),
+    }));
   }
 
   async listUsers(): Promise<IdentityAdminUserListItem[]> {
@@ -285,6 +348,14 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
       const membership = await this.prisma.member.create({
         data: { organizationId: organization.id, userId: user.id, tenantRole: input.tenantRole },
         select: { id: true },
+      });
+      await this.prisma.seoProjectAccess.create({
+        data: {
+          membershipId: membership.id,
+          organizationId: organization.id,
+          projectId: project.id,
+          role: input.tenantRole === "ORG_OWNER" ? "OPERATOR" : "VIEWER",
+        },
       });
       const siteIds: string[] = [];
       for (const siteInput of input.sites) {
@@ -526,6 +597,62 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
       },
     });
     return result.count === 1;
+  }
+
+  async createSeoProjectAccess(input: CreateSeoProjectAccessInput) {
+    try {
+      const membership = await this.prisma.member.findFirst({
+        where: { id: input.membershipId, organizationId: input.organizationId },
+        select: { userId: true },
+      });
+      if (!membership) throw new IdentityAdminError("PROJECT_ACCESS_REFERENCE_INVALID");
+      const access = await this.prisma.seoProjectAccess.create({
+        data: input,
+        select: { id: true, version: true },
+      });
+      return { ...access, userId: membership.userId };
+    } catch (error) {
+      if (error instanceof IdentityAdminError) throw error;
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") throw new IdentityAdminError("PROJECT_ACCESS_ALREADY_EXISTS");
+        if (error.code === "P2003") throw new IdentityAdminError("PROJECT_ACCESS_REFERENCE_INVALID");
+      }
+      throw error;
+    }
+  }
+
+  findSeoProjectAccessForAction(input: { organizationId: string; accessId: string }) {
+    return this.prisma.seoProjectAccess.findFirst({
+      where: { id: input.accessId, organizationId: input.organizationId },
+      select: {
+        id: true,
+        membershipId: true,
+        organizationId: true,
+        projectId: true,
+        role: true,
+        version: true,
+        membership: { select: { userId: true } },
+      },
+    }).then((record) => record ? { ...record, userId: record.membership.userId } : null);
+  }
+
+  async updateSeoProjectAccess(input: UpdateSeoProjectAccessInput): Promise<boolean> {
+    const result = await this.prisma.seoProjectAccess.updateMany({
+      where: { id: input.accessId, organizationId: input.organizationId, version: input.version },
+      data: { role: input.role, version: { increment: 1 } },
+    });
+    return result.count === 1;
+  }
+
+  async removeSeoProjectAccess(input: { organizationId: string; accessId: string; version: number }): Promise<boolean> {
+    const result = await this.prisma.seoProjectAccess.deleteMany({
+      where: { id: input.accessId, organizationId: input.organizationId, version: input.version },
+    });
+    return result.count === 1;
+  }
+
+  async revokeUserSessions(userId: string): Promise<void> {
+    await this.prisma.session.deleteMany({ where: { userId } });
   }
 
   async appendAudit(input: IdentityAdminAuditInput): Promise<void> {

@@ -1,4 +1,3 @@
-import type { ProjectRepository } from "../../project-registry/index.ts";
 import type { DirectorAnalytics, ReportRepository, StoredReportSnapshotRecord } from "./ports/report-repository.ts";
 import type { ReportPeriodKey, SiteReportSnapshot } from "../../../shared/schemas/report.ts";
 import { hasPermission, type PrincipalContext } from "../../../platform/authorization/principal.ts";
@@ -7,14 +6,8 @@ import { ProjectService } from "../../project-registry/index.ts";
 export class ReportService {
   private readonly projectService: ProjectService;
 
-  constructor(
-    projectServiceOrRepository: ProjectService | ProjectRepository,
-    private readonly reportRepository: ReportRepository,
-  ) {
-    this.projectService =
-      projectServiceOrRepository instanceof ProjectService
-        ? projectServiceOrRepository
-        : new ProjectService(projectServiceOrRepository);
+  constructor(projectService: ProjectService, private readonly reportRepository: ReportRepository) {
+    this.projectService = projectService;
   }
 
   async getSiteReportForUser(

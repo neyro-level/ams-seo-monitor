@@ -64,11 +64,7 @@ const PLATFORM_ANALYST_PERMISSIONS: readonly Permission[] = [
   "sync:run:any",
 ];
 const TENANT_PERMISSIONS: Record<TenantRole, readonly Permission[]> = {
-  ORG_OWNER: [
-    "project:read:organization",
-    "project:manage:any",
-    "report:read:organization",
-  ],
+  ORG_OWNER: ["project:read:organization", "report:read:organization"],
   ORG_MEMBER: ["project:read:organization", "report:read:organization"],
   VIEWER: ["project:read:organization", "report:read:organization"],
 };

@@ -1,4 +1,5 @@
 import { SyncService } from "../modules/data-ingestion/index.ts";
+import { PrismaAccessGrantRepository } from "../modules/identity-access/index.ts";
 import {
   PinoSyncLogger,
   PrismaSyncRepository,
@@ -15,14 +16,18 @@ import {
 } from "../modules/project-registry/worker.ts";
 import { ReportService } from "../modules/reporting/index.ts";
 import { PrismaReportRepository } from "../modules/reporting/server.ts";
+import { AuthorizationService } from "../platform/authorization/authorization-service.ts";
 
 const projectRepository = new PrismaProjectRepository();
 const monitoringRepository = new PrismaMonitoringRepository();
 const reportRepository = new PrismaReportRepository();
 const syncRepository = new PrismaSyncRepository();
 const reliabilityRepository = new PrismaReliabilityRepository();
+const authorizationService = new AuthorizationService(
+  new PrismaAccessGrantRepository(),
+);
 
-const projectService = new ProjectService(projectRepository);
+const projectService = new ProjectService(projectRepository, authorizationService);
 const monitoringService = new MonitoringService(monitoringRepository);
 const reportService = new ReportService(projectService, reportRepository);
 const reliabilityService = new ReliabilityService(reliabilityRepository);

@@ -6,6 +6,8 @@ import type {
   StoredProjectRecord,
   StoredSiteRecord,
 } from "../src/modules/project-registry/index.ts";
+import type { ProductProjectGrant } from "../src/platform/authorization/access-types.ts";
+import { AuthorizationService } from "../src/platform/authorization/authorization-service.ts";
 import {
   createDeniedJobPrincipal,
   createPlatformAdminPrincipal,
@@ -84,9 +86,9 @@ const projects: StoredProjectRecord[] = [
 
 class FakeProjectRepository implements ProjectRepository {
   async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
-    return scope.organizationIds === null
+    return scope.projectIds === null
       ? projects
-      : projects.filter((project) => scope.organizationIds!.includes(project.organizationId));
+      : projects.filter((project) => scope.projectIds!.includes(project.projectId));
   }
 
   async findProjectBySlug(
@@ -109,7 +111,18 @@ class FakeProjectRepository implements ProjectRepository {
 }
 
 describe("ProjectService", () => {
-  const projectService = new ProjectService(new FakeProjectRepository());
+  const grants: ProductProjectGrant[] = [
+    { product: "seo-monitor", organizationId: "org-alpha", projectId: "project-alpha", role: "VIEWER" },
+    { product: "seo-monitor", organizationId: "org-alpha", projectId: "project-alpha", role: "ANALYST" },
+    { product: "seo-monitor", organizationId: "org-west", projectId: "project-west", role: "ANALYST" },
+  ];
+  const authorization = new AuthorizationService({
+    async listProjectGrants(userId, product) {
+      const role = userId === "analyst-1" ? "ANALYST" : userId === "viewer-1" ? "VIEWER" : null;
+      return role ? grants.filter((grant) => grant.role === role && (!product || grant.product === product)) : [];
+    },
+  });
+  const projectService = new ProjectService(new FakeProjectRepository(), authorization);
 
   it("shows every project to analyst", async () => {
     expect(await projectService.listProjectsForUser(analystUser)).toHaveLength(2);
@@ -119,7 +132,7 @@ describe("ProjectService", () => {
     expect(await projectService.listProjectsForUser(platformAdmin)).toHaveLength(2);
   });
 
-  it("limits client viewer to own organization", async () => {
+  it("limits client viewer to an explicitly granted project", async () => {
     const visibleProjects = await projectService.listProjectsForUser(alphaViewer);
     expect(visibleProjects).toHaveLength(1);
     expect(visibleProjects[0]?.projectSlug).toBe("alpha");
@@ -129,7 +142,7 @@ describe("ProjectService", () => {
     expect(await projectService.listProjectsForUser(deniedPrincipal)).toEqual([]);
   });
 
-  it("returns site access only inside allowed organization", async () => {
+  it("returns site access only inside an explicitly granted project", async () => {
     expect(
       await projectService.getSiteAccessForUser(alphaViewer, "alpha", "north"),
     ).not.toBeNull();

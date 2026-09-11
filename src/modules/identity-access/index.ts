@@ -48,3 +48,4 @@ export type {
 } from "./domain/admin-identity.ts";
 export { parseSystemRole } from "./domain/system-role.ts";
 export type { SystemRole } from "./domain/system-role.ts";
+export { PrismaAccessGrantRepository } from "./infrastructure/prisma-access-grant-repository.ts";

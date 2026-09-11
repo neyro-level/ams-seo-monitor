@@ -2,9 +2,12 @@
 
 import type {
   CreateMembershipInput,
+  CreateSeoProjectAccessInput,
   CreateOrganizationInput,
   RemoveMembershipInput,
+  RemoveSeoProjectAccessInput,
   UpdateMembershipInput,
+  UpdateSeoProjectAccessInput,
   UpdateOrganizationInput,
   ProvisionClientInput,
   ResetUserPasswordInput,
@@ -12,9 +15,12 @@ import type {
 } from "../../../modules/identity-access/contracts.ts";
 import {
   createMembership,
+  createSeoProjectAccess,
   createOrganization,
   removeMembership,
+  removeSeoProjectAccess,
   updateMembership,
+  updateSeoProjectAccess,
   updateOrganization,
   provisionClient,
   resetUserPassword,
@@ -30,3 +36,6 @@ export const removeMembershipAction = platformAdminAction<RemoveMembershipInput,
 export const provisionClientAction = platformAdminAction<ProvisionClientInput, Awaited<ReturnType<typeof provisionClient>>>("memberships", provisionClient);
 export const resetUserPasswordAction = platformAdminAction<ResetUserPasswordInput, Awaited<ReturnType<typeof resetUserPassword>>>("memberships", resetUserPassword);
 export const setUserEnabledAction = platformAdminAction<SetUserEnabledInput, Awaited<ReturnType<typeof setUserEnabled>>>("memberships", setUserEnabled);
+export const createSeoProjectAccessAction = platformAdminAction<CreateSeoProjectAccessInput, Awaited<ReturnType<typeof createSeoProjectAccess>>>("memberships", createSeoProjectAccess);
+export const updateSeoProjectAccessAction = platformAdminAction<UpdateSeoProjectAccessInput, Awaited<ReturnType<typeof updateSeoProjectAccess>>>("memberships", updateSeoProjectAccess);
+export const removeSeoProjectAccessAction = platformAdminAction<RemoveSeoProjectAccessInput, Awaited<ReturnType<typeof removeSeoProjectAccess>>>("memberships", removeSeoProjectAccess);

@@ -1,21 +1,27 @@
 export {
   createMembershipInputSchema,
+  createSeoProjectAccessInputSchema,
   createOrganizationInputSchema,
   removeMembershipInputSchema,
+  removeSeoProjectAccessInputSchema,
   provisionClientInputSchema,
   resetUserPasswordInputSchema,
   setUserEnabledInputSchema,
   tenantRoleSchema,
+  productRoleSchema,
   updateMembershipInputSchema,
+  updateSeoProjectAccessInputSchema,
   updateOrganizationInputSchema,
 } from "./domain/admin-identity.ts";
 export { IdentityAdminError } from "./domain/admin-identity.ts";
 export type {
   CreateMembershipInput,
+  CreateSeoProjectAccessInput,
   CreateOrganizationInput,
   IdentityAdminFormOptions,
   MembershipListItem,
   MembershipListResult,
+  SeoProjectAccessListItem,
   OrganizationListItem,
   OrganizationListResult,
   IdentityAdminUserListItem,
@@ -24,6 +30,8 @@ export type {
   ResetUserPasswordInput,
   SetUserEnabledInput,
   RemoveMembershipInput,
+  RemoveSeoProjectAccessInput,
   UpdateMembershipInput,
+  UpdateSeoProjectAccessInput,
   UpdateOrganizationInput,
 } from "./domain/admin-identity.ts";

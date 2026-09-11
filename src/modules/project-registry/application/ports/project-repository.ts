@@ -21,7 +21,7 @@ export interface StoredProjectRecord {
 }
 
 export interface ProjectAccessScope {
-  organizationIds: string[] | null;
+  projectIds: string[] | null;
 }
 
 export interface ProjectRepository {

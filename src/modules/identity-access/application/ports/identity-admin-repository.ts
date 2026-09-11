@@ -1,6 +1,7 @@
 import type { TenantRole } from "../../../../platform/authorization/principal.ts";
 import type {
   CreateMembershipInput,
+  CreateSeoProjectAccessInput,
   CreateOrganizationInput,
   IdentityAdminFormOptions,
   IdentityAdminListQuery,
@@ -10,8 +11,10 @@ import type {
   ProvisionClientInput,
   ProvisionClientResult,
   UpdateMembershipInput,
+  UpdateSeoProjectAccessInput,
   UpdateOrganizationInput,
 } from "../../domain/admin-identity.ts";
+import type { ProductRole } from "../../../../platform/authorization/access-types.ts";
 
 export interface OrganizationActionRecord {
   id: string;
@@ -28,10 +31,20 @@ export interface MembershipActionRecord {
   version: number;
 }
 
+export interface SeoProjectAccessActionRecord {
+  id: string;
+  membershipId: string;
+  organizationId: string;
+  projectId: string;
+  userId: string;
+  role: ProductRole;
+  version: number;
+}
+
 export interface IdentityAdminAuditInput {
   actorId: string;
   action: string;
-  entityType: "Organization" | "Member" | "User";
+  entityType: "Organization" | "Member" | "User" | "SeoProjectAccess";
   entityId: string;
   organizationId: string | null;
   beforeMarker: Record<string, string | number | boolean | null> | null;
@@ -48,6 +61,7 @@ export type ProvisionClientPersistenceInput = Omit<ProvisionClientInput, "passwo
 export interface IdentityAdminRepository {
   listOrganizations(query: IdentityAdminListQuery): Promise<OrganizationListResult>;
   listMemberships(query: IdentityAdminListQuery): Promise<MembershipListResult>;
+  listSeoProjectAccesses(): Promise<import("../../domain/admin-identity.ts").SeoProjectAccessListItem[]>;
   listFormOptions(): Promise<IdentityAdminFormOptions>;
   listUsers(): Promise<IdentityAdminUserListItem[]>;
   provisionClient(input: ProvisionClientPersistenceInput): Promise<ProvisionClientResult>;
@@ -67,5 +81,10 @@ export interface IdentityAdminRepository {
     membershipId: string;
     version: number;
   }): Promise<boolean>;
+  createSeoProjectAccess(input: CreateSeoProjectAccessInput): Promise<{ id: string; version: number; userId: string }>;
+  findSeoProjectAccessForAction(input: { organizationId: string; accessId: string }): Promise<SeoProjectAccessActionRecord | null>;
+  updateSeoProjectAccess(input: UpdateSeoProjectAccessInput): Promise<boolean>;
+  removeSeoProjectAccess(input: { organizationId: string; accessId: string; version: number }): Promise<boolean>;
+  revokeUserSessions(userId: string): Promise<void>;
   appendAudit(input: IdentityAdminAuditInput): Promise<void>;
 }

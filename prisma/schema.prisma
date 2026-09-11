@@ -11,14 +11,20 @@ datasource db {
 
 enum SystemRole {
   PLATFORM_ADMIN
-  ANALYST @map("SEO_ANALYST")
-  CLIENT  @map("CLIENT_VIEWER")
+  ANALYST        @map("SEO_ANALYST")
+  CLIENT         @map("CLIENT_VIEWER")
 }
 
 enum MembershipRole {
   ORG_OWNER
   ORG_MEMBER
   VIEWER
+}
+
+enum ProductRole {
+  VIEWER
+  OPERATOR
+  ANALYST
 }
 
 enum AuditActorType {
@@ -280,17 +286,19 @@ model Organization {
 }
 
 model Member {
-  id             String         @id @default(cuid())
-  userId         String
-  organizationId String
-  tenantRole     MembershipRole @default(VIEWER)
-  version        Int            @default(1)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id                 String             @id @default(cuid())
+  userId             String
+  organizationId     String
+  tenantRole         MembershipRole     @default(VIEWER)
+  version            Int                @default(1)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  seoProjectAccesses SeoProjectAccess[]
 
   @@unique([organizationId, userId])
+  @@unique([id, organizationId])
   @@index([userId])
   @@index([organizationId])
 }
@@ -357,11 +365,29 @@ model Project {
   sites              Site[]
   goalDefinitions    GoalDefinition[]
   notifications      Notification[]
+  seoProjectAccesses SeoProjectAccess[]
 
   @@unique([organizationId, id])
   @@index([organizationId])
   @@index([thresholdProfileId])
   @@index([clusterProfileId])
+}
+
+model SeoProjectAccess {
+  id             String      @id @default(cuid())
+  membershipId   String
+  organizationId String
+  projectId      String
+  role           ProductRole @default(VIEWER)
+  version        Int         @default(1)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  membership     Member      @relation(fields: [membershipId, organizationId], references: [id, organizationId], onDelete: Cascade, onUpdate: Cascade)
+  project        Project     @relation(fields: [organizationId, projectId], references: [organizationId, id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([membershipId, projectId])
+  @@index([organizationId, projectId])
+  @@index([projectId])
 }
 
 model Site {

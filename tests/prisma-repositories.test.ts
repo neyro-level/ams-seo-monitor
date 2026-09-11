@@ -117,7 +117,7 @@ repositoryTestDescription("Prisma repositories", () => {
 
   it("loads project summaries from PostgreSQL", async () => {
     const repository = new PrismaProjectRepository();
-    const projects = await repository.listProjects({ organizationIds: null });
+    const projects = await repository.listProjects({ projectIds: null });
     const alpha = projects.find((project) => project.projectSlug === "alpha");
 
     expect(projects.length).toBeGreaterThanOrEqual(2);
@@ -125,20 +125,20 @@ repositoryTestDescription("Prisma repositories", () => {
     expect(alpha?.sites[0]?.enabledSourceCount).toBeGreaterThanOrEqual(0);
   });
 
-  it("applies organization scope inside Prisma queries", async () => {
+  it("applies explicit project scope inside Prisma queries", async () => {
     const repository = new PrismaProjectRepository();
     const alpha = await prisma!.organization.findUniqueOrThrow({
       where: { slug: "alpha" },
-      select: { id: true },
+      include: { projects: { select: { id: true } } },
     });
     const scopedProjects = await repository.listProjects({
-      organizationIds: [alpha.id],
+      projectIds: alpha.projects.map((project) => project.id),
     });
     const foreignProject = await repository.findProjectBySlug("beta", {
-      organizationIds: [alpha.id],
+      projectIds: alpha.projects.map((project) => project.id),
     });
     const foreignSite = await repository.findSiteBySlugs("beta", "west", {
-      organizationIds: [alpha.id],
+      projectIds: alpha.projects.map((project) => project.id),
     });
 
     expect(scopedProjects.map((project) => project.projectSlug)).toEqual(["alpha"]);
@@ -150,7 +150,7 @@ repositoryTestDescription("Prisma repositories", () => {
     const projectRepository = new PrismaProjectRepository();
     const reportRepository = new PrismaReportRepository();
     const site = await projectRepository.findSiteBySlugs("alpha", "north", {
-      organizationIds: null,
+      projectIds: null,
     });
 
     expect(site).not.toBeNull();

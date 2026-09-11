@@ -37,7 +37,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
     });
     const organization = await database.prisma.organization.findUniqueOrThrow({
       where: { slug: "alpha" },
-      select: { id: true },
+      include: { projects: { select: { id: true } } },
     });
     await database.prisma.user.upsert({
       where: { id: clientViewerIdentity.userId },
@@ -50,7 +50,7 @@ navigationTestDescription("database-backed navigation isolation", () => {
         systemRole: "CLIENT",
       },
     });
-    await database.prisma.member.upsert({
+    const clientMembership = await database.prisma.member.upsert({
       where: {
         organizationId_userId: {
           organizationId: organization.id,
@@ -63,6 +63,28 @@ navigationTestDescription("database-backed navigation isolation", () => {
         userId: clientViewerIdentity.userId,
         tenantRole: "VIEWER",
       },
+    });
+    await database.prisma.seoProjectAccess.createMany({
+      data: organization.projects.map((project) => ({
+        membershipId: clientMembership.id,
+        organizationId: organization.id,
+        projectId: project.id,
+        role: "VIEWER" as const,
+      })),
+      skipDuplicates: true,
+    });
+    const analystMemberships = await database.prisma.member.findMany({
+      where: { userId: "analyst-1" },
+      select: { id: true, organizationId: true, organization: { select: { projects: { select: { id: true } } } } },
+    });
+    await database.prisma.seoProjectAccess.createMany({
+      data: analystMemberships.flatMap((membership) => membership.organization.projects.map((project) => ({
+        membershipId: membership.id,
+        organizationId: membership.organizationId,
+        projectId: project.id,
+        role: "ANALYST" as const,
+      }))),
+      skipDuplicates: true,
     });
     clientViewerPrincipal = (await getPrincipalStateByUserId(clientViewerIdentity.userId, {
       correlationId: "00000000-0000-4000-8000-000000000002",

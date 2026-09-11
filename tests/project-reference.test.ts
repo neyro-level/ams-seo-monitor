@@ -69,13 +69,13 @@ describe("Project reference domain", () => {
     expect(() => nextProjectVersion(0)).toThrow("PROJECT_STALE");
   });
 
-  it("loads an owned project for an authorized tenant owner", async () => {
+  it("does not treat organization ownership as project management access", async () => {
     await expect(requireProjectForAction(
       owner,
       "organization-a",
       "project-a",
       repository,
-    )).resolves.toMatchObject({ project: { id: "project-a" } });
+    )).rejects.toMatchObject({ code: "PROJECT_ACCESS_DENIED" });
   });
 
   it("denies foreign tenant scope before loading a resource", async () => {
@@ -87,12 +87,12 @@ describe("Project reference domain", () => {
     )).rejects.toMatchObject({ code: "PROJECT_ACCESS_DENIED" });
   });
 
-  it("does not disclose a missing or foreign resource", async () => {
+  it("denies a missing resource before disclosing whether it exists", async () => {
     await expect(requireProjectForAction(
       owner,
       "organization-a",
       "missing",
       repository,
-    )).rejects.toMatchObject({ code: "PROJECT_NOT_FOUND_OR_FORBIDDEN" });
+    )).rejects.toMatchObject({ code: "PROJECT_ACCESS_DENIED" });
   });
 });

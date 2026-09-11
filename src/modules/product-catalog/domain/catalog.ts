@@ -1,5 +1,7 @@
-export const PRODUCT_CODES = ["seo-monitor", "leads", "tools"] as const;
-export type ProductCode = (typeof PRODUCT_CODES)[number];
+import { PRODUCT_CODES, type ProductCode } from "../../../platform/authorization/access-types.ts";
+
+export { PRODUCT_CODES };
+export type { ProductCode };
 
 export const TOOL_CODES = [
   "research",

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { TenantRole } from "../../../platform/authorization/principal.ts";
+import { PRODUCT_ROLES, type ProductRole } from "../../../platform/authorization/access-types.ts";
 
 const identifierSchema = z.string().trim().min(1).max(128);
 const positiveVersionSchema = z.number().int().positive();
@@ -114,12 +115,35 @@ export const removeMembershipInputSchema = z.object({
   version: positiveVersionSchema,
 });
 
+export const productRoleSchema = z.enum(PRODUCT_ROLES);
+
+export const createSeoProjectAccessInputSchema = z.object({
+  membershipId: identifierSchema,
+  organizationId: identifierSchema,
+  projectId: identifierSchema,
+  role: productRoleSchema,
+});
+
+export const updateSeoProjectAccessInputSchema = createSeoProjectAccessInputSchema.extend({
+  accessId: identifierSchema,
+  version: positiveVersionSchema,
+});
+
+export const removeSeoProjectAccessInputSchema = z.object({
+  accessId: identifierSchema,
+  organizationId: identifierSchema,
+  version: positiveVersionSchema,
+});
+
 export type IdentityAdminListQuery = z.infer<typeof identityAdminListQuerySchema>;
 export type CreateOrganizationInput = z.infer<typeof createOrganizationInputSchema>;
 export type UpdateOrganizationInput = z.infer<typeof updateOrganizationInputSchema>;
 export type CreateMembershipInput = z.infer<typeof createMembershipInputSchema>;
 export type UpdateMembershipInput = z.infer<typeof updateMembershipInputSchema>;
 export type RemoveMembershipInput = z.infer<typeof removeMembershipInputSchema>;
+export type CreateSeoProjectAccessInput = z.infer<typeof createSeoProjectAccessInputSchema>;
+export type UpdateSeoProjectAccessInput = z.infer<typeof updateSeoProjectAccessInputSchema>;
+export type RemoveSeoProjectAccessInput = z.infer<typeof removeSeoProjectAccessInputSchema>;
 export type ProvisionClientInput = z.infer<typeof provisionClientInputSchema>;
 export type ResetUserPasswordInput = z.infer<typeof resetUserPasswordInputSchema>;
 export type SetUserEnabledInput = z.infer<typeof setUserEnabledInputSchema>;
@@ -176,9 +200,26 @@ export interface MembershipListResult {
   pageSize: number;
 }
 
+export interface SeoProjectAccessListItem {
+  id: string;
+  membershipId: string;
+  organizationId: string;
+  organizationName: string;
+  projectId: string;
+  projectName: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  role: ProductRole;
+  version: number;
+  updatedAt: string;
+}
+
 export interface IdentityAdminFormOptions {
   organizations: Array<{ id: string; name: string }>;
   users: Array<{ id: string; label: string }>;
+  memberships: Array<{ id: string; organizationId: string; label: string }>;
+  projects: Array<{ id: string; organizationId: string; label: string }>;
 }
 
 export type IdentityAdminErrorCode =
@@ -190,6 +231,10 @@ export type IdentityAdminErrorCode =
   | "MEMBERSHIP_STALE"
   | "MEMBERSHIP_ALREADY_EXISTS"
   | "MEMBERSHIP_REFERENCE_INVALID"
+  | "PROJECT_ACCESS_NOT_FOUND_OR_FORBIDDEN"
+  | "PROJECT_ACCESS_STALE"
+  | "PROJECT_ACCESS_ALREADY_EXISTS"
+  | "PROJECT_ACCESS_REFERENCE_INVALID"
   | "USER_LOGIN_CONFLICT"
   | "USER_NOT_FOUND"
   | "PROJECT_SLUG_CONFLICT"
@@ -205,7 +250,7 @@ export class IdentityAdminError extends Error {
 
 export function nextIdentityVersion(
   version: number,
-  staleCode: "ORGANIZATION_STALE" | "MEMBERSHIP_STALE",
+  staleCode: "ORGANIZATION_STALE" | "MEMBERSHIP_STALE" | "PROJECT_ACCESS_STALE",
 ): number {
   if (!Number.isSafeInteger(version) || version < 1) {
     throw new IdentityAdminError(staleCode);

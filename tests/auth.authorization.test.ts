@@ -7,6 +7,8 @@ import { hashPassword } from "better-auth/crypto";
 import { Pool } from "pg";
 import { ProjectService } from "../src/modules/project-registry/index.ts";
 import { PrismaProjectRepository } from "../src/modules/project-registry/server.ts";
+import { PrismaAccessGrantRepository } from "../src/modules/identity-access/server.ts";
+import { AuthorizationService } from "../src/platform/authorization/authorization-service.ts";
 import { getPrincipalStateByUserId } from "../src/platform/authorization/principal-factories.ts";
 import { createPgPoolConfigFromEnvironment } from "../src/platform/database/prisma/pool-config.ts";
 import {
@@ -52,7 +54,7 @@ let analystUser: PrincipalContext | null = null;
 let alphaViewerUser: PrincipalContext | null = null;
 let westViewerUser: PrincipalContext | null = null;
 let disabledViewerId: string | null = null;
-const projectService = new ProjectService(new PrismaProjectRepository());
+let projectService: ProjectService | null = null;
 
 async function ensureCredentialUser(email: string, name: string, systemRole: SystemRole) {
   if (!prisma) {
@@ -107,6 +109,33 @@ async function ensureCredentialUser(email: string, name: string, systemRole: Sys
   return userId;
 }
 
+async function grantSeoProjects(
+  userId: string,
+  organizationId: string,
+  role: "VIEWER" | "ANALYST",
+) {
+  if (!prisma) throw new Error("Prisma test client is not initialized");
+  const membership = await prisma.member.upsert({
+    where: { organizationId_userId: { organizationId, userId } },
+    update: { tenantRole: "VIEWER" },
+    create: { organizationId, userId, tenantRole: "VIEWER" },
+    select: { id: true },
+  });
+  const projects = await prisma.project.findMany({
+    where: { organizationId },
+    select: { id: true },
+  });
+  await prisma.seoProjectAccess.createMany({
+    data: projects.map(({ id }) => ({
+      membershipId: membership.id,
+      organizationId,
+      projectId: id,
+      role,
+    })),
+    skipDuplicates: true,
+  });
+}
+
 authTestDescription("authorization matrix", () => {
   beforeAll(async () => {
     pool = new Pool(
@@ -121,6 +150,10 @@ authTestDescription("authorization matrix", () => {
       }),
     );
     prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+    projectService = new ProjectService(
+      new PrismaProjectRepository(),
+      new AuthorizationService(new PrismaAccessGrantRepository(prisma)),
+    );
 
     const alphaOrganization = await prisma.organization.findUniqueOrThrow({
       where: { slug: "alpha" },
@@ -162,35 +195,10 @@ authTestDescription("authorization matrix", () => {
       data: { disabledAt: new Date() },
     });
 
-    await prisma.member.upsert({
-      where: {
-        organizationId_userId: {
-          organizationId: alphaOrganization.id,
-          userId: alphaViewerId,
-        },
-      },
-      update: { tenantRole: "VIEWER" },
-      create: {
-        organizationId: alphaOrganization.id,
-        userId: alphaViewerId,
-        tenantRole: "VIEWER",
-      },
-    });
-
-    await prisma.member.upsert({
-      where: {
-        organizationId_userId: {
-          organizationId: westOrganization.id,
-          userId: westViewerId,
-        },
-      },
-      update: { tenantRole: "VIEWER" },
-      create: {
-        organizationId: westOrganization.id,
-        userId: westViewerId,
-        tenantRole: "VIEWER",
-      },
-    });
+    await grantSeoProjects(analystUserId, alphaOrganization.id, "ANALYST");
+    await grantSeoProjects(analystUserId, westOrganization.id, "ANALYST");
+    await grantSeoProjects(alphaViewerId, alphaOrganization.id, "VIEWER");
+    await grantSeoProjects(westViewerId, westOrganization.id, "VIEWER");
 
     platformAdminUser = (await getPrincipalStateByUserId(platformAdminUserId, {
       correlationId: "00000000-0000-4000-8000-000000000010",
@@ -226,14 +234,14 @@ authTestDescription("authorization matrix", () => {
       correlationId: "00000000-0000-4000-8000-000000000010",
     });
     expect(hasPermission(platformAdminUser!, "platform:manage")).toBe(true);
-    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "alpha")).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(platformAdminUser!, "beta")).not.toBeNull();
+    expect(await projectService!.getProjectAccessForUser(platformAdminUser!, "alpha")).not.toBeNull();
+    expect(await projectService!.getProjectAccessForUser(platformAdminUser!, "beta")).not.toBeNull();
   });
 
   it("allows analyst to read every project", async () => {
     expect(analystUser).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(analystUser!, "alpha")).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(analystUser!, "beta")).not.toBeNull();
+    expect(await projectService!.getProjectAccessForUser(analystUser!, "alpha")).not.toBeNull();
+    expect(await projectService!.getProjectAccessForUser(analystUser!, "beta")).not.toBeNull();
   });
 
   it("loads current memberships and validates active organization", () => {
@@ -248,13 +256,13 @@ authTestDescription("authorization matrix", () => {
 
   it("allows client viewer only inside own organization project", async () => {
     expect(alphaViewerUser).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(alphaViewerUser!, "alpha")).not.toBeNull();
-    expect(await projectService.getProjectAccessForUser(alphaViewerUser!, "beta")).toBeNull();
+    expect(await projectService!.getProjectAccessForUser(alphaViewerUser!, "alpha")).not.toBeNull();
+    expect(await projectService!.getProjectAccessForUser(alphaViewerUser!, "beta")).toBeNull();
   });
 
   it("denies foreign site access for another client viewer", async () => {
     expect(westViewerUser).not.toBeNull();
-    expect(await projectService.getSiteAccessForUser(westViewerUser!, "alpha", "north")).toBeNull();
-    expect(await projectService.getSiteAccessForUser(westViewerUser!, "beta", "west")).not.toBeNull();
+    expect(await projectService!.getSiteAccessForUser(westViewerUser!, "alpha", "north")).toBeNull();
+    expect(await projectService!.getSiteAccessForUser(westViewerUser!, "beta", "west")).not.toBeNull();
   });
 });

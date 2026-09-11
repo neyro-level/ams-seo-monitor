@@ -1,5 +1,6 @@
 import "server-only";
 
+import { PrismaAccessGrantRepository } from "../modules/identity-access/index.ts";
 import {
   AnalystService,
   MonitoringService,
@@ -14,13 +15,18 @@ import {
 } from "../modules/project-registry/server.ts";
 import { PrismaReliabilityRepository } from "../modules/platform-operations/server.ts";
 import { PrismaReportRepository } from "../modules/reporting/server.ts";
+import { AuthorizationService } from "../platform/authorization/authorization-service.ts";
+import { getPrismaClient } from "../platform/database/prisma/client.ts";
 
 const projectRepository = new PrismaProjectRepository();
 const monitoringRepository = new PrismaMonitoringRepository();
 const reportRepository = new PrismaReportRepository();
 const reliabilityRepository = new PrismaReliabilityRepository();
+const authorizationService = new AuthorizationService(
+  new PrismaAccessGrantRepository(getPrismaClient()),
+);
 
-const projectService = new ProjectService(projectRepository);
+const projectService = new ProjectService(projectRepository, authorizationService);
 const analystService = new AnalystService(projectService);
 const siteService = new SiteService(projectService);
 const monitoringService = new MonitoringService(monitoringRepository);
@@ -29,6 +35,10 @@ const reliabilityService = new ReliabilityService(reliabilityRepository);
 
 export function getProjectService() {
   return projectService;
+}
+
+export function getAuthorizationService() {
+  return authorizationService;
 }
 
 export function getAnalystService() {

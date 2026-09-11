@@ -14,6 +14,7 @@ import {
 import {
   getIdentityAdminFormOptions,
   listMemberships,
+  listSeoProjectAccesses,
   listOrganizations,
   listUsers,
 } from "../../../modules/identity-access/server.ts";
@@ -47,6 +48,7 @@ import {
   ClientProvisioningAdmin,
   MembershipsAdminForms,
   OrganizationsAdminForms,
+  SeoProjectAccessAdminForms,
 } from "../_components/IdentityAdminForms.tsx";
 import { OperationsAdminForms } from "../_components/OperationsAdminForms.tsx";
 import { PlatformAdminTable, type PlatformAdminDisplayRow } from "../_components/PlatformAdminTable.tsx";
@@ -198,12 +200,13 @@ export default async function AdminResourcePageRoute({
   }
 
   if (resource === "memberships") {
-    const [summary, result, options, users, projectOptions] = await Promise.all([
+    const [summary, result, options, users, projectOptions, seoProjectAccesses] = await Promise.all([
       getPlatformAdminDashboardSummary(),
       listMemberships(state.principal, listQuery),
       getIdentityAdminFormOptions(state.principal),
       listUsers(state.principal),
       getProjectRegistryAdminFormOptions(state.principal),
+      listSeoProjectAccesses(state.principal),
     ]);
     const rows: PlatformAdminDisplayRow[] = result.items.map((item) => ({
       id: item.id,
@@ -223,6 +226,7 @@ export default async function AdminResourcePageRoute({
           <Filters query={query} resource={resource} />
           <PlatformAdminTable pageSize={result.pageSize} query={query} resource={resource} rows={rows} sortOptions={defaultSortOptions} total={result.total} />
           <MembershipsAdminForms items={result.items} options={options} />
+          <SeoProjectAccessAdminForms items={seoProjectAccesses} options={options} />
           <ClientProvisioningAdmin users={users} thresholdProfiles={projectOptions.thresholdProfiles} clusterProfiles={projectOptions.clusterProfiles} />
         </div>
       </>

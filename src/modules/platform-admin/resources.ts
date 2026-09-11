@@ -28,8 +28,8 @@ export const PLATFORM_ADMIN_RESOURCES: readonly PlatformAdminResourceDefinition[
   },
   {
     key: "memberships",
-    label: "Участники и доступ",
-    description: "Пользователи и доступ к организациям.",
+    label: "Пользователи и доступы",
+    description: "Пользователи, членство в организациях и явные назначения проектов.",
     href: "/admin/memberships/",
   },
   {

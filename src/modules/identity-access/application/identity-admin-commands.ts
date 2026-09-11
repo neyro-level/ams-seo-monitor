@@ -4,14 +4,17 @@ import { defineCommand } from "../../../platform/commands/define-command.ts";
 import type { DatabaseTransaction } from "../../../platform/database/transaction.ts";
 import {
   createMembershipInputSchema,
+  createSeoProjectAccessInputSchema,
   createOrganizationInputSchema,
   IdentityAdminError,
   nextIdentityVersion,
   provisionClientInputSchema,
   removeMembershipInputSchema,
+  removeSeoProjectAccessInputSchema,
   resetUserPasswordInputSchema,
   setUserEnabledInputSchema,
   updateMembershipInputSchema,
+  updateSeoProjectAccessInputSchema,
   updateOrganizationInputSchema,
 } from "../domain/admin-identity.ts";
 import {
@@ -251,6 +254,7 @@ export function createIdentityAdminCommands(
       if (!updated) {
         throw new IdentityAdminError("MEMBERSHIP_STALE");
       }
+      await repository.revokeUserSessions(membership.userId);
 
       const version = nextIdentityVersion(input.version, "MEMBERSHIP_STALE");
       await repository.appendAudit({
@@ -307,6 +311,7 @@ export function createIdentityAdminCommands(
       if (!removed) {
         throw new IdentityAdminError("MEMBERSHIP_STALE");
       }
+      await repository.revokeUserSessions(membership.userId);
 
       await repository.appendAudit({
         actorId: scope.actorId,
@@ -326,11 +331,102 @@ export function createIdentityAdminCommands(
     },
   });
 
+  const createSeoProjectAccess = defineCommand<
+    PrincipalContext,
+    typeof createSeoProjectAccessInputSchema,
+    { accessId: string; version: number }
+  >({
+    name: "identity-access.seo-project-access.create",
+    input: createSeoProjectAccessInputSchema,
+    authorize: (principal, input) => { requireIdentityAdminScope(principal, input.organizationId); },
+    execute: async ({ principal, input, transaction }) => {
+      const scope = requireIdentityAdminScope(principal, input.organizationId);
+      const repository = dependencies.createRepository(transaction);
+      const access = await repository.createSeoProjectAccess(input);
+      await repository.revokeUserSessions(access.userId);
+      await repository.appendAudit({
+        actorId: scope.actorId,
+        action: "seo-project-access.create",
+        entityType: "SeoProjectAccess",
+        entityId: access.id,
+        organizationId: scope.organizationId,
+        beforeMarker: null,
+        afterMarker: { membershipId: input.membershipId, projectId: input.projectId, role: input.role, version: access.version },
+        correlationId: scope.correlationId,
+      });
+      return { accessId: access.id, version: access.version };
+    },
+  });
+
+  const updateSeoProjectAccess = defineCommand<
+    PrincipalContext,
+    typeof updateSeoProjectAccessInputSchema,
+    { accessId: string; version: number }
+  >({
+    name: "identity-access.seo-project-access.update",
+    input: updateSeoProjectAccessInputSchema,
+    authorize: (principal, input) => { requireIdentityAdminScope(principal, input.organizationId); },
+    execute: async ({ principal, input, transaction }) => {
+      const scope = requireIdentityAdminScope(principal, input.organizationId);
+      const repository = dependencies.createRepository(transaction);
+      const access = await repository.findSeoProjectAccessForAction({ organizationId: input.organizationId, accessId: input.accessId });
+      if (!access) throw new IdentityAdminError("PROJECT_ACCESS_NOT_FOUND_OR_FORBIDDEN");
+      if (access.version !== input.version) throw new IdentityAdminError("PROJECT_ACCESS_STALE");
+      if (!await repository.updateSeoProjectAccess(input)) throw new IdentityAdminError("PROJECT_ACCESS_STALE");
+      await repository.revokeUserSessions(access.userId);
+      const version = nextIdentityVersion(input.version, "PROJECT_ACCESS_STALE");
+      await repository.appendAudit({
+        actorId: scope.actorId,
+        action: "seo-project-access.update",
+        entityType: "SeoProjectAccess",
+        entityId: access.id,
+        organizationId: scope.organizationId,
+        beforeMarker: { membershipId: access.membershipId, projectId: access.projectId, role: access.role, version: access.version },
+        afterMarker: { membershipId: input.membershipId, projectId: input.projectId, role: input.role, version },
+        correlationId: scope.correlationId,
+      });
+      return { accessId: access.id, version };
+    },
+  });
+
+  const removeSeoProjectAccess = defineCommand<
+    PrincipalContext,
+    typeof removeSeoProjectAccessInputSchema,
+    { accessId: string }
+  >({
+    name: "identity-access.seo-project-access.remove",
+    input: removeSeoProjectAccessInputSchema,
+    authorize: (principal, input) => { requireIdentityAdminScope(principal, input.organizationId); },
+    execute: async ({ principal, input, transaction }) => {
+      const scope = requireIdentityAdminScope(principal, input.organizationId);
+      const repository = dependencies.createRepository(transaction);
+      const access = await repository.findSeoProjectAccessForAction({ organizationId: input.organizationId, accessId: input.accessId });
+      if (!access) throw new IdentityAdminError("PROJECT_ACCESS_NOT_FOUND_OR_FORBIDDEN");
+      if (access.version !== input.version) throw new IdentityAdminError("PROJECT_ACCESS_STALE");
+      if (!await repository.removeSeoProjectAccess(input)) throw new IdentityAdminError("PROJECT_ACCESS_STALE");
+      await repository.revokeUserSessions(access.userId);
+      await repository.appendAudit({
+        actorId: scope.actorId,
+        action: "seo-project-access.remove",
+        entityType: "SeoProjectAccess",
+        entityId: access.id,
+        organizationId: scope.organizationId,
+        beforeMarker: { membershipId: access.membershipId, projectId: access.projectId, role: access.role, version: access.version },
+        afterMarker: null,
+        correlationId: scope.correlationId,
+      });
+      return { accessId: access.id };
+    },
+  });
+
   return {
     createMembership,
+    createSeoProjectAccess,
     createOrganization,
     removeMembership,
+    removeSeoProjectAccess,
     updateMembership,
+    updateSeoProjectAccess,
     updateOrganization,
     provisionClient,
     resetUserPassword,

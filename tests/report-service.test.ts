@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ReportService } from "../src/modules/reporting/index.ts";
+import { ProjectService } from "../src/modules/project-registry/index.ts";
+import { AuthorizationService } from "../src/platform/authorization/authorization-service.ts";
 import type {
   ProjectAccessScope,
   ProjectRepository,
@@ -97,7 +99,7 @@ const sampleReport = siteReportSnapshotSchema.parse({
 
 class FakeProjectRepository implements ProjectRepository {
   async listProjects(scope: ProjectAccessScope): Promise<StoredProjectRecord[]> {
-    if (scope.organizationIds !== null && !scope.organizationIds.includes(sampleProject.organizationId)) {
+    if (scope.projectIds !== null && !scope.projectIds.includes(sampleProject.projectId)) {
       return [];
     }
     return [sampleProject];
@@ -140,8 +142,20 @@ class FakeReportRepository implements ReportRepository {
 }
 
 describe("ReportService", () => {
+  const authorization = new AuthorizationService({
+    async listProjectGrants(userId, product) {
+      if (product && product !== "seo-monitor") return [];
+      if (userId !== "analyst-1" && userId !== "viewer-1") return [];
+      return [{
+        product: "seo-monitor",
+        organizationId: "org-alpha",
+        projectId: "project-alpha",
+        role: userId === "analyst-1" ? "ANALYST" : "VIEWER",
+      }];
+    },
+  });
   const reportService = new ReportService(
-    new FakeProjectRepository(),
+    new ProjectService(new FakeProjectRepository(), authorization),
     new FakeReportRepository(),
   );
 
@@ -175,7 +189,7 @@ describe("ReportService", () => {
     expect(deniedReport).toBeNull();
   });
 
-  it("denies report outside allowed organization", async () => {
+  it("denies report outside an explicitly granted project", async () => {
     const deniedReport = await reportService.getSiteReportForUser(
       alphaViewer,
       "beta",

@@ -41,10 +41,16 @@ export function createIdentityAdminQueries(
     return dependencies.createRepository().listUsers();
   }
 
+  async function listSeoProjectAccesses(principal: PrincipalContext) {
+    requireIdentityAdminActor(principal);
+    return dependencies.createRepository().listSeoProjectAccesses();
+  }
+
   return {
     getIdentityAdminFormOptions,
     listOrganizations,
     listMemberships,
+    listSeoProjectAccesses,
     listUsers,
   };
 }
