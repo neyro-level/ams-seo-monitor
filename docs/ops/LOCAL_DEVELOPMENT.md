@@ -29,6 +29,8 @@ Create `.env.local` and fill only local/test values:
 - isolated `TEST_DATABASE_*` for `seo_monitor_test`;
 - local-only `BETTER_AUTH_SECRET`;
 - no production URLs, passwords or provider tokens unless a specific safe local provider task requires them.
+- `RESEARCH_QUERY_ESTIMATE_KOPECKS` for Research cabinet pricing;
+- test-only XMLRiver/S3 values only when the corresponding integration is intentionally exercised.
 
 Never print secrets or commit `.env.local`.
 

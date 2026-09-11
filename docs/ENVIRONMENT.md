@@ -59,17 +59,18 @@ Changing `NEXT_PUBLIC_*` requires rebuild/redeploy. Changing runtime secret requ
 - `OUTBOX_POLL_DELAY_MS`
 - `LOG_LEVEL`
 - `PGBOSS_SCHEMA`
-- `RESEARCH_WORKER_ID`
-- `RESEARCH_WORKER_CONCURRENCY`
-- `XMLRIVER_API_BASE_URL`
-- `XMLRIVER_API_KEY`
-- `XMLRIVER_RATE_CARD_VERSION`
-- `RESEARCH_DAILY_BUDGET_RUB`
-- `RESEARCH_MONTHLY_BUDGET_RUB`
+- `XMLRIVER_USER`
+- `XMLRIVER_KEY`
+- `RESEARCH_QUERY_ESTIMATE_KOPECKS`
+- `S3_BUCKET`
+- `S3_ENDPOINT`
+- `S3_REGION`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
 
 Provider token presence does not enable provider calls by itself. Calls require enabled ProviderConnection in PostgreSQL and valid server-side env after restart. Browser must never receive provider token variables.
 
-XMLRiver credentials are worker-only. Full provider URLs with query credentials must never be logged.
+XMLRiver credentials are worker-only. S3 credentials are web-only for authorized Research exports. Full provider URLs, credentials and signed download URLs must never be logged.
 
 ## Local/Test Variables
 

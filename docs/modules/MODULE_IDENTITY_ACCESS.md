@@ -1,40 +1,43 @@
 # Module: Identity Access
 
-## Purpose
+## Назначение
 
-Separates Better Auth identity/session lifecycle from AMS business authorization. Builds fresh server-only `PrincipalContext` and owns user/membership administration.
+Better Auth управляет identity, password, session и OAuth records. AMS управляет `systemRole`, продуктовыми memberships, явными project grants, permissions и audit.
 
-## Ownership
+## Web Principal
 
-- Better Auth: identity, password credential, sessions, verification records.
-- AMS: `systemRole`, Organization Membership, tenant role, permissions, resource authorization and safe audit markers.
+Сервер создаёт нейтральный principal без выбора «первой организации»:
 
-Public signup, password recovery, invitations, impersonation, Organization Plugin and second auth provider are out of scope.
+- `platform-admin` - единственный global bypass;
+- `identity-user` + `ANALYST | CLIENT` - требует продуктовых назначений;
+- `job` - ограниченный серверный процесс;
+- `api-client` - зарезервирован, не даёт пользовательский доступ.
 
-## Principals
+Legacy-типы `platform-analyst` и `tenant-user` остаются совместимыми внутренними контрактами старого SEO-кода, но новая web-сессия их не создаёт.
 
-- `platform-admin`: platform management, explicit target organization for cross-tenant operations.
-- `platform-analyst`: global project/report/sync read.
-- `tenant-user`: fresh Membership with `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
-- `job`: created by server worker flow.
-- `api-client`: reserved, not active.
+## Назначения
 
-Browser never creates `PrincipalContext`. Disabled User and removed Membership fail on the next fresh principal read.
+- SEO: `Member -> SeoProjectAccess`.
+- Инструменты: `ToolsMembership -> ToolsProjectAccess`.
+- АМС Лиды: таблицы запланированы, runtime отсутствует.
 
-## Commands And Queries
+Membership не открывает все проекты. Роль каждого проекта задаётся отдельно: `VIEWER`, `OPERATOR`, `ANALYST`.
 
-Commands: provision client user, reset password, enable/disable user, change tenant role, add/remove Membership.
+## OAuth И MCP
 
-Queries: browser-safe users, memberships and form options. Password hash, session token and unnecessary PII are not DTO.
+Better Auth `1.7.2` использует JWT, MCP OAuth Provider и CIMD. `/mcp` требует OAuth 2.1 authorization code + PKCE, scope `mcp:research`; access token живёт 300 секунд. Client credentials и универсальные admin tokens отключены.
 
-## Invariants
+Каждый MCP-вызов заново проверяет активного пользователя и текущие AMS grants. Отключение пользователя или отзыв назначения прекращают доступ со следующего запроса.
 
-- Password is exactly 8 printable ASCII characters and is passed only through protected UI/stdin.
-- Password reset revokes sessions.
-- Platform principals do not receive fake `organizationId`.
-- Tenant principal requires active Membership.
-- Every successful mutation writes safe AuditEvent in the same transaction.
+## Инварианты
 
-## Tests
+- Public signup и произвольные роли отключены.
+- Browser/URL/cookie/token claim не задаёт resource scope.
+- Password reset, disable и изменение доступа отзывают web sessions.
+- Успешная выдача/смена/отзыв доступа пишет безопасный `AuditEvent`.
+- OAuth token не может расширить AMS grants.
+- Password, session token, OAuth token и PII не попадают в DTO, logs или audit markers.
 
-Principal matrix, closed signup, duplicate login, password length, session revocation, disabled user, membership removal, tenant isolation and atomic provisioning.
+## Проверки
+
+Principal matrix, disabled user, session revocation, explicit project grants, cross-product denial, guessed UUID, OAuth scope и MCP authorization suite.

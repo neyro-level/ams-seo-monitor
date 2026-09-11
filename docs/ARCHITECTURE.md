@@ -62,7 +62,7 @@ Research не создаёт собственные organizations/projects.
 - Application зависит от domain и typed ports.
 - Infrastructure реализует repositories/providers/storage.
 - Presentation вызывает только module facade.
-- Cross-module consumers используют root entrypoints `index.ts`, `server.ts`, `worker.ts`, `mcp.ts`.
+- Cross-module consumers используют root entrypoints `index.ts`, `server.ts`, `worker.ts`; MCP adapter находится в `research/mcp/`.
 - Deep imports другого module запрещает architecture guard.
 
 ## Product Catalog
@@ -106,16 +106,15 @@ Product-specific membership/project-access tables preserve real foreign keys. Ge
 
 ## Data Schemas
 
-Target PostgreSQL schemas:
+Current PostgreSQL layout:
 
-- `platform` - Better Auth identity, catalog metadata, audit/idempotency;
-- `seo` - SEO organizations/projects/sites/evidence/reports;
-- `leads` - Leads organizations/projects/funnels/leads;
-- `tools` - shared Tools organizations/projects/grants;
-- `research`, `contracts`, `invoices`, `presentations`, `site_clone` - tool-owned records;
-- `ops`, `pgboss` - delivery, jobs and transport.
+- `public` - existing Better Auth identity, SEO data, audit, outbox and runtime records;
+- `platform` - RLS context helpers and reserved platform boundary;
+- `tools` - Tools organizations, projects and grants;
+- `research` - Research records and exports;
+- `seo`, `leads`, `contracts`, `invoices`, `presentations`, `site_clone`, `ops`, `pgboss` - reserved schemas for incremental extraction of the corresponding domains.
 
-Prisma multi-schema and immutable SQL migrations are canonical. Product schemas do not imply separate database servers.
+The Prisma schema owns the existing `public` models. Immutable SQL migrations and typed repository adapters own the cross-schema Tools/Research tables. A reserved schema is not evidence that its product is implemented, and product schemas do not imply separate database servers.
 
 ## RLS Defense
 
@@ -140,10 +139,10 @@ UI / MCP
 -> research.run.v1
 -> research worker (concurrency 1)
 -> XMLRiver / export storage
--> normalized evidence + notification
+-> normalized evidence + competitor projection
 ```
 
-Paid call runs only after estimate, exact request hash, approved amount, idempotency reservation and active permission. Ambiguous paid outcome becomes `ACTION_REQUIRED`.
+Paid call runs only after a persisted estimate, matching confirmed amount, idempotency reservation and active permission. Ambiguous provider outcome becomes `FAILED` with a safe code and is not retried automatically.
 
 ## MCP
 
@@ -153,12 +152,12 @@ Canonical endpoint: `/mcp`, Streamable HTTP. OAuth 2.1 + PKCE maps token subject
 
 Private shell uses server-built navigation and accessible organization/project options. Client state owns only presentation interactions such as drawer state. Direct URL access always reauthorizes server-side.
 
-Routes planned for Research:
+Implemented Research routes in the stacked branch:
 
-- `/tools/`;
 - `/tools/research/`;
-- `/tools/research/new/`;
-- `/tools/research/[id]/`.
+- `/tools/research/[researchId]/`.
+
+PWA uses `app/manifest.ts`, 192/512 PNG icons and a service worker with an explicit static-only allowlist. Private route/API/MCP responses use `no-store`.
 
 ## Runtime And Delivery
 

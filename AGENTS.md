@@ -101,7 +101,7 @@ Docs explain intent; code/schema/config decide actual behavior.
 - `src/modules/identity-access` — users, product memberships, project grants and access administration.
 - `src/modules/product-catalog` — product/tool registry and browser-safe labels.
 - `src/modules/project-registry` — SEO organizations, projects, sites and configuration until renamed behind its facade.
-- `src/modules/tools-registry` — Tools organizations/projects and their grants.
+- `src/modules/tools-workspace` — Tools organizations/projects and their grants.
 - `src/modules/research` — Research domain, execution, export and MCP facade.
 - `src/modules/reporting` — report reads and `SiteReportSnapshot` compiler.
 - `src/modules/ranking-analytics` — pure ranking semantics.
@@ -111,7 +111,7 @@ Docs explain intent; code/schema/config decide actual behavior.
 - `src/modules/platform-admin` — protected admin composition.
 - `src/platform` — neutral auth/authorization/database/actions/commands/config/http/MCP/observability.
 - `collector/sources` — server-only provider adapters.
-- `src/worker` — compiled worker entrypoint.
+- `src/modules/*/worker.ts` и `collector/main.ts` — worker entrypoints.
 - `prisma` — schema and immutable migrations.
 - `ops`, `scripts` — reviewed local/release/maintenance tooling.
 
@@ -122,7 +122,7 @@ Cross-module consumers use root entrypoints only. New module requires `docs/modu
 UX scope:
 
 - public `/`, legal pages and login/lead modals → `PUBLIC_COMMERCIAL`, `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
-- private `/dashboard`, `/analyst`, `/admin`, `/notifications`, `/c/*` → `APPLICATION_WORKSPACE`, `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
+- private `/dashboard`, `/analyst`, `/admin`, `/notifications`, `/c/*`, `/tools/*` → `APPLICATION_WORKSPACE`, `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
 - no CMS-native admin exists.
 
 Private UI uses PT Root UI, semantic tokens and project-owned shadcn/Base UI primitives. Public UI uses isolated `theme-public`, Manrope and `ch-*` tokens. Do not mix token systems.

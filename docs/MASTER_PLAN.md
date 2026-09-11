@@ -1,45 +1,50 @@
 # MASTER PLAN
 
-Только незавершённая работа. Завершённые этапы остаются в Git и SourceCraft.
+Документ содержит только незавершённую работу. Реализованные изменения сохраняются в Git и открытых SourceCraft PR.
 
-## Программа Модульной Платформы
+## Ближайший Gate
 
-Каждый эпик выполняется в отдельной stacked-ветке и отдельном Pull Request. PR остаются открытыми до завершения программы, затем проходят review и сливаются последовательно.
+1. Провести review stacked PR #107-#117 в порядке зависимостей.
+2. Для auth/data/RLS/MCP выполнить `RISKY` Merge Gate на точном SHA каждого изменившегося PR.
+3. До merge выполнить PostgreSQL integration и tenant-isolation suite на отдельной test DB.
+4. Последовательно слить PR в `main`, обновляя следующий base после каждого merge.
+5. Production не выпускать без отдельной команды владельца.
 
-1. `work/research-module-planning` - продуктовый, security и Research contract.
-2. `work/platform-modular-core` - реестры продуктов/инструментов, нейтральное ядро, `ANALYST`.
-3. `work/access-control-foundation` - единый Authorization Service и явные project grants.
-4. `work/product-data-foundation` - product schemas, composite constraints, RLS и managed PostgreSQL readiness.
-5. `work/tools-research-domain` - Tools organizations/projects и Research domain.
-6. `work/research-execution` - XMLRiver, budget confirmation, queue и worker.
-7. `work/research-mcp` - OAuth 2.1 + PKCE и bounded MCP tools.
-8. `work/tools-research-cabinet` - server-authorized кабинет «Исследования».
-9. `work/pwa-mobile-shell` - installable shell без кэширования private data.
-10. `work/final-documentation-sync` - финальная сверка канона с кодом.
+## До Production Research
 
-## Продуктовые Ограничения
+- настроить project Doppler variables для XMLRiver, Research pricing, OAuth origin и private S3;
+- создать/проверить роли `ams_web`, `ams_worker`, `ams_migrator`, `ams_backup`;
+- применить миграции на изолированной копии БД;
+- доказать RLS matrix для web и project-scoped research worker;
+- выполнить OAuth/MCP smoke из Codex на каждом из трёх локальных компьютеров;
+- проверить кабинет на `375`, `768`, `1280`, `1440` с реальной test DB;
+- проверить установку PWA на Windows, Android и iOS home screen;
+- подтвердить backup/restore и короткоживущую S3-ссылку CSV.
 
-- SEO Монитор, АМС Лиды и Инструменты имеют отдельные organization/project registries.
-- Модули внутри Инструментов используют общий `ToolsOrganization -> ToolsProject`.
-- Ни одна клиентская или analyst роль не получает продукт автоматически.
-- Каждый клиентский проект назначается явно; доступа ко всем будущим проектам нет.
-- Исследования доступны только через явный Tools grant.
-- Production database migration и release выполняются только по отдельной команде владельца.
+## Managed PostgreSQL
 
-## Следующие Модули
+Переезд на Timeweb Managed PostgreSQL 18 остаётся отдельным owner-approved релизом:
 
-После стабильного Research MVP отдельными программами реализуются:
+- тот же регион и частная сеть, что у AMS Main Server;
+- без публичного database IP;
+- TLS, раздельные DB identities и `NOBYPASSRLS` для runtime;
+- backup, restore smoke, row counts и isolation proof;
+- старая БД read-only 14 дней после подтверждённого cutover.
+
+## Следующие Продуктовые Эпики
 
 1. Договоры.
 2. Счета.
 3. Презентации.
 4. Клон сайтов.
 5. АМС Лиды.
-6. Внутренний AI-агент поверх детерминированного Research contract.
+6. Внутренний AI-агент поверх Research application contract.
 
-## Существующие Операционные Задачи
+Каждый пункт - отдельная ветка, PR, review и risk-based gate.
+
+## Операционные Задачи
 
 - завершить безопасное подключение существующих SEO provider mappings;
-- независимо подтвердить SourceCraft secret scanning;
+- подтвердить SourceCraft secret scanning;
 - завершить sanitation GitHub mirror до public visibility;
 - добавить внешний monitor без публикации readiness body.

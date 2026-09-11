@@ -91,7 +91,7 @@ RLS changes require PostgreSQL integration tests proving allowed and denied read
 - Token scopes may narrow but cannot expand current AMS grants.
 - Authorization is re-evaluated on every tool call.
 - No browser cookie, universal admin bearer token, generic SQL or direct database tool.
-- Paid tool requires separate estimate, exact confirmation hash, amount ceiling and idempotency key.
+- Paid tool requires a persisted estimate, matching confirmation amount and idempotency key.
 - Tool outputs are bounded and redact provider/internal errors.
 
 ## Worker And Providers
@@ -102,8 +102,10 @@ RLS changes require PostgreSQL integration tests proving allowed and denied read
 - XMLRiver full URL/query credential/raw response is never logged.
 - XML parser disables DTD/external entities and applies response-size limits.
 - External call runs outside DB transaction.
-- Paid request is reserved durably before dispatch.
-- Ambiguous paid result becomes `ACTION_REQUIRED`, never automatic retry.
+- Paid run is reserved durably before queue dispatch.
+- Ambiguous paid result becomes `FAILED` with a safe code, never automatic retry.
+
+Research worker sets transaction-local `ams.job_organization_id` and `ams.job_project_id`. RLS allows `ams_worker` only rows matching both values from the validated queue payload.
 
 ## Passwords And Sessions
 

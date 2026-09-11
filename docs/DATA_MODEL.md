@@ -25,17 +25,17 @@ Target system roles:
 
 ## Product Access
 
-Each product owns typed access tables:
+Each product uses its own typed access tables. Current implementation status:
 
 ```text
-SeoMembership   -> SeoProjectAccess
-LeadsMembership -> LeadsProjectAccess
-ToolsMembership -> ToolsProjectAccess
+SEO Monitor: Member          -> SeoProjectAccess       implemented in public
+AMS Leads:    LeadsMembership -> LeadsProjectAccess    reserved, not implemented
+Tools:        ToolsMembership -> ToolsProjectAccess    implemented in tools
 ```
 
 Common invariants:
 
-- one active membership per user/organization/product;
+- one membership per user/organization/product;
 - one explicit grant per membership/project;
 - project belongs to the same product organization as membership;
 - membership without project grant cannot read project data;
@@ -80,57 +80,53 @@ ToolsOrganization
 -> Research / Contract / Invoice / Presentation / SiteClone
 ```
 
-All internal tools reference `ToolsProject`. They do not create parallel organization/project tables.
+Implemented and future internal tools reference `ToolsProject`. They do not create parallel organization/project tables.
 
 ## Research Ownership
 
 ### Research
 
-- `id`, `toolsOrganizationId`, `toolsProjectId`;
-- name, type, status, author, version;
+- `id`, `organizationId`, `projectId`;
+- title, brief, status, author, version;
 - created/updated/archived timestamps.
 
 ### ResearchQuery
 
-- original and normalized text;
+- original text;
 - stable order;
-- unique normalized query within Research.
+- unique position within Research.
 
 ### ResearchRun
 
-- immutable input snapshot;
-- provider/adapter/rate-card versions;
-- estimated and approved maximum amount;
-- confirmation actor/time/hash/expiry;
-- lifecycle counters, actual calculated amount and correlation ID.
+- research scope and query count;
+- estimate, expiry, approved and actual cost in kopecks;
+- idempotency key, confirmation actor/time;
+- lifecycle timestamps and safe error code.
 
 ### ResearchQueryRun
 
 - one query execution within a run;
-- operation key, attempts, billable units, safe error code and timestamps;
-- ambiguous paid dispatch ends in `ACTION_REQUIRED`.
+- query relation, attempt count, cost, safe error code and timestamps.
 
 ### Evidence And Output
 
-- `SerpResult`, `SerpAd`, `KeywordMetric`, `ResearchSuggestion`;
-- `CompetitorProjection` - deterministic aggregate;
-- `ResearchInsight` - optional future AI interpretation;
-- `ResearchExport` - status, format, checksum and private storage reference.
+- `Evidence` - normalized type, URL, title, snippet and bounded JSON payload;
+- `CompetitorProjection` - deterministic aggregate by domain;
+- `Export` - status, format, idempotency key, expiry and private object key;
+- `ResearchInsight` - future, not implemented.
 
 Raw provider XML/HTML and credentials are not stored by default.
 
 ## Research Lifecycle
 
 ```text
-DRAFT -> QUEUED -> RUNNING -> SUCCESS | PARTIAL | FAILED | ACTION_REQUIRED
-DRAFT | QUEUED -> CANCELLED before paid dispatch
+AWAITING_CONFIRMATION -> QUEUED -> RUNNING -> SUCCEEDED | FAILED
 ```
 
-- `PARTIAL != SUCCESS`, `null != 0`.
-- Completed run input is immutable.
-- Retry creates/updates attempt state but never duplicates operation key.
-- Same idempotency key with different request hash is conflict.
-- Successful query evidence survives neighboring query failure.
+- `null != 0`.
+- Run estimate is immutable after confirmation.
+- Retry increments query attempt state and never follows an ambiguous timeout.
+- Same organization/idempotency key cannot create a second run or export.
 - Re-run creates a new ResearchRun.
 
 ## Budget
@@ -139,7 +135,7 @@ DRAFT | QUEUED -> CANCELLED before paid dispatch
 - daily approved ceiling 500 RUB;
 - monthly approved ceiling 3000 RUB;
 - paid execution requires current permission and unexpired exact confirmation;
-- rate card snapshot is stored with run;
+- per-query configured estimate and actual collected cost are stored;
 - actual provider invoice is not claimed unless provider exposes verifiable billing evidence.
 
 ## Tenant And Database Invariants

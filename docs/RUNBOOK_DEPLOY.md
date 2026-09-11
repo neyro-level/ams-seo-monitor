@@ -87,7 +87,10 @@ Required:
 - loopback `/api/health/ready` returns 200 with same SHA, PostgreSQL ready, auth configured, outbox counts, worker heartbeat and integration freshness;
 - external `/api/health/ready` returns 403;
 - unauthenticated `/analyst/` redirects to `/?login=1`;
+- `/manifest.webmanifest` returns the AMS PWA manifest and `/sw.js` has `no-store` headers;
+- service worker cache contains only reviewed static asset paths, never private HTML/API/MCP;
 - analyst sign-in and report read work;
+- assigned Tools user sees only allowed Research projects; foreign URL/action/MCP identifiers return not-found/deny;
 - client cannot read foreign project/site/report;
 - web and worker use same image digest;
 - scheduled sync succeeds or records honest partial/failure state;

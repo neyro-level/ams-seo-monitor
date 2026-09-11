@@ -1,6 +1,6 @@
 # INTERNAL DASHBOARD DESIGN SYSTEM
 
-Canonical UI contract for private AMS IMPULSE routes: `/dashboard/*`, `/analyst/*`, `/admin/*`, `/notifications/*` and `/c/*`.
+Canonical UI contract for private AMS IMPULSE routes: `/dashboard/*`, `/analyst/*`, `/admin/*`, `/notifications/*`, `/c/*` and `/tools/*`.
 
 Architecture/security boundaries are defined by `ARCHITECTURE.md` and `SECURITY.md`. This file owns visual and interaction rules only.
 
@@ -71,6 +71,7 @@ Mobile:
 - drawer traps focus and closes predictably;
 - touch targets at least `40px`;
 - no page-level horizontal overflow.
+- install command is available in the drawer when the browser supports PWA installation;
 
 Project navigation opens project page by title; a separate affordance expands sites. Active project/site uses restrained marker, not glow/shadow.
 
