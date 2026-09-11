@@ -1,7 +1,7 @@
 # Module: Research
 
-- Статус кода: `IMPLEMENTED_IN_STACKED_PRS`
-- Production: `NOT_RELEASED`
+- Статус кода: `RELEASED`
+- Production: `ACTIVE`
 - Продукт: **Инструменты**
 - Маршрут: `/tools/research/`
 - Очередь: `research.run.v1`
@@ -78,11 +78,13 @@ MCP не предоставляет SQL, provider credentials или admin beare
 
 Нормализованные данные находятся в PostgreSQL. CSV хранится в private S3 с SSE AES-256 и `no-store`; signed URL живёт 60 секунд. `XMLRIVER_USER`, `XMLRIVER_KEY`, AWS credentials и signed URL не логируются.
 
-## Acceptance До Production
+## Проверенное Состояние
 
-- PostgreSQL migrations и RLS integration suite проходят на test DB;
-- один проект не читает соседний проект;
-- missing user/job context получает deny;
-- OAuth/MCP smoke проходит из Codex;
-- worker restart не повторяет ambiguous paid call;
-- CSV доступен только после свежей авторизации.
+- PostgreSQL migrations, RLS integration и tenant-isolation suite проходят release gate;
+- один проект не читает соседний проект, а missing user/job context получает deny;
+- OAuth 2.1 + PKCE вход из Codex проверен на основном Windows-компьютере;
+- MCP публикует только шесть ограниченных Research tools;
+- web и worker проходят production health check на exact release SHA;
+- платный XMLRiver-вызов без подтверждения стоимости не выполнялся.
+
+Проверка OAuth ещё на двух локальных компьютерах, PWA на реальных устройствах и полный CSV/S3 сценарий остаются в `MASTER_PLAN.md`.

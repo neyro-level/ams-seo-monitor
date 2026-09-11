@@ -46,7 +46,7 @@ Tools Organization
 
 Модули:
 
-1. **Исследования** - реализован в текущей stacked PR-цепочке, ещё не выпущен в production.
+1. **Исследования** - реализован и выпущен в production; платный запуск требует отдельного подтверждения рассчитанной стоимости.
 2. **Договоры**.
 3. **Счета**.
 4. **Презентации**.
@@ -123,7 +123,7 @@ MCP, кабинет и будущий внутренний AI использую
 
 Native App Store/Google Play applications вне первого цикла.
 
-PWA-код реализован в stacked PR: manifest, install command и статический allowlist service worker. Device smoke остаётся обязательным до production.
+PWA-код выпущен в production: manifest, install command и статический allowlist service worker. Проверка установки на реальных Windows, Android и iOS устройствах остаётся операционной задачей.
 
 ## Non-goals Первого Цикла
 
@@ -133,4 +133,4 @@ PWA-код реализован в stacked PR: manifest, install command и ст
 - client self-service access administration;
 - generic SQL/MCP tools;
 - обязательный AI для Research report;
-- production migration или release без отдельной owner command.
+- автоматический production release без отдельной owner command.

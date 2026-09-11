@@ -6,10 +6,10 @@ Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii`, `D
 
 ## Status Convention
 
-- `CURRENT` - работает в canonical `main`.
-- `TARGET` - утверждено и реализуется stacked Pull Requests.
+- `CURRENT` - работает в canonical `main` и production.
+- `PLANNED` - утверждено, но ещё не реализовано или не выпущено.
 
-Текущий SEO runtime сохраняется до прохождения migration gates. Target architecture не считается production truth до merge/release.
+SEO Монитор, модульное ядро, Инструменты и Исследования относятся к `CURRENT`. АМС Лиды и остальные внутренние инструменты относятся к `PLANNED`.
 
 ## System Context
 
@@ -152,7 +152,7 @@ Canonical endpoint: `/mcp`, Streamable HTTP. OAuth 2.1 + PKCE maps token subject
 
 Private shell uses server-built navigation and accessible organization/project options. Client state owns only presentation interactions such as drawer state. Direct URL access always reauthorizes server-side.
 
-Implemented Research routes in the stacked branch:
+Research routes в production:
 
 - `/tools/research/`;
 - `/tools/research/[researchId]/`.
@@ -163,7 +163,7 @@ PWA uses `app/manifest.ts`, 192/512 PNG icons and a service worker with an expli
 
 Current production: host Nginx -> web/outbox worker containers -> Timeweb Managed PostgreSQL 18 over private network/TLS. The database has no public IP. Existing AMS server public IP remains because it serves HTTPS domains and SSH.
 
-Web, worker, migrator and backup use separate provider-managed identities. The previous self-managed database is read-only through `2026-09-25`; deletion requires a separate owner decision. The Research worker joins this topology only after its stacked PRs pass review, merge and release gates.
+Web, worker, migrator and backup use separate provider-managed identities. The previous self-managed database is read-only through `2026-09-25`; deletion requires a separate owner decision. Research worker входит в текущую production topology и выполняет только project-scoped jobs.
 
 ## Verification
 
