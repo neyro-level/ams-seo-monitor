@@ -14,7 +14,7 @@ export interface ResearchRepository {
   create(input: CreateResearchInput & { createdByUserId: string; correlationId: string }): Promise<ResearchRecord>;
   update(input: UpdateResearchInput & { actorId: string; correlationId: string }): Promise<ResearchRecord | null>;
   archive(ref: ResearchRef & { version: number; actorId: string; correlationId: string }): Promise<boolean>;
-  getCommittedSpend(organizationId: string, now: Date): Promise<{ dailyKopecks: number; monthlyKopecks: number }>;
+  getCommittedSpend(organizationId: string, projectId: string, now: Date): Promise<{ dailyKopecks: number; monthlyKopecks: number }>;
   createRunEstimate(input: {
     ref: ResearchRef;
     idempotencyKey: string;
@@ -28,5 +28,7 @@ export interface ResearchRepository {
     actorId: string;
     correlationId: string;
     now: Date;
+    dailyLimitKopecks: number;
+    monthlyLimitKopecks: number;
   }): Promise<{ runId: string; outboxEventId: string } | null>;
 }

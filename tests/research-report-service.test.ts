@@ -35,4 +35,20 @@ describe("ResearchReportService", () => {
     const client = createTenantUserPrincipal({ userId: "client", organizationId: "foreign" });
     await expect(service.getRun(client, { organizationId: "org-1", projectId: "project-1", researchId: "research-1", runId: "run-1" })).rejects.toMatchObject({ code: "RESEARCH_NOT_FOUND_OR_FORBIDDEN" });
   });
+
+  it("neutralizes spreadsheet formulas in exported cells", async () => {
+    const repository = new MemoryReports();
+    const dangerousReport: ResearchRunReport = {
+      ...report,
+      queries: [{ ...report.queries[0]!, query: "=WEBSERVICE(\"https://example.test\")" }],
+    };
+    repository.getRunReport = async () => dangerousReport;
+    const isolatedStorage: PrivateExportStorage & { body?: string } = {
+      async putCsv(_key, body) { this.body = body; },
+      async createDownloadUrl() { return "https://storage.test/signed"; },
+    };
+    const service = new ResearchReportService(repository, authorization, isolatedStorage);
+    await service.createExport(createPlatformAnalystPrincipal("analyst"), { organizationId: "org-1", projectId: "project-1", researchId: "research-1", runId: "run-1", idempotencyKey: "export-002" });
+    expect(isolatedStorage.body).toContain("'=WEBSERVICE");
+  });
 });

@@ -8,6 +8,7 @@ class MemoryResearchRepository implements ResearchRepository {
   dailyKopecks = 0;
   monthlyKopecks = 0;
   runIds = new Map<string, string>();
+  lastConfirmation: Parameters<ResearchRepository["confirmRun"]>[0] | null = null;
 
   async listByProject(organizationId: string, projectId: string) { return this.records.filter((record) => record.organizationId === organizationId && record.projectId === projectId && record.status !== "ARCHIVED"); }
   async findById(ref: { organizationId: string; projectId: string; researchId: string }) { return this.records.find((record) => record.id === ref.researchId && record.organizationId === ref.organizationId && record.projectId === ref.projectId) ?? null; }
@@ -23,7 +24,7 @@ class MemoryResearchRepository implements ResearchRepository {
   async archive(input: Parameters<ResearchRepository["archive"]>[0]) { const record = await this.findById(input); if (!record || record.version !== input.version) return false; record.status = "ARCHIVED"; record.version += 1; return true; }
   async getCommittedSpend() { return { dailyKopecks: this.dailyKopecks, monthlyKopecks: this.monthlyKopecks }; }
   async createRunEstimate(input: Parameters<ResearchRepository["createRunEstimate"]>[0]) { const runId = this.runIds.get(input.idempotencyKey) ?? `run-${this.runIds.size + 1}`; this.runIds.set(input.idempotencyKey, runId); return { runId }; }
-  async confirmRun(input: Parameters<ResearchRepository["confirmRun"]>[0]) { return input.expectedEstimatedCostKopecks >= 0 ? { runId: input.runId, outboxEventId: "outbox-1" } : null; }
+  async confirmRun(input: Parameters<ResearchRepository["confirmRun"]>[0]) { this.lastConfirmation = input; return input.expectedEstimatedCostKopecks >= 0 ? { runId: input.runId, outboxEventId: "outbox-1" } : null; }
 }
 
 const authorization = new AuthorizationService({
@@ -77,6 +78,7 @@ describe("ResearchService", () => {
     const analyst = createPlatformAnalystPrincipal("analyst");
     const research = await service.create(analyst, { organizationId: "atlas", projectId: "secondary", title: "Запуск", queries: ["один"] });
     await expect(service.confirmAndQueue(analyst, { organizationId: "atlas", projectId: "secondary", researchId: research.id, runId: "run-1", expectedEstimatedCostKopecks: 100 })).resolves.toEqual({ runId: "run-1", outboxEventId: "outbox-1" });
+    expect(repository.lastConfirmation).toMatchObject({ dailyLimitKopecks: 50_000, monthlyLimitKopecks: 300_000 });
     const client = createTenantUserPrincipal({ userId: "client", organizationId: "atlas" });
     await expect(service.confirmAndQueue(client, { organizationId: "atlas", projectId: "secondary", researchId: research.id, runId: "run-1", expectedEstimatedCostKopecks: 100 })).rejects.toMatchObject({ code: "RESEARCH_NOT_FOUND_OR_FORBIDDEN" });
   });

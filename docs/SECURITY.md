@@ -71,7 +71,8 @@ Application authorization, scoped repositories and composite ownership constrain
 - no context means default deny;
 - `USING` restricts reads/deletes and `WITH CHECK` restricts inserts/updates;
 - web and worker roles cannot run DDL;
-- migrator and backup identities are not used by application runtime.
+- migrator and backup identities are not used by application runtime;
+- provider physical backups remain complete independently of RLS; logical backup aborts before upload when `FORCE RLS` exists and the provider-managed backup role cannot bypass it.
 
 RLS changes require PostgreSQL integration tests proving allowed and denied reads/writes. Backup proof verifies complete dump and restore independently from runtime policies.
 

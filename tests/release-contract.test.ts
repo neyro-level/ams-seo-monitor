@@ -14,6 +14,7 @@ describe("production backup identity", () => {
       'run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres -- /usr/bin/env REQUIRE_OFFSITE=true',
     );
     expect(backupUnit).toContain("User=postgres\nGroup=postgres");
+    expect(deployScript).toContain('install -d -o postgres -g postgres -m 0700 "$BACKUP_ROOT_PATH"');
   });
 });
 
@@ -36,6 +37,24 @@ describe("production configuration boundary", () => {
     expect(migrationScript).toContain("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES");
     expect(migrationScript).not.toContain("GRANT CREATE ON SCHEMA");
     expect(migrationScript).not.toContain("GRANT ALL PRIVILEGES");
+  });
+
+  it("requires recent provider proof and disables logical backup timer for FORCE RLS", () => {
+    const deployScript = readFileSync("scripts/deploy-production.mjs", "utf8");
+
+    expect(deployScript).toContain('BACKUP_STRATEGY=logical');
+    expect(deployScript).toContain('provider_backup_proof_missing=true');
+    expect(deployScript).toContain('PROOF_AGE_SECONDS');
+    expect(deployScript).toContain('systemctl disable --now seo-monitor-db-backup.timer');
+  });
+
+  it("reapplies managed runtime grants after every schema migration", () => {
+    const deployScript = readFileSync("scripts/deploy-production.mjs", "utf8");
+
+    expect(deployScript).toContain(
+      'run_psql_with_database_env "$MIGRATOR_ENV_FILE" "$RELEASE/ops/postgres/roles.sql"',
+    );
+    expect(deployScript).not.toContain('--dbname="$DATABASE_URL"');
   });
 
   it("requires a healthy worker before completing production rollout", () => {

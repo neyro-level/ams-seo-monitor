@@ -22,9 +22,17 @@ describe("PostgreSQL RLS foundation", () => {
   });
 
   it("keeps runtime identities non-owner and unable to bypass RLS", () => {
-    expect(roles).toContain("ams_web NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS");
-    expect(roles).toContain("ams_worker NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS");
-    expect(roles).toContain("ams_migrator NOLOGIN");
-    expect(roles).toContain("ams_backup NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS");
+    expect(roles).toContain("required database role % does not exist");
+    expect(roles).toContain("runtime database role attributes are unsafe");
+    expect(roles).toContain("rolbypassrls");
+    expect(roles).toContain("managed runtime roles must not inherit membership from another role");
+    expect(roles).toContain("managed runtime roles must not own schemas or relations");
+    expect(roles).not.toContain("CREATE ROLE");
+  });
+
+  it("keeps pg-boss write access worker-only", () => {
+    expect(roles).toContain("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA %I FROM ams_web");
+    expect(roles).toContain("GRANT USAGE ON SCHEMA %I TO ams_worker, ams_backup");
+    expect(roles).toContain("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA %I TO ams_worker");
   });
 });

@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const scriptPath = "ops/postgres/backup.sh";
@@ -28,6 +29,18 @@ function runBackupPolicy(environment: NodeJS.ProcessEnv) {
 }
 
 const backupPolicyDescription = process.platform === "win32" ? describe.skip : describe;
+
+describe("RLS backup policy", () => {
+  it("fails closed before dump/upload when FORCE RLS exists without BYPASSRLS", () => {
+    const script = readFileSync(scriptPath, "utf8");
+
+    expect(script).toContain("relforcerowsecurity");
+    expect(script).toContain('if [ "${HAS_FORCED_RLS}" = "t" ] && [ "${BACKUP_BYPASS_RLS}" != "t" ]');
+    expect(script.indexOf("backup_rls_preflight_failed=true")).toBeLessThan(
+      script.indexOf("pg_dump --format=custom"),
+    );
+  });
+});
 
 backupPolicyDescription("production backup policy", () => {
   it.each([undefined, "false", "TRUE", "1"])(

@@ -92,7 +92,7 @@ export class ResearchService {
     if (!Number.isSafeInteger(estimatedCostKopecks) || estimatedCostKopecks < 0) {
       throw new ResearchError("RESEARCH_PRICING_UNAVAILABLE");
     }
-    const committed = await this.repository.getCommittedSpend(input.organizationId, this.now());
+    const committed = await this.repository.getCommittedSpend(input.organizationId, input.projectId, this.now());
     if (committed.dailyKopecks + estimatedCostKopecks > DAILY_LIMIT_KOPECKS) throw new ResearchError("RESEARCH_DAILY_LIMIT_EXCEEDED");
     if (committed.monthlyKopecks + estimatedCostKopecks > MONTHLY_LIMIT_KOPECKS) throw new ResearchError("RESEARCH_MONTHLY_LIMIT_EXCEEDED");
     const run = await this.repository.createRunEstimate({ ref: input, idempotencyKey: input.idempotencyKey, queryCount: research.queries.length, estimatedCostKopecks });
@@ -120,6 +120,8 @@ export class ResearchService {
       actorId,
       correlationId: principal.correlationId,
       now: this.now(),
+      dailyLimitKopecks: DAILY_LIMIT_KOPECKS,
+      monthlyLimitKopecks: MONTHLY_LIMIT_KOPECKS,
     });
     if (!result) throw new ResearchError("RESEARCH_NOT_FOUND_OR_FORBIDDEN");
     return result;

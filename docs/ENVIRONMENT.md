@@ -13,7 +13,9 @@ This document is the canonical registry of AMS IMPULSE environment variable owne
 
 One credential must not be reused between web, worker, migrator, tests and backup.
 
-Target production secrets are stored in the dedicated AMS IMPULSE Doppler scope before release. Timeweb account tokens are operator credentials and never become application runtime variables.
+`BACKUP_STRATEGY` is `logical` only while the backup identity can produce a complete dump. Production switches it to `provider-physical` when `FORCE RLS` is active; release then requires a root-owned provider backup proof newer than two hours and keeps the incompatible logical timer disabled.
+
+Production DB credentials currently live in root-owned server env files separated by web, worker, migrator and backup. Synchronizing their rotated replacements into the dedicated AMS IMPULSE Doppler scope remains an owner action because the current Codex service identity is read-only. Timeweb account tokens are operator credentials and never become application runtime variables.
 
 ## Database Variables
 
@@ -28,7 +30,7 @@ Application accepts either `DATABASE_URL` or a complete component set:
 
 `APP_ENV` must identify `development`, `test` or `production`. Partial DB config fails closed. Diagnostics may print env, host, port, database and identity, but never full URL or password.
 
-Production managed PostgreSQL requires private host resolution and TLS. Public database endpoints are forbidden.
+Production managed PostgreSQL uses its private BGP address and TLS. Node.js URLs use libpq-compatible `sslmode=require` because the provider endpoint presents a self-signed certificate; encryption is required but CA/hostname verification is not available in the current provider configuration. Public database endpoints are forbidden.
 
 Prisma migration commands require explicit `DATABASE_URL`; `prisma generate` is DB-independent.
 

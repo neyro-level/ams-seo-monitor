@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_NAME="${DB_NAME:-seo_monitor_prod}"
+DB_NAME="${DB_NAME:-${PGDATABASE:-seo_monitor_prod}}"
 BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/ams-seo-monitor-postgres}"
 KEEP_DAILY="${KEEP_DAILY:-7}"
 KEEP_WEEKLY="${KEEP_WEEKLY:-8}"
@@ -32,6 +32,24 @@ if [ -z "${S3_BUCKET}" ] || [ -z "${S3_ENDPOINT}" ] || [ -z "${AWS_ACCESS_KEY_ID
 fi
 if ! command -v aws >/dev/null 2>&1; then
   echo "offsite_backup_client_missing=true" >&2
+  exit 1
+fi
+
+RLS_PREFLIGHT="$(psql --no-psqlrc --tuples-only --no-align --set=ON_ERROR_STOP=1 --command "
+  SELECT
+    current_user,
+    COALESCE((SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user), false),
+    EXISTS (
+      SELECT 1
+      FROM pg_class
+      WHERE relkind IN ('r', 'p')
+        AND relforcerowsecurity
+    );
+")"
+IFS='|' read -r BACKUP_ROLE BACKUP_BYPASS_RLS HAS_FORCED_RLS <<< "${RLS_PREFLIGHT}"
+if [ "${HAS_FORCED_RLS}" = "t" ] && [ "${BACKUP_BYPASS_RLS}" != "t" ]; then
+  echo "backup_rls_preflight_failed=true" >&2
+  echo "backup_role=${BACKUP_ROLE}" >&2
   exit 1
 fi
 

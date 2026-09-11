@@ -11,6 +11,7 @@ import type {
   UpdateResearchInput,
 } from "../domain/research.ts";
 import type { ResearchRepository } from "../application/ports/research-repository.ts";
+import { ResearchError } from "../domain/research.ts";
 
 type Store = PrismaClient | DatabaseTransaction;
 type ResearchRow = Omit<ResearchRecord, "queries" | "updatedAt"> & { updatedAt: Date };
@@ -181,15 +182,10 @@ export class PrismaResearchRepository implements ResearchRepository {
     });
   }
 
-  async getCommittedSpend(organizationId: string, now: Date) {
+  async getCommittedSpend(organizationId: string, projectId: string, now: Date) {
     return this.withContext(async (transaction) => {
     const rows = await transaction.$queryRaw<Array<{ dailyKopecks: bigint; monthlyKopecks: bigint }>>(Prisma.sql`
-      SELECT
-        COALESCE(SUM(CASE WHEN "confirmedAt" >= date_trunc('day', ${now}::timestamptz) THEN "approvedCostKopecks" ELSE 0 END), 0)::bigint AS "dailyKopecks",
-        COALESCE(SUM(CASE WHEN "confirmedAt" >= date_trunc('month', ${now}::timestamptz) THEN "approvedCostKopecks" ELSE 0 END), 0)::bigint AS "monthlyKopecks"
-      FROM "research"."Run"
-      WHERE "organizationId" = ${organizationId} AND "approvedCostKopecks" IS NOT NULL
-        AND "status" IN ('QUEUED', 'RUNNING', 'SUCCEEDED')
+      SELECT * FROM "platform"."research_committed_spend"(${organizationId}, ${projectId}, ${now}::timestamptz)
     `);
     return { dailyKopecks: Number(rows[0]?.dailyKopecks ?? 0), monthlyKopecks: Number(rows[0]?.monthlyKopecks ?? 0) };
     });
@@ -218,8 +214,11 @@ export class PrismaResearchRepository implements ResearchRepository {
     });
   }
 
-  async confirmRun(input: { ref: ResearchRef; runId: string; expectedEstimatedCostKopecks: number; actorId: string; correlationId: string; now: Date }) {
+  async confirmRun(input: { ref: ResearchRef; runId: string; expectedEstimatedCostKopecks: number; actorId: string; correlationId: string; now: Date; dailyLimitKopecks: number; monthlyLimitKopecks: number }) {
     return this.withContext(async (transaction) => {
+      await transaction.$executeRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`research.budget:${input.ref.organizationId}`}, 0))`,
+      );
       const runs = await transaction.$queryRaw<Array<{ id: string; estimatedCostKopecks: number }>>(Prisma.sql`
         SELECT "id", "estimatedCostKopecks" FROM "research"."Run"
         WHERE "id"=${input.runId} AND "organizationId"=${input.ref.organizationId}
@@ -229,6 +228,21 @@ export class PrismaResearchRepository implements ResearchRepository {
       `);
       const run = runs[0];
       if (!run || run.estimatedCostKopecks !== input.expectedEstimatedCostKopecks) return null;
+      const spend = await transaction.$queryRaw<Array<{ dailyKopecks: bigint; monthlyKopecks: bigint }>>(Prisma.sql`
+        SELECT * FROM "platform"."research_committed_spend"(
+          ${input.ref.organizationId},
+          ${input.ref.projectId},
+          ${input.now}::timestamptz
+        )
+      `);
+      const dailyKopecks = Number(spend[0]?.dailyKopecks ?? 0);
+      const monthlyKopecks = Number(spend[0]?.monthlyKopecks ?? 0);
+      if (dailyKopecks + run.estimatedCostKopecks > input.dailyLimitKopecks) {
+        throw new ResearchError("RESEARCH_DAILY_LIMIT_EXCEEDED");
+      }
+      if (monthlyKopecks + run.estimatedCostKopecks > input.monthlyLimitKopecks) {
+        throw new ResearchError("RESEARCH_MONTHLY_LIMIT_EXCEEDED");
+      }
       await transaction.$executeRaw(Prisma.sql`
         UPDATE "research"."Run" SET "status"='QUEUED', "approvedCostKopecks"=${run.estimatedCostKopecks},
           "confirmedByUserId"=${input.actorId}, "confirmedAt"=${input.now}, "updatedAt"=CURRENT_TIMESTAMP

@@ -244,8 +244,14 @@ $rls$;
 ALTER TABLE "tools"."ToolsProject" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "tools"."ToolsProject" FORCE ROW LEVEL SECURITY;
 CREATE POLICY "project_scope" ON "tools"."ToolsProject"
-  USING (NOT "platform"."is_restricted_runtime"() OR "platform"."can_access_tools_project"("organizationId", id))
-  WITH CHECK (NOT "platform"."is_restricted_runtime"() OR "platform"."can_access_tools_project"("organizationId", id));
+  USING (
+    NOT "platform"."is_restricted_runtime"()
+    OR "platform"."can_access_tools_project"("organizationId", id)
+  )
+  WITH CHECK (
+    NOT "platform"."is_restricted_runtime"()
+    OR "platform"."can_access_tools_project"("organizationId", id)
+  );
 
 ALTER TABLE "tools"."ToolsMembership" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "tools"."ToolsMembership" FORCE ROW LEVEL SECURITY;

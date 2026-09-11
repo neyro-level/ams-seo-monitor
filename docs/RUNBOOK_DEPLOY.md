@@ -10,10 +10,9 @@ Project topology:
 
 - web binds `127.0.0.1:3000`;
 - host Nginx terminates external traffic;
-- current application uses self-managed PostgreSQL 18 until the managed database migration release;
-- target application uses Timeweb Managed PostgreSQL 18 through private TLS networking;
+- current application uses Timeweb Managed PostgreSQL 18 through private TLS networking without a public database endpoint;
 - protected env files are separated for web, worker, migrator and backup;
-- database migration is a separate owner-approved RISKY release and is never an ordinary code deploy side effect.
+- database provider provisioning or another database cutover is a separate owner-approved RISKY operation and is never an ordinary code deploy side effect.
 
 ## Preconditions
 
@@ -94,10 +93,10 @@ Required:
 - client cannot read foreign project/site/report;
 - web and worker use same image digest;
 - scheduled sync succeeds or records honest partial/failure state;
-- retention and backup timers are active;
-- latest backup has confirmed offsite object.
+- retention timers are active;
+- either the logical backup timer and offsite object are confirmed, or `provider-physical` mode has a fresh Timeweb backup proof and the incompatible logical timer is disabled.
 
-For the managed database cutover additionally require private network/TLS proof, complete row counts, RLS access matrix, application connection identity checks and old database read-only state.
+For another database cutover additionally require private network/TLS proof, complete row counts, RLS access matrix, application connection identity checks and old database read-only state.
 
 Do not paste user/report data into public logs.
 

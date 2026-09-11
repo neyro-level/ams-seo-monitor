@@ -23,7 +23,7 @@ PLATFORM_ADMIN = enabled
 DATABASE = managed-postgresql-target
 ```
 
-Текущий production использует self-managed PostgreSQL 18 до отдельной owner-approved миграции. Целевой contract — Timeweb Managed PostgreSQL 18 в частной сети без публичного database IP.
+Текущий production использует Timeweb Managed PostgreSQL 18 в частной сети без публичного database IP. Web, worker, migrator и backup используют отдельные provider-managed identities. Прежняя self-managed БД остаётся read-only только до завершения окна отката `2026-09-25`.
 
 ## Active Sources Of Truth
 

@@ -161,11 +161,9 @@ PWA uses `app/manifest.ts`, 192/512 PNG icons and a service worker with an expli
 
 ## Runtime And Delivery
 
-Current production: host Nginx -> web/outbox worker containers -> self-managed PostgreSQL 18.
+Current production: host Nginx -> web/outbox worker containers -> Timeweb Managed PostgreSQL 18 over private network/TLS. The database has no public IP. Existing AMS server public IP remains because it serves HTTPS domains and SSH.
 
-Target production: host Nginx -> web/outbox/research worker containers -> Timeweb Managed PostgreSQL 18 over private network/TLS. Database has no public IP. Existing AMS server public IP remains because it serves HTTPS domains and SSH.
-
-Migration requires backup, restore smoke, maintenance window up to one hour, data verification and 14-day read-only fallback database. Production change needs a separate owner command.
+Web, worker, migrator and backup use separate provider-managed identities. The previous self-managed database is read-only through `2026-09-25`; deletion requires a separate owner decision. The Research worker joins this topology only after its stacked PRs pass review, merge and release gates.
 
 ## Verification
 

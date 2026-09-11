@@ -9,7 +9,8 @@ function actorId(principal: PrincipalContext) {
 }
 
 function csvCell(value: string | number | null) {
-  const text = value === null ? "" : String(value);
+  const raw = value === null ? "" : String(value);
+  const text = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
   return `"${text.replaceAll('"', '""')}"`;
 }
 

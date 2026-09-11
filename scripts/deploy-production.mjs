@@ -65,6 +65,8 @@ WEB_ENV_FILE=/etc/ams-platform/ams-seo-monitor-web.env
 WORKER_ENV_FILE=/etc/ams-platform/ams-seo-monitor-worker.env
 MIGRATOR_ENV_FILE=/etc/ams-platform/ams-seo-monitor-migrator.env
 BACKUP_ENV_FILE=/etc/ams-platform/ams-seo-monitor-backup.env
+PROVIDER_BACKUP_PROOF_FILE=/etc/ams-platform/ams-managed-postgres-backup.proof
+BACKUP_STRATEGY=logical
 export COMPOSE_PROJECT_NAME=ams-seo-monitor
 COMPOSE_FILE="$RELEASE/docker-compose.production.yml"
 MANIFEST_FILE="$RELEASE/release-manifest.json"
@@ -97,6 +99,15 @@ EOF
   mv -f "$ROOT/shared/release.env.next" "$ROOT/shared/release.env"
 }
 
+enable_runtime_timers() {
+  systemctl enable --now seo-monitor-worker.timer seo-monitor-topvisor-checks.timer seo-monitor-competitors.timer seo-monitor-outbox.timer
+  if [ "$BACKUP_STRATEGY" = "logical" ]; then
+    systemctl enable --now seo-monitor-db-backup.timer
+  else
+    systemctl disable --now seo-monitor-db-backup.timer >/dev/null 2>&1 || true
+  fi
+}
+
 rollback_previous() {
   systemctl stop seo-monitor-worker.service seo-monitor-outbox.service seo-monitor-web.service >/dev/null 2>&1 || true
   systemctl disable --now seo-monitor-worker.timer seo-monitor-topvisor-checks.timer seo-monitor-competitors.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
@@ -124,7 +135,7 @@ rollback_previous() {
     nginx -t
     systemctl reload nginx
     systemctl restart seo-monitor-web.service || true
-    systemctl enable --now seo-monitor-worker.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer >/dev/null 2>&1 || true
+    enable_runtime_timers >/dev/null 2>&1 || true
   fi
 }
 
@@ -161,6 +172,54 @@ subprocess.run(command, env=env, check=True)
 PY
 }
 
+run_psql_with_database_env() {
+  local env_file="$1"
+  local sql_file="$2"
+  run_with_env_file "$env_file" python3 - "$sql_file" <<'PY'
+import os
+import subprocess
+import sys
+from urllib.parse import unquote, urlsplit
+
+sql_file = sys.argv[1]
+env = os.environ.copy()
+database_url = env.pop("DATABASE_URL", "")
+if database_url:
+    parsed = urlsplit(database_url)
+    env.update({
+        "PGHOST": parsed.hostname or "",
+        "PGPORT": str(parsed.port or 5432),
+        "PGUSER": unquote(parsed.username or ""),
+        "PGPASSWORD": unquote(parsed.password or ""),
+        "PGDATABASE": parsed.path.removeprefix("/"),
+    })
+    sslmode = dict(part.split("=", 1) for part in parsed.query.split("&") if "=" in part).get("sslmode")
+    if sslmode:
+        env["PGSSLMODE"] = sslmode
+else:
+    mapping = {
+        "DATABASE_HOST": "PGHOST",
+        "DATABASE_PORT": "PGPORT",
+        "DATABASE_USER": "PGUSER",
+        "DATABASE_PASSWORD": "PGPASSWORD",
+        "DATABASE_NAME": "PGDATABASE",
+        "DATABASE_SSLMODE": "PGSSLMODE",
+    }
+    for source, target in mapping.items():
+        if env.get(source):
+            env[target] = env[source]
+
+required = ("PGHOST", "PGUSER", "PGPASSWORD", "PGDATABASE")
+if any(not env.get(key) for key in required):
+    raise SystemExit("migrator_database_configuration_incomplete=true")
+subprocess.run(
+    ["psql", "--no-psqlrc", "--set=ON_ERROR_STOP=1", f"--file={sql_file}"],
+    env=env,
+    check=True,
+)
+PY
+}
+
 cd /tmp
 sha256sum -c "$ARTIFACT_NAME.sha256"
 if [ -e "$RELEASE" ]; then
@@ -183,6 +242,26 @@ for env_file in "$WEB_ENV_FILE" "$WORKER_ENV_FILE" "$MIGRATOR_ENV_FILE" "$BACKUP
     exit 1
   fi
 done
+
+BACKUP_STRATEGY="$(python3 - "$BACKUP_ENV_FILE" <<'PY'
+from pathlib import Path
+import sys
+
+value = "logical"
+for raw_line in Path(sys.argv[1]).read_text(encoding="utf-8").splitlines():
+    line = raw_line.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, candidate = line.split("=", 1)
+    if key.removeprefix("export ").strip() == "BACKUP_STRATEGY":
+        value = candidate.strip().strip('"').strip("'")
+print(value)
+PY
+)"
+if [ "$BACKUP_STRATEGY" != "logical" ] && [ "$BACKUP_STRATEGY" != "provider-physical" ]; then
+  echo "backup_strategy_invalid=true" >&2
+  exit 1
+fi
 
 WORKER_DATABASE_ROLE="$(python3 - "$WORKER_ENV_FILE" <<'PY'
 from pathlib import Path
@@ -224,11 +303,43 @@ run_with_env_file "$WEB_ENV_FILE" docker compose -f "$COMPOSE_FILE" config >/dev
 
 install -m 0755 "$RELEASE/ops/postgres/backup.sh" /usr/local/bin/seo-monitor-db-backup.sh
 install -m 0755 "$RELEASE/ops/postgres/restore-smoke.sh" /usr/local/bin/seo-monitor-db-restore-smoke.sh
-mkdir -p /var/backups/ams-seo-monitor-postgres/{tmp,daily,weekly,monthly}
-run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres -- /usr/bin/env REQUIRE_OFFSITE=true /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
-run_with_env_file "$BACKUP_ENV_FILE" /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
+BACKUP_ROOT_PATH="$(python3 - "$BACKUP_ENV_FILE" <<'PY'
+from pathlib import Path
+import sys
+
+value = "/var/backups/ams-seo-monitor-postgres"
+for raw_line in Path(sys.argv[1]).read_text(encoding="utf-8").splitlines():
+    line = raw_line.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, candidate = line.split("=", 1)
+    if key.removeprefix("export ").strip() == "BACKUP_ROOT":
+        value = candidate.strip().strip('"').strip("'")
+print(value)
+PY
+)"
+if [[ "$BACKUP_ROOT_PATH" != /var/backups/* ]] || [[ "$BACKUP_ROOT_PATH" == *".."* ]]; then
+  echo "backup_root_invalid=true" >&2
+  exit 1
+fi
+install -d -o postgres -g postgres -m 0700 "$BACKUP_ROOT_PATH"
+if [ "$BACKUP_STRATEGY" = "logical" ]; then
+  run_with_env_file "$BACKUP_ENV_FILE" runuser -u postgres -- /usr/bin/env REQUIRE_OFFSITE=true /usr/local/bin/seo-monitor-db-backup.sh >/dev/null
+  run_with_env_file "$BACKUP_ENV_FILE" /usr/local/bin/seo-monitor-db-restore-smoke.sh >/dev/null
+else
+  if [ ! -s "$PROVIDER_BACKUP_PROOF_FILE" ]; then
+    echo "provider_backup_proof_missing=true" >&2
+    exit 1
+  fi
+  PROOF_AGE_SECONDS=$(( $(date +%s) - $(stat -c %Y "$PROVIDER_BACKUP_PROOF_FILE") ))
+  if [ "$PROOF_AGE_SECONDS" -lt 0 ] || [ "$PROOF_AGE_SECONDS" -gt 7200 ]; then
+    echo "provider_backup_proof_stale=true" >&2
+    exit 1
+  fi
+fi
 
 run_with_env_file "$MIGRATOR_ENV_FILE" docker compose -f "$COMPOSE_FILE" run --rm -e PGBOSS_RUNTIME_ROLE="$WORKER_DATABASE_ROLE" migrate
+run_psql_with_database_env "$MIGRATOR_ENV_FILE" "$RELEASE/ops/postgres/roles.sql"
 
 cp "$NGINX_LIVE" "$NGINX_BACKUP"
 install -m 0644 "$RELEASE/ops/nginx/ams-seo-monitor.conf" "$NGINX_LIVE"
@@ -247,7 +358,7 @@ nginx -t
 systemctl reload nginx
 systemctl restart seo-monitor-web.service
 systemctl start seo-monitor-worker.service
-systemctl enable --now seo-monitor-worker.timer seo-monitor-topvisor-checks.timer seo-monitor-competitors.timer seo-monitor-outbox.timer seo-monitor-db-backup.timer
+enable_runtime_timers
 
 WEB_CONTAINER_ID="$(docker compose -f "$ROOT/current/docker-compose.production.yml" ps -q web)"
 WORKER_CONTAINER_ID="$(docker compose -f "$ROOT/current/docker-compose.production.yml" ps -q worker)"

@@ -166,6 +166,6 @@ Research queue topic: `research.run.v1`, concurrency `1`, finite retry and dead-
 - Managed PostgreSQL physical backups: daily, at least 7 copies.
 - Independent custom-format logical dump to private S3.
 - Restore smoke before risky production migration.
-- Backup identity must produce complete data despite runtime RLS.
+- Provider physical backups remain the complete recovery source after `FORCE RLS`; the logical backup fails closed if its read-only identity cannot see all rows.
 - Old self-managed database remains read-only for 14 days after cutover.
 - Research/contracts/presentations retain history until explicit owner deletion policy.

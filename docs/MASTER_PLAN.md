@@ -13,23 +13,12 @@
 ## До Production Research
 
 - настроить project Doppler variables для XMLRiver, Research pricing, OAuth origin и private S3;
-- создать/проверить роли `ams_web`, `ams_worker`, `ams_migrator`, `ams_backup`;
 - применить миграции на изолированной копии БД;
 - доказать RLS matrix для web и project-scoped research worker;
 - выполнить OAuth/MCP smoke из Codex на каждом из трёх локальных компьютеров;
 - проверить кабинет на `375`, `768`, `1280`, `1440` с реальной test DB;
 - проверить установку PWA на Windows, Android и iOS home screen;
 - подтвердить backup/restore и короткоживущую S3-ссылку CSV.
-
-## Managed PostgreSQL
-
-Переезд на Timeweb Managed PostgreSQL 18 остаётся отдельным owner-approved релизом:
-
-- тот же регион и частная сеть, что у AMS Main Server;
-- без публичного database IP;
-- TLS, раздельные DB identities и `NOBYPASSRLS` для runtime;
-- backup, restore smoke, row counts и isolation proof;
-- старая БД read-only 14 дней после подтверждённого cutover.
 
 ## Следующие Продуктовые Эпики
 
@@ -44,6 +33,10 @@
 
 ## Операционные Задачи
 
+- до `2026-09-25` проверить стабильность managed PostgreSQL и только отдельным решением удалить прежнюю read-only БД;
+- до включения `FORCE RLS` автоматизировать fresh physical-backup proof Timeweb в release gate; логический backup без `BYPASSRLS` намеренно блокируется;
+- после ротации Timeweb API token сохранить новый операторский токен в AMS IMPULSE Doppler через identity с write-доступом;
+- синхронизировать ротированные DB credentials в AMS IMPULSE Doppler, не меняя раздельные runtime identities;
 - завершить безопасное подключение существующих SEO provider mappings;
 - подтвердить SourceCraft secret scanning;
 - завершить sanitation GitHub mirror до public visibility;

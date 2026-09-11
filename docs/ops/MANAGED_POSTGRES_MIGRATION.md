@@ -1,31 +1,32 @@
 # Managed PostgreSQL Migration
 
-Status: implementation-ready, not executed.
+Status: completed on `2026-09-11`.
 
-The production cutover is a separate `RISKY` release and requires an explicit owner command. Repository migrations do not create Timeweb resources and do not change the current production database.
+Production was moved after the explicit owner command. This document now records the active contract and rollback boundary; it is not authorization for another infrastructure change.
 
 ## Required topology
 
 - Timeweb Managed PostgreSQL 18 in the same Moscow private network as the application server;
 - no public database endpoint;
-- TLS connection from the application server;
-- separate login credentials mapped one-to-one to `ams_web`, `ams_worker`, `ams_migrator` and `ams_backup` group roles;
-- secrets stored in the project Doppler scope, never in Git or shell history.
+- TLS-required connection from the application server over the private BGP address;
+- separate login credentials for `ams_web`, `ams_worker`, `ams_migrator` and `ams_backup`;
+- credentials separated in root-owned production env files; rotated replacements must also be synchronized to the project Doppler scope through a write-capable identity.
 
-`ams_web` and `ams_worker` are `NOBYPASSRLS` runtime roles. `ams_migrator` owns schema changes but is never used by the application. `ams_backup` is read-only and has `BYPASSRLS` so a logical backup cannot silently omit protected rows.
+`ams_web` and `ams_worker` are `NOBYPASSRLS` runtime roles. `ams_migrator` owns schema changes but is never used by the application. Timeweb Managed PostgreSQL does not currently allow the project administrator to grant `BYPASSRLS`; therefore provider physical backups are the complete recovery source after `FORCE RLS` is enabled. The independent logical S3 backup has a fail-closed RLS preflight and must never publish a partial dump.
 
-## Cutover gate
+With `BACKUP_STRATEGY=provider-physical`, deployment requires a root-owned proof file for a Timeweb backup created within the previous two hours and disables the logical backup timer. A missing or stale proof stops release before migrations.
 
-1. Create the managed cluster and private DNS/network route.
-2. Create login identities and apply `ops/postgres/roles.sql` as the database administrator.
-3. Restore a fresh production backup into an isolated target database.
-4. Apply Prisma migrations with the migrator identity.
-5. Compare row counts and checksums for every tenant-owned table.
-6. Run the RLS matrix as web and worker identities, including missing context and cross-project UUID substitution.
-7. Run application and worker smoke tests against the restored target.
-8. Freeze writes on the old database, repeat delta migration and verification, then switch protected runtime secrets.
-9. Verify live health, login, assigned SEO project, denied foreign project, worker heartbeat and backup.
-10. Keep the old database read-only for 14 days. Deletion requires a separate owner decision.
+## Completed proof
+
+1. Fresh source backup, checksum and isolated restore smoke passed.
+2. Four provider-managed login identities were created and least-privilege DML/DDL checks passed.
+3. Current immutable production image completed migrations and live/ready smoke against the target.
+4. Final write freeze and restore completed; exact row counts matched for all 55 persistent tables.
+5. Web and worker returned healthy status after the switch; PostgreSQL, auth, outbox, worker heartbeat and integration freshness were ready.
+6. A post-cutover logical dump, checksum and private S3 upload passed.
+7. The previous local database is read-only with zero application connections and retained through `2026-09-25`.
+
+The product RLS authorization matrix remains part of the unmerged access-control release gate. It was not applied to the current production schema during this infrastructure-only cutover.
 
 ## Hard stops
 

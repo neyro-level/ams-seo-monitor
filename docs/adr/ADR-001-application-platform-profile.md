@@ -16,7 +16,7 @@ AMS IMPULSE combines public SEO marketing, private multi-tenant reporting, Platf
 - `DATA = pii`.
 - `DELIVERY = own-saas`.
 - `PLATFORM_ADMIN = enabled`.
-- `DATABASE = managed-postgresql-target`; current self-managed PostgreSQL remains runtime only until the approved migration release.
+- `DATABASE = managed-postgresql-target`; production moved to Timeweb Managed PostgreSQL 18 on `2026-09-11`.
 - Runtime keeps exact TypeScript `6.0.3` as approved project exception.
 - Architecture is one modular monolith on Next.js with separate web/worker processes from one immutable OCI image.
 - Data owner is PostgreSQL + Prisma; no second ORM/runtime store.
@@ -33,7 +33,7 @@ AMS IMPULSE combines public SEO marketing, private multi-tenant reporting, Platf
 - No additional auth factor is an approved owner exception with compensating controls.
 - Applied migrations are immutable; production uses only `prisma migrate deploy`.
 - Release is tied to exact reviewed SHA and immutable image digest.
-- Current self-managed PostgreSQL 18 requires private listener, separated credentials, offsite backup and restore proof until cutover.
+- The previous self-managed PostgreSQL 18 remains read-only only for the approved rollback window through `2026-09-25`.
 - Target database topology and rollback are fixed in ADR-003.
 
 ## Reconsider When

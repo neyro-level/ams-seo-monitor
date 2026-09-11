@@ -7,8 +7,6 @@ Wants=network-online.target
 Type=oneshot
 User=postgres
 Group=postgres
-Environment=DB_NAME=seo_monitor_prod
-Environment=BACKUP_ROOT=/var/backups/ams-seo-monitor-postgres
 Environment=KEEP_DAILY=7
 Environment=KEEP_WEEKLY=8
 Environment=KEEP_MONTHLY=6
@@ -19,4 +17,4 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/var/backups/ams-seo-monitor-postgres
+ReadWritePaths=/var/backups/ams-seo-monitor-postgres /var/backups/ams-impulse-managed-postgres
