@@ -246,9 +246,8 @@ authTestDescription("authorization matrix", () => {
 
   it("loads current memberships and validates active organization", () => {
     expect(alphaViewerUser).toMatchObject({
-      kind: "tenant-user",
-      organizationId: expect.any(String),
-      role: "VIEWER",
+      kind: "identity-user",
+      systemRole: "CLIENT",
     });
     expect(hasPermission(alphaViewerUser!, "project:read:organization")).toBe(true);
     expect(hasPermission(alphaViewerUser!, "report:read:organization")).toBe(true);

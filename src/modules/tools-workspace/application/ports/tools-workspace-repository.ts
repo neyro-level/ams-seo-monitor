@@ -5,6 +5,7 @@ import type {
   GrantToolsProjectInput,
   ToolsOrganizationRecord,
   ToolsProjectRecord,
+  ToolsProjectOption,
   UpdateToolsOrganizationInput,
   UpdateToolsProjectInput,
 } from "../../domain/tools-workspace.ts";
@@ -12,6 +13,7 @@ import type {
 export interface ToolsWorkspaceRepository {
   listOrganizations(): Promise<ToolsOrganizationRecord[]>;
   listProjects(projectIds: string[] | null): Promise<ToolsProjectRecord[]>;
+  listProjectOptions(projectIds: string[] | null): Promise<ToolsProjectOption[]>;
   createOrganization(input: CreateToolsOrganizationInput): Promise<ToolsOrganizationRecord>;
   updateOrganization(input: UpdateToolsOrganizationInput): Promise<ToolsOrganizationRecord | null>;
   createProject(input: CreateToolsProjectInput): Promise<ToolsProjectRecord>;

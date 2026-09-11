@@ -68,6 +68,17 @@ export interface ResearchRunEstimate {
   confirmationRequired: true;
 }
 
+export interface ResearchRunSummary {
+  runId: string;
+  status: ResearchRunStatus;
+  queryCount: number;
+  estimatedCostKopecks: number;
+  actualCostKopecks: number | null;
+  safeErrorCode: string | null;
+  createdAt: string;
+  finishedAt: string | null;
+}
+
 export type ResearchErrorCode =
   | "RESEARCH_NOT_FOUND_OR_FORBIDDEN"
   | "RESEARCH_STALE"

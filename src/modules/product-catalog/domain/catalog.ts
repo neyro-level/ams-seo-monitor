@@ -48,13 +48,13 @@ export const PRODUCTS: readonly ProductDefinition[] = [
     code: "tools",
     label: "Инструменты",
     homeHref: "/tools/",
-    availability: "PLANNED",
+    availability: "ACTIVE",
     audience: "INTERNAL",
   },
 ] as const;
 
 export const TOOLS: readonly ToolDefinition[] = [
-  { code: "research", label: "Исследования", href: "/tools/research/", availability: "PLANNED" },
+  { code: "research", label: "Исследования", href: "/tools/research/", availability: "ACTIVE" },
   { code: "contracts", label: "Договоры", href: "/tools/contracts/", availability: "PLANNED" },
   { code: "invoices", label: "Счета", href: "/tools/invoices/", availability: "PLANNED" },
   { code: "presentations", label: "Презентации", href: "/tools/presentations/", availability: "PLANNED" },

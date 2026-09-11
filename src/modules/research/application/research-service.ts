@@ -45,6 +45,12 @@ export class ResearchService {
     return research;
   }
 
+  async listRuns(principal: PrincipalContext, rawRef: unknown) {
+    const ref = researchRefSchema.parse(rawRef);
+    await this.requireAccess(principal, "tools:project:read", ref);
+    return this.repository.listRuns(ref);
+  }
+
   async create(principal: PrincipalContext, rawInput: unknown) {
     const input = createResearchInputSchema.parse(rawInput);
     await this.requireAccess(principal, "research:create", input);

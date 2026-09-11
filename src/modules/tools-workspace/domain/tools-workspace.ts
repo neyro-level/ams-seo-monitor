@@ -21,6 +21,7 @@ export type GrantToolsProjectInput = z.infer<typeof grantToolsProjectSchema>;
 
 export interface ToolsOrganizationRecord { id: string; slug: string; name: string; version: number; archivedAt: string | null }
 export interface ToolsProjectRecord { id: string; organizationId: string; slug: string; name: string; version: number; archivedAt: string | null }
+export interface ToolsProjectOption extends ToolsProjectRecord { organizationName: string; organizationSlug: string }
 
 export class ToolsWorkspaceError extends Error {
   constructor(public readonly code: "TOOLS_ADMIN_ACCESS_DENIED" | "TOOLS_RECORD_STALE" | "TOOLS_REFERENCE_INVALID") {

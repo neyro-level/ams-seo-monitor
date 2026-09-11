@@ -7,6 +7,7 @@ import type {
   CreateResearchInput,
   ResearchRecord,
   ResearchRef,
+  ResearchRunSummary,
   UpdateResearchInput,
 } from "../domain/research.ts";
 import type { ResearchRepository } from "../application/ports/research-repository.ts";
@@ -88,6 +89,18 @@ export class PrismaResearchRepository implements ResearchRepository {
       ORDER BY "position"
     `);
     return toRecord(row, queries);
+    });
+  }
+
+  async listRuns(ref: ResearchRef): Promise<ResearchRunSummary[]> {
+    return this.withContext(async (transaction) => {
+      const rows = await transaction.$queryRaw<Array<Omit<ResearchRunSummary, "createdAt" | "finishedAt"> & { createdAt: Date; finishedAt: Date | null }>>(Prisma.sql`
+        SELECT "id" AS "runId", "status"::text, "queryCount", "estimatedCostKopecks", "actualCostKopecks", "safeErrorCode", "createdAt", "finishedAt"
+        FROM "research"."Run"
+        WHERE "researchId"=${ref.researchId} AND "organizationId"=${ref.organizationId} AND "projectId"=${ref.projectId}
+        ORDER BY "createdAt" DESC
+      `);
+      return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString(), finishedAt: row.finishedAt?.toISOString() ?? null }));
     });
   }
 

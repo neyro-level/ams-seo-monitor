@@ -27,9 +27,11 @@ describe("product catalog", () => {
     expect(getToolDefinition("research").href).toBe("/tools/research/");
   });
 
-  it("does not expose planned products as active", () => {
+  it("exposes only implemented products and tools as active", () => {
     expect(PRODUCTS.filter(({ availability }) => availability === "ACTIVE").map(({ code }) => code)).toEqual([
       "seo-monitor",
+      "tools",
     ]);
+    expect(TOOLS.filter(({ availability }) => availability === "ACTIVE").map(({ code }) => code)).toEqual(["research"]);
   });
 });

@@ -22,6 +22,7 @@ export interface StoredProjectRecord {
 
 export interface ProjectAccessScope {
   projectIds: string[] | null;
+  databaseUserId?: string;
 }
 
 export interface ProjectRepository {

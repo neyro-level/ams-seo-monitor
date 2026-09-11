@@ -11,6 +11,7 @@ const projects = [
 const repository: ToolsWorkspaceRepository = {
   listOrganizations: async () => [{ id: "org-a", slug: "atlas", name: "Атлас", version: 1, archivedAt: null }],
   listProjects: async (ids) => ids === null ? projects : projects.filter((project) => ids.includes(project.id)),
+  listProjectOptions: async (ids) => (ids === null ? projects : projects.filter((project) => ids.includes(project.id))).map((project) => ({ ...project, organizationName: project.organizationId, organizationSlug: project.organizationId })),
   createOrganization: async (input) => ({ id: "org-new", ...input, version: 1, archivedAt: null }),
   updateOrganization: async (input) => ({ id: input.organizationId, slug: input.slug, name: input.name, version: input.version + 1, archivedAt: null }),
   createProject: async (input) => ({ id: "project-new", ...input, version: 1, archivedAt: null }),

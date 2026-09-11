@@ -85,7 +85,7 @@ integrationDescription("PrincipalContext factories", () => {
     await database.close();
   });
 
-  it("builds platform and tenant principals without fake organization scope", async () => {
+  it("builds platform and neutral identity principals without fake organization scope", async () => {
     await expect(
       getPrincipalStateByUserId(`${suffix}-admin`, { correlationId }),
     ).resolves.toMatchObject({
@@ -94,7 +94,12 @@ integrationDescription("PrincipalContext factories", () => {
     await expect(
       getPrincipalStateByUserId(`${suffix}-analyst`, { correlationId }),
     ).resolves.toMatchObject({
-      principal: { kind: "platform-analyst", userId: `${suffix}-analyst`, correlationId },
+      principal: {
+        kind: "identity-user",
+        userId: `${suffix}-analyst`,
+        systemRole: "ANALYST",
+        correlationId,
+      },
     });
     await expect(
       getPrincipalStateByUserId(`${suffix}-viewer`, {
@@ -102,15 +107,21 @@ integrationDescription("PrincipalContext factories", () => {
       }),
     ).resolves.toMatchObject({
       principal: {
-        kind: "tenant-user",
+        kind: "identity-user",
         userId: `${suffix}-viewer`,
-        organizationId,
-        role: "VIEWER",
+        systemRole: "CLIENT",
         correlationId,
       },
     });
     await expect(
       getPrincipalStateByUserId(`${suffix}-nomember`, { correlationId }),
-    ).resolves.toBeNull();
+    ).resolves.toMatchObject({
+      principal: {
+        kind: "identity-user",
+        userId: `${suffix}-nomember`,
+        systemRole: "CLIENT",
+        correlationId,
+      },
+    });
   });
 });

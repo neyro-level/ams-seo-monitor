@@ -5,7 +5,6 @@ import type {
   PlatformAnalystPrincipal,
   IdentityUserPrincipal,
   PrincipalContext,
-  TenantRole,
   TenantUserPrincipal,
 } from "./principal.ts";
 
@@ -16,13 +15,6 @@ export interface PrincipalFactoryOptions {
 export interface PrincipalState {
   principal: PrincipalContext;
   displayName: string;
-}
-
-function parseTenantRole(value: string): TenantRole {
-  if (value === "ORG_OWNER" || value === "ORG_MEMBER" || value === "VIEWER") {
-    return value;
-  }
-  throw new Error(`Unsupported tenant role: ${value}`);
 }
 
 export async function getPrincipalStateByUserId(
@@ -36,10 +28,6 @@ export async function getPrincipalStateByUserId(
       name: true,
       systemRole: true,
       disabledAt: true,
-      members: {
-        orderBy: { organizationId: "asc" },
-        select: { id: true, organizationId: true, tenantRole: true },
-      },
     },
   });
   if (!user || user.disabledAt) return null;
@@ -52,19 +40,13 @@ export async function getPrincipalStateByUserId(
       userId: user.id,
       correlationId,
     } satisfies PlatformAdminPrincipal;
-  } else if (user.systemRole === "ANALYST") {
-    principal = { kind: "platform-analyst", userId: user.id, correlationId } satisfies PlatformAnalystPrincipal;
   } else {
-    const selectedMembership = user.members[0];
-    if (!selectedMembership) return null;
     principal = {
-      kind: "tenant-user",
+      kind: "identity-user",
       userId: user.id,
-      organizationId: selectedMembership.organizationId,
-      membershipId: selectedMembership.id,
-      role: parseTenantRole(selectedMembership.tenantRole),
+      systemRole: user.systemRole,
       correlationId,
-    } satisfies TenantUserPrincipal;
+    } satisfies IdentityUserPrincipal;
   }
 
   return {

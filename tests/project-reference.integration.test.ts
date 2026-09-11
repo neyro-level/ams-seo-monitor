@@ -154,7 +154,7 @@ integrationDescription("Project reference slice", () => {
     expect(analystResult.items.map((project) => project.id)).toEqual([projectAId, projectBId]);
   });
 
-  it("allows own-tenant changes and rejects foreign and stale mutations", async () => {
+  it("allows platform-admin changes and rejects tenant and stale mutations", async () => {
     const ownerA: PrincipalContext = {
       kind: "tenant-user",
       userId: `${suffix}-owner-a`,
@@ -163,34 +163,27 @@ integrationDescription("Project reference slice", () => {
       role: "ORG_OWNER",
       correlationId: "00000000-0000-4000-8000-000000000413",
     };
-    const ownerB: PrincipalContext = {
-      ...ownerA,
-      userId: `${suffix}-owner-b`,
-      membershipId: `${suffix}-membership-b`,
-      organizationId: organizationBId,
-    };
-
-    const statusResult = await changeProjectStatus(ownerA, {
+    const statusResult = await changeProjectStatus(admin, {
       organizationId: organizationAId,
       projectId: projectAId,
       version: 1,
       status: "ACTIVE",
     });
     expect(statusResult.version).toBe(2);
-    await expect(changeProjectStatus(ownerB, {
+    await expect(changeProjectStatus(ownerA, {
       organizationId: organizationAId,
       projectId: projectAId,
       version: 2,
       status: "DISABLED",
     })).rejects.toMatchObject({ code: "PROJECT_ACCESS_DENIED" });
-    await expect(changeProjectStatus(ownerA, {
+    await expect(changeProjectStatus(admin, {
       organizationId: organizationAId,
       projectId: projectAId,
       version: 1,
       status: "DISABLED",
     })).rejects.toMatchObject({ code: "PROJECT_STALE" });
 
-    const settingsResult = await updateProjectSettings(ownerA, {
+    const settingsResult = await updateProjectSettings(admin, {
       organizationId: organizationAId,
       projectId: projectAId,
       version: 2,

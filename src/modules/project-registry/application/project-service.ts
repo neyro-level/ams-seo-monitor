@@ -85,6 +85,7 @@ export class ProjectService {
   private async getAccessScope(principal: PrincipalContext) {
     return {
       projectIds: await this.authorization.listAccessibleProjectIds(principal, "seo-monitor"),
+      databaseUserId: principal.kind === "api-client" || principal.kind === "job" ? undefined : principal.userId,
     };
   }
 

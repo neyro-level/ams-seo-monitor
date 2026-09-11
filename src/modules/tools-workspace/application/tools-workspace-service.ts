@@ -27,6 +27,10 @@ export class ToolsWorkspaceService {
     return this.repository.listProjects(await this.authorization.listAccessibleProjectIds(principal, "tools"));
   }
 
+  async listProjectOptions(principal: PrincipalContext) {
+    return this.repository.listProjectOptions(await this.authorization.listAccessibleProjectIds(principal, "tools"));
+  }
+
   async createOrganization(principal: PrincipalContext, raw: unknown) { requireAdmin(principal); return this.repository.createOrganization(createToolsOrganizationSchema.parse(raw)); }
   async createProject(principal: PrincipalContext, raw: unknown) { requireAdmin(principal); return this.repository.createProject(createToolsProjectSchema.parse(raw)); }
   async grantProject(principal: PrincipalContext, raw: unknown) {

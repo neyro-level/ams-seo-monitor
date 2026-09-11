@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "../../../generated/prisma/client.ts";
 import { getPrismaClient } from "../../../platform/database/prisma/client.ts";
-import { ToolsWorkspaceError, type ArchiveToolsProjectInput, type CreateToolsOrganizationInput, type CreateToolsProjectInput, type GrantToolsProjectInput, type ToolsOrganizationRecord, type ToolsProjectRecord, type UpdateToolsOrganizationInput, type UpdateToolsProjectInput } from "../domain/tools-workspace.ts";
+import { setDatabaseAuthorizationContext } from "../../../platform/database/authorization-context.ts";
+import type { DatabaseTransaction } from "../../../platform/database/transaction.ts";
+import { ToolsWorkspaceError, type ArchiveToolsProjectInput, type CreateToolsOrganizationInput, type CreateToolsProjectInput, type GrantToolsProjectInput, type ToolsOrganizationRecord, type ToolsProjectOption, type ToolsProjectRecord, type UpdateToolsOrganizationInput, type UpdateToolsProjectInput } from "../domain/tools-workspace.ts";
 import type { ToolsWorkspaceRepository } from "../application/ports/tools-workspace-repository.ts";
 
 type OrganizationRow = Omit<ToolsOrganizationRecord, "archivedAt"> & { archivedAt: Date | null };
@@ -10,45 +12,69 @@ const mapOrganization = (row: OrganizationRow): ToolsOrganizationRecord => ({ ..
 const mapProject = (row: ProjectRow): ToolsProjectRecord => ({ ...row, archivedAt: row.archivedAt?.toISOString() ?? null });
 
 export class PrismaToolsWorkspaceRepository implements ToolsWorkspaceRepository {
-  constructor(private readonly injectedPrisma?: PrismaClient) {}
+  constructor(private readonly databaseUserId: string, private readonly injectedPrisma?: PrismaClient) {}
   private get prisma() { return this.injectedPrisma ?? getPrismaClient(); }
+  private withContext<T>(operation: (transaction: DatabaseTransaction) => Promise<T>) {
+    return this.prisma.$transaction(async (transaction) => {
+      await setDatabaseAuthorizationContext(transaction, { userId: this.databaseUserId });
+      return operation(transaction);
+    });
+  }
 
   async listOrganizations() {
-    const rows = await this.prisma.$queryRaw<OrganizationRow[]>(Prisma.sql`SELECT "id", "slug", "name", "version", "archivedAt" FROM "tools"."ToolsOrganization" ORDER BY "name"`);
+    const rows = await this.withContext((transaction) => transaction.$queryRaw<OrganizationRow[]>(Prisma.sql`SELECT "id", "slug", "name", "version", "archivedAt" FROM "tools"."ToolsOrganization" ORDER BY "name"`));
     return rows.map(mapOrganization);
   }
   async listProjects(projectIds: string[] | null) {
     if (projectIds !== null && projectIds.length === 0) return [];
-    const rows = projectIds === null
-      ? await this.prisma.$queryRaw<ProjectRow[]>(Prisma.sql`SELECT "id", "organizationId", "slug", "name", "version", "archivedAt" FROM "tools"."ToolsProject" WHERE "archivedAt" IS NULL ORDER BY "name"`)
-      : await this.prisma.$queryRaw<ProjectRow[]>(Prisma.sql`SELECT "id", "organizationId", "slug", "name", "version", "archivedAt" FROM "tools"."ToolsProject" WHERE "id" IN (${Prisma.join(projectIds)}) AND "archivedAt" IS NULL ORDER BY "name"`);
+    const rows = await this.withContext((transaction) => projectIds === null
+      ? transaction.$queryRaw<ProjectRow[]>(Prisma.sql`SELECT "id", "organizationId", "slug", "name", "version", "archivedAt" FROM "tools"."ToolsProject" WHERE "archivedAt" IS NULL ORDER BY "name"`)
+      : transaction.$queryRaw<ProjectRow[]>(Prisma.sql`SELECT "id", "organizationId", "slug", "name", "version", "archivedAt" FROM "tools"."ToolsProject" WHERE "id" IN (${Prisma.join(projectIds)}) AND "archivedAt" IS NULL ORDER BY "name"`));
     return rows.map(mapProject);
+  }
+  async listProjectOptions(projectIds: string[] | null) {
+    if (projectIds !== null && projectIds.length === 0) return [];
+    return this.withContext((transaction) => transaction.$queryRaw<ToolsProjectOption[]>(projectIds === null ? Prisma.sql`
+      SELECT project."id", project."organizationId", project."slug", project."name", project."version", project."archivedAt",
+        organization."name" AS "organizationName", organization."slug" AS "organizationSlug"
+      FROM "tools"."ToolsProject" AS project
+      JOIN "tools"."ToolsOrganization" AS organization ON organization.id=project."organizationId"
+      WHERE project."archivedAt" IS NULL AND organization."archivedAt" IS NULL
+      ORDER BY organization."name", project."name"
+    ` : Prisma.sql`
+      SELECT project."id", project."organizationId", project."slug", project."name", project."version", project."archivedAt",
+        organization."name" AS "organizationName", organization."slug" AS "organizationSlug"
+      FROM "tools"."ToolsProject" AS project
+      JOIN "tools"."ToolsOrganization" AS organization ON organization.id=project."organizationId"
+      WHERE project."id" IN (${Prisma.join(projectIds)}) AND project."archivedAt" IS NULL AND organization."archivedAt" IS NULL
+      ORDER BY organization."name", project."name"
+    `));
   }
   async createOrganization(input: CreateToolsOrganizationInput) {
     const id = randomUUID();
-    const rows = await this.prisma.$queryRaw<OrganizationRow[]>(Prisma.sql`INSERT INTO "tools"."ToolsOrganization" ("id", "slug", "name") VALUES (${id}, ${input.slug}, ${input.name}) RETURNING "id", "slug", "name", "version", "archivedAt"`);
+    const rows = await this.withContext((transaction) => transaction.$queryRaw<OrganizationRow[]>(Prisma.sql`INSERT INTO "tools"."ToolsOrganization" ("id", "slug", "name") VALUES (${id}, ${input.slug}, ${input.name}) RETURNING "id", "slug", "name", "version", "archivedAt"`));
     return mapOrganization(rows[0]!);
   }
   async updateOrganization(input: UpdateToolsOrganizationInput) {
-    const rows = await this.prisma.$queryRaw<OrganizationRow[]>(Prisma.sql`UPDATE "tools"."ToolsOrganization" SET "slug"=${input.slug}, "name"=${input.name}, "version"="version"+1, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${input.organizationId} AND "version"=${input.version} AND "archivedAt" IS NULL RETURNING "id", "slug", "name", "version", "archivedAt"`);
+    const rows = await this.withContext((transaction) => transaction.$queryRaw<OrganizationRow[]>(Prisma.sql`UPDATE "tools"."ToolsOrganization" SET "slug"=${input.slug}, "name"=${input.name}, "version"="version"+1, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${input.organizationId} AND "version"=${input.version} AND "archivedAt" IS NULL RETURNING "id", "slug", "name", "version", "archivedAt"`));
     return rows[0] ? mapOrganization(rows[0]) : null;
   }
   async createProject(input: CreateToolsProjectInput) {
     const id = randomUUID();
-    const rows = await this.prisma.$queryRaw<ProjectRow[]>(Prisma.sql`INSERT INTO "tools"."ToolsProject" ("id", "organizationId", "slug", "name") VALUES (${id}, ${input.organizationId}, ${input.slug}, ${input.name}) RETURNING "id", "organizationId", "slug", "name", "version", "archivedAt"`);
+    const rows = await this.withContext((transaction) => transaction.$queryRaw<ProjectRow[]>(Prisma.sql`INSERT INTO "tools"."ToolsProject" ("id", "organizationId", "slug", "name") VALUES (${id}, ${input.organizationId}, ${input.slug}, ${input.name}) RETURNING "id", "organizationId", "slug", "name", "version", "archivedAt"`));
     return mapProject(rows[0]!);
   }
   async updateProject(input: UpdateToolsProjectInput) {
-    const rows = await this.prisma.$queryRaw<ProjectRow[]>(Prisma.sql`UPDATE "tools"."ToolsProject" SET "slug"=${input.slug}, "name"=${input.name}, "version"="version"+1, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${input.projectId} AND "organizationId"=${input.organizationId} AND "version"=${input.version} AND "archivedAt" IS NULL RETURNING "id", "organizationId", "slug", "name", "version", "archivedAt"`);
+    const rows = await this.withContext((transaction) => transaction.$queryRaw<ProjectRow[]>(Prisma.sql`UPDATE "tools"."ToolsProject" SET "slug"=${input.slug}, "name"=${input.name}, "version"="version"+1, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${input.projectId} AND "organizationId"=${input.organizationId} AND "version"=${input.version} AND "archivedAt" IS NULL RETURNING "id", "organizationId", "slug", "name", "version", "archivedAt"`));
     return rows[0] ? mapProject(rows[0]) : null;
   }
   async archiveProject(input: ArchiveToolsProjectInput) {
-    return (await this.prisma.$executeRaw(Prisma.sql`UPDATE "tools"."ToolsProject" SET "archivedAt"=CURRENT_TIMESTAMP, "version"="version"+1, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${input.projectId} AND "organizationId"=${input.organizationId} AND "version"=${input.version} AND "archivedAt" IS NULL`)) === 1;
+    return this.withContext(async (transaction) => (await transaction.$executeRaw(Prisma.sql`UPDATE "tools"."ToolsProject" SET "archivedAt"=CURRENT_TIMESTAMP, "version"="version"+1, "updatedAt"=CURRENT_TIMESTAMP WHERE "id"=${input.projectId} AND "organizationId"=${input.organizationId} AND "version"=${input.version} AND "archivedAt" IS NULL`)) === 1);
   }
   async grantProject(input: GrantToolsProjectInput & { actorId: string; correlationId: string }) {
     const membershipId = randomUUID(); const accessId = randomUUID();
     try {
-      const effectiveAccessId = await this.prisma.$transaction(async (transaction) => {
+      const effectiveAccessId = await this.withContext(async (transaction) => {
         await transaction.$executeRaw(Prisma.sql`INSERT INTO "tools"."ToolsMembership" ("id", "organizationId", "userId") VALUES (${membershipId}, ${input.organizationId}, ${input.userId}) ON CONFLICT ("organizationId", "userId") DO NOTHING`);
         const memberships = await transaction.$queryRaw<Array<{ id: string }>>(Prisma.sql`SELECT "id" FROM "tools"."ToolsMembership" WHERE "organizationId"=${input.organizationId} AND "userId"=${input.userId}`);
         const membership = memberships[0]; if (!membership) throw new ToolsWorkspaceError("TOOLS_REFERENCE_INVALID");

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { KpiCard } from "../../components/dashboard/KpiCard.tsx";
 import { PageHeader } from "../../components/dashboard/PageHeader.tsx";
 import { SectionCard } from "../../components/dashboard/SectionCard.tsx";
@@ -11,12 +11,16 @@ import {
 } from "../../modules/identity-access/server.ts";
 import { buildAnalystOverview } from "../../modules/project-registry/presentation.ts";
 import { hasPermission } from "../../platform/authorization/principal.ts";
+import { getAuthorizationService } from "../../infrastructure/service-container.ts";
 
 export default async function DashboardPage() {
   const cabinetRedirect = await getCurrentCabinetRedirect();
   if (cabinetRedirect) redirect(cabinetRedirect);
   const state = await getCurrentPrincipalState();
   if (!state) redirect("/?login=1");
+  const products = await getAuthorizationService().listAccessibleProducts(state.principal);
+  if (!products.includes("seo-monitor") && products.includes("tools")) redirect("/tools/research/");
+  if (!products.includes("seo-monitor")) notFound();
 
   const overview = await buildAnalystOverview(state.principal);
 

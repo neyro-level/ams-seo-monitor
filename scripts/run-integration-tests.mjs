@@ -27,6 +27,8 @@ process.env.DATABASE_NAME = process.env.TEST_DATABASE_NAME;
 process.env.DATABASE_SSLMODE = process.env.TEST_DATABASE_SSLMODE?.trim() || "disable";
 process.env.DATABASE_URL = databaseUrl.toString();
 process.env.APP_ENV = "test";
+process.env.BETTER_AUTH_SECRET ??= "integration-test-secret-at-least-32-characters";
+process.env.BETTER_AUTH_URL ??= "http://127.0.0.1:3000";
 
 function runNodeScript(relativePath, args = []) {
   const result = spawnSync(process.execPath, [path.join(rootDir, relativePath), ...args], {

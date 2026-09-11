@@ -11,6 +11,7 @@ class MemoryResearchRepository implements ResearchRepository {
 
   async listByProject(organizationId: string, projectId: string) { return this.records.filter((record) => record.organizationId === organizationId && record.projectId === projectId && record.status !== "ARCHIVED"); }
   async findById(ref: { organizationId: string; projectId: string; researchId: string }) { return this.records.find((record) => record.id === ref.researchId && record.organizationId === ref.organizationId && record.projectId === ref.projectId) ?? null; }
+  async listRuns() { return []; }
   async create(input: Parameters<ResearchRepository["create"]>[0]) {
     const record: ResearchRecord = { id: `research-${this.records.length + 1}`, organizationId: input.organizationId, projectId: input.projectId, title: input.title, brief: input.brief, status: "DRAFT", version: 1, queries: input.queries.map((text, position) => ({ id: `query-${position}`, text, position })), updatedAt: "2026-09-11T00:00:00.000Z" };
     this.records.push(record); return record;

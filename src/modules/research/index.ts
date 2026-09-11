@@ -18,6 +18,7 @@ export type {
   ResearchRecord,
   ResearchRef,
   ResearchRunEstimate,
+  ResearchRunSummary,
   ResearchRunStatus,
   ResearchStatus,
   UpdateResearchInput,

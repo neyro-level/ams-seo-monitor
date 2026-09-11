@@ -1,6 +1,6 @@
 import { PrismaAccessGrantRepository } from "../identity-access/server.ts";
 import { AuthorizationService } from "../../platform/authorization/authorization-service.ts";
-import type { IdentityUserPrincipal, PlatformAdminPrincipal } from "../../platform/authorization/principal.ts";
+import type { PrincipalContext } from "../../platform/authorization/principal.ts";
 import { getPrismaClient } from "../../platform/database/prisma/client.ts";
 import { ConfiguredResearchPricing } from "./infrastructure/configured-research-pricing.ts";
 import { PrismaResearchReportRepository } from "./infrastructure/prisma-research-report-repository.ts";
@@ -9,20 +9,46 @@ import { S3PrivateExportStorage } from "./infrastructure/s3-private-export-stora
 import { ResearchReportService } from "./application/research-report-service.ts";
 import { ResearchService } from "./application/research-service.ts";
 
-export function createResearchMcpServices(principal: PlatformAdminPrincipal | IdentityUserPrincipal) {
+function databaseUserId(principal: PrincipalContext) {
+  if (principal.kind === "api-client" || principal.kind === "job") throw new Error("USER_PRINCIPAL_REQUIRED");
+  return principal.userId;
+}
+
+export function createResearchMcpServices(principal: PrincipalContext) {
   const prisma = getPrismaClient();
+  const userId = databaseUserId(principal);
   const authorization = new AuthorizationService(new PrismaAccessGrantRepository(prisma));
   const storage = S3PrivateExportStorage.fromEnvironment();
   return {
     research: new ResearchService(
-      new PrismaResearchRepository(principal.userId, prisma),
+      new PrismaResearchRepository(userId, prisma),
       authorization,
       ConfiguredResearchPricing.fromEnvironment(),
     ),
     reports: new ResearchReportService(
-      new PrismaResearchReportRepository(principal.userId, prisma),
+      new PrismaResearchReportRepository(userId, prisma),
       authorization,
       storage,
     ),
   };
+}
+
+export function createResearchCabinetService(principal: PrincipalContext) {
+  const prisma = getPrismaClient();
+  const userId = databaseUserId(principal);
+  return new ResearchService(
+    new PrismaResearchRepository(userId, prisma),
+    new AuthorizationService(new PrismaAccessGrantRepository(prisma)),
+    ConfiguredResearchPricing.fromEnvironment(),
+  );
+}
+
+export function createResearchReportService(principal: PrincipalContext) {
+  const prisma = getPrismaClient();
+  const userId = databaseUserId(principal);
+  return new ResearchReportService(
+    new PrismaResearchReportRepository(userId, prisma),
+    new AuthorizationService(new PrismaAccessGrantRepository(prisma)),
+    S3PrivateExportStorage.fromEnvironment(),
+  );
 }

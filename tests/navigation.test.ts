@@ -13,7 +13,7 @@ const navigationTestEnabled = Boolean(
 );
 const navigationTestDescription = navigationTestEnabled ? describe : describe.skip;
 
-const analystPrincipal = createPlatformAnalystPrincipal("analyst-1");
+let analystPrincipal: PrincipalContext = createPlatformAnalystPrincipal("analyst-1");
 
 const clientViewerIdentity = {
   userId: "navigation-viewer-1",
@@ -50,6 +50,17 @@ navigationTestDescription("database-backed navigation isolation", () => {
         systemRole: "CLIENT",
       },
     });
+    await database.prisma.user.upsert({
+      where: { id: "analyst-1" },
+      update: { disabledAt: null, systemRole: "ANALYST" },
+      create: {
+        id: "analyst-1",
+        email: "navigation-analyst@test.local",
+        name: "Navigation analyst",
+        emailVerified: false,
+        systemRole: "ANALYST",
+      },
+    });
     const clientMembership = await database.prisma.member.upsert({
       where: {
         organizationId_userId: {
@@ -73,10 +84,20 @@ navigationTestDescription("database-backed navigation isolation", () => {
       })),
       skipDuplicates: true,
     });
-    const analystMemberships = await database.prisma.member.findMany({
-      where: { userId: "analyst-1" },
-      select: { id: true, organizationId: true, organization: { select: { projects: { select: { id: true } } } } },
+    const analystOrganizations = await database.prisma.organization.findMany({
+      where: { slug: { in: ["alpha", "beta"] } },
+      select: { id: true, projects: { select: { id: true } } },
     });
+    const analystMemberships = await Promise.all(analystOrganizations.map(async (item) => ({
+      id: (await database!.prisma.member.upsert({
+        where: { organizationId_userId: { organizationId: item.id, userId: "analyst-1" } },
+        update: { tenantRole: "VIEWER" },
+        create: { organizationId: item.id, userId: "analyst-1", tenantRole: "VIEWER" },
+        select: { id: true },
+      })).id,
+      organizationId: item.id,
+      organization: { projects: item.projects },
+    })));
     await database.prisma.seoProjectAccess.createMany({
       data: analystMemberships.flatMap((membership) => membership.organization.projects.map((project) => ({
         membershipId: membership.id,
@@ -86,6 +107,9 @@ navigationTestDescription("database-backed navigation isolation", () => {
       }))),
       skipDuplicates: true,
     });
+    analystPrincipal = (await getPrincipalStateByUserId("analyst-1", {
+      correlationId: "00000000-0000-4000-8000-000000000001",
+    }))?.principal ?? analystPrincipal;
     clientViewerPrincipal = (await getPrincipalStateByUserId(clientViewerIdentity.userId, {
       correlationId: "00000000-0000-4000-8000-000000000002",
     }))?.principal ?? null;
@@ -94,20 +118,21 @@ navigationTestDescription("database-backed navigation isolation", () => {
 
   afterAll(async () => {
     if (!database) return;
-    await database.prisma.member.deleteMany({ where: { userId: clientViewerIdentity.userId } });
-    await database.prisma.user.deleteMany({ where: { id: clientViewerIdentity.userId } });
+    await database.prisma.member.deleteMany({ where: { userId: { in: [clientViewerIdentity.userId, "analyst-1"] } } });
+    await database.prisma.user.deleteMany({ where: { id: { in: [clientViewerIdentity.userId, "analyst-1"] } } });
     await database.close();
   });
   it("keeps all available projects visible on a client route", async () => {
     const sections = await buildNavigation("/c/alpha/north/", clientViewerPrincipal!);
     const items = sections.flatMap((section) => section.items);
 
-    expect(sections).toHaveLength(2);
+    expect(sections.map((section) => section.title)).toEqual(["Система", "Продукты", "SEO-проекты"]);
     expect(items.map((item) => item.label)).toEqual([
       "Мои проекты",
+      "SEO Монитор",
       "Synthetic Alpha Organization",
     ]);
-    expect(items[1]?.children?.map((item) => item.label)).toEqual([
+    expect(items[2]?.children?.map((item) => item.label)).toEqual([
       "Synthetic site 2",
       "Synthetic site 1",
       "Synthetic site 3",
@@ -116,16 +141,16 @@ navigationTestDescription("database-backed navigation isolation", () => {
     expect(items[0]?.active).toBe(false);
   });
 
-  it("renders all projects directly on the analyst root", async () => {
-    const sections = await buildNavigation("/analyst/", analystPrincipal);
+  it("renders only explicitly assigned projects on the analyst dashboard", async () => {
+    const sections = await buildNavigation("/dashboard/", analystPrincipal);
     const serialized = JSON.stringify(sections);
     const mainItems = sections[0]?.items ?? [];
-    const projectItems = sections[1]?.items ?? [];
 
-    expect(sections[0]?.title).toBe("");
-    expect(mainItems.map((item) => item.label)).toEqual(["Все проекты", "Уведомления"]);
+    expect(sections.map((section) => section.title)).toEqual(["Система", "Продукты", "SEO-проекты"]);
+    expect(mainItems.map((item) => item.label)).toEqual(["Мои проекты", "Уведомления"]);
     expect(mainItems[0]?.active).toBe(true);
-    expect(projectItems.map((item) => item.label)).toEqual([
+    expect(sections[1]?.items.map((item) => item.label)).toEqual(["SEO Монитор"]);
+    expect(sections[2]?.items.map((item) => item.label)).toEqual([
       "Synthetic Alpha Organization",
       "Synthetic Beta Organization",
     ]);
