@@ -1,6 +1,16 @@
 import { ImpulseLanding } from "../components/marketing/ImpulseLanding.tsx";
+import { isMcpOAuthLoginRequest } from "../platform/auth/mcp-config.ts";
 
-export default async function HomePage({ searchParams }: { searchParams: Promise<{ login?: string | string[] }> }) {
+type HomeSearchParams = Record<string, string | string[] | undefined>;
+
+export default async function HomePage({ searchParams }: { searchParams: Promise<HomeSearchParams> }) {
   const params = await searchParams;
-  return <ImpulseLanding loginRequested={params.login === "1"} />;
+  const oauthLoginRequested = isMcpOAuthLoginRequest(params);
+
+  return (
+    <ImpulseLanding
+      loginRequested={params.login === "1" || oauthLoginRequested}
+      oauthLoginRequested={oauthLoginRequested}
+    />
+  );
 }

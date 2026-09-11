@@ -44,7 +44,7 @@ export const auth =
         plugins: [
           jwt(),
           mcp({
-            loginPage: "/?login=1",
+            loginPage: "/",
             consentPage: "/consent",
             resource: getMcpResource(authEnvironment.baseUrl),
             resources: [{

@@ -1,5 +1,14 @@
 export const MCP_SCOPE = "mcp:research" as const;
 
+type OAuthSearchParams = Record<string, string | string[] | undefined>;
+
+export function isMcpOAuthLoginRequest(params: OAuthSearchParams) {
+  return params.response_type === "code"
+    && typeof params.client_id === "string"
+    && typeof params.sig === "string"
+    && typeof params.ba_iat === "string";
+}
+
 export function getMcpResource(baseUrl: string) {
   return `${new URL(baseUrl).origin}/mcp`;
 }

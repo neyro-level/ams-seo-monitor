@@ -16,9 +16,10 @@ import { authClient } from "../../../platform/auth/client.ts";
 
 type LoginDialogProps = {
   initialOpen?: boolean;
+  oauthLoginRequested?: boolean;
 };
 
-export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
+export function LoginDialog({ initialOpen = false, oauthLoginRequested = false }: LoginDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
   const [username, setUsername] = useState("");
@@ -53,7 +54,7 @@ export function LoginDialog({ initialOpen = false }: LoginDialogProps) {
 
       loginSucceededRef.current = true;
       setOpen(false);
-      if (!window.location.search.includes("oauth_query=")) router.replace("/dashboard/");
+      if (!oauthLoginRequested) router.replace("/dashboard/");
     } catch {
       setErrorMessage("Не удалось войти. Повторите попытку позже.");
     } finally {
