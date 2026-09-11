@@ -1,87 +1,53 @@
 # Module: Reporting
 
-## Назначение
+## Purpose
 
-Компилирует и выдаёт единый browser-safe директорский SEO-отчёт сайта по четырём периодам и пяти вкладкам.
+Compiles and serves browser-safe director reports for one authorized site and one period.
 
-## Не входит в scope
+## Not In Scope
 
-Provider HTTP, tenant configuration, report mutations from browser, второй compiler и raw provider UI.
+Provider HTTP, provider credentials, report mutations from browser, second compiler and raw provider UI.
 
-## Data ownership
+## Ownership
 
-ReportSnapshot persistence, report repository port, period semantics and `SiteReportSnapshot` compilation.
+- `ReportSnapshot` persistence contract.
+- `SiteReportSnapshot` schema compatibility.
+- Period semantics.
+- Director analytics projections.
+- Single compiler: `src/modules/reporting/domain/report-compiler.ts`.
 
-## Principal types
+## Principals
 
-`platform-analyst` and `tenant-user` through `PrincipalContext` only.
+Platform Analyst can read reports globally. Tenant User can read only reports inside fresh Membership organization. Route slugs do not prove access.
 
-## Roles and permissions
+## Route Contract
 
-Platform analyst reads allowed reports globally. Tenant user reads only reports inside fresh Membership organization.
+```text
+/c/{clientSlug}/{siteSlug}/?period=week|month|quarter|halfYear
+```
 
-## Commands
+Invalid or missing period resolves to `month`.
 
-No browser business mutations. Snapshot persistence is invoked from Data Ingestion worker orchestration.
+## Report Order
 
-## Queries
-
-`ReportService.getSiteReportForUser` читает latest snapshot; `getSiteDirectorAnalyticsForUser` после того же tenant authorization читает engine/phrase/geo/demand/competitor projections.
-
-## DTO
-
-`SiteReportSnapshot` v2 — основной browser contract; v1 читается compatibility schema. Дополнительная `DirectorAnalytics` projection содержит только нормализованные агрегаты, без raw provider payload.
+1. Site context, URL, period, timezone, freshness and source state.
+2. Ranking: Top-3/Top-10, coverage, movement and tracked queries.
+3. Technical/Webmaster health.
+4. Search demand.
+5. Metrika organic/goal/conversion data.
+6. Landing pages, devices, goals, phrases and geography.
+7. Competitors, alerts, risks, opportunities and methodology.
 
 ## Invariants
 
-- compiler only at `src/modules/reporting/domain/report-compiler.ts`;
-- `week=7`, `month=28`, `quarter=90`, `halfYear=180`; default month;
-- current and previous periods have equal length;
-- `partial`, `stale`, `unavailable` and `null` remain explicit;
-- Webmaster average show position is not exact ranking;
-- Top-3 is a subset of Top-10;
-- direct query-to-lead attribution is prohibited;
-- sites and periods are never mixed.
-- вкладки: overview, queries/ranks, pages/leads, technical, competitors;
-- Яндекс default, Google и desktop/mobile остаются явными измерениями;
-- Webmaster → Metrica funnel всегда помечена сводкой разных источников.
-
-## Tenant behavior
-
-ReportSnapshot carries organizationId and Site ownership; route slugs never establish scope.
-
-## Resource authorization
-
-Report query validates Project/Site access before loading the latest snapshot. Foreign tenant receives denial/not-found.
-
-## State lifecycle
-
-Validated snapshots are append-only. Repository selects latest by `generatedAt`; old data may be shown only with explicit stale/partial status.
-
-## Concurrency
-
-One sync uses a stable generatedAt. Concurrent full sync is prevented by Data Ingestion advisory lock.
-
-## Idempotency
-
-Natural snapshot identity and worker orchestration prevent accidental cross-period overwrite; repeated reads are side-effect free.
-
-## Audit
-
-Reads do not create business AuditEvent. Snapshot-producing sync is tracked by SyncRun/SourceRun and worker logs.
-
-## Events / Async policy
-
-Reporting does not own outbox topics. It is called by the idempotent project sync handler.
-
-## Integrations
-
-Consumes normalized data through application contracts; never calls Yandex/Topvisor directly.
-
-## Failure behavior
-
-Missing/invalid snapshot → unavailable/not-found; foreign scope → denial; previous data requires explicit source/freshness label.
+- `SiteReportSnapshot` is the only browser-safe report DTO.
+- Current and previous periods have equal length.
+- `partial`, `stale`, `unavailable` and `null` stay explicit.
+- Webmaster average show position is not exact rank.
+- Top-3 is a subset of Top-10.
+- Direct query-to-lead attribution is prohibited.
+- Sites and periods are never mixed.
 
 ## Tests
 
-Period math, compiler semantics, authorization, schema serialization, latest snapshot selection and responsive report route.
+Compiler semantics, period math, latest snapshot selection, authorization, schema serialization, null/partial/stale rendering and responsive route proof.

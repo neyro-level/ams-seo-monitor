@@ -1,45 +1,40 @@
 # Module: Identity Access
 
-## Назначение
+## Purpose
 
-Разделяет Better Auth identity/password/session lifecycle и AMS business authorization. Создаёт server-only `PrincipalContext`, управляет пользователями и Membership.
+Separates Better Auth identity/session lifecycle from AMS business authorization. Builds fresh server-only `PrincipalContext` and owns user/membership administration.
 
 ## Ownership
 
-- Better Auth: User identity, Account credential, Session, Verification;
-- AMS: Organization, `Member.tenantRole`, permissions, resource authorization и административные операции доступа.
+- Better Auth: identity, password credential, sessions, verification records.
+- AMS: `systemRole`, Organization Membership, tenant role, permissions, resource authorization and safe audit markers.
 
-Public signup, self-service password recovery, invitations, impersonation, Organization Plugin и второй auth provider не входят в scope.
+Public signup, password recovery, invitations, impersonation, Organization Plugin and second auth provider are out of scope.
 
-## Principal и роли
+## Principals
 
-- `platform-admin`: platform management, явный cross-tenant target;
-- `platform-analyst`: project/report/sync read;
-- `tenant-user`: свежий Membership и `ORG_OWNER | ORG_MEMBER | VIEWER`;
-- `job`: server-owned organization scope;
-- `api-client`: зарезервирован до появления внешнего API.
+- `platform-admin`: platform management, explicit target organization for cross-tenant operations.
+- `platform-analyst`: global project/report/sync read.
+- `tenant-user`: fresh Membership with `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
+- `job`: created by server worker flow.
+- `api-client`: reserved, not active.
 
-Browser никогда не создаёт PrincipalContext. Disabled User не получает principal; platform roles не имеют fake organization; tenant principal требует свежий Membership.
+Browser never creates `PrincipalContext`. Disabled User and removed Membership fail on the next fresh principal read.
 
-## User lifecycle
+## Commands And Queries
 
-```text
-Platform Admin
-→ атомарно создаёт Organization + Project + User credential + Membership + AuditEvent
-→ передаёт назначенный пароль приватным каналом
-→ пользователь входит и сразу открывает /dashboard/
-```
+Commands: provision client user, reset password, enable/disable user, change tenant role, add/remove Membership.
 
-Пароль содержит ровно 8 печатных ASCII-символов. Он хранится только как Better Auth hash, не возвращается после сохранения и не попадает в URL, logs или AuditEvent. Назначение нового пароля отзывает sessions. Отключение пользователя также отзывает доступ.
+Queries: browser-safe users, memberships and form options. Password hash, session token and unnecessary PII are not DTO.
 
-## Commands и queries
+## Invariants
 
-Identity-owned commands: provision client, reset password, enable/disable user, change tenant role, add/remove Membership. Business writes проходят `defineCommand` и пишут безопасный AuditEvent в той же транзакции.
+- Password is exactly 8 printable ASCII characters and is passed only through protected UI/stdin.
+- Password reset revokes sessions.
+- Platform principals do not receive fake `organizationId`.
+- Tenant principal requires active Membership.
+- Every successful mutation writes safe AuditEvent in the same transaction.
 
-Queries возвращают browser-safe user/membership DTO и исключают email, когда он не нужен, session token и password hash.
+## Tests
 
-## Failure и tests
-
-Unauthenticated → login; disabled/no-membership → denial без раскрытия tenant; duplicate login → stable safe error; transaction failure → полный rollback.
-
-Проверяются principal matrix, atomic provisioning, password length, duplicate login/slug, session revocation, disabled user, foreign/no-membership denial, закрытый signup и прямой первый вход в кабинет.
+Principal matrix, closed signup, duplicate login, password length, session revocation, disabled user, membership removal, tenant isolation and atomic provisioning.

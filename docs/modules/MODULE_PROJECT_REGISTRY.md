@@ -1,86 +1,44 @@
 # Module: Project Registry
 
-## Назначение
+## Purpose
 
-Управляет `Organization → Project → Site`, provider mappings, goals, tracked queries, profiles и configuration readiness.
+Owns tenant business structure: Organization → Project → Site, provider mappings, goals, query core, threshold/cluster profiles and configuration readiness.
 
-## Не входит в scope
+## Not In Scope
 
-Provider HTTP, report compilation, credentials storage, physical project deletion и generic CRUD.
+Provider HTTP calls, credential storage, report compilation, physical deletion of business history and generic CRUD.
 
-## Data ownership
+## Ownership
 
-Organization, Project, Site, ProviderConnection, GoalDefinition, TrackedQuerySet/TrackedQuery, ThresholdProfile и QueryClusterProfile. Prisma schema/migrations own shape; operator config is an explicit private-path import, not a deploy input.
+Models: Organization, Project, Site, ProviderConnection, SearchTarget, ProviderOperation, GoalDefinition, GoalDefinitionSite, TrackedQuerySet, TrackedQuery, ThresholdProfile, QueryClusterProfile, QueryClusterGroup.
 
-## Principal types
+## Principals
 
-`platform-admin`, `platform-analyst`, `tenant-user`. Job access exists only through explicit worker APIs; api-client is not active.
+- Platform Admin: global read/write with explicit target organization.
+- SEO Analyst: global read.
+- Tenant roles: organization-scoped read; management only when explicitly allowed by command.
+- Job: only through worker APIs.
 
-## Roles and permissions
+## Commands And Queries
 
-- platform-admin: global read/write with explicit target organization;
-- platform-analyst: global read;
-- ORG_OWNER: organization read and allowed project management;
-- ORG_MEMBER/VIEWER: organization read only.
+Commands are typed and versioned: create/update/status operations for projects, sites, provider mappings, goals, query sets and profiles. Mutations use `defineCommand`, transaction-bound repositories and optimistic `version`.
 
-## Commands
-
-Typed create/update/status commands for Project and Platform Admin-owned registry aggregates. New mutations use `defineCommand`, transaction-bound repositories and optimistic `version`.
-
-## Queries
-
-Project/site/navigation/monitoring reads and bounded Platform Admin list/detail/form-option queries with allowlisted filters/sorts.
-
-## DTO
-
-Selected project/site/configuration DTOs only; no Prisma records, credentials or raw provider payloads.
+Queries expose bounded list/detail/navigation/readiness DTOs with allowlisted filters, sorts and pagination.
 
 ## Invariants
 
-- Project belongs to one Organization; Site belongs to the same tenant;
-- slug/parent uniqueness follows Prisma constraints;
-- enabled site has verified HTTPS URL and approved provider mapping;
-- checked-in config contains no secrets;
-- runtime reads PostgreSQL, not config JSON;
-- `clientSlug/siteSlug` preserve the URL contract;
-- replacement disables tracked queries instead of deleting history.
+- Project belongs to one Organization.
+- Site belongs to the same Organization as Project.
+- Enabled site has exact HTTPS URL, timezone and approved provider mappings.
+- Provider settings store only nonsecret IDs/settings.
+- `clientSlug/siteSlug` remains stable route contract.
+- Replacing query core disables missing queries instead of deleting history.
+- Resource authorization happens inside the transaction for writes.
 
-## Tenant behavior
+## Async
 
-Every tenant-owned row has organizationId. Repository filters and composite foreign keys independently enforce owner consistency.
-
-## Resource authorization
-
-Queries derive scope from PrincipalContext. Mutations load the concrete resource/parent inside the transaction and return not-found-or-forbidden without existence disclosure.
-
-## State lifecycle
-
-Projects: `PLANNED → ACTIVE ↔ DISABLED`; Site/provider/query disable preserves history. Physical deletion is outside ordinary commands.
-
-## Concurrency
-
-Mutable aggregates use positive `version`; stale writes return a stable conflict and commit neither mutation nor audit.
-
-## Idempotency
-
-Seed is repeatable. Deferred project sync uses Platform Operations idempotency + outbox; direct registry mutations rely on explicit version/unique constraints.
-
-## Audit
-
-Every successful registry mutation writes one safe AuditEvent in the same transaction.
-
-## Events / Async policy
-
-Registry writes emit OutboxEvent only when a named command requires deferred work. Provider sync requests use `project.sync.requested`.
-
-## Integrations
-
-No direct provider calls. `pnpm project:add` prepares operator config; only explicit `config:sync --source <private-path> --apply` materializes it.
-
-## Failure behavior
-
-Foreign/missing resource → stable denial; stale version → conflict; invalid relation/slug/settings → stable validation/domain error; no partial write.
+Only named commands enqueue events. Current project sync topic: `project.sync.requested`; integration setup and competitors sync are worker-owned follow-up topics.
 
 ## Tests
 
-Permission matrix, tenant isolation, stale conflicts, audit atomicity, tracked-query preservation, migrations, URL state and responsive admin UI.
+Tenant ownership, stale version conflicts, audit atomicity, provider setting redaction, query preservation, URL state and responsive admin UI.

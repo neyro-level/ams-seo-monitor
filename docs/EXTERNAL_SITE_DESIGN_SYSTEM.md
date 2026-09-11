@@ -1,293 +1,114 @@
-# AMS IMPULSE External Site Design System
+# EXTERNAL SITE DESIGN SYSTEM
 
-**Версия:** 1.1
-**Поверхность:** публичный маршрут `/`, действующие юридические страницы и modal-вход
-**Основа:** собственный публичный визуальный профиль AMS IMPULSE
-**Статус:** канон внешнего сайта AMS IMPULSE
+Canonical UI contract for public AMS IMPULSE routes: `/`, legal pages and login/lead modals.
 
-## 1. Граница системы
+Private cabinet UI is governed by [`INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](INTERNAL_DASHBOARD_DESIGN_SYSTEM.md).
 
-Эта дизайн-система применяется только к публичной части AMS IMPULSE. Приватный кабинет использует отдельный канон [`INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`](INTERNAL_DASHBOARD_DESIGN_SYSTEM.md).
+## Character
 
-Внешний и внутренний интерфейсы связаны брендом и базовой тёмно-синей палитрой, но не копируют друг друга:
+Public profile: cold service-premium. It is strict, technological and clear without cyberpunk, neon, warm luxury or generic SaaS softness.
 
-- внешний сайт — Manrope, крупная editorial-типографика, строгий marketing hero, почти прямые углы;
-- внутренний кабинет — PT Root UI, плотная рабочая композиция, более мягкие панели и controls;
-- общая связка — графитово-синий основной цвет и steel-blue акцент.
+One screen should communicate one meaning: route, value and action first; decoration second.
 
-## 2. Характер
+## Theme
 
-Публичный профиль AMS IMPULSE — холодный service-premium:
+Public UI uses isolated `.theme-public`, Manrope and `ch-*` tokens only. These tokens must not leak into private reusable components.
 
-- строгий, но не корпоративно-сухой;
-- технологичный, но не cyberpunk;
-- премиальный через воздух, типографику и материалы;
-- сервисный, а не рекламно-крикливый;
-- один экран — один смысл;
-- сначала маршрут и действие, затем эмоция.
+Core rhythm:
 
-Не использовать:
-
-- мягкий generic SaaS;
-- glassmorphism как основной язык;
-- неоновый glow;
-- тёплый золотой luxury;
-- красный как основной акцент;
-- декоративные градиенты без функциональной роли;
-- одинаковые карточечные экраны без смены ритма.
-
-## 3. Цветовые токены
-
-```css
-:root {
-  --ch-accent: #5f7fae;
-  --ch-accent-hover: #4f709f;
-  --ch-accent-soft: rgb(95 127 174 / 10%);
-  --ch-accent-strong: #3e5d86;
-
-  --ch-bg-deepest: #0c1117;
-  --ch-bg-deeper: #101720;
-  --ch-bg-dark: #151e29;
-  --ch-bg-dark-elev: #1b2633;
-  --ch-bg-dark-hover: #223142;
-
-  --ch-bg-page: #f3f5f7;
-  --ch-bg-section: #fafbfc;
-  --ch-bg-surface: #ffffff;
-  --ch-bg-soft: #eef2f6;
-
-  --ch-white: #f8fafc;
-  --ch-soft-white: #cbd5e1;
-  --ch-muted-ondark: rgb(248 250 252 / 62%);
-  --ch-faint-ondark: rgb(248 250 252 / 38%);
-
-  --ch-text-primary: #111827;
-  --ch-text-secondary: #4b5563;
-  --ch-text-tertiary: #6b7280;
-
-  --ch-border-subtle: rgb(255 255 255 / 8%);
-  --ch-border-hover: rgb(255 255 255 / 16%);
-  --ch-border-light: #d9e1e8;
-}
+```text
+dark hero → light evidence → soft service detail → light proof → dark CTA/footer
 ```
 
-Цветовой ритм лендинга: `dark hero → light → soft → light → dark CTA → dark footer`. Значения живут только в изолированном `.theme-public`; generic primitives не зависят от `ch-*`.
+Steel-blue accent is used sparingly for primary CTA, focus and one data/structure marker.
 
-Steel-blue используется редко: primary CTA, focus, ключевой marker, одна линия динамики. Несколько равносильных акцентов запрещены.
+## Typography
 
-## 4. Типографика
+- Display: `clamp(44px, 6.2vw, 84px)`, strong, tight.
+- H1/H2: large editorial headings.
+- Body: `16px`, comfortable line height.
+- Eyebrow: uppercase small marker only when it adds structure.
 
-Основной шрифт публичной части — локальный **Manrope**.
+No meaningful text is baked into images. Long Russian headings wrap instead of shrinking to unreadable size.
 
-| Роль | Размер | Вес | Правило |
-|---|---:|---:|---|
-| Display | `clamp(44px, 6.2vw, 84px)` | 800 | `line-height: 0.98–1.06`, tracking `-0.045em` |
-| H1 | `clamp(34px, 3.4vw, 52px)` | 750–800 | tracking `-0.025em` |
-| H2 | `clamp(28px, 2.8vw, 44px)` | 700 | tracking `-0.02em` |
-| H3 | `clamp(20px, 1.8vw, 28px)` | 600 | line-height `1.28–1.34` |
-| Lead | `clamp(16px, 1.2vw, 21px)` | 400 | line-height `1.6–1.72` |
-| Body | `16px` | 400 | line-height `1.6` |
-| Small | `14px` | 400–600 | line-height `1.5` |
-| Eyebrow | `11px` | 700 | uppercase, tracking `0.18em` |
+## Layout
 
-Правила:
-
-- заголовки по левому краю;
-- на первом экране не больше двух коротких текстовых блоков;
-- длинные вступления запрещены;
-- технологии не подменяют продуктовый результат;
-- текст не уменьшается ради сохранения одной строки.
-
-## 5. Layout
+Container:
 
 ```css
-.external-container {
-  width: 100%;
-  max-width: 1360px;
-  margin-inline: auto;
-  padding-inline: 24px;
-}
+max-width: 1360px;
+padding-inline: 24px;
 ```
 
-На mobile горизонтальный отступ `20px`.
+Mobile padding: `20px`.
 
-Основные паттерны:
+Preferred patterns:
 
-- dark split hero;
-- 4/8 editorial;
-- 6/6 service panel;
-- light evidence section;
-- dark final CTA slab.
+- quiet premium hero;
+- editorial 4/8 or 6/6 sections;
+- evidence and service sections with varied rhythm;
+- dark final CTA and footer.
 
-Широкая рабочая композиция предпочтительнее узкой центральной колонки. Whole-page horizontal overflow запрещён.
+Whole-page horizontal overflow is forbidden.
 
-## 6. Геометрия
+## Header
 
-```css
---ch-r-xs: 2px;
---ch-r-sm: 6px;
---ch-r-md: 8px;
---ch-r-lg: 10px;
---ch-r-xl: 14px;
---ch-r-pill: 999px;
-```
+- Left: compact `AMS IMPULSE` wordmark.
+- Right: one main action, login to cabinet.
+- Login opens modal, not a separate `/login` route.
+- Mobile label may shorten to `Войти`.
+- Touch target at least `44px`.
 
-- поля и карточки почти прямые;
-- большие мягкие контейнеры используются редко;
-- pill допустим только для badge или компактного filter;
-- тени сухие и нейтральные;
-- цветные тени и outer glow запрещены.
+Secondary nav appears only when real sections exist.
 
-## 7. Header
+## Hero
 
-Публичный header:
+Hero contains:
 
-- слева компактный wordmark `AMS IMPULSE`;
-- справа одно главное сервисное действие — вход в личный кабинет;
-- вход открывает модальное окно, не отдельную страницу;
-- touch target не меньше `44px`;
-- на mobile подпись сокращается до `Войти`;
-- вторичная навигация добавляется только вместе с новыми секциями лендинга.
+- one strong H1;
+- one lead;
+- one primary CTA;
+- up to three short markers;
+- one cold architectural/data visual.
 
-## 8. Hero
+Avoid generic AI heads, robots, rockets, magnifying glasses, Yandex logos, fake dashboards inside images and text embedded in images.
 
-Текущий сценарий — **Quiet Premium Hero**:
+## Modals
 
-- один сильный H1;
-- один lead;
-- один primary CTA;
-- до трёх коротких маркеров;
-- крупный технологический визуал;
-- левая часть сохраняет контраст под текст;
-- главный визуальный объект смещён вправо.
+Login modal:
 
-Фото или генеративный визуал должны быть холодными, архитектурными и правдоподобными. Абстрактная графика допустима только как тонкий слой данных поверх среды.
+- shadcn/Base UI Dialog;
+- focus trap and Escape close;
+- login + password;
+- one primary button `Войти`;
+- neutral safe error;
+- successful login redirects to `/dashboard/`.
 
-## 9. Изображения
+Lead modal:
 
-Подходят:
+- name;
+- phone;
+- required consent;
+- honeypot/open-time anti-spam;
+- one primary action;
+- success/error states without internal API details;
+- submit only to allowlisted AMS Leads API.
 
-- современная архитектура из стекла и графита;
-- северный вечерний свет;
-- точная модульная сетка;
-- тонкие траектории и узлы данных;
-- controlled depth без сильного blur.
+## Legal Pages And Footer
 
-Не подходят:
+Legal text is readable HTML and does not require JavaScript. Footer contains brand, contacts and existing legal routes only; no links to nonexistent sections.
 
-- generic AI-head;
-- роботы, ракеты, мишени и лупы;
-- буквальные финансовые графики;
-- интерфейсы, сгенерированные внутри изображения;
-- логотипы Яндекса;
-- фиолетовый cyberpunk;
-- тёплые золотые фильтры;
-- текст внутри изображения.
+## Motion
 
-Ключевой визуал хранится отдельным оптимизированным asset. H1, CTA и значимые подписи всегда остаются HTML.
+Use short motion `150–220ms`: opacity, border, background and translate up to `2px`. Respect `prefers-reduced-motion`. Avoid card scale, parallax and glow.
 
-## 10. Кнопки и ссылки
+## Acceptance
 
-Marketing-варианты принадлежат публичному `MarketingButton`, а не generic `Button`. Это сохраняет переносимость shadcn primitive и визуальную неизменность внешней темы.
-
-Primary CTA:
-
-- фон `--ch-accent`;
-- белый текст;
-- высота минимум `48px`;
-- hover `--ch-accent-hover` и translateY не более `2px`;
-- без outer glow.
-
-Outline action:
-
-- hairline border;
-- прозрачная или спокойная поверхность;
-- hover через border/surface, не свечение.
-
-CTA должен называть действие. Предпочтительно `Обсудить проект`, `Разобрать задачу`, `Войти в личный кабинет`. Слабые подписи `Подробнее` и `Узнать больше` не используются без контекста.
-
-## 11. Модальное окно входа
-
-Login modal относится к внешней системе, потому что открывается с публичной страницы:
-
-- shadcn Dialog поверх Base UI с focus trap и закрытием по Escape;
-- затемнённый backdrop без цветного glow;
-- графитовая почти прямая панель;
-- Manrope;
-- логин и пароль;
-- одна primary-кнопка `Войти`;
-- нейтральное сообщение об ошибке без раскрытия деталей;
-- accounts создаёт оператор; самостоятельной регистрации в интерфейсе нет;
-- после успешного входа переход на `/dashboard/`.
-
-## 12. Модальное окно заявки
-
-Contact modal повторяет внешний визуальный язык и содержит только необходимое:
-
-- имя;
-- телефон с маской;
-- обязательное согласие на обработку данных;
-- hidden honeypot и время открытия для anti-spam;
-- одна кнопка `Обсудить проект`;
-- success/error states без раскрытия внутренних ответов API;
-- заявка уходит только в allowlisted AMS Leads API.
-
-## 13. Подвал и правовые страницы
-
-- подвал продолжает тёмный ритм hero;
-- содержит только бренд, контакты и существующие правовые маршруты;
-- ссылки на несуществующие разделы продукта запрещены;
-- правовые страницы используют dark intro, светлое content body и общий footer;
-- юридически значимый текст остаётся HTML и читается без JavaScript.
-
-## 14. Motion
-
-- длительность `150–220ms`;
-- только opacity, border, background и translate до `2px`;
-- `prefers-reduced-motion` обязателен;
-- scale всего card shell и декоративная параллакс-анимация запрещены.
-
-## 15. Responsive acceptance
-
-| Width | Контракт |
-|---:|---|
-| `375` | один столбец, `Войти`, H1 без обрезания, visual ниже текста |
-| `768` | один широкий столбец, полный текст входа, CTA и helper рядом при наличии места |
-| `1280` | split hero, визуал справа |
-| `1440` | split hero в контейнере `1360px`, без искусственного сжатия |
-
-На всех размерах:
-
-- нет горизонтального scroll страницы;
-- CTA и вход имеют touch target не меньше `44px`;
-- контраст соответствует WCAG AA;
-- значимый текст не является частью изображения.
-
-## 16. Связь с внутренним кабинетом
-
-Общие элементы бренда:
-
-- `#101720` как основной тёмно-синий;
-- `#5F7FAE` как controlled accent;
-- холодные нейтральные поверхности;
-- строгая информационная иерархия.
-
-Различия сохраняются намеренно:
-
-- внешний сайт: Manrope, крупный масштаб, почти прямые углы, маркетинговый ритм;
-- кабинет: PT Root UI, меньший масштаб, радиусы control/panel/card `10/14/18px`, операционная плотность;
-- marketing hero, background imagery и крупный display запрещены внутри кабинета.
-
-## 17. Проверка
-
-Перед готовностью публичного UI:
-
-- используются только внешние `ch-*` tokens;
-- внутренние application components и semantic tokens не переносятся на landing;
-- Manrope загружается локально;
-- изображение не содержит текст и логотипы;
-- CTA ведёт к реальному действию;
-- modal доступен с клавиатуры;
-- contact form проверена вместе с origin allowlist и Max delivery;
-- footer не содержит ссылок на отсутствующие страницы;
-- выполнен browser proof на `375 / 768 / 1280 / 1440`.
+- `375`: one column, no H1 clipping, visual below text.
+- `768`: wide single column where needed.
+- `1280`: split hero works.
+- `1440`: content sits inside `1360px` container.
+- CTA and login targets at least `44px`.
+- WCAG AA contrast.
+- No public/private token mixing.
+- Lead form origin allowlist remains intact.

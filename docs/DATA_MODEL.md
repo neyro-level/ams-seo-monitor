@@ -1,352 +1,178 @@
 # DATA MODEL
 
-## Источники истины
-
-- `prisma/schema.prisma` — фактическая структура PostgreSQL;
-- `prisma/migrations/*` — immutable история изменений schema;
-- `src/shared/schemas/*` — runtime DTO validation;
-- этот документ — назначение, связи, lifecycle и invariants;
-- operator configuration — private external input для explicit `config:sync`, не production runtime store;
-- `config/examples/**` и test fixtures содержат только synthetic data; verifier запрещает private operator paths и известные client signatures в tracked tree.
-
-PostgreSQL — единственный runtime source of truth.
-
-## DateTime contract
-
-Audit updated: `2026-09-07`. Prisma version: `7.10.0`. После удаления compatibility auth schema в schema осталось 81 поле `DateTime`: 17 доказанных UTC instant полей используют PostgreSQL `timestamptz(3)`, остальные 64 остаются `timestamp(3)` (`timestamp without time zone`). Prisma default mapping для PostgreSQL задаёт `DateTime → timestamp(3)`; timezone-aware mapping задан явно через `@db.Timestamptz(3)`.
-
-Нормативные источники: [Prisma PostgreSQL type mapping](https://docs.prisma.io/docs/orm/v6/overview/databases/postgresql), [Prisma 7 native database types](https://docs.prisma.io/docs/orm/v7/prisma-migrate/workflows/native-database-types), [PostgreSQL 18 date/time types](https://www.postgresql.org/docs/18/datatype-datetime.html).
-
-PostgreSQL не сохраняет timezone в `timestamp without time zone` и игнорирует offset при приведении входа к этому типу. `timestamptz` хранит instant в UTC, но преобразование старого `timestamp` использует session `TimeZone`, если зона не указана явно. Поэтому 12B может применять только явную семантику `USING <column> AT TIME ZONE 'UTC'` и только к полям с доказанным UTC-origin; слепое изменение native type запрещено.
-
-Статусы:
-
-- `TIMESTAMPTZ_UTC` — writers передают JS `Date` либо ISO/RFC3339 instant с `Z`/offset; conversion на копии production backup сохранил epoch и null-shape;
-- `KEEP_TIMESTAMP` — значение является civil date, а не instant; timezone задаёт provider/site contract, поэтому автоматический переход на `timestamptz` изменит смысл;
-- `REQUIRES_CHECK` — старые production-значения или все writers не доказаны; migration запрещена до read-only проверки database/session timezone и выборки данных.
-
-| Model.fields | Бизнес-смысл | Источник timezone / UTC proof | Стратегия | Статус |
-|---|---|---|---|---|
-| `User.disabledAt` | момент административной блокировки | admin CLI передаёт `new Date()` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `User.createdAt`, `User.updatedAt` | создание/последнее изменение identity | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять; проверить production timezone и samples | REQUIRES_CHECK |
-| `Session.expiresAt`, `Session.createdAt`, `Session.updatedAt` | Better Auth session lifecycle | Better Auth-owned writer; historical adapter/session timezone не доказан | не менять; сверить production rows и Better Auth adapter | REQUIRES_CHECK |
-| `Account.accessTokenExpiresAt`, `Account.refreshTokenExpiresAt`, `Account.createdAt`, `Account.updatedAt` | Better Auth account/token lifecycle | Better Auth-owned writer; provider offsets и historical rows не доказаны | не менять; сверить provider/adapter writers | REQUIRES_CHECK |
-| `Verification.expiresAt`, `Verification.createdAt`, `Verification.updatedAt` | Better Auth verification lifecycle | Better Auth-owned writer; historical rows не доказаны | не менять; проверить adapter и samples | REQUIRES_CHECK |
-| `Organization.createdAt`, `Organization.updatedAt` | tenant record audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `Member.createdAt`, `Member.updatedAt` | membership audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `ThresholdProfile.createdAt`, `ThresholdProfile.updatedAt` | threshold profile audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `QueryClusterProfile.createdAt`, `QueryClusterProfile.updatedAt` | cluster profile audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `QueryClusterGroup.createdAt`, `QueryClusterGroup.updatedAt` | cluster group audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `Project.createdAt`, `Project.updatedAt` | project audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `Site.createdAt`, `Site.updatedAt` | site audit time | DB `now()` / Prisma `@updatedAt`; `Site.timezone` is business configuration, not proof for these instants | не менять до production proof | REQUIRES_CHECK |
-| `ProviderConnection.createdAt`, `ProviderConnection.updatedAt` | provider mapping audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `ProviderConnection.lastCheckedAt`, `ProviderConnection.connectedAt`, `ProviderOperation.startedAt`, `ProviderOperation.finishedAt` | фактические provider lifecycle instants | worker JS `Date` | `timestamptz(3)` | TIMESTAMPTZ_UTC |
-| `ProviderOperation.createdAt`, `ProviderOperation.updatedAt`, `SearchTarget.createdAt`, `SearchTarget.updatedAt` | audit/configuration time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `GoalDefinition.createdAt`, `GoalDefinition.updatedAt` | goal configuration audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `TrackedQuerySet.createdAt`, `TrackedQuerySet.updatedAt` | query-set audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `TrackedQuery.createdAt`, `TrackedQuery.updatedAt` | tracked-query audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `SyncRun.startedAt`, `SyncRun.finishedAt` | фактические границы полного sync | worker injects `new Date().toISOString()`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `SyncRun.createdAt`, `SyncRun.updatedAt` | sync record audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `SourceRun.startedAt`, `SourceRun.finishedAt` | фактические границы provider execution | worker ISO instant with `Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `SourceRun.createdAt`, `SourceRun.updatedAt` | source-run audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `WebmasterDailyMetric.date`, `WebmasterQueryDailyMetric.date`, `MetrikaDailyMetric.date`, `LandingPageDailyMetric.date`, `MetrikaDeviceDailyMetric.date`, `MetrikaGoalDailyMetric.date` | provider civil day / period key | provider date plus site/provider timezone; persisted as `YYYY-MM-DDT00:00:00.000Z` solely for stable storage | сохранить `timestamp(3)`; `timestamptz` запрещён без отдельного semantic redesign | KEEP_TIMESTAMP |
-| `MetrikaSearchEngineDailyMetric.date`, `MetrikaSearchPhraseDailyMetric.date`, `MetrikaGeoDailyMetric.date` | provider civil day / period key | provider date plus site timezone; stable UTC-midnight storage only | сохранить `timestamp(3)` | KEEP_TIMESTAMP |
-| `MetrikaSearchEngineDailyMetric.createdAt`, `MetrikaSearchPhraseDailyMetric.createdAt`, `MetrikaGeoDailyMetric.createdAt` | ingestion row audit time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `WebmasterDailyMetric.createdAt`, `WebmasterQueryDailyMetric.createdAt`, `MetrikaDailyMetric.createdAt`, `LandingPageDailyMetric.createdAt`, `MetrikaDeviceDailyMetric.createdAt`, `MetrikaGoalDailyMetric.createdAt` | ingestion row audit time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `RankingCapture.capturedAt` | instant получения/владельческого снимка позиции | provider RFC3339 instant или explicit `T00:00:00.000Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `RankingCapture.createdAt` | capture row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `CompetitorSnapshot.capturedAt` | Topvisor snapshot instant | worker JS `Date` | `timestamptz(3)` | TIMESTAMPTZ_UTC |
-| `CompetitorSnapshot.createdAt`, `Notification.createdAt` | persistence/audit time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `Notification.occurredAt`, `NotificationRead.readAt` | user-visible event/read instants | worker/action JS `Date` | `timestamptz(3)` | TIMESTAMPTZ_UTC |
-| `TechnicalSnapshot.capturedAt` | instant provider fetch represented by snapshot | validated provider `fetchedAt` with offset; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `TechnicalSnapshot.createdAt` | snapshot row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `ReportSnapshot.generatedAt` | report compilation instant | worker-generated ISO instant with `Z`; repository constructs JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `ReportSnapshot.createdAt` | report row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `AuditEvent.createdAt` | audit marker creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `IdempotencyKey.expiresAt` | idempotency retention deadline | reliability service derives ISO instant from injected JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `IdempotencyKey.createdAt`, `IdempotencyKey.updatedAt` | idempotency record audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `OutboxEvent.lockedAt`, `OutboxEvent.processedAt` | lease acquisition and terminal processing instants | repository uses injected ISO instant converted to JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `OutboxEvent.occurredAt`, `OutboxEvent.availableAt` | business occurrence / earliest dispatch instant | application normally supplies UTC ISO, but DB defaults and migration backfill remain valid writers | не менять до production default/backfill proof | REQUIRES_CHECK |
-| `OutboxEvent.createdAt`, `OutboxEvent.updatedAt` | outbox row audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `JobRun.startedAt`, `JobRun.finishedAt` | queue attempt boundaries | repository uses injected UTC ISO/JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `JobRun.createdAt` | attempt row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `RuntimeHeartbeat.startedAt`, `RuntimeHeartbeat.heartbeatAt` | worker identity start and latest heartbeat instants | runtime passes JS `Date`; all arithmetic uses epoch milliseconds | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `RuntimeHeartbeat.createdAt`, `RuntimeHeartbeat.updatedAt` | heartbeat row audit time | DB `now()` / Prisma `@updatedAt`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-| `RetentionRun.startedAt`, `RetentionRun.finishedAt` | retention execution boundaries | runtime passes one injected JS `Date` | `timestamptz(3)`, explicit `AT TIME ZONE 'UTC'` | TIMESTAMPTZ_UTC |
-| `RetentionRun.createdAt` | retention row creation time | DB `now()`; historical session timezone не доказан | не менять до production proof | REQUIRES_CHECK |
-
-Coverage включает все DateTime-поля текущей Prisma schema, включая onboarding, provider operation, Metrica analytics, competitor и notification records. Ранее подтверждённый backup-copy proof сохраняет epoch/null-shape для старых UTC-полей при production timezone `Etc/UTC`; новые migration-поля получают тип явно.
+Этот документ — единственный data/lifecycle source of truth. Фактическую структуру определяют `prisma/schema.prisma` and immutable `prisma/migrations/*`.
 
-## Identity и access
-
-### User
+## Sources Of Truth
 
-Better Auth identity with project `systemRole`, immutable optional `username` и `disabledAt`.
+- `prisma/schema.prisma` — tables, relations, indexes, enums.
+- `prisma/migrations/*` — immutable schema history.
+- `src/shared/schemas/*` — browser/API DTO validation.
+- PostgreSQL — only runtime data store.
+- Operator configuration — explicit private-path import, not runtime source and not deploy input.
 
-- `username` and `email` are unique;
-- `PLATFORM_ADMIN` maps to non-tenant `platform-admin`;
-- `SEO_ANALYST` maps to non-tenant project-specific `platform-analyst`;
-- client access is created only through `Member.tenantRole`;
-- `disabledAt` blocks principal creation;
-- schema содержит только текущие identity/session records; удалённые compatibility auth tables и flags не являются частью runtime contract.
+## Schema Policy
 
-### Session, Account, Verification
+- Applied migration is never edited.
+- Schema change requires a new migration.
+- Production uses only `prisma migrate deploy`; `db push` is forbidden.
+- Destructive data/schema action requires backup, compatibility plan and explicit owner approval.
+- Prisma access is allowed only in database/platform and module infrastructure repositories.
+- JSONB is allowed for validated complex snapshots; queryable ownership/security fields stay relational.
+- Runtime, migrator, test and backup database identities are separate.
 
-Better Auth-owned authentication state. Session token, IP and user-agent are not DTO. Organization Plugin compatibility state отсутствует.
+## Core Ownership
 
-### Organization and Member
+### Identity And Access
 
-```text
-User/Auth Identity
-      ↓
-Member (tenantRole)
-      ↓
-Organization
-      ↓
-Project
-```
+- `User`, `Session`, `Account`, `Verification` are Better Auth-owned identity/session records plus AMS `systemRole`.
+- `Organization` and `Member` are AMS tenant access records.
+- `PrincipalContext` is not a DB record; server builds it from fresh User and Membership.
 
-- membership is unique by `(organizationId, userId)`;
-- `tenantRole` is `ORG_OWNER | ORG_MEMBER | VIEWER`, default `VIEWER`;
-- membership removal removes tenant principal scope on the next authorization read.
+### Project Registry
 
-### PrincipalContext
+Owns:
 
-Not a database record. A server factory creates a discriminated principal from fresh User, deterministically selected Membership and server correlation ID. Platform principals never receive fake `organizationId`; tenant reads use only the selected fresh Membership organization.
+- `Project`, `Site`;
+- `ProviderConnection`, `SearchTarget`, `ProviderOperation`;
+- `GoalDefinition`, `GoalDefinitionSite`;
+- `TrackedQuerySet`, `TrackedQuery`;
+- `ThresholdProfile`, `QueryClusterProfile`, `QueryClusterGroup`.
 
-## Project registry
+`Project` is the tenant ownership root. `Site` and every configuration/history row carry explicit `organizationId`. Composite foreign keys protect parent ownership.
 
-### Project
+### Data Ingestion
 
-Принадлежит одной `Organization`, ссылается на `ThresholdProfile` и `QueryClusterProfile`.
+Owns:
 
-- `slug` уникален глобально;
-- status: `ACTIVE`, `PLANNED`, `DISABLED`;
-- `version` — positive optimistic concurrency token, initial value `1`;
-- successful status/settings mutation increments `version` exactly once;
-- stale expected version rejects the mutation and its AuditEvent in the same transaction;
-- physical delete production project не является обычной операцией.
+- `SyncRun`, `SourceRun`;
+- Webmaster/Metrika metric tables;
+- `RankingCapture`, `CompetitorSnapshot`, `TechnicalSnapshot`;
+- provider operation state used by Topvisor paid/bounded actions.
 
-### Tenant ownership
+Natural keys protect repeatable upserts. Provider raw HTTP bodies, credentials and authorization headers are never stored.
 
-`Project` is the ownership root. Every registry, configuration, query, run, metric and report record stores its own required `organizationId`; it is not inferred from a browser route or a mutable session field.
+### Reporting
 
-- direct `organizationId → Organization` foreign keys preserve a valid owner;
-- composite foreign keys make the owner agree with every parent relation: Site→Project, configuration/query records→their parent, SourceRun→SyncRun/Site, metrics/technical snapshots→Site/SourceRun, RankingCapture→TrackedQuery/optional SourceRun and ReportSnapshot→Site;
-- `SyncRun` has an explicit owner even before a SourceRun exists;
-- `pnpm verify:tenant-ownership` is a read-only preflight that emits only check names and counts. Its every count must be zero before the contract migration reaches production.
+Owns `ReportSnapshot`: append-only, validated report payload for one site and period. Repository reads the latest snapshot by `generatedAt`.
 
-### Site
+### Notifications
 
-Принадлежит одному Project и той же Organization.
+Owns `Notification` and `NotificationRead`. These are safe user-facing projections, not audit logs.
 
-- `(projectId, slug)` уникален;
-- `(organizationId, projectId)` must reference the same Project ownership;
-- хранит display name, URL, timezone и `enabled`;
-- владеет provider connections, tracked queries, runs, metrics и reports;
-- отключение не удаляет историю.
+### Platform Operations
 
-### ProviderConnection
+Owns `AuditEvent`, `IdempotencyKey`, `OutboxEvent`, `JobRun`, `RuntimeHeartbeat`, `RetentionRun`.
 
-Одна запись на `(siteId, provider)` для Webmaster, Metrika или Topvisor.
+Outbox and JobRun are the business delivery truth; pg-boss is transport.
 
-- хранит nonsecret external mapping и validated settings JSON;
-- credentials остаются в server environment;
-- `enabled=false` запрещает provider call.
-- lifecycle status: `PENDING | CONNECTING | CONNECTED | ACTION_REQUIRED | FAILED` с safe status code;
-- Metrica становится `CONNECTED` только после подтверждения двух выбранных целей.
+## Tenant Invariants
 
-### SearchTarget и ProviderOperation
+- Every tenant-owned row stores `organizationId`.
+- Browser route, URL slug, hidden form field or client state never establish tenant scope.
+- Resource authorization and database ownership constraints are both required.
+- Platform Admin uses explicit target organization; it never receives fake tenant scope.
+- Tenant reads use only fresh Membership.
+- Foreign tenant access returns denial/not-found without existence disclosure.
 
-- SearchTarget уникален по site + engine + device + region и задаёт четыре Topvisor targets;
-- ProviderOperation хранит цену и durable state платного checker по уникальному operationKey;
-- `DISPATCHING`/`ACTION_REQUIRED` не перезапускается автоматически.
+## Principal And Roles
 
-## Profiles
+Effective principals:
 
-### ThresholdProfile
+- `platform-admin` — global management with explicit target organization.
+- `platform-analyst` — global read/report/sync visibility.
+- `tenant-user` — fresh Membership with `ORG_OWNER`, `ORG_MEMBER` or `VIEWER`.
+- `job` — server-owned organization scope for worker handlers.
+- `api-client` — reserved, not active public API.
 
-Детерминированные пороги alerts/opportunities. Project ссылается на профиль; изменение влияет на будущую compilation.
+## Project Lifecycle
 
-### QueryClusterProfile и QueryClusterGroup
+- Project statuses: `PLANNED`, `ACTIVE`, `DISABLED`.
+- Site/provider/query disable preserves history.
+- Mutable aggregates use positive `version`; stale writes fail with no mutation and no AuditEvent.
+- Physical delete of project/site/history is outside ordinary commands.
+- Operator config sync disables removed tracked queries/sites when safe; it does not blindly delete history.
 
-Классификация запросов по утверждённым группам. `(profileId, slug)` уникален.
+## Provider Lifecycle
 
-### GoalDefinition и GoalDefinitionSite
+`ProviderConnection` states: `PENDING`, `CONNECTING`, `CONNECTED`, `ACTION_REQUIRED`, `FAILED`.
 
-Project-level allowlist целей Metrika и optional site scope.
+- `enabled=false` forbids provider call.
+- Yandex providers are read-only.
+- Metrika is connected only after required goals are confirmed.
+- Topvisor requires four search targets: Yandex/Google × desktop/mobile.
+- Paid checker requires price-check and unique `ProviderOperation.operationKey`.
+- `DISPATCHING` or ambiguous paid result is not retried automatically.
 
-- `(projectId, externalGoalId)` уникален;
-- `includeInSeoConversion` определяет участие цели в unique target visits;
-- category/direction сохраняют business semantics, а не display-only labels.
+## Sync And Report Lifecycle
 
-### TrackedQuerySet и TrackedQuery
+`SyncRun`: `RUNNING → SUCCESS | PARTIAL | FAILED`.
 
-Один set на site. Query уникален по `(trackedQuerySetId, normalizedQuery)`.
+`SourceRun`: `SUCCESS | PARTIAL | FAILED | NOT_CONFIGURED | ACCESS_DENIED | QUOTA_LIMITED | STALE`.
 
-- содержит source, baseline label и expected count;
-- позиции nullable;
-- `enabled=false` сохраняет историю, но исключает query из активного core.
-
-## Project command lifecycle
-
-- Project create/status/settings use canonical Zod input and `PrincipalContext`;
-- existing Project ownership and requested `organizationId` are checked inside the transaction;
-- Project mutation and safe `AuditEvent` commit atomically;
-- Project `slug` and `organizationId` are immutable after creation in this slice;
-- status/settings changes require the current `version`;
-- no Project command physically deletes a Project or its history.
-
-## Platform Admin command lifecycle
-
-- Platform Admin lists read PostgreSQL through owner module queries with allowlisted search/sort/page and browser-safe DTOs;
-- typed Server Actions rebuild fresh `PrincipalContext`; browser state does not authorize mutations;
-- every mutable aggregate uses positive `version` with optimistic concurrency;
-- resource loaders derive target organization from explicit organization input or validated parent ownership;
-- Organization, Member, Site, ProviderConnection, GoalDefinition, TrackedQuerySet, ThresholdProfile and QueryClusterProfile commit mutation + safe `AuditEvent` atomically;
-- membership removal is explicit and versioned, not implicit overwrite;
-- provider settings contain only nonsecret mapping; sensitive keys are rejected before persistence;
-- tracked query replacement disables missing queries instead of deleting history.
-
-## Sync lifecycle
-
-### SyncRun
-
-Один запуск worker:
-
-- trigger: `DAILY`, `MANUAL`, `PREFLIGHT`, `BACKFILL`;
-- status: `RUNNING`, `SUCCESS`, `PARTIAL`, `FAILED`;
-- `startedAt`, фактический `finishedAt`, число обработанных sites и safe error code.
-
-### SourceRun
-
-Provider execution внутри SyncRun и Site.
-
-- status сохраняет `SUCCESS`, `PARTIAL`, `FAILED`, `NOT_CONFIGURED`, `ACCESS_DENIED`, `QUOTA_LIMITED`, `STALE`;
-- `durationMs`, row count и safe error metadata не содержат raw response body;
-- unexpected worker error закрывает оставшиеся open runs как failed.
-
-PostgreSQL advisory lock запрещает concurrent full sync. Lock session-scoped и освобождается в `finally` или PostgreSQL при разрыве соединения.
-
-## Historical metrics
-
-### Webmaster
-
-- `WebmasterDailyMetric` — daily all-query shows/clicks/CTR/average position, unique `(siteId, date)`;
-- `WebmasterQueryDailyMetric` — period/query/device/order detail с demand и relevant URL из Query Analytics, unique по site + period + date + normalized query + device + order;
-- total KPI не вычисляется суммой ограниченного popular-query pool.
-
-### Metrika
-
-- `MetrikaDailyMetric` — daily organic/all-traffic and target metrics, unique `(siteId, date)`;
-- `LandingPageDailyMetric` — period landing aggregates;
-- `MetrikaDeviceDailyMetric` — period device aggregates;
-- `MetrikaGoalDailyMetric` — period goal aggregates.
-- `MetrikaSearchEngineDailyMetric` — Яндекс/Google organic и unique target visits;
-- `MetrikaSearchPhraseDailyMetric` — распознанные и неизвестные поисковые фразы;
-- `MetrikaGeoDailyMetric` — география органического трафика.
-
-Upsert обновляет актуальное значение того же natural key и связывает его с последним SourceRun.
-
-### RankingCapture
-
-Exact/owner position на момент `capturedAt`, unique по tracked query + instant + source + engine + device + region. Legacy rows читаются как Яндекс/desktop/legacy.
-
-### CompetitorSnapshot
-
-До 10 ведущих доменов на каждый engine/device/region capture с visibility, average position и Top‑3/10/30/50/100.
-
-### TechnicalSnapshot
-
-Validated JSONB для сложных technical structures Webmaster/Metrika. Raw HTTP body, authorization header и credentials не сохраняются.
-
-## ReportSnapshot
-
-Materialized validated report:
-
-- `siteId`, `periodKey`, `schemaVersion`, `generatedAt`, `freshness`;
-- `payload` соответствует `SiteReportSnapshot`;
-- records append-only; `ReportRepository` выбирает последний по `generatedAt`;
-- report payload — browser DTO, не raw source of truth.
+One full sync is protected by PostgreSQL advisory lock. Unexpected worker error closes open SourceRuns/SyncRun best-effort.
 
 Periods:
 
-| Key | Длина | UI |
-|---|---:|---|
-| `week` | 7 дней | Неделя |
-| `month` | 28 дней | Месяц |
-| `quarter` | 90 дней | 3 месяца |
-| `halfYear` | 180 дней | Полгода |
+| Key | Days |
+|---|---:|
+| `week` | 7 |
+| `month` | 28 |
+| `quarter` | 90 |
+| `halfYear` | 180 |
 
-`month` — default. Previous period непосредственно предшествует current и имеет ту же длину.
+Previous period immediately precedes current and has the same length.
 
-## Metric invariants
+## Metric Invariants
 
-- `partial` не становится `success`;
-- `stale` не становится `current`;
-- неизвестное значение не становится `0`;
-- technical endpoint failure сохраняется в partial/error metadata;
-- source error одного периода не переносится в успешный другой период;
-- Webmaster average position — средняя позиция показов, не exact rank;
-- Top-3 является подмножеством Top-10;
-- меньшая позиция лучше;
-- ranking denominator — всё утверждённое ядро, включая unmeasured queries;
-- director conversion = unique target visits / Yandex organic visits;
-- direct query-to-lead attribution запрещена;
-- данные разных projects/sites/periods не смешиваются.
+- `partial` does not become `success`.
+- `stale` does not become `current`.
+- Unknown value does not become `0`.
+- One provider/period failure does not contaminate another successful period.
+- Webmaster average show position is not exact rank.
+- Top-3 is a subset of Top-10.
+- Lower rank position is better.
+- Ranking denominator is the full approved enabled query core.
+- Director conversion = unique target visits / Yandex organic visits.
+- Direct query-to-lead attribution is prohibited.
+- Sites, projects and periods are never mixed.
 
-## Reliability records
+## Reliability Invariants
 
-### Notification и NotificationRead
+- Enqueue transaction atomically creates idempotency marker, event and audit.
+- Same idempotency key + same hash returns original event.
+- Same idempotency key + different hash is conflict.
+- Outbox event payloads are bounded and versioned.
+- pg-boss job carries authoritative `job.data.event`.
+- `singletonKey = outboxEventId`.
+- Only lease owner completes/fails.
+- Retry is bounded exponential backoff.
+- Permanent/exhausted failures become `DEAD_LETTER`.
+- RuntimeHeartbeat is the worker liveness source for readiness.
+- Retention removes only old terminal delivery detail.
 
-Notification — safe пользовательская проекция lifecycle-события с tenant scope, visibility и уникальным dedupKey. NotificationRead индивидуален пользователю и уникален по `(notificationId, userId)`; технические журналы не заменяет.
+## DateTime Policy
 
-### AuditEvent
+DateTime mapping was audited on `2026-09-07` for Prisma `7.10.0`.
 
-Safe append-only marker: optional organization, actor type/id, action, entity, before/after markers, source, correlation ID and timestamp. Organization deletion sets relation null without deleting platform audit history.
+Rules:
 
-### IdempotencyKey
+- proven UTC instants use `timestamptz(3)`;
+- provider civil day/period keys stay `timestamp(3)`;
+- historical DB/default timestamps remain unchanged until production timezone and sample proof exists;
+- blind conversion from `timestamp` to `timestamptz` is forbidden;
+- any new DateTime field must explicitly declare whether it is an instant or civil/business timestamp.
 
-Unique `(scope, organizationScope, key)`. Stores SHA-256 request hash, lifecycle status, response marker, expiry and optional OutboxEvent link. `organizationScope` is always explicit: organization ID or `platform`.
+The archived detailed field table is in `docs/archive/2026-09-11-docs-normalization/DATA_MODEL_DETAILED_2026-09-07.md` only for archaeology; active decisions must be checked against current Prisma schema before migration.
 
-### OutboxEvent
+## Backup And Retention
 
-Status `PENDING → PROCESSING → PROCESSED` or `DEAD_LETTER`; stores topic, JSON payload, `schemaVersion`, `occurredAt`, attempts, availability, lease owner/time, safe error, correlation and processed timestamp.
+Production backup contract:
 
-### JobRun
+- custom-format `pg_dump`;
+- checksum;
+- private offsite copy;
+- remote HEAD confirmation before retention;
+- isolated restore smoke;
+- retention baseline: 7 daily, 8 weekly, 6 monthly.
 
-One row per attempt, unique `(outboxEventId, attempt)`. Stores worker, RUNNING/SUCCESS/FAILED, timing and safe error code.
-
-### RuntimeHeartbeat
-
-One row per unique `(runtime, workerId)`. `startedAt` records the first observed start for that identity; `heartbeatAt` is refreshed at most once per minute and is the only worker-liveness source used by readiness.
-
-### RetentionRun
-
-Retention execution marker: RUNNING/SUCCESS/FAILED, started/finished timestamps and deleted outbox/job-run counts.
-
-Invariants:
-
-- enqueue transaction atomically creates idempotency marker, event and audit;
-- same key + same hash returns the original event;
-- same key + different hash is rejected;
-- pg-boss transports claimed outbox work, but business retry/dead-letter truth remains in OutboxEvent and JobRun;
-- queue payload carries a wrapper `schemaVersion` and one authoritative claimed event in `job.data.event`;
-- queue dispatch uses `singletonKey = outboxEventId`; a duplicate/null send is not a business failure;
-- only lease owner completes/fails;
-- retry uses bounded exponential backoff;
-- permanent/exhausted failures become dead-letter;
-- retention removes only old processed/dead-letter outbox detail;
-- payload/audit/error fields never contain secrets or raw PII.
-
-## Delete и retention
-
-- auth child records cascade вместе с User/Organization по schema rules;
-- Project/Site core relations используют `Restrict` там, где удаление потеряло бы business history;
-- physical delete project/site/history требует отдельной destructive operation и backup/rollback plan;
-- ReportSnapshot и historical retention автоматически не удаляются текущим application code;
-- release rollback не откатывает PostgreSQL schema/data автоматически.
-
-## Backup
-
-Production contract: local custom-format `pg_dump`, checksum, обязательная private offsite copy с HEAD confirmation, retention tiers и restore smoke во временную БД. Детали: `docs/DATABASE.md` и `docs/ops/RECOVERY.md`.
+Release rollback does not roll back schema/data. DB restore is a separate owner-approved recovery operation.

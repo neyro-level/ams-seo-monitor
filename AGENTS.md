@@ -1,10 +1,18 @@
-# AMS IMPULSE — project router
+# AMS IMPULSE — Project Router
 
-## Project contract
+Этот файл — первый проектный источник истины для AI. Он уточняет глобальный AMS-канон и не заменяет код, schema, migrations или runtime config.
 
-AMS IMPULSE — отдельный продукт АМС: публичный SEO-лендинг и приватный кабинет отчётности по нескольким организациям, проектам и сайтам. Это не модуль другого проекта; чужие runtime, БД, auth и credentials не используются.
+## Project Identity
 
-Platform contract: `AMS Application Platform Core 3.4 — Solo Minimal`.
+AMS IMPULSE — отдельный продукт АМС: публичный сайт SEO-услуги и приватный multi-tenant кабинет SEO-отчётности. Это не модуль другого проекта; чужие runtime, БД, auth и credentials не используются.
+
+Repository slug in SourceCraft: `integrator-p/ams-seo-monitor`.
+
+Canonical branch: `origin/main`.
+
+## Platform Contract
+
+`AMS Application Platform Core 3.4 — Solo Minimal`.
 
 ```text
 TENANCY = multi-tenant
@@ -15,89 +23,132 @@ PLATFORM_ADMIN = enabled
 DATABASE = self-managed-postgresql
 ```
 
-`DATABASE` — утверждённое project exception: production PostgreSQL 18 установлен и обслуживается в собственном AMS-контуре. Managed PostgreSQL не является целью или незавершённым этапом.
+`DATABASE = self-managed-postgresql` — принятое project exception. PostgreSQL 18 обслуживается в собственном AMS-контуре; Managed PostgreSQL не является целью или долгом.
 
-## Source of truth
+## Active Sources Of Truth
 
-- продукт и роли — `docs/PRODUCT.md`;
-- архитектура и profile — `docs/ARCHITECTURE.md`;
-- schema/lifecycle/invariants — `docs/DATA_MODEL.md`;
-- auth, PII и trust boundaries — `docs/SECURITY.md`, `docs/AUTH.md`;
-- environment ownership — `docs/ENVIRONMENT.md`;
-- текущий backlog — `docs/MASTER_PLAN.md`;
-- release и recovery — `docs/RUNBOOK_DEPLOY.md`, `docs/ops/*`;
-- private UI — `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
-- public UI, legal и login modal — `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
-- соответствие Core 3.4 — `docs/PLATFORM_CONFORMANCE.md`;
-- exact versions/runtime — `package.json`, lockfile, `.node-version`, Prisma schema/migrations и runtime config.
+Обязательное ядро:
 
-Для обычной задачи читать `README.md`, этот router и один профильный документ. Полный Core и весь docs tree подключать только для architecture/security/compliance scope.
+- `README.md` — быстрый контекст и route map.
+- `docs/PRODUCT.md` — пользователи, сценарии, продуктовые ограничения.
+- `docs/ARCHITECTURE.md` — stack, layers, runtime, release topology.
+- `docs/DATA_MODEL.md` — data ownership, schema policy, lifecycle, invariants.
+- `docs/SECURITY.md` — auth, tenancy, PII, secrets, trust boundaries.
+- `docs/MASTER_PLAN.md` — только незавершённая работа.
+- `docs/RUNBOOK_DEPLOY.md` — production release and recovery gate.
 
-## Product invariants
+Профильные документы:
+
+- `docs/modules/MODULE_*.md` — contracts значимых bounded modules.
+- `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md` — private application UI.
+- `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md` — public marketing/legal UI.
+- `docs/ops/*.md` — конкретные operator runbooks.
+- `docs/adr/*` — труднообратимые решения.
+
+Архив `docs/archive/**` не является каноном. Читать его только для истории normalization или явного archaeology task.
+
+## Runtime Truth
+
+- exact package versions: `package.json`, `pnpm-lock.yaml`, `.node-version`;
+- database truth: `prisma/schema.prisma`, `prisma/migrations/*`;
+- executable boundaries: `dependency-cruiser.config.cjs`, `scripts/verify-architecture.mjs`;
+- release truth: `Dockerfile`, `docker-compose.production.yml`, `ops/**`, `scripts/deploy-production.mjs`;
+- local run truth: `docs/ops/LOCAL_DEVELOPMENT.md`.
+
+Docs explain intent; code/schema/config decide actual behavior.
+
+## Product Invariants
 
 - hierarchy: `Все проекты → Проект → Сайты → Единый отчёт`;
-- browser-safe report contract: `SiteReportSnapshot`;
+- URL/data contract: `clientSlug/siteSlug` and `/c/*`;
+- `SiteReportSnapshot` is the only browser-safe report DTO;
 - periods: `week`, `month`, `quarter`, `halfYear`; default `month`;
-- `partial ≠ success`, `stale ≠ current`, `null ≠ 0`;
-- Webmaster average position не является exact ranking;
-- Top-3 входит в Top-10;
-- direct query-to-lead attribution запрещена; Topvisor mutations и paid rank checks разрешены только idempotent worker-сценарию onboarding/weekly schedule после обязательного price-check;
-- PostgreSQL — единственный runtime source of truth; operator config импортируется только явной private-path командой.
+- `partial != success`, `stale != current`, `null != 0`;
+- Webmaster average show position is not exact ranking;
+- Top-3 is a subset of Top-10;
+- ranking denominator is the full approved enabled query core;
+- direct query-to-lead attribution is prohibited;
+- PostgreSQL is the only runtime source of truth;
+- operator config import is explicit private-path work, never deploy side effect.
 
-## Hard rules
+## Security And Data Rules
 
-1. Перед изменением установить checkout, branch, dirty state и actual versions.
-2. Объявить `STANDARD` или `RISKY`; независимые scope не смешивать.
-3. Browser/URL/form `organizationId` не доказывает tenant access.
-4. Canonical identity — server-generated `PrincipalContext`; Platform Admin не получает fake tenant.
-5. Authentication не заменяет permission + resource authorization.
-6. Prisma запрещён в presentation/domain; global client — только в approved database/infrastructure boundary.
-7. Business mutation проходит `defineAction/API/job → defineCommand → transaction-bound repositories`.
-8. External HTTP/email/AI/storage запрещены внутри business transaction.
-9. Tenant relations защищаются explicit scope и composite PostgreSQL constraints; nested tenant writes запрещены без доказанного исключения.
-10. Applied migration не переписывается; production `db push` запрещён; после schema change выполняется explicit Prisma generate.
-11. Unknown environment/database target для destructive операции означает fail closed.
-12. Better Auth владеет identity/password/session; public signup и Organization Plugin выключены.
-13. Пароль ровно из 8 печатных символов назначает Platform Admin через protected UI или stdin-only CLI; fresh session и active User обязательны.
-14. Secrets/PII не попадают в Git, browser, argv, docs или logs; provider calls только read-only.
-15. Production использует exact reviewed SHA и immutable image; merge не равен release.
-16. Private UI следует AMS UI Development Constitution 3.1 и Application Design System 2.1, использует semantic tokens и PT Root UI; `crm-*`, системный HEX в reusable UI и business CSS в `globals.css` запрещены.
-17. Public UI остаётся в изолированной `theme-public` с Manrope; landing, legal и modal-вход не редизайнятся без отдельного решения владельца.
+1. Browser, URL, form, hidden input and navigation never prove tenant access.
+2. Server-generated `PrincipalContext` is the only authorization input.
+3. Better Auth owns identity/password/session; AMS owns Membership, permissions and resource authorization.
+4. Platform Admin has no fake tenant and must name target organization for cross-tenant actions.
+5. Every tenant-owned record stores `organizationId`; composite PostgreSQL constraints protect parent ownership.
+6. Prisma is allowed only in approved database/infrastructure boundaries.
+7. Business mutation path: `defineAction/API/job adapter → defineCommand → transaction-bound repository`.
+8. External HTTP/email/provider/storage calls are forbidden inside business transaction.
+9. Applied migrations are immutable; production `db push` is forbidden.
+10. Secrets/PII must not appear in Git, docs, browser, argv, logs, AuditEvent or raw error bodies.
+11. Provider credentials exist only server-side. Yandex providers are read-only; Topvisor writes are bounded worker operations with price-check.
+12. Production uses exact reviewed SHA and immutable image; merge is not release.
 
-## Architecture map
+## Architecture Map
 
-- `src/app`, `src/components` — routes и presentation;
-- `src/modules/identity-access` — Membership и auth adapter;
-- `src/modules/project-registry` — organizations/projects/sites/configuration;
-- `src/modules/reporting` — report reads и единственный compiler;
-- `src/modules/ranking-analytics` — ranking semantics;
-- `src/modules/data-ingestion` — sync lifecycle и provider orchestration;
-- `src/modules/platform-operations` — audit/idempotency/outbox/jobs/readiness;
-- `src/modules/platform-admin` — admin composition;
-- `src/platform` — neutral auth/authorization/database/actions/commands/config/observability;
-- `collector/sources` — server-only read-only provider adapters;
-- `src/worker` — compiled worker entrypoint;
-- `prisma` — current schema + immutable migrations;
-- `ops`, `scripts` — reviewed release/maintenance/verification boundaries.
+- `src/app` — route composition only.
+- `src/components` — shared public/private UI.
+- `src/modules/identity-access` — auth adapter, PrincipalContext, users, memberships.
+- `src/modules/project-registry` — organizations, projects, sites, provider mappings, goals, query sets.
+- `src/modules/reporting` — report reads and `SiteReportSnapshot` compiler.
+- `src/modules/ranking-analytics` — pure ranking semantics.
+- `src/modules/data-ingestion` — provider orchestration, normalized evidence, worker APIs.
+- `src/modules/notifications` — browser-safe lifecycle notifications.
+- `src/modules/platform-operations` — audit, idempotency, outbox, pg-boss, JobRun, readiness, retention.
+- `src/modules/platform-admin` — protected admin composition.
+- `src/platform` — neutral auth/authorization/database/actions/commands/config/http/observability.
+- `collector/sources` — server-only provider adapters.
+- `src/worker` — compiled worker entrypoint.
+- `prisma` — schema and immutable migrations.
+- `ops`, `scripts` — reviewed local/release/maintenance tooling.
 
-Cross-module consumers используют только root entrypoints. Runtime pg-boss работает без DDL. Новый topic требует versioned bounded payload, handler, finite retry/dead-letter и tests.
+Cross-module consumers use root entrypoints only. New module requires `docs/modules/MODULE_<NAME>.md` before or with implementation.
 
-## Solo workflow
+## UI Routes
+
+UX scope:
+
+- public `/`, legal pages and login/lead modals → `PUBLIC_COMMERCIAL`, `docs/EXTERNAL_SITE_DESIGN_SYSTEM.md`;
+- private `/dashboard`, `/analyst`, `/admin`, `/notifications`, `/c/*` → `APPLICATION_WORKSPACE`, `docs/INTERNAL_DASHBOARD_DESIGN_SYSTEM.md`;
+- no CMS-native admin exists.
+
+Private UI uses PT Root UI, semantic tokens and project-owned shadcn/Base UI primitives. Public UI uses isolated `theme-public`, Manrope and `ch-*` tokens. Do not mix token systems.
+
+## Work Modes
+
+Use SourceCraft as primary.
 
 ```text
-один независимый scope
-→ новая work/* branch + worktree от origin/main
-→ реализация
-→ commit + push
-→ PR без review/tests/manual CI
-→ перед main: full diff review + STANDARD/RISKY exact-head proof
-→ merge
-→ ancestry check + удалить worktree/local branch
+WORK: branch/worktree from origin/main → scoped edits → optional checkpoint
+PR: create PR only, no implicit tests/review/CI
+MERGE: review + STANDARD/RISKY exact-head gate → merge → cleanup
+RELEASE: owner command only → deploy runbook
 ```
 
-Canonical primary — SourceCraft `origin/main`. GitHub — только очищенное manual mirror. Production меняется лишь по отдельной owner-команде.
+Do not work directly on `main` for a new independent stream.
 
-Основные проверки:
+## Risk Classification
+
+`STANDARD`:
+
+- docs-only normalization;
+- public/private presentation with no data/auth/runtime change;
+- safe read/client UI work.
+
+`RISKY`:
+
+- schema/migrations/data retention;
+- auth, tenant access, PII, secrets;
+- provider integrations, Topvisor paid operations, worker/outbox;
+- dependencies, Docker, CI, release, production ops.
+
+If uncertain, classify as `RISKY`.
+
+## Checks
+
+Available scripts:
 
 ```bash
 pnpm verify:quick
@@ -106,8 +157,20 @@ pnpm verify:daily
 pnpm verify:release
 ```
 
-Выбирать минимально достаточный профиль. Integration runner допускает только explicit `*_test` database. UI proof при необходимости: `375 / 768 / 1280 / 1440`.
+Run only the minimum proof required by scope during WORK. Merge Gate and production proof are separate lifecycle commands.
 
-## Documentation rule
+## Documentation Rule
 
-Обновлять только authoritative документ затронутой области. Не создавать архивы, audit reports, worklogs и вторые планы. Выполненные пункты удалять из `docs/MASTER_PLAN.md`; историю хранит Git.
+Update the authoritative document for the changed area:
+
+- product behavior → `PRODUCT.md`;
+- architecture/profile/stack/boundaries → `ARCHITECTURE.md`;
+- schema/data lifecycle/invariants → `DATA_MODEL.md`;
+- auth/tenancy/PII/secrets/trust → `SECURITY.md`;
+- active backlog → `MASTER_PLAN.md`;
+- production release/recovery → `RUNBOOK_DEPLOY.md`;
+- local/operator procedure → `docs/ops/*`;
+- significant module → `docs/modules/MODULE_*.md`;
+- UI system → the relevant design-system document.
+
+Do not create worklogs, audit reports, second plans, duplicate tech-stack/auth/database documents or new ADRs for small changes. Completed work is kept by Git/SourceCraft history; remove completed items from `MASTER_PLAN.md`.

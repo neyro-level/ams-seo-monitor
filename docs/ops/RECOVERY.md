@@ -1,91 +1,69 @@
 # RECOVERY
 
-## Scope
+Recovery has two independent contours:
 
-Два независимых контура:
+1. code/runtime rollback;
+2. PostgreSQL data recovery.
 
-1. code/runtime rollback — immutable release symlink + Nginx/systemd assets;
-2. data recovery — PostgreSQL backup/restore.
+Code rollback does not roll back schema/data. DB restore is not an automatic release rollback.
 
-Code rollback не откатывает schema/data. DB restore не является обычным способом отката релиза.
+## Runtime Rollback
 
-## Runtime rollback
+Automatic post-switch rollback in `scripts/deploy-production.mjs` restores:
 
-Автоматический post-switch rollback выполняет `scripts/deploy-production.mjs` при ошибке после cutover:
+- previous `current` symlink;
+- previous Nginx/systemd assets;
+- previous `shared/release.env`;
+- previous web/worker runtime.
 
-- возвращает previous `current` symlink;
-- восстанавливает previous Nginx/systemd topology;
-- атомарно возвращает `shared/release.env` к SHA previous release;
-- проверяет Nginx;
-- перезапускает предыдущий web/worker runtime;
-- не удаляет failed immutable release автоматически;
-- не меняет PostgreSQL data.
+It does not delete failed release automatically and does not change PostgreSQL data.
 
-Перед ручным rollback нужны exact current/previous SHA, release health DTO, service state и совместимость previous code с уже применённой schema.
+Manual rollback requires:
 
-## Database recovery
+- exact current SHA;
+- exact previous SHA;
+- release health DTO;
+- service states;
+- proof that previous code is compatible with already applied schema.
+
+## Database Recovery
 
 Production backup contract:
 
 - custom-format `pg_dump`;
 - checksum;
 - private offsite copy;
-- remote HEAD confirmation до retention;
+- remote HEAD confirmation before retention;
 - 7 daily / 8 weekly / 6 monthly;
-- credentials outside Git/logs.
+- credentials outside Git/logs/docs.
 
 Restore procedure:
 
-1. выбрать проверенный dump/checksum;
-2. разрешить `latest.dump` в точный файл, подключить только этот файл read-only, дождаться завершения init-фазы временного PostgreSQL и восстановить dump во временную database;
-3. проверить owner, migrations и key row counts;
-4. проверить application compatibility;
-5. только после отдельного owner decision планировать production restore;
-6. сохранить incident evidence и rollback option.
+1. choose verified dump/checksum;
+2. resolve `latest.dump` to exact immutable file;
+3. mount it read-only;
+4. restore into temporary PostgreSQL database;
+5. verify owner, migrations and key row counts;
+6. verify application compatibility;
+7. request separate owner decision before production restore.
 
-`ops/postgres/restore-smoke.sh` никогда не должен восстанавливать поверх production.
+`ops/postgres/restore-smoke.sh` must never restore over production.
 
-## Failure classes
+## Failure Classes
 
-### Web release failure
+- Web release failure: rollback code/assets only.
+- Migration failure before cutover: stop; fix with new reviewed migration, never edit applied migration.
+- Worker provider failure: keep honest SourceRun/ReportSnapshot state; no DB restore.
+- Outbox failure: inspect PENDING/PROCESSING/DEAD_LETTER and retry only after root-cause correction.
+- Data corruption/loss: stop writes, preserve evidence, verify offsite dump in temp DB, request owner decision.
+- Secret compromise: follow [`TOKEN_ROTATION.md`](TOKEN_ROTATION.md).
 
-Rollback code/assets; PostgreSQL не трогать.
+## Required Evidence
 
-### Migration failure до cutover
-
-Deploy останавливается до symlink switch. Нельзя редактировать применённую migration; исправление — новая reviewed migration/compatibility plan.
-
-### Worker partial provider failure
-
-Не выполнять DB restore. Сохранить honest SourceRun/ReportSnapshot status, устранить provider access/quota issue и повторить sync.
-
-### Worker unexpected failure
-
-Проверить failed SyncRun/SourceRuns, safe logs и advisory lock release. Повторять только после root-cause correction.
-
-### Outbox failure
-
-- PENDING после retryable failure обрабатывается только после `availableAt`;
-- PROCESSING со stale lease может быть reclaimed;
-- DEAD_LETTER не повторяется автоматически;
-- manual retry требует root-cause correction, new idempotent command и audit;
-- rollback отключает несовместимый outbox timer и восстанавливает units previous release.
-
-### Data corruption/loss
-
-Остановить writes, сохранить текущее состояние, проверить offsite dump во временной DB и эскалировать owner decision. Не запускать destructive cleanup.
-
-### Secret compromise
-
-Следовать `TOKEN_ROTATION.md`; не публиковать secret/error bodies.
-
-## Required proof
-
-- exact code SHA and rollback SHA;
-- DB migration state;
+- current and rollback SHA;
+- migration state;
 - health/auth/tenant smoke;
-- live/ready DTO SHA совпадает с restored release env;
 - worker status and timestamps;
-- backup checksum/offsite confirmation;
+- backup checksum and offsite confirmation;
 - temporary restore row-count checks;
 - incident timeline without secrets/PII.

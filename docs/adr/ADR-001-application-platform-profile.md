@@ -1,41 +1,41 @@
-# ADR-001: Профиль AMS IMPULSE
+# ADR-001: AMS IMPULSE Platform Profile
 
-## Статус
+## Status
 
-Принято. Это единственное действующее архитектурное решение верхнего уровня.
+Accepted. This is the only active top-level architecture decision.
 
-## Контекст
+## Context
 
-AMS IMPULSE совмещает публичный SEO-лендинг, приватную multi-tenant отчётность, Platform Admin и фоновые read-only интеграции. Проекту нужны строгая tenant-изоляция, воспроизводимая доставка внешних операций и ограниченная обработка account/operational PII.
+AMS IMPULSE combines public SEO marketing, private multi-tenant reporting, Platform Admin and scheduled provider integrations. The project needs tenant isolation, audited admin operations, repeatable external work and limited account/operational PII handling.
 
-## Решение
+## Decision
 
-- platform contract: `AMS Application Platform Core 3.4 — Solo Minimal`;
-- `TENANCY = multi-tenant`;
-- `ASYNC = outbox-plus-queue`;
-- `DATA = pii`;
-- `DELIVERY = own-saas`;
-- `PLATFORM_ADMIN = enabled`;
-- `DATABASE = self-managed-postgresql`;
-- project runtime retains exact TypeScript `6.0.3` as an approved project exception to the Core 3.4 default line; downgrade has no product or safety benefit;
-- архитектура: один modular monolith на Next.js, отдельные web/worker процессы из одного OCI image;
-- data owner: PostgreSQL + Prisma, без второго ORM или runtime storage;
-- auth owner: Better Auth для identity/password/session, AMS для Membership, permissions, resource authorization и admin provisioning;
-- mutations: `defineAction/API/job adapter → defineCommand → transaction-bound repositories`;
-- async: transactional OutboxEvent → pg-boss → idempotent handler;
-- public landing и внутренний кабинет сохраняют разные design systems;
-- существующие opaque CUID сохраняются; массовая смена идентификаторов не имеет продуктовой ценности;
-- RLS, Redis, public signup, billing, files, realtime, внешний `/api/v1` и отдельные services добавляются только по отдельному product trigger.
+- Platform contract: `AMS Application Platform Core 3.4 — Solo Minimal`.
+- `TENANCY = multi-tenant`.
+- `ASYNC = outbox-plus-queue`.
+- `DATA = pii`.
+- `DELIVERY = own-saas`.
+- `PLATFORM_ADMIN = enabled`.
+- `DATABASE = self-managed-postgresql`.
+- Runtime keeps exact TypeScript `6.0.3` as approved project exception.
+- Architecture is one modular monolith on Next.js with separate web/worker processes from one immutable OCI image.
+- Data owner is PostgreSQL + Prisma; no second ORM/runtime store.
+- Auth owner is Better Auth for identity/password/session and AMS for Membership/permissions/resource authorization.
+- Mutations use `defineAction/API/job adapter → defineCommand → transaction-bound repositories`.
+- Async uses transactional OutboxEvent → pg-boss → idempotent handler.
+- Public site and private cabinet keep separate design systems.
+- Opaque CUID identifiers are preserved.
 
-## Последствия
+## Consequences
 
-- `PrincipalContext`, tenant-aware repositories и PostgreSQL constraints являются совместными уровнями защиты;
-- Platform Admin не получает фиктивный tenant; вход без дополнительного фактора является утверждённым owner exception с HTTPS, закрытой регистрацией, rate limiting, session revocation и audit как compensating controls;
-- applied migrations неизменяемы, production использует только `prisma migrate deploy`;
-- release привязан к exact reviewed SHA и immutable image;
-- self-managed PostgreSQL 18 — утверждённая production topology: private listener, separate runtime/migrator/backup boundaries, offsite backup и restore proof обязательны;
-- перенос на Managed PostgreSQL не планируется и не является conformance gap.
+- `PrincipalContext`, tenant-aware repositories and PostgreSQL constraints jointly protect tenant data.
+- Platform Admin has no fake tenant.
+- No additional auth factor is an approved owner exception with compensating controls.
+- Applied migrations are immutable; production uses only `prisma migrate deploy`.
+- Release is tied to exact reviewed SHA and immutable image digest.
+- Self-managed PostgreSQL 18 requires private listener, separated credentials, offsite backup and restore proof.
+- Managed PostgreSQL is not a planned migration target.
 
-## Критерий пересмотра
+## Reconsider When
 
-ADR пересматривается только при изменении platform profile, auth/data owner, async mechanism или production topology.
+Review this ADR only if platform profile, auth/data owner, async mechanism, production topology or service boundary changes.

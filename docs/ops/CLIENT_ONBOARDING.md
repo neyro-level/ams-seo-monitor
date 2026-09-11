@@ -1,49 +1,52 @@
-# CLIENT PROVISIONING
+# CLIENT ONBOARDING
 
-## Цель
+Purpose: create a client tenant, project, sites, user access and SEO source setup through bounded audited operations.
 
-Подключить новый client tenant, проект, 1–50 сайтов, пользователя и SEO-источники одной управляемой операцией без ручных записей в БД.
+## Required Inputs
 
-## Обязательные данные
+- organization and project names/slugs;
+- user display name and unique lowercase login;
+- operator-assigned password: exactly 8 printable ASCII characters;
+- tenant role, default `VIEWER`;
+- for each site: name, slug, exact HTTPS URL, timezone, Topvisor region;
+- 20–100 unique approved queries per site;
+- two Metrika business goals: `LEAD_SUBMIT` and `PHONE_CLICK`.
 
-- organization/project names и уникальные slugs;
-- имя и уникальный lowercase login пользователя;
-- назначенный Platform Admin пароль ровно из 8 печатных символов;
-- tenant role: `VIEWER` по умолчанию;
-- для каждого сайта: name/slug, exact HTTPS URL, timezone и Topvisor region;
-- 20–100 уникальных ключевых запросов на сайт, вставленных построчно или загруженных из UTF-8 `.txt/.csv`;
-- две бизнес-цели Метрики: `LEAD_SUBMIT` и `PHONE_CLICK`.
+Credentials and provider IDs must not be copied from another project by analogy.
 
-Credentials и provider IDs нельзя переносить между проектами по аналогии.
+## Flow
 
-## Порядок
+1. Platform Admin opens `/admin/`.
+2. Admin runs client provisioning wizard.
+3. One transaction creates Organization → Project → Sites → User credential → Membership → SearchTargets → TrackedQuerySet → AuditEvent → OutboxEvent.
+4. Admin sends password through a private channel outside Git/docs/logs.
+5. User signs in and lands on `/dashboard/`, seeing only assigned organization.
+6. Worker discovers Yandex Webmaster/Metrika mappings.
+7. Admin confirms two Metrika goals if source is `ACTION_REQUIRED`.
+8. Worker finds or creates Topvisor project, adds Yandex/Google × desktop/mobile targets and imports missing queries.
+9. Worker performs price-check, reserves unique `ProviderOperation`, then starts first paid rank check.
+10. First report and notifications are reviewed for honest `fresh/partial/stale/unavailable` states.
 
-1. В `/admin/` запустить единый мастер создания клиента.
-2. Создать одной транзакцией Organization → Project → Sites → User credential → Membership → SearchTargets → TrackedQuerySet → AuditEvent → OutboxEvent.
-3. Передать назначенный пароль пользователю приватным каналом; не сохранять его в документах или сообщениях команды.
-4. Проверить вход: пользователь сразу попадает в `/dashboard/` и видит только назначенную organization.
-5. Worker автоматически находит точный Metrica counter и подтверждённый Webmaster host; администратор подтверждает предложенное соответствие двух целей.
-6. Worker находит либо создаёт Topvisor project, добавляет Яндекс/Google × desktop/mobile и выбранный region, импортирует отсутствующие queries в группу «Основное ядро».
-7. Перед первым платным checker worker получает цену и резервирует уникальный `ProviderOperation`; недоступная цена или неоднозначный ответ переводят подключение в `ACTION_REQUIRED` без повтора списания.
-8. Первый rank-check запускается сразу; daily Yandex sync выполняется ежедневно, Topvisor positions — по понедельникам, competitors — сразу и в первый понедельник месяца.
-9. Проверить уведомление о результате, первый report и четыре периода.
-9. Release/deploy выполнять отдельной owner-командой.
+Deploy/release is a separate owner command.
 
-Private operator config при необходимости синхронизируется только явным `config:sync --source <private-path>`: сначала dry-run, затем отдельный `--apply`. Deployment config sync не вызывает.
+## Private Config Sync
+
+`config:sync --source <private-path>` is explicit operator work:
+
+- dry-run by default;
+- write only with `--apply`;
+- no deploy-time config import;
+- no physical deletion of history.
 
 ## Acceptance
 
-- создание клиента атомарно; duplicate login/slug возвращает safe error;
-- пароль отсутствует в logs, AuditEvent, URL и Git;
-- public signup недоступен;
-- client видит только свою organization;
-- каждый сайт имеет четыре Topvisor targets и ядро в границах 20–100;
-- повторная доставка onboarding event не повторяет paid checker;
-- Platform Admin/SEO Analyst видят safe notifications, CLIENT_VIEWER не получает `/notifications/`;
-- enabled sources имеют подтверждённый mapping и свежий успешный SourceRun;
-- four valid ReportSnapshots на site;
-- `partial`, `stale` и missing values отображаются честно;
-- secrets/raw provider data отсутствуют в Git/browser/logs;
-- backup/recovery contract не ослаблен.
-
-Live access и integration state подтверждаются runtime evidence, а не этим runbook.
+- Provisioning is atomic.
+- Duplicate login/slug returns safe error.
+- Password is absent from logs, AuditEvent, URL and Git.
+- Public signup stays disabled.
+- Client sees only its organization.
+- Every enabled site has required provider mappings or honest `ACTION_REQUIRED`.
+- Topvisor setup has four search targets and 20–100 query core.
+- Replayed onboarding event does not repeat paid checker.
+- Admin/Analyst receive safe notifications; Client Viewer does not get `/notifications/`.
+- Secrets/raw provider data are absent from browser/logs/docs.

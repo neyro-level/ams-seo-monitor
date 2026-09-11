@@ -1,127 +1,122 @@
 # ARCHITECTURE
 
-Platform contract: `AMS Application Platform Core 3.4 — Solo Minimal`.
+AMS IMPULSE follows `AMS Application Platform Core 3.4 — Solo Minimal`.
 
-Project Profile: `TENANCY = multi-tenant`, `ASYNC = outbox-plus-queue`, `DATA = pii`, `DELIVERY = own-saas`, `PLATFORM_ADMIN = enabled`, `DATABASE = self-managed-postgresql`.
+```text
+TENANCY = multi-tenant
+ASYNC = outbox-plus-queue
+DATA = pii
+DELIVERY = own-saas
+PLATFORM_ADMIN = enabled
+DATABASE = self-managed-postgresql
+```
 
-## System context
+Self-managed PostgreSQL 18 and TypeScript `6.0.3` are approved project exceptions recorded in [`adr/ADR-001-application-platform-profile.md`](adr/ADR-001-application-platform-profile.md).
+
+## Runtime Stack
+
+Exact versions are defined by `package.json`, `pnpm-lock.yaml` and `.node-version`.
+
+| Layer | Current |
+|---|---:|
+| Node.js | `24.20.0` |
+| pnpm | `11.5.1` |
+| Next.js | `16.3.3` |
+| React / React DOM | `19.2.8` |
+| TypeScript | `6.0.3` |
+| Prisma / Client / adapter | `7.10.0` |
+| PostgreSQL | `18.x` |
+| Better Auth | `1.7.2` |
+| Tailwind / Base UI / TanStack Table / Recharts | `4.3.3` / `1.8.0` / `9.2.4` / `3.10.1` |
+
+`next.config.ts` uses standalone output. Web and worker are built from one repository and one immutable image.
+
+## System Context
 
 ```text
 Public/private browser
 → host Nginx
 → Next.js App Router standalone web
-→ session + server authorization
-→ module application query/command
+→ Better Auth session + PrincipalContext
+→ module query/command
 → repository port
 → Prisma adapter
 → PostgreSQL
+```
 
-scheduled project sync
-→ compiled worker command
-→ read-only provider adapters
+```text
+systemd timer / operator command / outbox handler
+→ worker entrypoint
+→ provider adapters
 → normalized evidence
 → PostgreSQL history
-→ Reporting compiler
+→ report compiler
 → ReportSnapshot
+```
 
-client onboarding command
-→ transaction: Organization + Project + Sites + User + Membership + SEO core + SearchTargets + OutboxEvent
-→ worker: Yandex read-only discovery + Topvisor idempotent setup/price-check/first capture
-→ Notification projection + first ReportSnapshot
-
-business command requiring deferred work
-→ transaction: business data + AuditEvent + IdempotencyKey + OutboxEvent
-→ persistent outbox worker
-→ pg-boss
+```text
+business command
+→ transaction: data + AuditEvent + IdempotencyKey + OutboxEvent
+→ outbox daemon
+→ pg-boss singleton job
 → idempotent JobPrincipal handler
 ```
 
-Next.js не является static export. PostgreSQL — единственный runtime data store. Web и worker собираются из одного repository и одного immutable OCI image.
+PostgreSQL is the only runtime source of truth. Operator config is imported only by explicit private-path command and never by deploy.
 
-## Module and layer boundaries
+## Layers And Boundaries
 
-Vertical modules содержат `domain / application / infrastructure / presentation` по фактической необходимости. Внешние consumers импортируют только root entrypoints:
+Vertical modules use only needed parts of:
+
+```text
+domain / application / infrastructure / presentation
+```
+
+Allowed module entrypoints:
 
 - `index.ts` — framework-neutral API;
-- `server.ts` — server-only composition/adapters;
-- `client.ts` — browser-safe presentation;
+- `server.ts` — server-only composition;
+- `client.ts` — browser-safe presentation contracts;
 - `presentation.ts` — server-rendered presentation;
 - `worker.ts` — worker API.
 
-`dependency-cruiser.config.cjs` запрещает циклы, deep imports другого module, Prisma/SQL в presentation, production-to-tests и server dependency в client chain.
+External consumers must not deep-import another module. `dependency-cruiser.config.cjs` and `scripts/verify-architecture.mjs` guard cycles, test imports, client/server leakage, Prisma in presentation and forbidden compatibility paths.
 
-## Platform
+## Platform Layer
 
-- `src/platform/auth` — Better Auth identity/password/session adapters и principal session;
-- `src/platform/authorization` — discriminated `PrincipalContext`, permissions и factories;
-- `src/platform/database` — Prisma client/pool, transaction, scopedDb и tenant registry;
-- `src/platform/commands` — business transaction boundary `defineCommand`;
-- `src/platform/actions` — transport-only `defineAction`;
-- `src/platform/config` — server environment validation;
-- `src/platform/http` — correlation, stable error envelope и health DTO;
-- `src/platform/observability` — redacted pino logger.
+- `src/platform/auth` — Better Auth adapter and fresh principal session.
+- `src/platform/authorization` — `PrincipalContext`, permissions and factories.
+- `src/platform/database` — Prisma/pg context, transactions, tenant-aware repositories.
+- `src/platform/actions` — transport-only Server Action boundary.
+- `src/platform/commands` — business transaction boundary.
+- `src/platform/config` — safe env validation.
+- `src/platform/http` — correlation and safe envelopes.
+- `src/platform/observability` — redacted structured logging.
 
-`src/infrastructure/service-container.ts` и `worker-service-container.ts` являются текущими composition roots. Они не владеют business rules.
+Composition roots: `src/infrastructure/service-container.ts` and `src/infrastructure/worker-service-container.ts`. They wire dependencies but do not own business rules.
 
-## Business modules
+## Business Modules
 
-### Identity Access
+- Identity Access — Better Auth lifecycle, users, memberships, `PrincipalContext`.
+- Project Registry — organizations, projects, sites, provider mappings, goals, query sets and configuration readiness.
+- Reporting — report reads, period semantics, `SiteReportSnapshot` compiler and director analytics projections.
+- Ranking Analytics — pure ranking calculations and Top-3/Top-10 semantics.
+- Data Ingestion — Yandex/Topvisor orchestration, SyncRun/SourceRun and normalized history.
+- Notifications — safe lifecycle notification feed and unread state.
+- Platform Operations — AuditEvent, idempotency, outbox, pg-boss, JobRun, RuntimeHeartbeat, retention and readiness.
+- Platform Admin — protected `/admin/*` composition over owner-module APIs.
 
-Better Auth владеет identity/password/session. AMS владеет Organization, Membership, permissions, resource authorization и административным provisioning.
+Each significant new module must receive a matching `docs/modules/MODULE_<NAME>.md` contract.
 
-Все private reads и mutations используют только `PrincipalContext`; compatibility authorization facade удалён и запрещён статическим guard.
-
-### Project Registry
-
-Владеет Organization → Project → Site, provider mappings, goals, tracked query sets, four-way SearchTarget, threshold/cluster profiles, configuration readiness и typed Platform Admin commands.
-
-### Reporting
-
-Владеет report reads, periods и единственным compiler: `src/modules/reporting/domain/report-compiler.ts`. Browser получает validated `SiteReportSnapshot` v1/v2 compatibility payload и tenant-authorized director analytics projections.
-
-### Ranking Analytics
-
-Владеет deterministic query merge, exact/owner position semantics, Top-3/Top-10 и movements. Не зависит от React, Prisma или HTTP.
-
-### Data Ingestion
-
-Владеет `SyncService`, provider ports, sync lifecycle и persistence. Яндекс-клиенты read-only; Topvisor client имеет узкий mutation contract для project/search targets/keywords/checker. Paid operation резервируется до API-вызова в `ProviderOperation`.
-
-### Notifications
-
-Владеет browser-safe лентой, role/tenant visibility, персональным `NotificationRead`, server pagination и unread count. Это проекция lifecycle-событий, а не замена AuditEvent/SyncRun/OutboxEvent.
-
-### Platform Operations
-
-Владеет AuditEvent, idempotency, transactional outbox, pg-boss transport, JobRun, leases, bounded retry/dead-letter, persistent RuntimeHeartbeat, retention и readiness. Dispatch завершается успешным `pg-boss.send`; обработчик позднее принимает только `job.data.event`, поэтому публикация не связана с произвольным немедленным fetch.
-
-### Platform Admin
-
-`/admin/*` агрегирует typed queries/commands владельцев данных. Forms и Next action adapters разделены по bounded resources: sites, providers, goals, tracked queries, thresholds и query clusters; общий слой содержит только transport primitives и safe error mapping. Generic form framework, generic dispatcher, Refine registry и arbitrary Prisma CRUD отсутствуют.
-
-## UI architecture
-
-UI следует `tokens → shadcn primitives → shared application components → module presentation → route composition`.
-
-- `.theme-app` изолирует светлый приватный интерфейс на PT Root UI и semantic tokens Application Design System 2.1; UI-реализация следует AMS UI Development Constitution 3.1;
-- `.theme-public` изолирует Manrope и `ch-*` только для landing, legal и modal-входа;
-- `src/components/ui` содержит generic project-owned primitives поверх Base UI;
-- `src/components/shell`, `dashboard`, `tables`, `charts`, `states` содержат reusable application patterns;
-- `src/modules/*/presentation` владеет бизнес-компонентами; `src/app` только композирует route;
-- единый private layout получает свежий principal и server-built navigation, а client state владеет только collapse/drawer;
-- administrative tables используют общий `AdminDataTable`, server-side URL filter/sort/page и mobile renderer;
-- графики используют `AnalyticsCard`, shadcn Chart/Recharts и `chart-*`; report semantics остаётся в reporting domain.
-
-`scripts/verify-ui-conformance.mjs` запрещает возврат `crm-*`, системный HEX в reusable components и business selectors в `globals.css`.
-
-## Canonical data paths
+## Data Paths
 
 Read:
 
 ```text
 Server Component
-→ server-generated principal
-→ module query + resource authorization
+→ fresh principal
+→ module query
+→ resource authorization
 → tenant-aware repository
 → DTO
 → JSX
@@ -130,75 +125,68 @@ Server Component
 Mutation:
 
 ```text
-form / Server Action
-→ defineAction: fresh session + PrincipalContext + safe error envelope
+form/API/worker adapter
+→ defineAction or worker adapter
 → defineCommand
 → permission + resource authorization
 → transaction-bound repositories
-→ business mutation + AuditEvent + optional OutboxEvent
+→ mutation + AuditEvent + optional OutboxEvent
 → typed result
-→ defineAction revalidation after success
 ```
 
-Worker:
+External HTTP, provider calls, email and storage are forbidden inside business transactions.
+
+## UI Architecture
 
 ```text
-timer/operator/outbox
-→ worker entrypoint
-→ module worker API
-→ provider/repository adapters
-→ PostgreSQL
+tokens
+→ shadcn/Base UI primitives
+→ shared application components
+→ module presentation
+→ route composition
 ```
 
-External HTTP, provider calls, email и storage запрещены внутри business transaction.
+Private UI uses `theme-app`, PT Root UI, semantic tokens and the internal design system. Public UI uses isolated `theme-public`, Manrope and `ch-*` tokens. Do not mix public and private token layers.
 
-## Tenancy and authorization
+Mobile is part of the web application contract: private routes use topbar/drawer on small widths, tables render as cards, controls stay touch-friendly, and visual proof targets `375 / 768 / 1280 / 1440`.
 
-- browser/URL/form `organizationId` не доказывает доступ;
-- tenant user создаётся server-side из fresh User + active AMS Membership;
-- platform-admin/platform-analyst не получают fake organization;
-- permission и module-owned resource authorization обязательны одновременно;
-- every tenant-owned record carries `organizationId`;
-- composite foreign keys отклоняют cross-tenant parent relations;
-- cacheable tenant read принимает organization scope явно;
-- tenant scope выбирается только из свежих AMS Membership в детерминированном порядке.
+Installable/PWA behavior is not yet active. If added later, manifest/icons are a small STANDARD UI/runtime addition; service worker/offline caching is RISKY because private PII/report data must not be cached accidentally.
 
-## Reporting and provider invariants
+## Worker And Providers
 
-- periods: `week`, `month`, `quarter`, `halfYear`; default `month`;
-- `partial != success`, `stale != current`, `null != 0`;
-- Webmaster average show position не заменяет exact ranking;
-- Top-3 является подмножеством Top-10;
-- direct query-to-lead attribution запрещена;
-- browser не вызывает Yandex/Topvisor APIs и не получает credentials;
-- Topvisor weekly check runs on Monday; competitors run at onboarding and in the first Monday window of each month;
-- missing price-check blocks a paid call; ambiguous paid dispatch remains `ACTION_REQUIRED`;
-- Яндекс providers остаются read-only; Topvisor writes запрещены вне idempotent worker contract.
+Worker commands live behind `src/worker/main.ts` and compiled collector output. Providers:
 
-## Runtime and release
+- Yandex Webmaster: read-only host, query and technical evidence.
+- Yandex Metrika: read-only traffic, goals, phrases, devices and geography.
+- Topvisor: bounded project/search target/query/checker/competitor operations.
 
-Repository assets определяют текущий release contract:
+Topvisor paid checker requires durable `ProviderOperation` reservation and price-check. Ambiguous dispatch becomes `ACTION_REQUIRED`, not an automatic retry.
 
-- multi-stage non-root `Dockerfile`;
-- `docker-compose.production.yml`: persistent web + outbox worker, manual migrate/maintenance;
-- host Nginx → loopback web `127.0.0.1:3000`;
-- daily project-sync и outbox-retention systemd timers;
-- exact image tag/digest и `RELEASE_SHA` в root-owned release env;
-- migration container выполняет Prisma deploy и pg-boss schema migration;
-- pre-migration backup + offsite confirmation + isolated restore smoke;
-- automatic code/assets rollback после failed cutover.
+## Release Topology
 
-Текущая topology с host networking и self-managed PostgreSQL 18 является утверждённым project exception. БД не публикует `5432` в Internet; runtime/migrator/backup identities, capacity, backup timers и offsite proof проверяются перед release. Managed PostgreSQL для этого проекта — `NOT_APPLICABLE`.
+Production release unit:
 
-## Executable proof
+```text
+reviewed main SHA
+→ immutable OCI image
+→ Docker Compose
+→ host Nginx
+→ protected web/worker/migrator/backup env
+→ self-managed PostgreSQL 18
+```
 
-- `pnpm architecture:check` — import/static boundaries;
-- `pnpm test:unit` — domain/contracts;
-- `pnpm test:integration` — fail-closed real PostgreSQL;
-- `pnpm test:e2e` — standalone/browser flows;
-- `pnpm verify:quick` — постоянная дешёвая проверка;
-- `pnpm verify:risky` — unit, security integration subset и build для auth/data/tenant/worker/CI/deploy;
-- `pnpm verify:daily` — полный integration/E2E/security набор один раз ночью;
-- SourceCraft `risky-check` и `release-check` проверяют exact requested SHA; обычный PR выполняет только `verify:quick`.
+Release requires backup, offsite confirmation, restore smoke, migration, cutover and live smoke. Merge is not release. Details: [`RUNBOOK_DEPLOY.md`](RUNBOOK_DEPLOY.md).
 
-Локальный PASS не заменяет SourceCraft exact-head gate. Production release требует отдельного live proof по `docs/RUNBOOK_DEPLOY.md`.
+## Verification
+
+Main scripts:
+
+```bash
+pnpm architecture:check
+pnpm verify:quick
+pnpm verify:risky
+pnpm verify:daily
+pnpm verify:release
+```
+
+Use minimum proof in WORK. SourceCraft exact-head gate is required before `main`. Production proof is only part of release.

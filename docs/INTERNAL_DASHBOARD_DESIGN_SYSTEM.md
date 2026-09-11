@@ -1,166 +1,118 @@
-# AMS IMPULSE Application Design System
+# INTERNAL DASHBOARD DESIGN SYSTEM
 
-Статус: канон приватного интерфейса AMS IMPULSE. Версия проектного профиля: 2.1.
+Canonical UI contract for private AMS IMPULSE routes: `/dashboard/*`, `/analyst/*`, `/admin/*`, `/notifications/*` and `/c/*`.
 
-Документ конкретизирует `AMS UI Development Constitution 3.1` и `AMS Application Design System 2.1` для кабинета, Platform Admin, аналитики и отчётов. Архитектурные и security-границы определяет Application Platform Core 3.4. Приватный интерфейс использует каноническую default-палитру AMS Application Design System без project color override.
+Architecture/security boundaries are defined by `ARCHITECTURE.md` and `SECURITY.md`. This file owns visual and interaction rules only.
 
-Заголовок страницы остаётся в обычном потоке документа. Второй липкий слой под верхней панелью запрещён: он перекрывает содержание при прокрутке.
+## Character
 
-## Область действия
+Private UI is a calm operational workspace: dense, readable, restrained, fast to scan. It is not a marketing page and does not use hero layouts, decorative gradients, glow or oversized editorial type.
 
-Система применяется к приватным маршрутам `/dashboard/*`, `/admin/*`, `/analyst/*` и `/c/*`: shell, навигации, таблицам, формам, графикам и рабочим состояниям.
+## Stack
 
-Публичный лендинг, юридические страницы и модальное окно входа используют отдельную тему `theme-public`, Manrope и существующий внешний визуальный язык. Вход остаётся кнопкой на главной, modal `Вход в кабинет` и deep link `/?login=1`; отдельный `/login` не создаётся.
+- Tailwind CSS 4.
+- Project-owned shadcn-compatible primitives over Base UI.
+- Lucide icons.
+- TanStack Table for working tables.
+- React Hook Form + Zod for complex forms.
+- `nuqs` for URL state.
+- Sonner for feedback.
+- Recharts through project chart wrappers.
+- Self-hosted PT Root UI Variable.
 
-## Иерархия UI
+Do not add a second UI/table/chart/icon/state framework without a separate architecture decision.
 
-```text
-semantic tokens
-→ shadcn primitives на Base UI
-→ shared application components
-→ module presentation
-→ route composition
-```
+## Theme
 
-- `src/components/ui` — generic shadcn-compatible primitives;
-- `src/components/shell`, `dashboard`, `tables`, `charts`, `states` — переиспользуемый application UI;
-- `src/modules/*/presentation` — компоненты с бизнес-смыслом;
-- `src/app` — композиция маршрутов, без собственного data access.
+Private routes use `.theme-app`, semantic tokens and PT Root UI.
 
-Новый общий компонент создаётся только при фактическом повторении. UI не импортирует Prisma, repositories и provider adapters.
+Core palette:
 
-## Технический UI-стек
-
-- Tailwind CSS 4;
-- shadcn-compatible project-owned components поверх Base UI;
-- Lucide Icons;
-- TanStack Table 9 для рабочих таблиц;
-- React Hook Form + Zod для сложных форм;
-- nuqs для URL-state;
-- Sonner для уведомлений;
-- shadcn Chart + Recharts 3 для графиков;
-- self-hosted PT Root UI Variable.
-
-Второй UI, table, chart, icon или client-state framework без отдельного решения не добавляется.
-
-## Визуальный профиль
-
-Характер: строгий, спокойный, технологичный, информационно плотный. Рабочая зона светлая; shell тёмно-синий; голубой акцент используется дозированно для primary action, focus, selection и интерактивных состояний.
-
-Канонические значения:
-
-| Роль | Значение |
-|---|---|
+| Role | Value |
+|---|---:|
 | Shell | `#082539` |
 | Shell hover | `#113850` |
 | Primary action | `#197FB8` |
-| Interactive ring | `#3997CB` |
+| Ring | `#3997CB` |
 | Link | `#0E4F73` |
 | Page | `#EDF2F6` |
 | Surface | `#FFFFFF` |
 | Main text | `#10202F` |
 
-Reusable UI обращается только к семантическим переменным:
+Reusable UI must use semantic variables, not raw product aliases or business CSS in `globals.css`.
 
-```text
---background / --foreground
---card / --popover
---primary / --secondary / --accent
---border / --input / --ring
---sidebar-*
---success / --warning / --info / --destructive
---chart-1 ... --chart-5
---radius / --radius-panel / --radius-card
---shadow-surface / --shadow-overlay
-```
+## Typography And Geometry
 
-Параллельные aliases по названию продукта или цвета запрещены. Публичные `ch-*` переменные существуют только внутри `.theme-public` и не используются в кабинете.
+- Base: `14/22`.
+- H1: `24/30`.
+- H2: `20/26`.
+- H3: `16/22`.
+- Caption: `12/16`.
+- Use `tabular-nums` for metrics.
+- Control height: target `44px`, minimum `40px`.
+- Radius: controls `10px`, panels `14px`, cards `18px`.
+- Spacing scale: `4, 8, 12, 16, 20, 24, 32, 40px`.
 
-## Типографика и геометрия
+Text must wrap/truncate intentionally and never overflow its control or card.
 
-Приватный интерфейс использует PT Root UI Variable. Базовый текст — `14/22`, H1 — `24/30`, H2 — `20/26`, H3 — `16/22`, caption — `12/16`. Числовые показатели используют `tabular-nums`.
+## Shell
 
-- control: радиус `10px`, высота не меньше `40px`, целевая `44px`;
-- panel: радиус `14px`;
-- card: радиус `18px`;
-- spacing scale: `4, 8, 12, 16, 20, 24, 32, 40px`;
-- обычные поверхности разделяются фоном и border; постоянные тяжёлые тени запрещены;
-- локальный motion: `120–180ms`, modal/navigation: `180–240ms`, с обязательным `prefers-reduced-motion`.
+Desktop:
 
-## Application shell
+- fixed sidebar `232px`, compact `76px`;
+- no desktop topbar;
+- page title starts in normal content flow;
+- navigation is server-built from `PrincipalContext`;
+- hidden navigation is not authorization.
 
-- desktop sidebar: `232px` в рабочем состоянии и `76px` в компактном; переключатель оформлен как небольшой полупрозрачный треугольный указатель на верхнем краю панели, без отдельной пиктограммы, toolbar-строки, плотной заливки и тени;
-- desktop topbar отсутствует: заголовок страницы начинается в верхней части рабочей области;
-- хлебные крошки не используются, пока глубина приватной навигации не требует отдельного пути; на странице сайта допускается компактное действие `Назад`;
-- mobile использует topbar и drawer;
-- бренд-блок использует цельный тёмный контейнер, плоский steel-blue бейдж `АМС` и русское название `ИМПУЛЬС`; декоративные градиенты не применяются;
-- иконки навигации различаются по смыслу: обзор, администрирование, уведомления, проект и сайт;
-- проект в навигации открывает страницу проекта по названию, а отдельная стрелка раскрывает сайты; раскрытая группа сайтов не образует отдельную карточку и связывается тонкой вертикальной steel-blue линией;
-- активный проект и сайт выделяются полупрозрачной графитовой поверхностью, холодным контуром и компактным левым маркером без серой заливки, теней и glow;
-- пользовательский блок показывает только компактное название текущей роли; для Platform Admin — `Супер админ`; безопасный выход остаётся компактным;
-- навигация строится на сервере из `PrincipalContext`; скрытый пункт не заменяет authorization;
-- несуществующие маршруты не показываются.
+Mobile:
 
-## Таблицы
+- topbar + drawer;
+- drawer traps focus and closes predictably;
+- touch targets at least `40px`;
+- no page-level horizontal overflow.
 
-Рабочая таблица строится на TanStack Table и shadcn Table. Filter, sort, count и page остаются server-side и отражаются в URL. Header sticky, строка `48–52px`, числовые колонки выравниваются вправо. Горизонтальный scroll допускается только внутри table container.
+Project navigation opens project page by title; a separate affordance expands sites. Active project/site uses restrained marker, not glow/shadow.
 
-На mobile operational table превращается в карточки. Состояние `данных ещё нет` отличается от `фильтр ничего не нашёл`. Saved views, selection, virtualization и pinned columns добавляются только под реальный сценарий.
+## Tables
 
-## Формы и действия
+Tables use TanStack Table + shadcn Table. Filter, sort, count and page are server-side and reflected in URL. Desktop may have local table-container horizontal scroll; whole page must not.
 
-Сложная форма использует RHF + Zod, одинаковый field contract и обязательную server validation. Label не заменяется placeholder. Ошибка объясняет исправление и сохраняет ввод. Pending блокирует повторную отправку. Обычный системный HTML-select оформляется через shadcn `NativeSelect`; popup Select применяется только при фактической потребности в поиске, группировке или сложном выборе. Раскрывающиеся секции используют Base UI/shadcn Accordion, а не ручной `details/summary`.
+Mobile operational tables render as cards. Empty state, filtered-empty state and permission/error state are distinct.
 
-Пользовательские тексты используют понятный русский деловой язык. Внутренние идентификаторы и термины разработки — `slug`, `version`, `tenant`, `scope`, названия enum и коды ошибок — не выводятся в интерфейсе. Если внутренний адрес объекта нужен в форме, он называется `Адрес в кабинете` и сопровождается коротким примером.
+## Forms And Actions
 
-Destructive action отделяется визуально и подтверждается именем объекта. После mutation пользователь получает явный success/error feedback. Пароль, provider secret и другие чувствительные значения не возвращаются в browser-safe result.
+- Label never replaced by placeholder.
+- Client validation is convenience; server validation is authoritative.
+- Pending blocks duplicate submission.
+- Stale version preserves input and returns clear conflict.
+- Destructive action requires explicit object-name confirmation.
+- Passwords, provider secrets and sensitive values are never returned in browser-safe result.
 
-## Состояния и статусы
+Use Base UI/shadcn Accordion for disclosure and NativeSelect for simple select. Popup Select only when search/grouping/complex choice is needed.
 
-Канонические состояния: loading, empty, filtered-empty, error, permission-denied, partial и stale. Loading сохраняет геометрию будущего экрана. Status всегда выражается текстом; цвет и иконка только усиливают значение.
+## States
 
-- success — завершённое корректное состояние;
-- warning — требуется внимание;
-- info — нейтральная системная информация;
-- destructive — ошибка или опасное действие;
-- partial и stale не маскируются под success.
+Required states: loading, empty, filtered-empty, error, permission-denied, partial, stale.
 
-## Аналитика и графики
+Color/icon can reinforce status but text carries meaning. Loading state preserves layout geometry.
 
-Основной рабочий объект важнее декоративного набора KPI. Каждый график отвечает на конкретный вопрос и показывает период, единицы, timezone и числовой итог. Цвета, grid, tooltip и legend используют `chart-*` и semantic tokens. Семантика данных остаётся во владельце домена `report-compiler`.
+## Analytics
 
-## Responsive и доступность
+Every chart must answer a specific question and show period, units, timezone/source context and current status. Chart semantics stay in domain/reporting code, not presentation.
 
-Минимальная visual QA-матрица: `375 / 768 / 1280 / 1440px`.
+## Mobile / Installable Readiness
 
-- без горизонтального overflow страницы;
-- keyboard flow соответствует визуальному порядку;
-- focus-visible не скрывается;
-- dialog и drawer удерживают focus и корректно закрываются;
-- icon-only action имеет accessible name;
-- table сохраняет `table/thead/th/scope`;
-- touch target не меньше `40px`;
-- цвет не является единственным носителем смысла.
+Private UI must remain web-mobile first. Adding `manifest.ts` and icons later is allowed as a small installable shell. Service worker/offline caching is not allowed until a RISKY security design defines what may be cached and proves private reports/PII are excluded.
 
-## Запрещённый drift
+## Acceptance
 
-- системный HEX в reusable TSX;
-- business-specific CSS в `globals.css`;
-- новый параллельный token layer;
-- ручной table/form/state pattern при наличии общего компонента;
-- декоративные градиенты, glassmorphism и glow в кабинете;
-- маркетинговый hero внутри приложения;
-- полная загрузка server dataset в browser;
-- перенос `ch-*` в private UI;
-- визуальный редизайн текущего login modal без отдельного решения владельца.
-
-## Приёмка UI-потока
-
-- component ownership соответствует слоям;
-- route/DTO/permission contracts не изменены скрыто;
-- semantic tokens используются последовательно;
-- fixed desktop sidebar, project accordions и mobile shell проверены;
-- формы, таблицы, графики и все состояния имеют browser proof;
-- keyboard, focus, dialog/drawer и overflow проверены;
-- публичный лендинг, legal pages и login modal визуально не изменены.
-- для RISKY UI-потока выполнены impact review и независимый read-only review через OMP; каждое замечание подтверждено или отклонено по коду.
+- Visual QA at `375 / 768 / 1280 / 1440`.
+- No incoherent overlap or page overflow.
+- Keyboard flow matches visual order.
+- Focus-visible is preserved.
+- Dialog/drawer focus management works.
+- Icon-only action has accessible name.
+- Table semantics remain valid.
+- Public `ch-*` tokens are absent from private UI.
+- Raw HEX is absent from reusable TSX except approved token definition layer.

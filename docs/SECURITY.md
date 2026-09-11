@@ -1,94 +1,132 @@
 # SECURITY
 
-Документ фиксирует security boundary canonical `main` для профиля `multi-tenant / pii / own-saas`.
+Security boundary for AMS IMPULSE profile: `multi-tenant / pii / own-saas / Platform Admin enabled`.
 
-## Trust boundaries
+## Trust Boundaries
 
 ### Browser
 
-Browser получает публичный сайт либо явные DTO кабинета. Он не получает Prisma records, database URL, provider credentials, raw provider payloads, backup credentials, password hashes или внутренние error bodies.
+Receives only public HTML or explicit browser-safe DTOs. It must never receive Prisma records, database URLs, provider credentials, raw provider payloads, password hashes, session tokens, backup credentials, stack traces or internal error bodies.
 
-### Next.js application
+### Next.js Web
 
-- Better Auth проверяет identity/password/session;
-- `requireCurrentCabinetPrincipal()` перечитывает session без cookie cache и требует активного User;
-- tenant scope создаётся только из свежего AMS Membership;
-- permission и module-owned resource authorization обязательны одновременно;
-- public signup и user-created organizations выключены;
-- public errors имеют stable code, safe message и correlation ID;
-- readiness доступен только с localhost.
+- Better Auth validates identity/password/session.
+- Server rebuilds fresh `PrincipalContext` for every private request/action.
+- Disabled User or removed Membership loses access on next request.
+- Public signup and user-created organizations are disabled.
+- Public errors use stable code, safe message and correlation ID.
+- `/api/health/ready` is loopback-only.
 
 ### PostgreSQL
 
-- единственный runtime source of truth;
-- listener не публикуется в Internet;
-- runtime и migrator identities разделены;
-- tenant-owned records имеют `organizationId`, а composite constraints блокируют cross-tenant relations;
-- production применяет только новые reviewed migrations;
-- backup, checksum, offsite confirmation и isolated restore smoke обязательны перед release.
+- Single runtime source of truth.
+- No public Internet listener.
+- Runtime, migrator, test and backup identities are separated.
+- Tenant-owned records carry explicit `organizationId`.
+- Composite constraints reject cross-tenant parent relations.
+- Production schema changes use reviewed migrations only.
+- Backup/offsite/restore proof is required before release migration.
 
-### Worker и integrations
+### Worker And Providers
 
-- provider tokens доступны только worker environment;
-- Яндекс.Вебмастер и Яндекс.Метрика только read-only; Topvisor mutations разрешены узкому onboarding/weekly worker contract на exact allowlisted HTTPS origin;
-- browser не вызывает provider API;
-- provider mapping хранит только nonsecret identifiers/settings;
-- price-check обязателен до Topvisor paid rank-check; `ProviderOperation.operationKey` защищает от повторного списания, неоднозначный результат fail-closed в `ACTION_REQUIRED`;
-- logs содержат safe IDs/counts/status, но не token/header/raw body/PII;
-- outbox использует idempotency, lease, bounded retry и dead-letter.
+- Provider tokens exist only in worker/server environment.
+- Yandex Webmaster and Yandex Metrika are read-only.
+- Topvisor writes are allowed only inside bounded idempotent worker contracts.
+- Browser never calls providers directly.
+- Provider settings in DB contain nonsecret mappings only.
+- Price-check is mandatory before paid Topvisor checker.
+- Logs contain safe IDs, counts and statuses; no token, header, raw body or PII.
 
 ### Leads API
 
-Публичная форма передаёт заявку в отдельный allowlisted AMS Leads API. Имя и телефон не сохраняются в PostgreSQL AMS IMPULSE и не логируются. `NEXT_PUBLIC_LEADS_SITE_KEY` — публичный site identifier, а delivery credentials остаются во внешнем сервисе.
+Public lead form submits to allowlisted external AMS Leads API. AMS IMPULSE does not store name/phone in its PostgreSQL. `NEXT_PUBLIC_LEADS_*` values are public identifiers, not delivery credentials.
 
-## Identity и доступ
+## Identity Contract
 
-- вход по уникальному логину и паролю ровно из 8 печатных ASCII-символов;
-- пароль назначает только Platform Admin и передаёт вне Git, URL, argv, docs и logs;
-- открытый пароль никогда не возвращается после сохранения;
-- смена пароля отзывает все старые sessions;
-- отключённый User отклоняется на fresh principal boundary;
-- Platform Admin — non-tenant principal и всегда указывает целевую organization для cross-tenant операции;
-- tenant user видит только organization свежего Membership;
-- знание URL, slug или скрытый UI control не дают доступ.
+Better Auth `1.7.2` owns identity, password credential and session lifecycle. AMS owns Membership, permissions, resource authorization and AuditEvent.
 
-Отсутствие дополнительного фактора — утверждённое владельцем исключение. Компенсирующие меры: HTTPS/HSTS, закрытая регистрация, встроенный Better Auth limiter, server-side authorization, короткая административная поверхность, session revocation, disabled-user boundary и AuditEvent.
+Effective principals:
 
-## Rate limiting и redaction
+```text
+platform-admin   → PLATFORM_ADMIN, no organizationId
+platform-analyst → SEO_ANALYST, no fake tenant
+tenant-user      → userId + membershipId + organizationId + tenantRole
+job              → jobName + explicit organizationId
+```
 
-- встроенный Better Auth limiter включён независимо от runtime mode;
-- `/sign-in/email` и `/sign-in/username` ограничены до 5 попыток за 60 секунд на IP и endpoint;
-- отдельный application limiter не создаётся;
-- Pino redaction закрывает root и nested `user`, `actor`, `payload`, `headers`, `request/response`, `req/res` поля с password/token/secret/cookie/API key/email/phone;
-- serialized-log test проверяет отсутствие исходных sentinel values.
+Browser, URL, form and cookie do not create tenant scope.
 
-## Секреты
+## Login And Password Policy
 
-Source of truth — разрешённый Doppler scope и root-owned protected server env. К секретам относятся Better Auth secret, DB credentials, provider tokens и backup credentials. Они запрещены в Git, fixtures, build output, browser, argv, документации и логах. Server-only values не используют `NEXT_PUBLIC_*`.
+- Login uses unique lowercase username and operator-assigned password.
+- Password is exactly 8 printable ASCII characters without spaces.
+- Only Platform Admin/operator CLI assigns or resets password.
+- Plain password is never returned after save.
+- Reset revokes existing sessions.
+- Self-service registration, password recovery and user password change are out of scope.
+- No additional factor is an approved owner exception.
 
-## PII и retention
+Compensating controls: HTTPS/HSTS, closed signup, Better Auth rate limit, server-side authorization, disabled-user boundary, session revocation and AuditEvent.
 
-- User/Session могут содержать email, IP и user-agent только в auth/server layer;
-- lead PII не хранится в этой БД;
-- production PII не используется в fixtures;
-- raw errors и provider bodies не сохраняются;
-- Notification хранит только safe title/message/route; token URL, raw payload и stack trace запрещены;
-- удаление/retention identity data — отдельная owner-approved операция;
-- release rollback не откатывает schema/data автоматически.
+## Authorization Rules
 
-## Security invariants
+- Knowledge of slug/URL is not access.
+- Navigation hiding is not authorization.
+- Permission and module-owned resource authorization are both required.
+- Platform Admin must explicitly name target organization for cross-tenant operation.
+- Tenant user can read only its fresh Membership organization.
+- Direct Server Action calls must pass the same checks as UI flows.
+- Worker `JobPrincipal` organization must match queued event/target.
 
-- public signup off;
-- fresh `PrincipalContext` — единственный authorization input;
-- foreign tenant read/write denied server-side и PostgreSQL constraints;
-- UI не импортирует Prisma/SQL;
-- `defineAction → defineCommand → transaction-bound repository` для business mutations;
-- Platform Admin provisioning и user operations пишут safe AuditEvent атомарно;
-- provider settings отклоняют sensitive key names;
-- secret/PII отсутствуют в DTO, logs, AuditEvent и error response;
-- integration runner принимает только отдельную `*_test` database;
-- production deploy привязан к exact reviewed SHA и immutable image digest.
+## Secrets
 
-## Проверка
+Secret sources: approved Doppler scope and root-owned protected server env files.
 
-Auth, PII, provider credentials, migrations, Nginx, backup и release имеют класс `RISKY`. Перед `main` нужен профильный exact-head gate, перед production — `release-check`, backup/restore proof и live smoke изменённого сценария.
+Secrets include Better Auth secret, DB credentials, provider tokens, Topvisor API key, backup credentials and external delivery credentials. They are forbidden in Git, fixtures, build output, docs, browser, argv, logs, AuditEvent and public error responses.
+
+Server-only secrets must not use `NEXT_PUBLIC_*`. Secret rotation runbook: [`ops/TOKEN_ROTATION.md`](ops/TOKEN_ROTATION.md).
+
+## PII And Logging
+
+- User/session may include email, IP and user-agent only in auth/server layer.
+- Lead PII is not stored in this database.
+- Production PII is not used in fixtures.
+- Raw provider errors and response bodies are not persisted.
+- Notifications use safe title/message/route only.
+- Pino redaction covers root and nested password/token/secret/cookie/API key/email/phone fields.
+- Serialized-log tests must keep sentinel secrets out of output.
+
+## Mutations And Audit
+
+Business mutations follow:
+
+```text
+defineAction/API/job adapter
+→ fresh PrincipalContext
+→ defineCommand
+→ permission + resource authorization
+→ transaction-bound repositories
+→ mutation + safe AuditEvent + optional OutboxEvent
+```
+
+External provider calls are outside the business DB transaction. Successful admin/user/provider configuration mutations write one safe AuditEvent atomically with the mutation.
+
+## Security Invariants
+
+- Public signup off.
+- `PrincipalContext` is the only authorization input.
+- Foreign tenant read/write denied in application and blocked by DB constraints.
+- UI does not import Prisma/SQL.
+- Provider settings reject sensitive key names.
+- Secret/PII absent from DTOs, logs, AuditEvent and error responses.
+- Integration runner accepts only dedicated `*_test` database.
+- Production deploy uses exact reviewed SHA and immutable image digest.
+
+## Open Security Work
+
+Tracked in [`MASTER_PLAN.md`](MASTER_PLAN.md):
+
+- independent confirmation of SourceCraft secret scanning;
+- GitHub mirror sanitation before public visibility;
+- narrowing production migrator `CREATEDB` after owner-approved impact scope;
+- external monitor for public health/stale integrations without exposing readiness body.

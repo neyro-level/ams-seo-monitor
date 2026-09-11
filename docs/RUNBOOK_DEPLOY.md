@@ -1,113 +1,124 @@
 # DEPLOY RUNBOOK
 
-Release unit: immutable OCI image + Docker Compose + host Nginx. Merge, image build and deploy are separate owner-gated steps.
+Production deploy is owner-gated. Merge, artifact build and deploy are separate steps.
 
 ## Scope
 
-Manual production deploy of reviewed canonical `main`. This runbook does not authorize deploy without an owner command.
+Deploy reviewed canonical `main` as immutable OCI image through Docker Compose and host Nginx. This runbook does not authorize deploy by itself.
 
-Repository assets use Linux host networking: web binds `127.0.0.1:3000`, and database/backup operations use the approved self-managed PostgreSQL 18 topology. Managed PostgreSQL is not a release target for this project.
+Project topology:
+
+- web binds `127.0.0.1:3000`;
+- host Nginx terminates external traffic;
+- application uses approved self-managed PostgreSQL 18;
+- protected env files are separated for web, worker, migrator and backup;
+- managed PostgreSQL is not a target.
 
 ## Preconditions
 
-- current branch = clean local `main` fast-forwarded to `origin/main`;
-- exact commit SHA reviewed and Merge Gate green;
-- Docker Engine + Compose available on the target;
-- required web/worker/migrator/backup env files exist on target;
-- Docker runs on Linux with host networking so loopback-only PostgreSQL remains reachable from application containers;
+- clean local `main` fast-forwarded to `origin/main`;
+- exact commit SHA reviewed and SourceCraft Merge Gate green;
+- release target and previous release are known;
+- Docker Engine + Compose available on target Linux host;
+- required protected env files exist;
 - no secret value is printed;
-- rollback target and current symlink readable.
+- current rollback target is readable;
+- backup/offsite/restore smoke tooling is available.
 
-## Build artifact
+## Build Artifact
 
 ```bash
 pnpm release:build
 ```
 
-Artifact contains:
+Artifact includes:
 
-- `docker-image.tar` built outside production host;
+- `docker-image.tar`;
 - `docker-compose.production.yml`;
 - reviewed `ops/` assets;
 - `release-manifest.json` with exact SHA, image tag, image digest and lock checksum.
 
-Artifact does not require host install/build and does not include local DB data or secrets.
+Artifact does not include DB data, local env or secrets.
 
-## Target preparation
+## Target Preparation
 
-Deploy script:
+Deploy script must:
 
-1. uploads artifact/checksum;
-2. verifies checksum and manifest SHA;
-3. rejects an existing target release directory and in-place rebuild;
-4. verifies all protected env files;
-5. loads the OCI image with Docker on target;
-6. verifies loaded image digest against the manifest;
-7. validates compose config under the fixed project name `ams-seo-monitor`, shared by deploy checks and systemd;
-8. installs backup/restore scripts;
-9. runs the pre-migration backup as the `postgres` OS user, then requires offsite upload + HEAD confirmation;
-10. resolves the immutable backup file behind `latest.dump`, mounts that exact file read-only, waits for first-run PostgreSQL initialization to finish, then restores it in an ephemeral PostgreSQL container;
-11. runs `migrate` container with Prisma + pg-boss schema migration;
-12. never imports operator configuration; migrations are the only automatic database change;
-13. installs reviewed Nginx/systemd assets.
+1. upload artifact/checksum;
+2. verify checksum and manifest SHA;
+3. reject existing target release directory and in-place rebuild;
+4. validate protected env files;
+5. load OCI image and verify digest;
+6. validate Compose config under project name `ams-seo-monitor`;
+7. install backup/restore scripts;
+8. run pre-migration backup as `postgres`;
+9. require offsite upload + remote HEAD confirmation;
+10. restore exact immutable backup file into ephemeral PostgreSQL for smoke;
+11. run Prisma migrate deploy and pg-boss schema migration;
+12. never run operator config sync automatically;
+13. install reviewed Nginx/systemd assets.
 
-Any failure before symlink switch leaves the current code runtime untouched. The mandatory backup and restore smoke run before migration because code rollback does not reverse database changes.
+Any failure before symlink switch leaves current code runtime untouched.
 
 ## Cutover
 
-After successful preparation:
+After preparation:
 
-1. arm post-switch rollback trap;
-2. atomically switch `current` symlink;
-3. atomically write root-owned `shared/release.env` with exact SHA, image tag and image digest;
-4. `systemctl daemon-reload`;
+1. arm automatic post-switch rollback;
+2. switch `current` symlink atomically;
+3. write root-owned `shared/release.env` with exact SHA/tag/digest;
+4. reload systemd;
 5. validate and reload Nginx;
-6. restart compose stack through `seo-monitor-web.service`;
+6. restart Compose stack through `seo-monitor-web.service`;
 7. run scheduled sync once;
-8. enable sync, outbox-retention and backup timers;
-9. verify web and worker containers use the exact image digest from manifest;
-10. require loopback live/ready DTOs to report exact target SHA, ready DB/auth, typed outbox counts, worker heartbeat and integration freshness;
+8. enable sync, Topvisor, competitors, outbox-retention and backup timers;
+9. verify web and worker containers use the exact image digest;
+10. require loopback live/ready DTOs to report exact target SHA, DB/auth/outbox/worker/integration freshness;
 11. record previous release and deployed SHA;
 12. remove uploaded temp artifact/checksum.
 
-## Post-deploy smoke
+## Post-Deploy Smoke
 
 Required:
 
-- public `/` = 200 and canonical metadata;
-- `/api/health/live` = 200, valid correlation ID and exact deployed SHA;
-- loopback `/api/health/ready` = 200, same SHA, PostgreSQL ready, auth configured, queue status, worker heartbeat and freshness DTOs;
-- external `/api/health/ready` = 403;
+- public `/` returns 200 and canonical metadata;
+- `/api/health/live` returns 200, correlation ID and deployed SHA;
+- loopback `/api/health/ready` returns 200 with same SHA, PostgreSQL ready, auth configured, outbox counts, worker heartbeat and integration freshness;
+- external `/api/health/ready` returns 403;
 - unauthenticated `/analyst/` redirects to `/?login=1`;
 - analyst sign-in and report read work;
 - client cannot read foreign project/site/report;
-- web and worker containers use the same image digest;
-- scheduled sync succeeds and DB timestamps/status are credible;
-- retention timer and backup timer active;
+- web and worker use same image digest;
+- scheduled sync succeeds or records honest partial/failure state;
+- retention and backup timers are active;
 - latest backup has confirmed offsite object.
 
-Do not paste response bodies containing user/report data into public logs.
+Do not paste user/report data into public logs.
 
-## Automatic code rollback
+## Automatic Code Rollback
 
-Any post-switch command error triggers:
+Post-switch failure triggers:
 
 - restore previous `current` symlink;
 - restore previous compatible Nginx/systemd assets;
-- restart previous compose/service topology;
-- restore `shared/release.env` to previous release SHA + image digest.
+- restore `shared/release.env`;
+- restart previous web/worker runtime.
 
-Rollback does not reverse PostgreSQL migrations/data. Migrations must stay backward-compatible or have an explicit recovery decision.
+Rollback does not reverse PostgreSQL migrations/data. Migrations must be backward-compatible or have explicit recovery decision.
 
-## Production proof
+## Production Proof
 
 Record outside source docs:
 
 - deployed SHA;
 - artifact checksum;
-- image tag + digest;
+- image tag and digest;
 - service/timer states;
-- health/auth/isolation smoke results;
+- health/auth/isolation smoke;
 - migration state;
 - backup/restore result;
 - rollback target.
+
+## Recovery
+
+Operational recovery details live in [`ops/RECOVERY.md`](ops/RECOVERY.md). DB restore is never an automatic release rollback and always requires separate owner decision.
