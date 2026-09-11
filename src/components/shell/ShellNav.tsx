@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import type { NavigationSection } from "../../modules/project-registry/presentation.ts";
+import type { NavigationSection } from "../../platform/navigation/types.ts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip.tsx";
 
 type ShellNavProps = {

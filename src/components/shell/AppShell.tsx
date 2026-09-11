@@ -3,7 +3,7 @@
 import { LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import type { NavigationSection } from "../../modules/project-registry/presentation.ts";
+import type { NavigationSection } from "../../platform/navigation/types.ts";
 import { authClient } from "../../platform/auth/client.ts";
 import { Button } from "../ui/button.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip.tsx";

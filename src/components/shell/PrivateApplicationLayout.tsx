@@ -7,7 +7,7 @@ import { AppShell } from "./AppShell.tsx";
 
 function getRoleLabel(state: NonNullable<Awaited<ReturnType<typeof getCurrentPrincipalState>>>) {
   if (state.principal.kind === "platform-admin") return "Супер админ";
-  if (state.principal.kind === "platform-analyst") return "SEO-аналитик";
+  if (state.principal.kind === "platform-analyst") return "Аналитик";
   if (state.principal.kind === "tenant-user") {
     return state.principal.role === "ORG_OWNER"
       ? "Владелец организации"

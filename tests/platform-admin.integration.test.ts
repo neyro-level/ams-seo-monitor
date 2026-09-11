@@ -114,7 +114,7 @@ integrationDescription("Platform Admin typed commands", () => {
         id: `${suffix}-user`,
         name: "Platform member",
         email: `${suffix}@example.invalid`,
-        systemRole: "CLIENT_VIEWER",
+        systemRole: "CLIENT",
       },
     });
 

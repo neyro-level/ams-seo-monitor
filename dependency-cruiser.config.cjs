@@ -99,6 +99,12 @@ module.exports = {
       to: { path: "^src/modules/identity-access/(domain|application|infrastructure|presentation)/" },
     },
     {
+      name: "product-catalog-internals-are-private",
+      severity: "error",
+      from: { pathNot: "^src/modules/product-catalog/" },
+      to: { path: "^src/modules/product-catalog/(domain|application|infrastructure|presentation)/" },
+    },
+    {
       name: "project-registry-internals-are-private",
       severity: "error",
       from: { pathNot: "^src/modules/project-registry/" },

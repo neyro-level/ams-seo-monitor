@@ -2,26 +2,13 @@ import {
   hasPermission,
   type PrincipalContext,
 } from "../../../platform/authorization/principal.ts";
+import type {
+  NavigationItem,
+  NavigationSection,
+} from "../../../platform/navigation/types.ts";
 import { getProjectService } from "../../../infrastructure/service-container.ts";
 
-export type NavigationChild = {
-  href: string;
-  label: string;
-  active: boolean;
-  muted?: boolean;
-};
-
-export type NavigationItem = {
-  href: string;
-  label: string;
-  active: boolean;
-  children?: NavigationChild[];
-};
-
-export type NavigationSection = {
-  title: string;
-  items: NavigationItem[];
-};
+export type { NavigationChild, NavigationItem, NavigationSection } from "../../../platform/navigation/types.ts";
 
 export async function buildNavigation(
   currentPath: string,

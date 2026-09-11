@@ -11,8 +11,8 @@ datasource db {
 
 enum SystemRole {
   PLATFORM_ADMIN
-  SEO_ANALYST
-  CLIENT_VIEWER
+  ANALYST @map("SEO_ANALYST")
+  CLIENT  @map("CLIENT_VIEWER")
 }
 
 enum MembershipRole {
@@ -204,7 +204,7 @@ model User {
   email             String             @unique
   emailVerified     Boolean            @default(false)
   image             String?
-  systemRole        SystemRole         @default(CLIENT_VIEWER)
+  systemRole        SystemRole         @default(CLIENT)
   disabledAt        DateTime?          @db.Timestamptz(3)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt

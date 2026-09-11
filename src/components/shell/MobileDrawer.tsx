@@ -2,7 +2,7 @@
 
 import { Menu } from "lucide-react";
 import { useState } from "react";
-import type { NavigationSection } from "../../modules/project-registry/presentation.ts";
+import type { NavigationSection } from "../../platform/navigation/types.ts";
 import { Button } from "../ui/button.tsx";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet.tsx";
 import { ShellNav } from "./ShellNav.tsx";

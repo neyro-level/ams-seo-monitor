@@ -268,7 +268,7 @@ export class PrismaIdentityAdminRepository implements IdentityAdminRepository {
           username: input.username,
           email: `${input.username}@users.impulse.invalid`,
           emailVerified: false,
-          systemRole: "CLIENT_VIEWER",
+          systemRole: "CLIENT",
         },
         select: { id: true },
       });

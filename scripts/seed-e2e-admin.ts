@@ -28,7 +28,7 @@ async function main() {
       username: string;
       email: string;
       name: string;
-      systemRole: "PLATFORM_ADMIN" | "CLIENT_VIEWER";
+      systemRole: "PLATFORM_ADMIN" | "CLIENT";
     }) => {
       const existing = await prisma.user.findUnique({
         where: { email: input.email },
@@ -83,7 +83,7 @@ async function main() {
         username,
         email: `${username}@example.invalid`,
         name: `E2E ${username}`,
-        systemRole: "CLIENT_VIEWER",
+        systemRole: "CLIENT",
       });
       await prisma.member.upsert({
         where: {

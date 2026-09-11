@@ -28,6 +28,8 @@ for (const relativePath of [
   "src/platform/database/tenant-owned-models.ts",
   "src/platform/commands/define-command.ts",
   "src/platform/actions/define-action.ts",
+  "src/platform/navigation/types.ts",
+  "src/modules/product-catalog/index.ts",
 ]) {
   try {
     await readFile(path.join(rootDir, relativePath));

@@ -139,22 +139,22 @@ authTestDescription("authorization matrix", () => {
     const analystUserId = await ensureCredentialUser(
       authTestEmails.analyst,
       "SEO Analyst Test",
-      SystemRole.SEO_ANALYST,
+      SystemRole.ANALYST,
     );
     const alphaViewerId = await ensureCredentialUser(
       authTestEmails.alphaViewer,
       "Alpha Viewer Test",
-      SystemRole.CLIENT_VIEWER,
+      SystemRole.CLIENT,
     );
     const westViewerId = await ensureCredentialUser(
       authTestEmails.westViewer,
       "West Viewer Test",
-      SystemRole.CLIENT_VIEWER,
+      SystemRole.CLIENT,
     );
     disabledViewerId = await ensureCredentialUser(
       authTestEmails.disabledViewer,
       "Disabled Viewer Test",
-      SystemRole.CLIENT_VIEWER,
+      SystemRole.CLIENT,
     );
 
     await prisma.user.update({

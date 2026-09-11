@@ -51,7 +51,7 @@ export async function getPrincipalStateByUserId(
       userId: user.id,
       correlationId,
     } satisfies PlatformAdminPrincipal;
-  } else if (user.systemRole === "SEO_ANALYST") {
+  } else if (user.systemRole === "ANALYST") {
     principal = { kind: "platform-analyst", userId: user.id, correlationId } satisfies PlatformAnalystPrincipal;
   } else {
     const selectedMembership = user.members[0];

@@ -85,6 +85,9 @@ describe("PrincipalContext", () => {
 
   it("validates operator system roles independently from principal permissions", () => {
     expect(parseSystemRole("PLATFORM_ADMIN")).toBe("PLATFORM_ADMIN");
+    expect(parseSystemRole("ANALYST")).toBe("ANALYST");
+    expect(parseSystemRole("CLIENT")).toBe("CLIENT");
+    expect(() => parseSystemRole("SEO_ANALYST")).toThrow("Unsupported system role");
     expect(() => parseSystemRole("SUPERUSER")).toThrow("Unsupported system role");
   });
 });

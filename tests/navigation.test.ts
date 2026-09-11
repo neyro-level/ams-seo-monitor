@@ -41,13 +41,13 @@ navigationTestDescription("database-backed navigation isolation", () => {
     });
     await database.prisma.user.upsert({
       where: { id: clientViewerIdentity.userId },
-      update: { disabledAt: null, systemRole: "CLIENT_VIEWER" },
+      update: { disabledAt: null, systemRole: "CLIENT" },
       create: {
         id: clientViewerIdentity.userId,
         email: clientViewerIdentity.email,
         name: clientViewerIdentity.name,
         emailVerified: false,
-        systemRole: "CLIENT_VIEWER",
+        systemRole: "CLIENT",
       },
     });
     await database.prisma.member.upsert({

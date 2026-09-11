@@ -99,7 +99,7 @@ async function createUser() {
   const email = (options.email ?? `${username}@users.impulse.invalid`).toLowerCase();
   const name = requireOption("name");
   const password = readPasswordFromStdin();
-  const systemRole = parseSystemRole(options["system-role"] ?? SystemRole.CLIENT_VIEWER);
+  const systemRole = parseSystemRole(options["system-role"] ?? SystemRole.CLIENT);
   const existingUser = await prisma.user.findFirst({
     where: {
       OR: [{ username }, { email }],

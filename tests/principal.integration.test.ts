@@ -49,19 +49,19 @@ integrationDescription("PrincipalContext factories", () => {
           id: `${suffix}-analyst`,
           email: `analyst.${suffix}@example.invalid`,
           name: "Analyst",
-          systemRole: "SEO_ANALYST",
+          systemRole: "ANALYST",
         },
         {
           id: `${suffix}-viewer`,
           email: `viewer.${suffix}@example.invalid`,
           name: "Viewer",
-          systemRole: "CLIENT_VIEWER",
+          systemRole: "CLIENT",
         },
         {
           id: `${suffix}-nomember`,
           email: `nomember.${suffix}@example.invalid`,
           name: "No member",
-          systemRole: "CLIENT_VIEWER",
+          systemRole: "CLIENT",
         },
       ],
     });

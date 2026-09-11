@@ -22,7 +22,7 @@ describe("notification audience", () => {
     await expect(service.getNotificationSummary(analyst)).resolves.toMatchObject({ unreadCount: 1 });
   });
 
-  it("denies CLIENT_VIEWER", async () => {
+  it("denies CLIENT", async () => {
     await expect(service.getNotificationSummary(viewer)).rejects.toThrow("NOTIFICATION_ACCESS_DENIED");
   });
 });
